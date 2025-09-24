@@ -321,6 +321,13 @@ async function generateServer() {
         return;
     }
 
+    // Check if name is available (client-side validation)
+    const nameInput = document.getElementById('serverName');
+    if (nameInput.style.borderColor === 'rgb(252, 129, 129)') {
+        showError('generate-error', 'Please choose a different server name - this name already exists');
+        return;
+    }
+
     if (!currentDataSource || !currentParsedData) {
         showError('generate-error', 'Please parse a data source first');
         return;
@@ -350,7 +357,8 @@ async function generateServer() {
         const result = await response.json();
 
         if (result.success) {
-            showSuccess('generate-success', `MCP Server "${name}" generated successfully!`);
+            // Show success modal instead of inline message
+            showSuccessModal(name, result.data);
             // Reset form
             document.getElementById('serverName').value = '';
             document.getElementById('serverDescription').value = '';
@@ -941,4 +949,72 @@ function showSuccess(elementId, message) {
     const successDiv = document.getElementById(elementId);
     successDiv.textContent = message;
     successDiv.classList.add('show');
+}
+// Success Modal Functions
+function showSuccessModal(serverName, serverData) {
+    const modal = document.getElementById("success-modal");
+    const messageElement = document.getElementById("success-message");
+
+    let message = `Your MCP server "${serverName}" has been successfully generated and is ready to use.`;
+
+    if (serverData) {
+        message += ` Generated ${serverData.toolsCount || 0} tools, ${serverData.resourcesCount || 0} resources, and ${serverData.promptsCount || 0} prompts.`;
+    }
+
+    messageElement.textContent = message;
+    modal.style.display = "block";
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById("success-modal");
+    modal.style.display = "none";
+}
+
+function goToManageServers() {
+    closeSuccessModal();
+    window.location.href = "/manage-servers";
+}
+
+// Server name validation
+let nameCheckTimeout;
+
+async function checkServerName() {
+    const nameInput = document.getElementById('serverName');
+    const validationDiv = document.getElementById('name-validation');
+    const serverName = nameInput.value.trim();
+
+    // Clear previous timeout
+    if (nameCheckTimeout) {
+        clearTimeout(nameCheckTimeout);
+    }
+
+    // Hide validation if empty
+    if (!serverName) {
+        validationDiv.style.display = 'none';
+        nameInput.style.borderColor = '#e1e1e1';
+        return;
+    }
+
+    // Debounce API calls
+    nameCheckTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/servers/check-name/${encodeURIComponent(serverName)}`);
+            const result = await response.json();
+
+            if (result.success) {
+                validationDiv.style.display = 'block';
+                if (result.available) {
+                    validationDiv.textContent = '✓ Server name is available';
+                    validationDiv.style.color = '#2f855a';
+                    nameInput.style.borderColor = '#68d391';
+                } else {
+                    validationDiv.textContent = '✗ Server name already exists';
+                    validationDiv.style.color = '#c53030';
+                    nameInput.style.borderColor = '#fc8181';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking server name:', error);
+        }
+    }, 500); // 500ms debounce
 }

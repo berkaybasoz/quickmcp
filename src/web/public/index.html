@@ -562,7 +562,8 @@
                 <div id="server-config-section">
                     <div class="form-group">
                         <label>Server Name</label>
-                        <input type="text" id="serverName" placeholder="my-data-server">
+                        <input type="text" id="serverName" placeholder="my-data-server" oninput="checkServerName()">
+                        <div id="name-validation" style="margin-top: 8px; font-size: 14px; display: none;"></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
@@ -995,6 +996,44 @@ npm install</pre>
             ">
                 <!-- Content will be loaded here -->
             </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+    ">
+        <div style="
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            margin: 15% auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: center;
+            padding: 40px 30px;
+        ">
+            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+            <h2 style="color: #2d3748; margin-bottom: 16px;">MCP Server Created Successfully!</h2>
+            <p id="success-message" style="color: #718096; margin-bottom: 30px; line-height: 1.5;">
+                Your MCP server has been generated and is ready to use.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="closeSuccessModal()" class="btn btn-secondary">
+                    Close
+                </button>
+                <button onclick="goToManageServers()" class="btn btn-primary">
+                    View Servers
+                </button>
             </div>
         </div>
     </div>

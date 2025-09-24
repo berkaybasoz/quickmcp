@@ -81,6 +81,14 @@ app.post('/api/generate', async (req, res) => {
   try {
     const { name, description, dataSource, customConfig } = req.body;
 
+    // Check if server with this name already exists
+    if (generatedServers.has(name)) {
+      return res.status(400).json({
+        success: false,
+        error: `MCP Server with name "${name}" already exists. Please choose a different name.`
+      });
+    }
+
     // Re-parse the data source to get full data
     const parsedData = await parser.parse(dataSource);
 
@@ -147,6 +155,20 @@ app.get('/api/servers', (req, res) => {
   }));
 
   res.json({ success: true, data: servers });
+});
+
+// Check if server name is available endpoint
+app.get('/api/servers/check-name/:name', (req, res) => {
+  const serverName = req.params.name;
+  const isAvailable = !generatedServers.has(serverName);
+
+  res.json({
+    success: true,
+    available: isAvailable,
+    message: isAvailable ?
+      `Server name "${serverName}" is available` :
+      `Server name "${serverName}" already exists`
+  });
 });
 
 // Get server details endpoint
