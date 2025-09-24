@@ -524,19 +524,37 @@ npm install</code></pre>
 
         // Show delete confirmation modal
         function deleteServer(serverId) {
-            // Find server info from the current servers list
-            const serverElement = document.querySelector(`[onclick="deleteServer('${serverId}')"]`);
-            const serverCard = serverElement.closest('.server-card');
-            const serverName = serverCard.querySelector('h3').textContent;
+            try {
+                // Find server info from the current servers list
+                const serverElement = document.querySelector(`[onclick="deleteServer('${serverId}')"]`);
+                if (!serverElement) {
+                    console.error('Server element not found for ID:', serverId);
+                    showErrorModal('Delete Failed', `Server element not found. Please refresh the page.`);
+                    return;
+                }
 
-            // Store the server info for deletion
-            serverToDelete = { id: serverId, name: serverName };
+                const serverCard = serverElement.closest('.server-card');
+                if (!serverCard) {
+                    console.error('Server card not found for ID:', serverId);
+                    showErrorModal('Delete Failed', `Server card not found. Please refresh the page.`);
+                    return;
+                }
 
-            // Update modal content
-            document.getElementById('deleteServerName').textContent = `"${serverName}"`;
+                const serverNameElement = serverCard.querySelector('h3');
+                const serverName = serverNameElement ? serverNameElement.textContent : `Server ${serverId}`;
 
-            // Show confirmation modal
-            document.getElementById('deleteConfirmModal').style.display = 'block';
+                // Store the server info for deletion
+                serverToDelete = { id: serverId, name: serverName };
+
+                // Update modal content
+                document.getElementById('deleteServerName').textContent = `"${serverName}"`;
+
+                // Show confirmation modal
+                document.getElementById('deleteConfirmModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error showing delete confirmation:', error);
+                showErrorModal('Delete Failed', `Failed to prepare delete confirmation: ${error.message}`);
+            }
         }
 
         // Close delete confirmation modal
@@ -547,7 +565,12 @@ npm install</code></pre>
 
         // Confirm and execute server deletion
         async function confirmDeleteServer() {
-            if (!serverToDelete) return;
+            if (!serverToDelete) {
+                console.error('No server selected for deletion');
+                closeDeleteConfirmModal();
+                showErrorModal('Delete Failed', 'No server selected for deletion.');
+                return;
+            }
 
             const confirmBtn = document.getElementById('confirmDeleteBtn');
             const btnText = confirmBtn.querySelector('.btn-text');
@@ -566,11 +589,13 @@ npm install</code></pre>
                 const result = await response.json();
 
                 if (result.success) {
+                    const serverName = serverToDelete ? serverToDelete.name : 'Unknown Server';
+
                     // Close confirmation modal
                     closeDeleteConfirmModal();
 
                     // Show success modal
-                    showSuccessModal('Server Deleted', `Server "${serverToDelete.name}" has been successfully deleted.`);
+                    showSuccessModal('Server Deleted', `Server "${serverName}" has been successfully deleted.`);
 
                     // Reload servers list
                     loadServers();
@@ -589,14 +614,15 @@ npm install</code></pre>
                 closeDeleteConfirmModal();
 
                 // Show detailed error message
+                const serverName = serverToDelete ? serverToDelete.name : 'Unknown Server';
                 if (error.message.includes('Server not found') || error.message.includes('404')) {
                     showErrorModal('Server Not Found',
-                        `The server "${serverToDelete.name}" could not be found. It may have been deleted already or the application was restarted. Please refresh the page to see the current servers.`
+                        `The server "${serverName}" could not be found. It may have been deleted already or the application was restarted. Please refresh the page to see the current servers.`
                     );
                     // Refresh the servers list
                     loadServers();
                 } else {
-                    showErrorModal('Delete Failed', `Failed to delete server "${serverToDelete.name}": ${error.message}`);
+                    showErrorModal('Delete Failed', `Failed to delete server "${serverName}": ${error.message}`);
                 }
             }
         }

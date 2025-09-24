@@ -316,6 +316,7 @@ Columns: ${data.headers.join(', ')}
   }
 
   private generatePromptHandler(prompt: MCPPrompt): string {
+    const escapedTemplate = prompt.template.replace(/`/g, '\\`').replace(/\${/g, '\\${');
     return `case '${prompt.name}':
           return {
             description: '${prompt.description}',
@@ -323,7 +324,7 @@ Columns: ${data.headers.join(', ')}
               role: 'user',
               content: {
                 type: 'text',
-                text: \`${prompt.template}\`
+                text: \`${escapedTemplate}\`
               }
             }]
           };`;

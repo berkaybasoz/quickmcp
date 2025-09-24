@@ -52,6 +52,7 @@ export class DataSourceParser {
     });
 
     return [{
+      tableName: 'data',
       headers,
       rows,
       metadata: {
