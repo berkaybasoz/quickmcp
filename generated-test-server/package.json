@@ -1,0 +1,18 @@
+{
+  "name": "mcp-server-employee-data-server",
+  "version": "1.0.0",
+  "description": "MCP server for employee data analysis and querying",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

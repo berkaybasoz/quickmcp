@@ -1,0 +1,49 @@
+{
+  "name": "mcp-server-generator",
+  "version": "1.0.0",
+  "description": "An application to generate MCP servers from various data sources and test them",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@types/mssql": "^9.1.8",
+    "@types/node": "^20.0.0",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "express": "^4.18.0",
+    "mssql": "^11.0.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.0",
+    "pg": "^8.11.0",
+    "sqlite3": "^5.1.6",
+    "ws": "^8.14.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
+    "@types/multer": "^1.4.0",
+    "@types/pg": "^8.15.5",
+    "@types/ws": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "server-generator",
+    "ai",
+    "llm"
+  ],
+  "author": "MCP Server Generator",
+  "license": "MIT"
+}
