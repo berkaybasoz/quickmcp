@@ -93,6 +93,15 @@ class ${this.toPascalCase(config.name)}Server {
 
 ${this.generateUtilityMethods(parsedData)}
 
+  private toSafeIdentifier(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/^[0-9]/, '_$&')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+  }
+
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
@@ -134,11 +143,12 @@ server.run().catch(console.error);
     const prompts: MCPPrompt[] = [];
 
     parsedData.forEach((data, tableIndex) => {
-      const tableName = `table_${tableIndex}`;
+      const tableName = data.tableName || `table_${tableIndex}`;
+      const safeTableName = this.toSafeIdentifier(tableName);
 
       // Generate search tool
       tools.push({
-        name: `search_${tableName}`,
+        name: `search_${safeTableName}`,
         description: `Search records in ${tableName}`,
         inputSchema: {
           type: "object",
@@ -153,7 +163,7 @@ server.run().catch(console.error);
 
       // Generate get all tool
       tools.push({
-        name: `get_all_${tableName}`,
+        name: `get_all_${safeTableName}`,
         description: `Get all records from ${tableName}`,
         inputSchema: {
           type: "object",
@@ -168,9 +178,10 @@ server.run().catch(console.error);
       data.headers.forEach(header => {
         const columnType = data.metadata.dataTypes[header];
         const filterSchema = this.getFilterSchema(columnType);
+        const safeHeaderName = this.toSafeIdentifier(header);
 
         tools.push({
-          name: `filter_${tableName}_by_${header.toLowerCase()}`,
+          name: `filter_${safeTableName}_by_${safeHeaderName}`,
           description: `Filter ${tableName} by ${header}`,
           inputSchema: {
             type: "object",
@@ -186,7 +197,7 @@ server.run().catch(console.error);
 
       // Generate resource for table schema
       resources.push({
-        uri: `schema://${tableName}`,
+        uri: `schema://${safeTableName}`,
         name: `${tableName} Schema`,
         description: `Schema information for ${tableName}`,
         mimeType: "application/json"
@@ -194,7 +205,7 @@ server.run().catch(console.error);
 
       // Generate resource for sample data
       resources.push({
-        uri: `data://${tableName}/sample`,
+        uri: `data://${safeTableName}/sample`,
         name: `${tableName} Sample Data`,
         description: `Sample data from ${tableName}`,
         mimeType: "application/json"
@@ -202,7 +213,7 @@ server.run().catch(console.error);
 
       // Generate analysis prompt
       prompts.push({
-        name: `analyze_${tableName}`,
+        name: `analyze_${safeTableName}`,
         description: `Analyze data patterns in ${tableName}`,
         arguments: [
           { name: "focus", description: "What aspect to focus on", required: false }
@@ -264,27 +275,32 @@ Columns: ${data.headers.join(', ')}
     const resourcePath = uriParts[1];
 
     if (resourceType === 'schema') {
-      const tableIndex = resourcePath.replace('table_', '');
+      // Find table index by matching the resource path with actual table names
       return `case '${resource.uri}':
+          const schemaTableIndex = DATA.findIndex(table =>
+            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${resourcePath}'
+          );
           return {
             contents: [{
               uri: '${resource.uri}',
               mimeType: 'application/json',
               text: JSON.stringify({
-                headers: DATA[${tableIndex}].headers,
-                metadata: DATA[${tableIndex}].metadata
+                headers: DATA[schemaTableIndex].headers,
+                metadata: DATA[schemaTableIndex].metadata
               }, null, 2)
             }]
           };`;
     } else if (resourceType === 'data') {
       const [tableName, dataType] = resourcePath.split('/');
-      const tableIndex = tableName.replace('table_', '');
       return `case '${resource.uri}':
+          const dataTableIndex = DATA.findIndex(table =>
+            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${tableName}'
+          );
           return {
             contents: [{
               uri: '${resource.uri}',
               mimeType: 'application/json',
-              text: JSON.stringify(DATA[${tableIndex}].rows.slice(0, 10), null, 2)
+              text: JSON.stringify(DATA[dataTableIndex].rows.slice(0, 10), null, 2)
             }]
           };`;
     }
@@ -376,6 +392,15 @@ Columns: ${data.headers.join(', ')}
       default:
         return { type: "string", description: "String value to search for" };
     }
+  }
+
+  private toSafeIdentifier(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/^[0-9]/, '_$&')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
   private toPascalCase(str: string): string {
