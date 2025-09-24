@@ -23,6 +23,7 @@ export class ExcelParser {
     const dataTypes = this.inferDataTypes(rows, headers);
 
     return {
+      tableName: worksheetName,
       headers,
       rows,
       metadata: {

@@ -164,9 +164,34 @@ function displayDataPreview(parsedData) {
     let html = '';
 
     parsedData.forEach((data, index) => {
-        html += `<h4>Table ${index + 1} (${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns)</h4>`;
-        html += '<table>';
-        html += '<thead><tr>';
+        const tableName = data.tableName || `Table ${index + 1}`;
+        const panelId = `table-panel-${index}`;
+
+        html += `
+            <div class="collapsible-panel" style="margin-bottom: 15px;">
+                <div class="panel-header" onclick="togglePanel('${panelId}')" style="
+                    background: #f7fafc;
+                    padding: 12px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border: 1px solid #e1e1e1;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f7fafc'">
+                    <div>
+                        <strong>${tableName}</strong>
+                        <span style="color: #718096; margin-left: 10px;">
+                            ${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns
+                        </span>
+                    </div>
+                    <span id="${panelId}-icon" style="font-size: 18px;">▶</span>
+                </div>
+                <div id="${panelId}" class="panel-content" style="margin-top: 10px; display: none;">
+                    <table>
+                        <thead><tr>`;
+
         data.headers.forEach(header => {
             const dataType = data.metadata.dataTypes[header];
             html += `<th>${header} <small>(${dataType})</small></th>`;
@@ -185,10 +210,24 @@ function displayDataPreview(parsedData) {
             html += `<tr><td colspan="${data.headers.length}"><em>... and ${data.rows.length - 5} more rows</em></td></tr>`;
         }
 
-        html += '</tbody></table><br>';
+        html += '</tbody></table></div></div>';
     });
 
     preview.innerHTML = html;
+}
+
+// Toggle collapsible panel
+function togglePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    const icon = document.getElementById(`${panelId}-icon`);
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        panel.style.display = 'none';
+        icon.textContent = '▶';
+    }
 }
 
 // Generate server

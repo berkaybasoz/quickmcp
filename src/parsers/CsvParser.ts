@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as csv from 'csv-parser';
+import * as path from 'path';
 import { ParsedData } from '../types';
 
 export class CsvParser {
@@ -19,7 +20,9 @@ export class CsvParser {
         .on('end', () => {
           const dataTypes = this.inferDataTypes(rows, headers);
 
+          const fileName = path.basename(filePath, path.extname(filePath));
           resolve({
+            tableName: fileName,
             headers,
             rows,
             metadata: {

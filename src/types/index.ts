@@ -47,6 +47,7 @@ export interface MCPPrompt {
 }
 
 export interface ParsedData {
+  tableName?: string;
   headers: string[];
   rows: any[][];
   metadata: {
