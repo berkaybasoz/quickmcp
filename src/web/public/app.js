@@ -326,6 +326,7 @@ function displayServers(servers) {
                     <button class="btn btn-primary" onclick="viewServer('${server.id}')">View Details</button>
                     <button class="btn btn-secondary" onclick="testServer('${server.id}')">Test</button>
                     <button class="btn btn-secondary" onclick="exportServer('${server.id}')">Export</button>
+                    <button class="btn btn-primary" onclick="showHowToUse('${server.id}')">How To Use</button>
                     <button class="btn btn-danger" onclick="deleteServer('${server.id}')">Delete</button>
                 </div>
             </div>
@@ -654,6 +655,73 @@ function toggleDetails(elementId) {
         element.style.display = 'block';
     } else {
         element.style.display = 'none';
+    }
+}
+
+// How To Use Modal Functions
+async function showHowToUse(serverId) {
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+
+        if (!result.success) {
+            alert('Server not found');
+            return;
+        }
+
+        const server = result.data;
+        const serverName = server.config.name;
+
+        // Update server name in configurations
+        document.getElementById('claude-server-name').textContent = serverName;
+        document.getElementById('openai-server-name').textContent = serverName;
+
+        // Use a typical installation path
+        const serverPath = `~/mcp-servers/${serverName}`;
+        document.getElementById('claude-server-path').textContent = serverPath;
+        document.getElementById('openai-server-path').textContent = serverPath;
+
+        // Show the modal
+        document.getElementById('how-to-use-modal').style.display = 'block';
+
+        // Default to Claude tab
+        switchIntegrationTab('claude');
+
+    } catch (error) {
+        console.error('Error loading server info:', error);
+        alert('Failed to load integration instructions');
+    }
+}
+
+function closeHowToUse() {
+    document.getElementById('how-to-use-modal').style.display = 'none';
+}
+
+function switchIntegrationTab(platform) {
+    // Hide all content
+    document.getElementById('claude-instructions').style.display = 'none';
+    document.getElementById('openai-instructions').style.display = 'none';
+
+    // Reset all tab buttons
+    document.getElementById('claude-tab-btn').style.background = 'transparent';
+    document.getElementById('claude-tab-btn').style.borderBottom = '2px solid transparent';
+    document.getElementById('claude-tab-btn').style.color = '#4a5568';
+
+    document.getElementById('openai-tab-btn').style.background = 'transparent';
+    document.getElementById('openai-tab-btn').style.borderBottom = '2px solid transparent';
+    document.getElementById('openai-tab-btn').style.color = '#4a5568';
+
+    // Show selected content and highlight tab
+    if (platform === 'claude') {
+        document.getElementById('claude-instructions').style.display = 'block';
+        document.getElementById('claude-tab-btn').style.background = 'white';
+        document.getElementById('claude-tab-btn').style.borderBottom = '2px solid #667eea';
+        document.getElementById('claude-tab-btn').style.color = '#667eea';
+    } else if (platform === 'openai') {
+        document.getElementById('openai-instructions').style.display = 'block';
+        document.getElementById('openai-tab-btn').style.background = 'white';
+        document.getElementById('openai-tab-btn').style.borderBottom = '2px solid #667eea';
+        document.getElementById('openai-tab-btn').style.color = '#667eea';
     }
 }
 

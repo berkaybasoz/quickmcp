@@ -450,6 +450,232 @@
         </div>
     </div>
 
+    <!-- How To Use Modal -->
+    <div id="how-to-use-modal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    ">
+        <div style="
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 85%;
+            margin: 5% auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        ">
+            <div style="
+                padding: 20px;
+                border-bottom: 1px solid #e1e1e1;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <h2>How to Use Your MCP Server</h2>
+                <button onclick="closeHowToUse()" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #718096;
+                ">✕</button>
+            </div>
+
+            <!-- Platform Tabs -->
+            <div style="
+                display: flex;
+                background: #f5f5f5;
+                border-bottom: 1px solid #e1e1e1;
+            ">
+                <button id="claude-tab-btn" class="integration-tab active" onclick="switchIntegrationTab('claude')" style="
+                    flex: 1;
+                    padding: 12px 20px;
+                    background: white;
+                    border: none;
+                    border-bottom: 2px solid #667eea;
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #667eea;
+                ">Claude Desktop</button>
+                <button id="openai-tab-btn" class="integration-tab" onclick="switchIntegrationTab('openai')" style="
+                    flex: 1;
+                    padding: 12px 20px;
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #4a5568;
+                ">OpenAI Desktop</button>
+            </div>
+
+            <div style="
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+            ">
+                <!-- Claude Desktop Instructions -->
+                <div id="claude-instructions" class="integration-content">
+                    <h3 style="color: #2d3748; margin-bottom: 20px;">Using with Claude Desktop</h3>
+
+                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #81e6d9;">
+                        <h4 style="color: #234e52; margin-bottom: 10px;">🚀 Direct Integration (Recommended)</h4>
+                        <p style="color: #2c7a7b; margin-bottom: 10px;">Use this MCP Server Generator directly as a live MCP server. Your databases and tools will be available in real-time.</p>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Keep This App Running</h4>
+                        <p style="color: #718096; margin-bottom: 10px;">Make sure this application is running in MCP server mode:</p>
+                        <pre style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">cd /path/to/quickmcp
+npm run mcp-server</pre>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Configure Claude Desktop</h4>
+                        <p style="color: #718096; margin-bottom: 10px;">Add this configuration to your Claude Desktop config file:</p>
+                        <p style="color: #718096; margin-bottom: 10px;"><strong>Location:</strong></p>
+                        <ul style="color: #718096; margin-left: 20px; margin-bottom: 10px;">
+                            <li>macOS: <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+                            <li>Windows: <code style="background: white; padding: 2px 4px; border-radius: 3px;">%APPDATA%\\Claude\\claude_desktop_config.json</code></li>
+                        </ul>
+                        <p style="color: #718096; margin-bottom: 10px;">Add this to your configuration:</p>
+                        <pre id="claude-config" style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">{
+  "mcpServers": {
+    "quickmcp-generator": {
+      "command": "node",
+      "args": ["/path/to/quickmcp/src/mcp-server.js"]
+    }
+  }
+}</pre>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Available Tools in Claude</h4>
+                        <ul style="color: #718096; margin-left: 20px;">
+                            <li><strong>connect_database</strong> - Connect to MySQL, PostgreSQL, SQLite, or MSSQL</li>
+                            <li><strong>list_tables</strong> - List all tables in connected database</li>
+                            <li><strong>execute_query</strong> - Run custom SQL queries</li>
+                            <li><strong>get_table_schema</strong> - Get table structure and column info</li>
+                            <li><strong>generate_mcp_server</strong> - Generate and export MCP servers</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Restart Claude Desktop</h4>
+                        <p style="color: #718096;">Restart the Claude Desktop app to load the MCP server. You can then ask Claude to:</p>
+                        <ul style="color: #718096; margin-left: 20px;">
+                            <li>"Connect to my MySQL database"</li>
+                            <li>"Show me all tables in the database"</li>
+                            <li>"Run a query to find all users"</li>
+                            <li>"Generate an MCP server from this data"</li>
+                        </ul>
+                    </div>
+
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e1e1;">
+
+                    <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d1d5db;">
+                        <h4 style="color: #374151; margin-bottom: 10px;">📦 Alternative: Export Static Servers</h4>
+                        <p style="color: #6b7280; margin-bottom: 10px;">You can also export individual servers as standalone files:</p>
+                        <ol style="color: #6b7280; margin-left: 20px;">
+                            <li>Click "Export" on any generated server</li>
+                            <li>Extract the ZIP file to a folder</li>
+                            <li>Run <code style="background: white; padding: 2px 4px; border-radius: 3px;">npm install</code> in the folder</li>
+                            <li>Configure Claude Desktop to use the exported server.js</li>
+                        </ol>
+                    </div>
+
+                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #81e6d9;">
+                        <h4 style="color: #234e52; margin-bottom: 10px;">💡 Tips</h4>
+                        <ul style="color: #2c7a7b; margin-left: 20px;">
+                            <li>Keep this app running in the background for live database access</li>
+                            <li>Use absolute paths in the Claude Desktop configuration</li>
+                            <li>Check Claude Desktop logs if the server doesn't appear</li>
+                            <li>The live server provides more flexibility than exported static servers</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- OpenAI Desktop Instructions -->
+                <div id="openai-instructions" class="integration-content" style="display: none;">
+                    <h3 style="color: #2d3748; margin-bottom: 20px;">Integrating with OpenAI Desktop</h3>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">📋 Prerequisites</h4>
+                        <ul style="color: #718096; margin-left: 20px;">
+                            <li>OpenAI Desktop app (ChatGPT desktop) installed</li>
+                            <li>Node.js installed on your system</li>
+                            <li>Your exported MCP server files</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Export Your Server</h4>
+                        <ol style="color: #718096; margin-left: 20px;">
+                            <li>Click the "Export" button for your server</li>
+                            <li>Save the ZIP file to your desired location</li>
+                            <li>Extract the ZIP file to a folder (e.g., <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/mcp-servers/your-server</code>)</li>
+                        </ol>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Install Dependencies</h4>
+                        <p style="color: #718096; margin-bottom: 10px;">Navigate to your server folder and install dependencies:</p>
+                        <pre style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">cd ~/mcp-servers/your-server
+npm install</pre>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Configure OpenAI Desktop</h4>
+                        <p style="color: #718096; margin-bottom: 10px;">Add your server to OpenAI Desktop's configuration:</p>
+                        <p style="color: #718096; margin-bottom: 10px;"><strong>Location:</strong></p>
+                        <ul style="color: #718096; margin-left: 20px; margin-bottom: 10px;">
+                            <li>macOS: <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/Library/Application Support/OpenAI/mcp_config.json</code></li>
+                            <li>Windows: <code style="background: white; padding: 2px 4px; border-radius: 3px;">%APPDATA%\\OpenAI\\mcp_config.json</code></li>
+                        </ul>
+                        <p style="color: #718096; margin-bottom: 10px;">Add this to your configuration:</p>
+                        <pre id="openai-config" style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">{
+  "servers": {
+    "<span id="openai-server-name">your-server</span>": {
+      "command": "node",
+      "args": ["<span id="openai-server-path">/path/to/your-server</span>/server.js"],
+      "enabled": true
+    }
+  }
+}</pre>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Restart OpenAI Desktop</h4>
+                        <p style="color: #718096;">Restart the OpenAI Desktop app to load your new MCP server. Your server's capabilities will be available in ChatGPT!</p>
+                    </div>
+
+                    <div style="background: #fef5e7; padding: 15px; border-radius: 8px; border: 1px solid #f9c74f;">
+                        <h4 style="color: #7c3f00; margin-bottom: 10px;">⚠️ Note</h4>
+                        <p style="color: #a05a00;">OpenAI Desktop MCP support may vary. Check the latest OpenAI documentation for the most current integration steps.</p>
+                    </div>
+
+                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #81e6d9; margin-top: 20px;">
+                        <h4 style="color: #234e52; margin-bottom: 10px;">💡 Tips</h4>
+                        <ul style="color: #2c7a7b; margin-left: 20px;">
+                            <li>Ensure your server follows the MCP protocol specification</li>
+                            <li>Test your server locally first using the Test feature</li>
+                            <li>Check application logs for debugging</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Server Details Modal -->
     <div id="server-details-modal" style="
         display: none;

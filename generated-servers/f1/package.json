@@ -1,7 +1,7 @@
 {
   "name": "mcp-server-f1",
   "version": "1.0.0",
-  "description": "f1",
+  "description": "",
   "type": "module",
   "main": "index.js",
   "scripts": {
