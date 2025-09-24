@@ -507,9 +507,154 @@ function displaySingleTestResult(testResult) {
 }
 
 // Server management functions
-function viewServer(serverId) {
-    // Implementation for viewing server details
-    alert(`View server details for: ${serverId}`);
+async function viewServer(serverId) {
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+
+        if (!result.success) {
+            alert('Server not found');
+            return;
+        }
+
+        const server = result.data;
+
+        // Update modal title
+        document.getElementById('modal-server-name').textContent = server.config.name;
+
+        // Build content HTML
+        let html = `
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Server Information</h3>
+                <div style="background: #f7fafc; padding: 15px; border-radius: 8px;">
+                    <p><strong>Name:</strong> ${server.config.name}</p>
+                    <p><strong>Version:</strong> ${server.config.version}</p>
+                    <p><strong>Description:</strong> ${server.config.description || 'No description provided'}</p>
+                    <p><strong>Data Source:</strong> ${server.config.dataSource.type}</p>
+                    ${server.config.dataSource.connection ?
+                        `<p><strong>Database:</strong> ${server.config.dataSource.connection.type} - ${server.config.dataSource.connection.database}</p>` :
+                        ''}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Tools (${server.config.tools.length})</h3>
+                <div style="max-height: 300px; overflow-y: auto;">
+        `;
+
+        // Add tools
+        server.config.tools.forEach(tool => {
+            html += `
+                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong style="color: #4a5568;">${tool.name}</strong>
+                            <p style="color: #718096; margin: 5px 0 0 0; font-size: 14px;">${tool.description}</p>
+                        </div>
+                        <button onclick="toggleDetails('tool-${tool.name}')" style="
+                            background: #e2e8f0;
+                            border: none;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">Schema</button>
+                    </div>
+                    <div id="tool-${tool.name}" style="display: none; margin-top: 10px;">
+                        <pre style="background: white; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Resources (${server.config.resources.length})</h3>
+                <div style="max-height: 300px; overflow-y: auto;">
+        `;
+
+        // Add resources
+        server.config.resources.forEach(resource => {
+            html += `
+                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
+                    <strong style="color: #4a5568;">${resource.name}</strong>
+                    <p style="color: #718096; margin: 5px 0; font-size: 14px;">${resource.description}</p>
+                    <p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">URI: ${resource.uri}</p>
+                    ${resource.mimeType ? `<p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">Type: ${resource.mimeType}</p>` : ''}
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Prompts (${server.config.prompts.length})</h3>
+                <div style="max-height: 300px; overflow-y: auto;">
+        `;
+
+        // Add prompts
+        server.config.prompts.forEach(prompt => {
+            html += `
+                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
+                    <strong style="color: #4a5568;">${prompt.name}</strong>
+                    <p style="color: #718096; margin: 5px 0; font-size: 14px;">${prompt.description}</p>
+                    ${prompt.arguments && prompt.arguments.length > 0 ?
+                        `<p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">Arguments: ${prompt.arguments.map(arg => arg.name).join(', ')}</p>` :
+                        ''}
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #2d3748; margin-bottom: 15px;">Data Statistics</h3>
+                <div style="background: #f7fafc; padding: 15px; border-radius: 8px;">
+                    <p><strong>Total Data Rows:</strong> ${server.parsedData.reduce((sum, data) => sum + data.metadata.rowCount, 0)}</p>
+                    <p><strong>Tables/Sheets:</strong> ${server.parsedData.length}</p>
+        `;
+
+        // Add table details
+        server.parsedData.forEach(data => {
+            const tableName = data.tableName || 'Data';
+            html += `<p style="margin-left: 20px;">• ${tableName}: ${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns</p>`;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+
+        // Update content
+        document.getElementById('server-details-content').innerHTML = html;
+
+        // Show modal
+        document.getElementById('server-details-modal').style.display = 'block';
+
+    } catch (error) {
+        console.error('Error fetching server details:', error);
+        alert('Failed to load server details');
+    }
+}
+
+function closeServerDetails() {
+    document.getElementById('server-details-modal').style.display = 'none';
+}
+
+function toggleDetails(elementId) {
+    const element = document.getElementById(elementId);
+    if (element.style.display === 'none') {
+        element.style.display = 'block';
+    } else {
+        element.style.display = 'none';
+    }
 }
 
 function testServer(serverId) {

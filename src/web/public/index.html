@@ -450,6 +450,55 @@
         </div>
     </div>
 
+    <!-- Server Details Modal -->
+    <div id="server-details-modal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    ">
+        <div style="
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            height: 90%;
+            margin: 5% auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        ">
+            <div style="
+                padding: 20px;
+                border-bottom: 1px solid #e1e1e1;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <h2 id="modal-server-name">Server Details</h2>
+                <button onclick="closeServerDetails()" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #718096;
+                ">✕</button>
+            </div>
+            <div id="server-details-content" style="
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+            ">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
