@@ -236,8 +236,8 @@ async function generateServer() {
     const description = document.getElementById('serverDescription').value;
     const version = document.getElementById('serverVersion').value;
 
-    if (!name || !description) {
-        showError('generate-error', 'Please provide server name and description');
+    if (!name) {
+        showError('generate-error', 'Please provide server name');
         return;
     }
 
@@ -262,7 +262,7 @@ async function generateServer() {
             },
             body: JSON.stringify({
                 name,
-                description,
+                description: description || '',
                 dataSource: currentDataSource
             })
         });

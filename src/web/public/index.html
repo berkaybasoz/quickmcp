@@ -296,6 +296,26 @@
             <div id="generate-tab" class="tab-content active">
                 <h2>Generate MCP Server</h2>
 
+                <!-- Server Configuration -->
+                <div id="server-config-section">
+                    <div class="form-group">
+                        <label>Server Name</label>
+                        <input type="text" id="serverName" placeholder="my-data-server">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Version</label>
+                            <input type="text" id="serverVersion" value="1.0.0">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="serverDescription" placeholder="Describe what your MCP server does...">
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid #e1e1e1;">
+
                 <div class="form-group">
                     <label>Data Source Type</label>
                     <select id="dataSourceType" onchange="toggleDataSourceFields()">
@@ -363,22 +383,6 @@
                 <div id="data-preview-section" class="hidden">
                     <h3>Data Preview</h3>
                     <div id="data-preview" class="data-preview"></div>
-
-                    <h3>Server Configuration</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="form-group">
-                            <label>Server Name</label>
-                            <input type="text" id="serverName" placeholder="my-data-server">
-                        </div>
-                        <div class="form-group">
-                            <label>Version</label>
-                            <input type="text" id="serverVersion" value="1.0.0">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="serverDescription" placeholder="Describe what your MCP server does..."></textarea>
-                    </div>
 
                     <button class="btn btn-primary" onclick="generateServer()">Generate MCP Server</button>
 
