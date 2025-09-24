@@ -472,7 +472,19 @@ npm install</code></pre>
   "mcpServers": {
     "${config.name}": {
       "command": "node",
-      "args": ["${process.cwd()}/${serverDir}/dist/index.js"]
+      "args": ["<strong>FULL_PATH_TO_PROJECT</strong>/${serverDir}/dist/index.js"]
+    }
+  }
+}</code></pre>
+                        </div>
+                        <p><strong>Replace <code>FULL_PATH_TO_PROJECT</code> with the absolute path to your QuickMCP project directory.</strong></p>
+                        <p><strong>Example:</strong></p>
+                        <div class="code-block">
+                            <pre><code>{
+  "mcpServers": {
+    "${config.name}": {
+      "command": "node",
+      "args": ["/Users/yourname/Documents/quickmcp/${serverDir}/dist/index.js"]
     }
   }
 }</code></pre>
