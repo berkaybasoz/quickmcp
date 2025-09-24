@@ -103,9 +103,29 @@ ${this.generateUtilityMethods(parsedData)}
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('${config.name} MCP server running on stdio');
+    // Check if we should run as TCP server for runtime mode
+    const port = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT) : null;
+
+    if (port) {
+      // TCP Server mode for runtime
+      const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
+      const transport = new SSEServerTransport(\`/message\`, this.server);
+
+      const express = await import('express');
+      const app = express.default();
+
+      app.use(express.json());
+      app.use('/sse', transport.handler);
+
+      app.listen(port, () => {
+        console.error(\`${config.name} MCP server running on http://localhost:\${port}\`);
+      });
+    } else {
+      // Standard stdio mode
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error('${config.name} MCP server running on stdio');
+    }
   }
 }
 
@@ -125,14 +145,19 @@ server.run().catch(console.error);
       main: "index.js",
       scripts: {
         build: "tsc",
-        start: "node dist/index.js"
+        start: "node dist/index.js",
+        dev: "tsx src/index.ts",
+        "start:runtime": "MCP_PORT=3001 tsx src/index.ts"
       },
       dependencies: {
-        "@modelcontextprotocol/sdk": "^0.4.0"
+        "@modelcontextprotocol/sdk": "^0.4.0",
+        "express": "^4.18.0"
       },
       devDependencies: {
         typescript: "^5.0.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "@types/express": "^4.17.0",
+        "tsx": "^4.0.0"
       }
     }, null, 2);
   }

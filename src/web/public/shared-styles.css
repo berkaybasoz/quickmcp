@@ -878,6 +878,104 @@
         color: #dc2626;
     }
 
+    /* Server Details Modal Styles */
+    .server-details {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .detail-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .detail-section h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a202c;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 8px;
+    }
+
+    .detail-item {
+        background: white;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .detail-item strong {
+        display: block;
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+
+    .detail-item p {
+        margin: 0 0 8px 0;
+        color: #4a5568;
+        line-height: 1.5;
+    }
+
+    .detail-item small {
+        color: #718096;
+        font-size: 12px;
+        font-family: 'Monaco', 'Consolas', monospace;
+        background: #edf2f7;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .data-preview-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 14px;
+    }
+
+    .data-preview-table th {
+        background: #667eea;
+        color: white;
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 500;
+    }
+
+    .data-preview-table td {
+        padding: 8px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .data-preview-table tr:nth-child(even) {
+        background: #f7fafc;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        margin-top: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+    }
+
+    .data-table h4 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .data-table p {
+        margin: 0 0 12px 0;
+        color: #718096;
+        font-size: 14px;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .container {

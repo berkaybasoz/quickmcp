@@ -7,6 +7,8 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DataSource, MCPServerConfig, ParsedData } from '../types';
+import { fork } from 'child_process';
+import { IntegratedMCPServer } from '../integrated-mcp-server';
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -19,11 +21,80 @@ const parser = new DataSourceParser();
 const generator = new MCPServerGenerator();
 const testRunner = new MCPTestRunner();
 
+let nextAvailablePort = 3001;
+
+function getNextPort(): number {
+  return nextAvailablePort++;
+}
+
+function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const serverInfo = generatedServers.get(serverId);
+    if (!serverInfo) {
+      reject(new Error('Server not found'));
+      return;
+    }
+
+    // Kill existing process if running
+    if (serverInfo.runtimeProcess) {
+      serverInfo.runtimeProcess.kill();
+    }
+
+    const port = getNextPort();
+    const serverDir = path.dirname(serverPath);
+
+    console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
+
+    // Fork the MCP server process
+    const mcpProcess = fork(serverPath, [], {
+      cwd: serverDir,
+      env: {
+        ...process.env,
+        MCP_PORT: port.toString()
+      },
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+    });
+
+    mcpProcess.on('message', (message) => {
+      if (message === 'ready') {
+        console.log(`MCP Server ${serverId} ready on port ${port}`);
+        resolve(port);
+      }
+    });
+
+    mcpProcess.on('error', (error) => {
+      console.error(`MCP Server ${serverId} error:`, error);
+      reject(error);
+    });
+
+    mcpProcess.on('exit', (code) => {
+      console.log(`MCP Server ${serverId} exited with code ${code}`);
+      if (serverInfo.runtimeProcess === mcpProcess) {
+        serverInfo.runtimeProcess = undefined;
+        serverInfo.runtimePort = undefined;
+      }
+    });
+
+    // Update server info
+    serverInfo.runtimeProcess = mcpProcess;
+    serverInfo.runtimePort = port;
+
+    // Fallback timeout
+    setTimeout(() => {
+      if (serverInfo.runtimePort === port) {
+        resolve(port);
+      }
+    }, 3000);
+  });
+}
+
 // Store generated servers in memory (in production, use a database)
 const generatedServers = new Map<string, {
   config: MCPServerConfig;
   serverPath: string;
   parsedData: ParsedData[];
+  runtimeProcess?: any;
+  runtimePort?: number;
 }>();
 
 // Health check endpoint
@@ -287,6 +358,66 @@ app.delete('/api/servers/:id', async (req, res) => {
   }
 });
 
+// Start runtime server endpoint
+app.post('/api/servers/:id/start-runtime', async (req, res) => {
+  try {
+    const serverInfo = generatedServers.get(req.params.id);
+
+    if (!serverInfo) {
+      return res.status(404).json({
+        success: false,
+        error: 'Server not found'
+      });
+    }
+
+    const port = await startRuntimeMCPServer(req.params.id, serverInfo.serverPath);
+
+    res.json({
+      success: true,
+      data: {
+        serverId: req.params.id,
+        port,
+        endpoint: `http://localhost:${port}`,
+        claudeConfig: {
+          [serverInfo.config.name]: {
+            command: "curl",
+            args: ["-X", "POST", `http://localhost:${port}/sse/message`],
+            env: {
+              MCP_TRANSPORT: "sse"
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Runtime start error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Stop runtime server endpoint
+app.post('/api/servers/:id/stop-runtime', (req, res) => {
+  const serverInfo = generatedServers.get(req.params.id);
+
+  if (!serverInfo) {
+    return res.status(404).json({
+      success: false,
+      error: 'Server not found'
+    });
+  }
+
+  if (serverInfo.runtimeProcess) {
+    serverInfo.runtimeProcess.kill();
+    serverInfo.runtimeProcess = undefined;
+    serverInfo.runtimePort = undefined;
+  }
+
+  res.json({ success: true });
+});
+
 // Export server endpoint
 app.get('/api/servers/:id/export', (req, res) => {
   const serverInfo = generatedServers.get(req.params.id);
@@ -327,9 +458,30 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const MCP_PORT = 3001;
 
-app.listen(PORT, () => {
-  console.log(`MCP Server Generator running on http://localhost:${PORT}`);
+// Initialize integrated MCP server
+const integratedMCPServer = new IntegratedMCPServer(generatedServers);
+
+app.listen(PORT, async () => {
+  console.log(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
+
+  // Start integrated MCP server
+  try {
+    await integratedMCPServer.start(MCP_PORT);
+    console.log(`🔗 Add to Claude Desktop config:`);
+    console.log(`{`);
+    console.log(`  "quickmcp-integrated": {`);
+    console.log(`    "command": "curl",`);
+    console.log(`    "args": ["-X", "POST", "http://localhost:${MCP_PORT}/sse/message"],`);
+    console.log(`    "env": {`);
+    console.log(`      "MCP_TRANSPORT": "sse"`);
+    console.log(`    }`);
+    console.log(`  }`);
+    console.log(`}`);
+  } catch (error) {
+    console.error('❌ Failed to start integrated MCP server:', error);
+  }
 });
 
 export default app;

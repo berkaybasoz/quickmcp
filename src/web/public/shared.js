@@ -148,6 +148,189 @@ async function loadTestServers() {
     }
 }
 
+// Server action functions
+async function viewServer(serverId) {
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+
+        if (result.success) {
+            showServerDetails(result.data);
+        } else {
+            alert('Failed to load server details: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error viewing server:', error);
+        alert('Failed to load server details');
+    }
+}
+
+function showServerDetails(serverData) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2>Server Details: ${serverData.config.name}</h2>
+                <button class="modal-close" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="server-details">
+                    <div class="detail-section">
+                        <h3>Basic Information</h3>
+                        <p><strong>Name:</strong> ${serverData.config.name}</p>
+                        <p><strong>Description:</strong> ${serverData.config.description}</p>
+                        <p><strong>Version:</strong> ${serverData.config.version}</p>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Tools (${serverData.config.tools.length})</h3>
+                        ${serverData.config.tools.map(tool => `
+                            <div class="detail-item">
+                                <strong>${tool.name}</strong>
+                                <p>${tool.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Resources (${serverData.config.resources.length})</h3>
+                        ${serverData.config.resources.map(resource => `
+                            <div class="detail-item">
+                                <strong>${resource.name}</strong>
+                                <p>${resource.description}</p>
+                                <small>URI: ${resource.uri}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Prompts (${serverData.config.prompts.length})</h3>
+                        ${serverData.config.prompts.map(prompt => `
+                            <div class="detail-item">
+                                <strong>${prompt.name}</strong>
+                                <p>${prompt.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Data Preview</h3>
+                        ${serverData.parsedData.map((data, index) => `
+                            <div class="data-table">
+                                <h4>${data.tableName || `Table ${index + 1}`}</h4>
+                                <p>Rows: ${data.metadata.rowCount}, Columns: ${data.metadata.columnCount}</p>
+                                <div class="table-container">
+                                    <table class="data-preview-table">
+                                        <thead>
+                                            <tr>
+                                                ${data.headers.map(header => `<th>${header}</th>`).join('')}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${data.rows.slice(0, 5).map(row => `
+                                                <tr>
+                                                    ${row.map(cell => `<td>${cell}</td>`).join('')}
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                    ${data.rows.length > 5 ? `<p><em>... and ${data.rows.length - 5} more rows</em></p>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+function testServer(serverId) {
+    window.location.href = `/test-servers?server=${serverId}`;
+}
+
+function exportServer(serverId) {
+    window.location.href = `/api/servers/${serverId}/export`;
+}
+
+async function showHowToUse(serverId) {
+    try {
+        const response = await fetch(`/api/servers/${serverId}/start-runtime`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>How to Use Your MCP Server</h2>
+                        <button class="modal-close" onclick="closeModal(this)">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Your MCP server is now running on <strong>port ${result.data.port}</strong></p>
+                        <p>Endpoint: <code>${result.data.endpoint}</code></p>
+
+                        <h3>Claude Desktop Configuration</h3>
+                        <p>Add this to your Claude Desktop config file:</p>
+                        <pre style="background: #f7fafc; padding: 15px; border-radius: 5px; overflow-x: auto;"><code>${JSON.stringify(result.data.claudeConfig, null, 2)}</code></pre>
+
+                        <h3>Usage Instructions</h3>
+                        <ol>
+                            <li>Copy the configuration above to your Claude Desktop config</li>
+                            <li>Restart Claude Desktop</li>
+                            <li>Your MCP server will be available as tools and resources</li>
+                        </ol>
+
+                        <p><strong>Note:</strong> Keep this application running for the MCP server to work with Claude.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            alert('Failed to start runtime server: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error starting runtime server:', error);
+        alert('Failed to start runtime server');
+    }
+}
+
+async function deleteServer(serverId) {
+    if (!confirm('Are you sure you want to delete this server? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/servers/${serverId}`, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Server deleted successfully');
+            loadServers(); // Reload the servers list
+        } else {
+            alert('Failed to delete server: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error deleting server:', error);
+        alert('Failed to delete server');
+    }
+}
+
+function closeModal(closeButton) {
+    const modal = closeButton.closest('.modal-overlay');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 // Utility functions (add more as needed)
 function showError(elementId, message) {
     const element = document.getElementById(elementId);
