@@ -256,12 +256,17 @@ app.post('/api/servers/:id/test', async (req, res) => {
 // Delete server endpoint
 app.delete('/api/servers/:id', async (req, res) => {
   try {
-    const serverInfo = generatedServers.get(req.params.id);
+    const serverId = req.params.id;
+    console.log(`Attempting to delete server with ID: ${serverId}`);
+    console.log(`Available servers:`, Array.from(generatedServers.keys()));
+
+    const serverInfo = generatedServers.get(serverId);
 
     if (!serverInfo) {
+      console.log(`Server with ID "${serverId}" not found`);
       return res.status(404).json({
         success: false,
-        error: 'Server not found'
+        error: `Server with ID "${serverId}" not found. Available servers: ${Array.from(generatedServers.keys()).join(', ') || 'None'}`
       });
     }
 

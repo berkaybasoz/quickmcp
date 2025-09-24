@@ -163,6 +163,7 @@ export class DatabaseParser {
               const rowsArray = rows.map(row => headers.map(header => row[header]));
 
               results.push({
+                tableName: table,
                 headers,
                 rows: rowsArray,
                 metadata: {

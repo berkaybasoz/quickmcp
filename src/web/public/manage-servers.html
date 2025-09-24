@@ -91,6 +91,56 @@
         <div class="modal-overlay" onclick="closeHowToUseModal()"></div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal" style="display: none;">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h2>🗑️ Delete Server</h2>
+                <button class="modal-close" onclick="closeDeleteConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-content">
+                        <h3>Are you sure you want to delete this server?</h3>
+                        <p id="deleteServerName" class="server-name-to-delete"></p>
+                        <p class="warning-text">This action cannot be undone. All server files and configurations will be permanently removed.</p>
+                    </div>
+                </div>
+                <div class="delete-actions">
+                    <button class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
+                    <button class="btn btn-danger" onclick="confirmDeleteServer()" id="confirmDeleteBtn">
+                        <span class="btn-text">Delete Server</span>
+                        <span class="btn-loading" style="display: none;">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" onclick="closeDeleteConfirmModal()"></div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="display: none;">
+        <div class="modal-content success-modal">
+            <div class="modal-header">
+                <h2 id="successTitle">✅ Success</h2>
+                <button class="modal-close" onclick="closeSuccessModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="success-content">
+                    <div class="success-icon">🎉</div>
+                    <div class="success-message">
+                        <p id="successMessage">Operation completed successfully!</p>
+                    </div>
+                </div>
+                <div class="success-actions">
+                    <button class="btn btn-primary" onclick="closeSuccessModal()">OK</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" onclick="closeSuccessModal()"></div>
+    </div>
+
     <script src="shared.js"></script>
     <script>
         // Load servers when page loads
@@ -470,29 +520,121 @@ npm install</code></pre>
             }
         }
 
-        // Delete server
-        async function deleteServer(serverId) {
-            if (!confirm('Are you sure you want to delete this server? This action cannot be undone.')) {
-                return;
-            }
+        let serverToDelete = null;
+
+        // Show delete confirmation modal
+        function deleteServer(serverId) {
+            // Find server info from the current servers list
+            const serverElement = document.querySelector(`[onclick="deleteServer('${serverId}')"]`);
+            const serverCard = serverElement.closest('.server-card');
+            const serverName = serverCard.querySelector('h3').textContent;
+
+            // Store the server info for deletion
+            serverToDelete = { id: serverId, name: serverName };
+
+            // Update modal content
+            document.getElementById('deleteServerName').textContent = `"${serverName}"`;
+
+            // Show confirmation modal
+            document.getElementById('deleteConfirmModal').style.display = 'block';
+        }
+
+        // Close delete confirmation modal
+        function closeDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            serverToDelete = null;
+        }
+
+        // Confirm and execute server deletion
+        async function confirmDeleteServer() {
+            if (!serverToDelete) return;
+
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const btnText = confirmBtn.querySelector('.btn-text');
+            const btnLoading = confirmBtn.querySelector('.btn-loading');
+
+            // Show loading state
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline';
+            confirmBtn.disabled = true;
 
             try {
-                const response = await fetch(`/api/servers/${serverId}`, {
+                const response = await fetch(`/api/servers/${serverToDelete.id}`, {
                     method: 'DELETE'
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('Server deleted successfully!');
-                    loadServers(); // Reload the servers list
+                    // Close confirmation modal
+                    closeDeleteConfirmModal();
+
+                    // Show success modal
+                    showSuccessModal('Server Deleted', `Server "${serverToDelete.name}" has been successfully deleted.`);
+
+                    // Reload servers list
+                    loadServers();
                 } else {
-                    alert('Delete failed: ' + result.error);
+                    throw new Error(result.error || 'Unknown error occurred');
                 }
             } catch (error) {
                 console.error('Delete error:', error);
-                alert('Delete failed: ' + error.message);
+
+                // Reset button state
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+                confirmBtn.disabled = false;
+
+                // Close confirmation modal first
+                closeDeleteConfirmModal();
+
+                // Show detailed error message
+                if (error.message.includes('Server not found') || error.message.includes('404')) {
+                    showErrorModal('Server Not Found',
+                        `The server "${serverToDelete.name}" could not be found. It may have been deleted already or the application was restarted. Please refresh the page to see the current servers.`
+                    );
+                    // Refresh the servers list
+                    loadServers();
+                } else {
+                    showErrorModal('Delete Failed', `Failed to delete server "${serverToDelete.name}": ${error.message}`);
+                }
             }
+        }
+
+        // Show success modal
+        function showSuccessModal(title, message) {
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successModal').style.display = 'block';
+        }
+
+        // Close success modal
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+
+        // Show error modal (reuse success modal with different styling)
+        function showErrorModal(title, message) {
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successMessage').textContent = message;
+
+            // Change styling for error
+            const modal = document.getElementById('successModal');
+            const content = modal.querySelector('.modal-content');
+            content.classList.add('error-modal');
+
+            // Change icon to error
+            const icon = modal.querySelector('.success-icon');
+            icon.textContent = '❌';
+
+            // Show modal
+            modal.style.display = 'block';
+
+            // Reset styling after close
+            setTimeout(() => {
+                content.classList.remove('error-modal');
+                icon.textContent = '🎉';
+            }, 100);
         }
     </script>
 </body>
