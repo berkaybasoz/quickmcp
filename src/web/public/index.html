@@ -13,39 +13,216 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8fafc;
             min-height: 100vh;
-            color: #333;
+            color: #1a202c;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1a202c;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .sidebar-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+        }
+
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-nav-item:hover {
+            background: #2d3748;
+            color: white;
+        }
+
+        .sidebar-nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .sidebar-nav-item .icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content Styles */
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .hamburger:hover {
+            background: #f7fafc;
+        }
+
+        .hamburger span {
+            width: 20px;
+            height: 2px;
+            background: #4a5568;
+            transition: all 0.2s;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+
+        .topbar-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .topbar-subtitle {
+            color: #718096;
+            margin-left: 8px;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
         }
 
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
         }
 
         .card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            padding: 30px;
-            margin-bottom: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 32px 32px 0 32px;
+        }
+
+        .card-content {
+            padding: 32px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 32px;
         }
 
         .tabs {
@@ -195,8 +372,12 @@
         }
 
         .server-list {
-            display: grid;
+            display: block;
             gap: 20px;
+        }
+
+        .server-list.has-servers {
+            display: grid;
         }
 
         .server-card {
@@ -276,25 +457,106 @@
         .hidden {
             display: none !important;
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .card-header {
+                padding: 24px 24px 0 24px;
+            }
+
+            .card-content {
+                padding: 24px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .topbar-subtitle {
+                display: none;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+            }
+
+            .topbar-title {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 20px;
+            }
+
+            .card-header {
+                padding: 20px 20px 0 20px;
+            }
+
+            .card-content {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>MCP Server Generator</h1>
-            <p>Create Model Context Protocol servers from any data source and test them instantly</p>
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">QM</div>
+                <div class="sidebar-title">QuickMCP</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="sidebar-nav-item active">
+                    <div class="icon">🚀</div>
+                    <span>Generate Server</span>
+                </a>
+                <a href="/manage-servers" class="sidebar-nav-item">
+                    <div class="icon">📋</div>
+                    <span>Manage Servers</span>
+                </a>
+                <a href="/test-servers" class="sidebar-nav-item">
+                    <div class="icon">🧪</div>
+                    <span>Test Servers</span>
+                </a>
+            </nav>
         </div>
 
-        <div class="card">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('generate')">Generate Server</div>
-                <div class="tab" onclick="switchTab('manage')">Manage Servers</div>
-                <div class="tab" onclick="switchTab('test')">Test Servers</div>
+        <!-- Overlay for mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="topbar">
+                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="topbar-title">
+                    MCP Server Generator
+                </div>
             </div>
 
-            <!-- Generate Server Tab -->
-            <div id="generate-tab" class="tab-content active">
-                <h2>Generate MCP Server</h2>
+            <div class="container">
+                <div class="card">
+                    <!-- Generate Server Tab -->
+                    <div id="generate-tab" class="tab-content active">
+                        <div class="card-header">
+                            <h1 class="section-title">Generate MCP Server</h1>
+                            <p class="section-subtitle">Create powerful Model Context Protocol servers from your data sources</p>
+                        </div>
+                        <div class="card-content">
 
                 <!-- Server Configuration -->
                 <div id="server-config-section">
@@ -342,10 +604,10 @@
                         <div class="form-group">
                             <label>Database Type</label>
                             <select id="dbType" onchange="updateDefaultPort()">
+                                <option value="mssql">Microsoft SQL Server</option>
                                 <option value="mysql">MySQL</option>
                                 <option value="postgresql">PostgreSQL</option>
                                 <option value="sqlite">SQLite</option>
-                                <option value="mssql">Microsoft SQL Server</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -354,7 +616,7 @@
                         </div>
                         <div class="form-group">
                             <label>Port</label>
-                            <input type="number" id="dbPort" placeholder="3306">
+                            <input type="number" id="dbPort" placeholder="1433">
                         </div>
                         <div class="form-group">
                             <label>Database Name</label>
@@ -392,20 +654,29 @@
 
                     <div id="generate-success" class="success"></div>
                     <div id="generate-error" class="error"></div>
-                </div>
-            </div>
+                        </div>
+                    </div>
 
-            <!-- Manage Servers Tab -->
-            <div id="manage-tab" class="tab-content">
-                <h2>Generated Servers</h2>
-                <div id="server-list" class="server-list">
-                    <!-- Servers will be loaded here -->
-                </div>
-            </div>
+                    <!-- Manage Servers Tab -->
+                    <div id="manage-tab" class="tab-content">
+                        <div class="card-header">
+                            <h1 class="section-title">Generated Servers</h1>
+                            <p class="section-subtitle">Manage and deploy your created MCP servers</p>
+                        </div>
+                        <div class="card-content">
+                            <div id="server-list" class="server-list">
+                                <!-- Servers will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Test Servers Tab -->
-            <div id="test-tab" class="tab-content">
-                <h2>Test MCP Server</h2>
+                    <!-- Test Servers Tab -->
+                    <div id="test-tab" class="tab-content">
+                        <div class="card-header">
+                            <h1 class="section-title">Test MCP Server</h1>
+                            <p class="section-subtitle">Test and validate your MCP servers functionality</p>
+                        </div>
+                        <div class="card-content">
 
                 <div class="form-group">
                     <label>Select Server</label>
@@ -444,9 +715,11 @@
                     <p>Running tests...</p>
                 </div>
 
-                <div id="test-results" class="test-results hidden"></div>
-                <div id="test-error" class="error"></div>
-            </div>
+                            <div id="test-results" class="test-results hidden"></div>
+                            <div id="test-error" class="error"></div>
+                        </div>
+                    </div>
+                </div>
         </div>
     </div>
 
@@ -721,6 +994,7 @@ npm install</pre>
                 padding: 20px;
             ">
                 <!-- Content will be loaded here -->
+            </div>
             </div>
         </div>
     </div>

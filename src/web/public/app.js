@@ -4,30 +4,110 @@ let currentDataSource = null;
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
-    loadServers();
-    loadTestServers();
+    setupRouting();
+    handleInitialRoute();
 });
 
-// Tab management
-function switchTab(tabName) {
+// Setup URL routing
+function setupRouting() {
+    window.addEventListener('popstate', function(event) {
+        handleRoute();
+    });
+}
+
+// Handle initial route
+function handleInitialRoute() {
+    handleRoute();
+}
+
+// Route handler
+function handleRoute() {
+    const path = window.location.pathname;
+    let tabName = 'generate'; // default tab
+
+    if (path === '/manage-servers') {
+        tabName = 'manage';
+    } else if (path === '/test-servers') {
+        tabName = 'test';
+    }
+
+    switchTabByRoute(tabName);
+}
+
+// Switch tab and update URL
+function switchTabByRoute(tabName) {
     // Hide all tab contents
     const tabs = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => tab.classList.remove('active'));
 
-    // Hide all tab buttons active state
-    const tabButtons = document.querySelectorAll('.tab');
-    tabButtons.forEach(button => button.classList.remove('active'));
+    // Hide all sidebar nav items active state
+    const navItems = document.querySelectorAll('.sidebar-nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
 
     // Show selected tab
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-    event.target.classList.add('active');
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    console.log('Selected tab element:', selectedTab, 'Adding active class');
+    selectedTab.classList.add('active');
+
+    // Set active sidebar item
+    const activeItem = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
 
     // Load data for specific tabs
     if (tabName === 'manage') {
+        console.log('Loading servers for manage tab');
+        const manageTab = document.getElementById('manage-tab');
+        console.log('Manage tab element:', manageTab, 'Active:', manageTab?.classList.contains('active'));
         loadServers();
     } else if (tabName === 'test') {
+        console.log('Loading test servers for test tab');
+        const testTab = document.getElementById('test-tab');
+        console.log('Test tab element:', testTab, 'Active:', testTab?.classList.contains('active'));
         loadTestServers();
     }
+
+    // Close sidebar
+    closeSidebar();
+}
+
+// Sidebar management
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const hamburger = document.getElementById('hamburger');
+
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+    hamburger.classList.toggle('active');
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const hamburger = document.getElementById('hamburger');
+
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    hamburger.classList.remove('active');
+}
+
+// Tab management with URL update
+function switchTab(tabName) {
+    // Update URL
+    let newPath = '/';
+    if (tabName === 'manage') {
+        newPath = '/manage-servers';
+    } else if (tabName === 'test') {
+        newPath = '/test-servers';
+    }
+
+    // Update URL without triggering popstate
+    window.history.pushState(null, '', newPath);
+
+    // Switch the tab
+    switchTabByRoute(tabName);
 }
 
 // File upload setup
@@ -288,26 +368,71 @@ async function generateServer() {
 
 // Load servers list
 async function loadServers() {
+    console.log('loadServers function called');
     try {
         const response = await fetch('/api/servers');
         const result = await response.json();
+        console.log('Servers API response:', result);
 
         if (result.success) {
             displayServers(result.data);
+        } else {
+            displayServers([]);
         }
     } catch (error) {
         console.error('Failed to load servers:', error);
+        displayServers([]);
     }
 }
 
 // Display servers
 function displayServers(servers) {
+    console.log('displayServers called with:', servers);
     const serverList = document.getElementById('server-list');
+    console.log('server-list element:', serverList);
 
-    if (servers.length === 0) {
-        serverList.innerHTML = '<p>No servers generated yet. Go to "Generate Server" tab to create one.</p>';
+    if (!serverList) {
+        console.error('server-list element not found');
         return;
     }
+
+    if (!servers || servers.length === 0) {
+        console.log('Showing empty state for servers');
+        serverList.classList.remove('has-servers');
+        serverList.style.display = 'block';
+        serverList.style.minHeight = '400px';
+        serverList.style.width = '100%';
+        const emptyStateHTML = `
+            <div style="text-align: center; padding: 40px; color: #718096; min-height: 300px; width: 100%; display: block;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+                <h3 style="margin-bottom: 8px; color: #2d3748;">No Servers Generated Yet</h3>
+                <p style="margin-bottom: 20px;">Create your first MCP server by uploading data or connecting to a database.</p>
+                <button class="btn btn-primary" onclick="switchTab('generate'); closeSidebar();">
+                    🚀 Generate Your First Server
+                </button>
+            </div>
+        `;
+        serverList.innerHTML = emptyStateHTML;
+        console.log('Empty state HTML set, serverList innerHTML:', serverList.innerHTML);
+
+        // Debug parent containers
+        const manageTab = document.getElementById('manage-tab');
+        const cardContent = serverList.closest('.card-content');
+        console.log('Manage tab styles:', {
+            display: getComputedStyle(manageTab).display,
+            height: getComputedStyle(manageTab).height,
+            visibility: getComputedStyle(manageTab).visibility
+        });
+        console.log('Card content styles:', {
+            display: getComputedStyle(cardContent).display,
+            height: getComputedStyle(cardContent).height,
+            visibility: getComputedStyle(cardContent).visibility
+        });
+        return;
+    }
+
+    // Has servers - use grid layout
+    serverList.classList.add('has-servers');
 
     let html = '';
     servers.forEach(server => {
@@ -338,20 +463,57 @@ function displayServers(servers) {
 
 // Load test servers dropdown
 async function loadTestServers() {
+    console.log('loadTestServers function called');
     try {
         const response = await fetch('/api/servers');
         const result = await response.json();
+        console.log('Test servers API response:', result);
 
-        if (result.success) {
-            const select = document.getElementById('testServerSelect');
+        // Test tab should be active by now since we removed the delays
+        const testTab = document.getElementById('test-tab');
+        if (!testTab || !testTab.classList.contains('active')) {
+            console.log('Test tab not active, skipping loadTestServers');
+            return;
+        }
+
+        const select = document.getElementById('testServerSelect');
+        if (!select) {
+            console.error('testServerSelect element not found');
+            return;
+        }
+
+        if (result.success && result.data.length > 0) {
             select.innerHTML = '<option value="">Select a server to test</option>';
-
             result.data.forEach(server => {
                 select.innerHTML += `<option value="${server.id}">${server.name}</option>`;
             });
+        } else {
+            select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
+
+            // Show empty state message
+            const testContent = document.querySelector('#test-tab .card-content');
+            console.log('Test content element:', testContent);
+            console.log('Existing test-empty-state:', document.getElementById('test-empty-state'));
+            if (testContent && !document.getElementById('test-empty-state')) {
+                console.log('Creating test empty state');
+                testContent.innerHTML = `
+                    <div id="test-empty-state" style="text-align: center; padding: 40px; color: #718096;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🧪</div>
+                        <h3 style="margin-bottom: 8px; color: #2d3748;">No Servers to Test</h3>
+                        <p style="margin-bottom: 20px;">Create an MCP server first before testing its functionality.</p>
+                        <button class="btn btn-primary" onclick="switchTab('generate'); closeSidebar();">
+                            🚀 Generate Your First Server
+                        </button>
+                    </div>
+                `;
+            }
         }
     } catch (error) {
         console.error('Failed to load test servers:', error);
+        const select = document.getElementById('testServerSelect');
+        if (select) {
+            select.innerHTML = '<option value="">Error loading servers</option>';
+        }
     }
 }
 

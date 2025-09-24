@@ -285,6 +285,16 @@ app.get('/api/servers/:id/export', (req, res) => {
 });
 
 // Serve the main HTML page
+// Serve specific HTML files for different routes
+app.get('/manage-servers', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'manage-servers.html'));
+});
+
+app.get('/test-servers', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test-servers.html'));
+});
+
+// Serve index.html for root and any other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

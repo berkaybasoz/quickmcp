@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Servers - MCP Server Generator</title>
+    <link rel="stylesheet" href="shared-styles.css">
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">QM</div>
+                <div class="sidebar-title">QuickMCP</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="sidebar-nav-item">
+                    <div class="icon">🚀</div>
+                    <span>Generate Server</span>
+                </a>
+                <a href="/manage-servers" class="sidebar-nav-item active">
+                    <div class="icon">📋</div>
+                    <span>Manage Servers</span>
+                </a>
+                <a href="/test-servers" class="sidebar-nav-item">
+                    <div class="icon">🧪</div>
+                    <span>Test Servers</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Overlay for mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="topbar">
+                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="topbar-title">
+                    MCP Server Generator
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="section-title">Generated Servers</h1>
+                        <p class="section-subtitle">Manage and deploy your created MCP servers</p>
+                    </div>
+                    <div class="card-content">
+                        <div id="server-list" class="server-list">
+                            <!-- Servers will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        // Load servers when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadServers();
+        });
+    </script>
+</body>
+</html>
