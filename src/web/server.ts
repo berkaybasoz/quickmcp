@@ -246,23 +246,39 @@ app.get('/api/servers/check-name/:name', (req, res) => {
 
 // Get server details endpoint
 app.get('/api/servers/:id', (req, res) => {
-  const serverInfo = generatedServers.get(req.params.id);
+  const server = generator.getServer(req.params.id);
 
-  if (!serverInfo) {
+  if (!server) {
     return res.status(404).json({
       success: false,
       error: 'Server not found'
     });
   }
 
+  const tools = generator.getToolsForServer(server.id);
+  const resources = generator.getResourcesForServer(server.id);
+
   res.json({
     success: true,
     data: {
-      config: serverInfo.config,
-      parsedData: serverInfo.parsedData.map(data => ({
-        ...data,
-        rows: data.rows.slice(0, 20) // Limit rows for API response
-      }))
+      config: {
+        name: server.name,
+        description: `Virtual MCP Server (${server.dbConfig.type})`,
+        version: "1.0.0",
+        tools: tools.map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+          operation: tool.operation
+        })),
+        resources: resources.map(resource => ({
+          name: resource.name,
+          description: resource.description,
+          uri_template: resource.uri_template
+        })),
+        prompts: []
+      },
+      parsedData: []
     }
   });
 });
