@@ -51,7 +51,7 @@ class DynamicMCPExecutor {
         return tools.map(tool => ({
             name: `${tool.server_id}__${tool.name}`,
             description: `[${tool.server_id}] ${tool.description}`,
-            inputSchema: tool.inputSchema
+            inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
         }));
     }
     async getAllResources() {
