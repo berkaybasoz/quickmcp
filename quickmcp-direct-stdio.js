@@ -89,17 +89,37 @@ process.stdin.on('data', async (data) => {
         break;
 
       case 'tools/call':
-        // For now, just return a simple response
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: {
-            content: [{
-              type: 'text',
-              text: `Tool ${message.params.name} called with: ${JSON.stringify(message.params.arguments)}`
-            }]
-          }
-        };
+        try {
+          // Import DynamicMCPExecutor
+          const { DynamicMCPExecutor } = require('./dist/dynamic-mcp-executor.js');
+          const executor = new DynamicMCPExecutor();
+
+          // Execute the tool
+          const toolResult = await executor.executeTool(
+            message.params.name,
+            message.params.arguments || {}
+          );
+
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(toolResult, null, 2)
+              }]
+            }
+          };
+        } catch (error) {
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            error: {
+              code: -32603,
+              message: `Tool execution failed: ${error.message}`
+            }
+          };
+        }
         break;
 
       case 'notifications/initialized':
