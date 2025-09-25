@@ -11,5 +11,8 @@ export declare class DatabaseParser {
     private mapMySqlType;
     private mapPostgreSqlType;
     private mapSqliteType;
+    private parseMsSql;
+    private getMsSqlTables;
+    private mapMsSqlType;
 }
 //# sourceMappingURL=DatabaseParser.d.ts.map

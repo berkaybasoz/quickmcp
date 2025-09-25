@@ -1,4 +1,4 @@
-import { JSONManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/json-manager.js';
+import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager.js';
 
 interface ParsedColumn {
   name: string;
@@ -11,10 +11,10 @@ interface ParsedData {
 }
 
 export class MCPServerGenerator {
-  private jsonManager: JSONManager;
+  private sqliteManager: SQLiteManager;
 
   constructor() {
-    this.jsonManager = new JSONManager();
+    this.sqliteManager = new SQLiteManager();
   }
 
   async generateServer(
@@ -34,21 +34,21 @@ export class MCPServerGenerator {
         createdAt: new Date().toISOString()
       };
 
-      // Save server to JSON database
-      this.jsonManager.saveServer(serverConfig);
-      console.log(`✅ Server config saved to JSON database: ${serverId}`);
+      // Save server to SQLite database only
+      this.sqliteManager.saveServer(serverConfig);
+      console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
       const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
       if (tools.length > 0) {
-        this.jsonManager.saveTools(tools);
+        this.sqliteManager.saveTools(tools);
         console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
       // Generate and save resources
       const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
       if (resources.length > 0) {
-        this.jsonManager.saveResources(resources);
+        this.sqliteManager.saveResources(resources);
         console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
       }
 
@@ -304,39 +304,39 @@ export class MCPServerGenerator {
 
   // Public methods for management
   getAllServers(): ServerConfig[] {
-    return this.jsonManager.getAllServers();
+    return this.sqliteManager.getAllServers();
   }
 
   getServer(serverId: string): ServerConfig | null {
-    return this.jsonManager.getServer(serverId);
+    return this.sqliteManager.getServer(serverId);
   }
 
   deleteServer(serverId: string): void {
-    this.jsonManager.deleteServer(serverId);
-    console.log(`🗑️ Deleted server: ${serverId}`);
+    this.sqliteManager.deleteServer(serverId);
+    console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
   }
 
   getAllTools(): ToolDefinition[] {
-    return this.jsonManager.getAllTools();
+    return this.sqliteManager.getAllTools();
   }
 
   getToolsForServer(serverId: string): ToolDefinition[] {
-    return this.jsonManager.getToolsForServer(serverId);
+    return this.sqliteManager.getToolsForServer(serverId);
   }
 
   getAllResources(): ResourceDefinition[] {
-    return this.jsonManager.getAllResources();
+    return this.sqliteManager.getAllResources();
   }
 
   getResourcesForServer(serverId: string): ResourceDefinition[] {
-    return this.jsonManager.getResourcesForServer(serverId);
+    return this.sqliteManager.getResourcesForServer(serverId);
   }
 
   getStats(): { servers: number; tools: number; resources: number } {
-    return this.jsonManager.getStats();
+    return this.sqliteManager.getStats();
   }
 
   close(): void {
-    this.jsonManager.close();
+    this.sqliteManager.close();
   }
 }

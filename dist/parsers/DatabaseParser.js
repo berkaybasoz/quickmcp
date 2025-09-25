@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,6 +40,7 @@ exports.DatabaseParser = void 0;
 const promise_1 = __importDefault(require("mysql2/promise"));
 const pg_1 = require("pg");
 const sqlite3_1 = __importDefault(require("sqlite3"));
+const sql = __importStar(require("mssql"));
 class DatabaseParser {
     async parse(connection, tableName) {
         switch (connection.type) {
@@ -16,6 +50,8 @@ class DatabaseParser {
                 return this.parsePostgreSql(connection, tableName);
             case 'sqlite':
                 return this.parseSqlite(connection, tableName);
+            case 'mssql':
+                return this.parseMsSql(connection, tableName);
             default:
                 throw new Error(`Unsupported database type: ${connection.type}`);
         }
@@ -28,6 +64,8 @@ class DatabaseParser {
                 return this.getPostgreSqlTables(connection);
             case 'sqlite':
                 return this.getSqliteTables(connection);
+            case 'mssql':
+                return this.getMsSqlTables(connection);
             default:
                 throw new Error(`Unsupported database type: ${connection.type}`);
         }
@@ -53,6 +91,7 @@ class DatabaseParser {
                 });
                 const rowsArray = rows.map((row) => headers.map((header) => row[header]));
                 results.push({
+                    tableName: table,
                     headers,
                     rows: rowsArray,
                     metadata: {
@@ -90,6 +129,7 @@ class DatabaseParser {
                 });
                 const rowsArray = dataResult.rows.map(row => headers.map(header => row[header]));
                 results.push({
+                    tableName: table,
                     headers,
                     rows: rowsArray,
                     metadata: {
@@ -137,6 +177,7 @@ class DatabaseParser {
                             });
                             const rowsArray = rows.map(row => headers.map(header => row[header]));
                             results.push({
+                                tableName: table,
                                 headers,
                                 rows: rowsArray,
                                 metadata: {
@@ -237,6 +278,93 @@ class DatabaseParser {
             return 'boolean';
         if (lowerType === 'date' || lowerType === 'datetime')
             return 'date';
+        return 'string';
+    }
+    async parseMsSql(connection, tableName) {
+        const config = {
+            server: connection.host,
+            port: connection.port || 1433,
+            user: connection.username,
+            password: connection.password,
+            database: connection.database,
+            options: {
+                encrypt: true,
+                trustServerCertificate: true
+            }
+        };
+        try {
+            await sql.connect(config);
+            const tables = tableName ? [tableName] : await this.getMsSqlTables(connection);
+            const results = [];
+            for (const table of tables) {
+                const request = new sql.Request();
+                const dataResult = await request.query(`SELECT TOP 1000 * FROM [${table}]`);
+                const columnsResult = await request.query(`
+          SELECT COLUMN_NAME, DATA_TYPE
+          FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_NAME = '${table}'
+        `);
+                const headers = columnsResult.recordset.map((col) => col.COLUMN_NAME);
+                const dataTypes = {};
+                columnsResult.recordset.forEach((col) => {
+                    dataTypes[col.COLUMN_NAME] = this.mapMsSqlType(col.DATA_TYPE);
+                });
+                const rowsArray = dataResult.recordset.map((row) => headers.map((header) => row[header]));
+                results.push({
+                    tableName: table,
+                    headers,
+                    rows: rowsArray,
+                    metadata: {
+                        rowCount: rowsArray.length,
+                        columnCount: headers.length,
+                        dataTypes
+                    }
+                });
+            }
+            return results;
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    async getMsSqlTables(connection) {
+        const config = {
+            server: connection.host,
+            port: connection.port || 1433,
+            user: connection.username,
+            password: connection.password,
+            database: connection.database,
+            options: {
+                encrypt: true,
+                trustServerCertificate: true
+            }
+        };
+        try {
+            await sql.connect(config);
+            const request = new sql.Request();
+            const result = await request.query(`
+        SELECT TABLE_NAME
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_TYPE = 'BASE TABLE'
+      `);
+            return result.recordset.map((row) => row.TABLE_NAME);
+        }
+        catch (error) {
+            throw error;
+        }
+    }
+    mapMsSqlType(type) {
+        const lowerType = type.toLowerCase();
+        if (lowerType.includes('int') || lowerType === 'bigint' || lowerType === 'smallint' || lowerType === 'tinyint')
+            return 'integer';
+        if (lowerType.includes('decimal') || lowerType.includes('numeric') || lowerType === 'float' || lowerType === 'real' || lowerType === 'money')
+            return 'number';
+        if (lowerType === 'bit')
+            return 'boolean';
+        if (lowerType.includes('date') || lowerType.includes('time'))
+            return 'date';
+        if (lowerType === 'uniqueidentifier')
+            return 'string';
         return 'string';
     }
 }

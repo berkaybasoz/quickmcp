@@ -6,12 +6,12 @@ export interface DataSource {
     data?: any[];
 }
 export interface DatabaseConnection {
-    host: string;
-    port: number;
+    host?: string;
+    port?: number;
     database: string;
-    username: string;
-    password: string;
-    type: 'mysql' | 'postgresql' | 'sqlite';
+    username?: string;
+    password?: string;
+    type: 'mysql' | 'postgresql' | 'sqlite' | 'mssql';
 }
 export interface MCPServerConfig {
     name: string;
@@ -41,6 +41,7 @@ export interface MCPPrompt {
     template: string;
 }
 export interface ParsedData {
+    tableName?: string;
     headers: string[];
     rows: any[][];
     metadata: {

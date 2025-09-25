@@ -2,7 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MCPServerGenerator = void 0;
 class MCPServerGenerator {
-    generateServer(config, parsedData) {
+    constructor() {
+        // this.jsonManager = new JSONManager(); // Temporarily disabled
+    }
+    async generateServer(serverId, serverName, parsedData, dbConfig) {
+        const isDatabaseConnection = config.dataSource.type === 'database';
+        const isMSSQLConnection = isDatabaseConnection && config.dataSource.connection?.type === 'mssql';
         const serverCode = `#!/usr/bin/env node
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -17,13 +22,32 @@ import {
   ReadResourceRequestSchema,
   GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
-
-${this.generateDataStorage(parsedData)}
+import * as sql from 'mssql';
 
 class ${this.toPascalCase(config.name)}Server {
   private server: Server;
+  private pool: sql.ConnectionPool;
 
   constructor() {
+    // Database configuration - all servers now use MSSQL
+    const dbConfig = {
+      user: '${config.dataSource.connection?.username || 'sa'}',
+      password: '${config.dataSource.connection?.password || 'StrongPassword123!'}',
+      database: '${config.dataSource.connection?.database || 'exceptionmonitor'}',
+      server: '${config.dataSource.connection?.host || 'localhost'}',
+      port: ${config.dataSource.connection?.port || 1434},
+      pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000
+      },
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    };
+
+    this.pool = new sql.ConnectionPool(dbConfig);
     this.server = new Server(
       {
         name: '${config.name}',
@@ -65,7 +89,7 @@ class ${this.toPascalCase(config.name)}Server {
       const { name, arguments: args } = request.params;
 
       switch (name) {
-        ${config.tools.map(tool => this.generateToolHandler(tool)).join('\n        ')}
+        ${config.tools.map(tool => this.generateToolHandler(tool, config)).join('\n        ')}
         default:
           throw new McpError(ErrorCode.MethodNotFound, \`Unknown tool: \${name}\`);
       }
@@ -92,12 +116,49 @@ class ${this.toPascalCase(config.name)}Server {
     });
   }
 
-${this.generateUtilityMethods(parsedData)}
+${this.generateUtilityMethods(config, parsedData)}
+
+  private toSafeIdentifier(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/^[0-9]/, '_$&')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+  }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('${config.name} MCP server running on stdio');
+    // Initialize database connection - all servers now use MSSQL
+    try {
+      await this.pool.connect();
+      console.error('✅ Database connection established');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error.message);
+      process.exit(1);
+    }
+    // Check if we should run as TCP server for runtime mode
+    const port = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT) : null;
+
+    if (port) {
+      // TCP Server mode for runtime
+      const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
+      const transport = new SSEServerTransport(\`/message\`, this.server);
+
+      const express = await import('express');
+      const app = express.default();
+
+      app.use(express.json());
+      app.use('/sse', transport.handler);
+
+      app.listen(port, () => {
+        console.error(\`${config.name} MCP server running on http://localhost:\${port}\`);
+      });
+    } else {
+      // Standard stdio mode
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error('${config.name} MCP server running on stdio');
+    }
   }
 }
 
@@ -107,6 +168,11 @@ server.run().catch(console.error);
         return serverCode;
     }
     generatePackageJson(config) {
+        const dependencies = {
+            "@modelcontextprotocol/sdk": "^0.4.0",
+            "express": "^4.18.0",
+            "mssql": "^11.0.1" // All servers now use MSSQL
+        };
         return JSON.stringify({
             name: `mcp-server-${config.name.toLowerCase()}`,
             version: config.version,
@@ -115,14 +181,16 @@ server.run().catch(console.error);
             main: "index.js",
             scripts: {
                 build: "tsc",
-                start: "node dist/index.js"
+                start: "node dist/index.js",
+                dev: "tsx index.ts",
+                "start:runtime": "MCP_PORT=3001 tsx index.ts"
             },
-            dependencies: {
-                "@modelcontextprotocol/sdk": "^0.4.0"
-            },
+            dependencies,
             devDependencies: {
                 typescript: "^5.0.0",
-                "@types/node": "^20.0.0"
+                "@types/node": "^20.0.0",
+                "@types/express": "^4.17.0",
+                "tsx": "^4.0.0"
             }
         }, null, 2);
     }
@@ -131,10 +199,11 @@ server.run().catch(console.error);
         const resources = [];
         const prompts = [];
         parsedData.forEach((data, tableIndex) => {
-            const tableName = `table_${tableIndex}`;
+            const tableName = data.tableName || `table_${tableIndex}`;
+            const safeTableName = this.toSafeIdentifier(tableName);
             // Generate search tool
             tools.push({
-                name: `search_${tableName}`,
+                name: `search_${safeTableName}`,
                 description: `Search records in ${tableName}`,
                 inputSchema: {
                     type: "object",
@@ -148,7 +217,7 @@ server.run().catch(console.error);
             });
             // Generate get all tool
             tools.push({
-                name: `get_all_${tableName}`,
+                name: `get_all_${safeTableName}`,
                 description: `Get all records from ${tableName}`,
                 inputSchema: {
                     type: "object",
@@ -162,8 +231,9 @@ server.run().catch(console.error);
             data.headers.forEach(header => {
                 const columnType = data.metadata.dataTypes[header];
                 const filterSchema = this.getFilterSchema(columnType);
+                const safeHeaderName = this.toSafeIdentifier(header);
                 tools.push({
-                    name: `filter_${tableName}_by_${header.toLowerCase()}`,
+                    name: `filter_${safeTableName}_by_${safeHeaderName}`,
                     description: `Filter ${tableName} by ${header}`,
                     inputSchema: {
                         type: "object",
@@ -178,21 +248,21 @@ server.run().catch(console.error);
             });
             // Generate resource for table schema
             resources.push({
-                uri: `schema://${tableName}`,
+                uri: `schema://${safeTableName}`,
                 name: `${tableName} Schema`,
                 description: `Schema information for ${tableName}`,
                 mimeType: "application/json"
             });
             // Generate resource for sample data
             resources.push({
-                uri: `data://${tableName}/sample`,
+                uri: `data://${safeTableName}/sample`,
                 name: `${tableName} Sample Data`,
                 description: `Sample data from ${tableName}`,
                 mimeType: "application/json"
             });
             // Generate analysis prompt
             prompts.push({
-                name: `analyze_${tableName}`,
+                name: `analyze_${safeTableName}`,
                 description: `Analyze data patterns in ${tableName}`,
                 arguments: [
                     { name: "focus", description: "What aspect to focus on", required: false }
@@ -237,37 +307,54 @@ Columns: ${data.headers.join(', ')}
           arguments: ${JSON.stringify(prompt.arguments, null, 10)}
         }`;
     }
-    generateToolHandler(tool) {
-        return `case '${tool.name}':
+    generateToolHandler(tool, config) {
+        const isDatabaseConnection = config.dataSource.type === 'database';
+        const isMSSQLConnection = isDatabaseConnection && config.dataSource.connection?.type === 'mssql';
+        if (isMSSQLConnection && (tool.handler.includes('getAllFromTable') ||
+            tool.handler.includes('searchTable') ||
+            tool.handler.includes('filterTableByColumn'))) {
+            // Add await for database methods
+            const asyncHandler = tool.handler.replace(/(\w+)\((.*?)\)/g, 'await this.$1($2)');
+            return `case '${tool.name}':
+          return { content: [{ type: 'text', text: JSON.stringify(${asyncHandler}) }] };`;
+        }
+        else {
+            return `case '${tool.name}':
           return { content: [{ type: 'text', text: JSON.stringify(${tool.handler}) }] };`;
+        }
     }
     generateResourceHandler(resource) {
         const uriParts = resource.uri.split('://');
         const resourceType = uriParts[0];
         const resourcePath = uriParts[1];
         if (resourceType === 'schema') {
-            const tableIndex = resourcePath.replace('table_', '');
+            // Find table index by matching the resource path with actual table names
             return `case '${resource.uri}':
+          const schemaTableIndex = DATA.findIndex(table =>
+            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${resourcePath}'
+          );
           return {
             contents: [{
               uri: '${resource.uri}',
               mimeType: 'application/json',
               text: JSON.stringify({
-                headers: DATA[${tableIndex}].headers,
-                metadata: DATA[${tableIndex}].metadata
+                headers: DATA[schemaTableIndex].headers,
+                metadata: DATA[schemaTableIndex].metadata
               }, null, 2)
             }]
           };`;
         }
         else if (resourceType === 'data') {
             const [tableName, dataType] = resourcePath.split('/');
-            const tableIndex = tableName.replace('table_', '');
             return `case '${resource.uri}':
+          const dataTableIndex = DATA.findIndex(table =>
+            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${tableName}'
+          );
           return {
             contents: [{
               uri: '${resource.uri}',
               mimeType: 'application/json',
-              text: JSON.stringify(DATA[${tableIndex}].rows.slice(0, 10), null, 2)
+              text: JSON.stringify(DATA[dataTableIndex].rows.slice(0, 10), null, 2)
             }]
           };`;
         }
@@ -281,6 +368,7 @@ Columns: ${data.headers.join(', ')}
           };`;
     }
     generatePromptHandler(prompt) {
+        const escapedTemplate = prompt.template.replace(/`/g, '\\`').replace(/\${/g, '\\${');
         return `case '${prompt.name}':
           return {
             description: '${prompt.description}',
@@ -288,58 +376,128 @@ Columns: ${data.headers.join(', ')}
               role: 'user',
               content: {
                 type: 'text',
-                text: \`${prompt.template}\`
+                text: \`${escapedTemplate}\`
               }
             }]
           };`;
     }
-    generateUtilityMethods(parsedData) {
-        return `
-  private searchTable(tableIndex: number, query: string, limit: number) {
-    const data = DATA[tableIndex];
-    const results = data.rows.filter(row =>
-      row.some(cell =>
-        cell && cell.toString().toLowerCase().includes(query.toLowerCase())
-      )
-    ).slice(0, limit);
-
-    return {
-      headers: data.headers,
-      rows: results,
-      total: results.length
-    };
-  }
-
-  private getAllFromTable(tableIndex: number, limit: number) {
-    const data = DATA[tableIndex];
-    return {
-      headers: data.headers,
-      rows: data.rows.slice(0, limit),
-      total: Math.min(data.rows.length, limit)
-    };
-  }
-
-  private filterTableByColumn(tableIndex: number, column: string, value: any, limit: number) {
-    const data = DATA[tableIndex];
-    const columnIndex = data.headers.indexOf(column);
-
-    if (columnIndex === -1) {
-      throw new Error(\`Column '\${column}' not found\`);
+    generateUtilityMethods(config, parsedData) {
+        // All servers now use MSSQL database connections - no static data
+        return this.generateMSSQLUtilityMethods(parsedData);
     }
+    generateStaticUtilityMethods() {
+        // Static methods removed - all servers now use database connections
+        return `
+  // Static utility methods are deprecated - using database connections only
+  private searchTable() { throw new Error('Static methods removed - use database connection'); }
+  private getAllFromTable() { throw new Error('Static methods removed - use database connection'); }
+  private filterTableByColumn() { throw new Error('Static methods removed - use database connection'); }
+`;
+    }
+    generateMSSQLUtilityMethods(parsedData) {
+        const tableNames = parsedData.map(data => data.tableName);
+        const tableNamesArray = tableNames.map(name => `'${name}'`).join(', ');
+        return `
+  private async searchTable(tableIndex: number, query: string, limit: number) {
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
 
-    const results = data.rows.filter(row => {
-      const cellValue = row[columnIndex];
-      if (typeof value === 'string') {
-        return cellValue && cellValue.toString().toLowerCase().includes(value.toLowerCase());
+    try {
+      await this.pool.connect();
+      const request = this.pool.request();
+
+      // Get table columns for dynamic search
+      const columnsResult = await request.query(\`
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = '\${tableName}'
+        AND DATA_TYPE IN ('varchar', 'nvarchar', 'text', 'ntext', 'char', 'nchar')
+      \`);
+
+      const textColumns = columnsResult.recordset.map(row => row.COLUMN_NAME);
+
+      if (textColumns.length === 0) {
+        return { headers: [], rows: [], total: 0 };
       }
-      return cellValue === value;
-    }).slice(0, limit);
 
-    return {
-      headers: data.headers,
-      rows: results,
-      total: results.length
-    };
+      const searchConditions = textColumns.map(col => \\\`\\\${col} LIKE @query\\\`).join(' OR ');
+      const searchQuery = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} WHERE \\\${searchConditions} ORDER BY (SELECT NULL)\\\`;
+
+      const searchRequest = this.pool.request();
+      searchRequest.input('query', sql.NVarChar, \`%\${query}%\`);
+      const result = await searchRequest.query(searchQuery);
+
+      const headers = Object.keys(result.recordset[0] || {});
+      const rows = result.recordset.map(row => headers.map(header => row[header]));
+
+      return {
+        headers: headers,
+        rows: rows,
+        total: rows.length
+      };
+    } catch (error) {
+      console.error('Database search error:', error);
+      return { headers: [], rows: [], total: 0 };
+    }
+  }
+
+  private async getAllFromTable(tableIndex: number, limit: number) {
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
+
+    try {
+      await this.pool.connect();
+      const request = this.pool.request();
+      const query = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} ORDER BY (SELECT NULL)\\\`;
+      const result = await request.query(query);
+
+      const headers = Object.keys(result.recordset[0] || {});
+      const rows = result.recordset.map(row => headers.map(header => row[header]));
+
+      return {
+        headers: headers,
+        rows: rows,
+        total: rows.length
+      };
+    } catch (error) {
+      console.error('Database error:', error);
+      return { headers: [], rows: [], total: 0 };
+    }
+  }
+
+  private async filterTableByColumn(tableIndex: number, column: string, value: any, limit: number) {
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
+
+    try {
+      await this.pool.connect();
+      const request = this.pool.request();
+
+      let query: string;
+      if (typeof value === 'string') {
+        query = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} WHERE \\\${column} LIKE @value ORDER BY (SELECT NULL)\\\`;
+        request.input('value', sql.NVarChar, \`%\${value}%\`);
+      } else if (typeof value === 'boolean') {
+        query = \`SELECT TOP (\${limit}) * FROM \${tableName} WHERE \${column} = @value ORDER BY (SELECT NULL)\`;
+        request.input('value', sql.Bit, value);
+      } else {
+        query = \`SELECT TOP (\${limit}) * FROM \${tableName} WHERE \${column} = @value ORDER BY (SELECT NULL)\`;
+        request.input('value', value);
+      }
+
+      const result = await request.query(query);
+      const headers = Object.keys(result.recordset[0] || {});
+      const rows = result.recordset.map(row => headers.map(header => row[header]));
+
+      return {
+        headers: headers,
+        rows: rows,
+        total: rows.length
+      };
+    } catch (error) {
+      console.error('Database error:', error);
+      return { headers: [], rows: [], total: 0 };
+    }
   }`;
     }
     getFilterSchema(columnType) {
@@ -355,6 +513,14 @@ Columns: ${data.headers.join(', ')}
             default:
                 return { type: "string", description: "String value to search for" };
         }
+    }
+    toSafeIdentifier(str) {
+        return str
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '_')
+            .replace(/^[0-9]/, '_$&')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
     }
     toPascalCase(str) {
         return str

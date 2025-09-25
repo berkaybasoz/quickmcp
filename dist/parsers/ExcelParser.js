@@ -51,6 +51,7 @@ class ExcelParser {
         const rows = jsonData.slice(1);
         const dataTypes = this.inferDataTypes(rows, headers);
         return {
+            tableName: worksheetName,
             headers,
             rows,
             metadata: {

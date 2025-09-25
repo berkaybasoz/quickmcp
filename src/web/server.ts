@@ -9,6 +9,8 @@ import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DataSource, MCPServerConfig, ParsedData } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
+import { SQLiteManager } from '../database/sqlite-manager';
+import Database from 'better-sqlite3';
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -20,6 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const parser = new DataSourceParser();
 const generator = new MCPServerGenerator();
 const testRunner = new MCPTestRunner();
+const sqliteManager = new SQLiteManager();
 
 let nextAvailablePort = 3001;
 
@@ -478,8 +481,125 @@ app.get('/test-servers', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'test-servers.html'));
 });
 
+app.get('/database-tables', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'database-tables.html'));
+});
+
 app.get('/how-to-use', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'how-to-use.html'));
+});
+
+// Database tables API endpoints
+app.get('/api/database/tables', (req, res) => {
+  try {
+    // Get database path
+    const dbPath = path.join(process.cwd(), 'data', 'quickmcp.sqlite');
+
+    // Open database connection
+    const db = new Database(dbPath);
+
+    // Get all table names
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all() as any[];
+
+    const tablesInfo = tables.map(table => {
+      const tableName = table.name;
+
+      // Get column information
+      const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+
+      // Get row count
+      const rowCountResult = db.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).get() as any;
+      const rowCount = rowCountResult?.count || 0;
+
+      return {
+        name: tableName,
+        columns: columns.map(col => ({
+          name: col.name,
+          type: col.type,
+          notnull: col.notnull === 1,
+          pk: col.pk === 1
+        })),
+        rowCount
+      };
+    });
+
+    db.close();
+
+    res.json({
+      success: true,
+      data: {
+        dbPath,
+        tables: tablesInfo
+      }
+    });
+  } catch (error) {
+    console.error('Database tables error:', error);
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get specific table details
+app.get('/api/database/tables/:tableName', (req, res) => {
+  try {
+    const tableName = req.params.tableName;
+    const dbPath = path.join(process.cwd(), 'data', 'quickmcp.sqlite');
+
+    // Validate table name to prevent SQL injection
+    if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid table name'
+      });
+    }
+
+    const db = new Database(dbPath);
+
+    // Check if table exists
+    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(tableName);
+    if (!tableExists) {
+      db.close();
+      return res.status(404).json({
+        success: false,
+        error: 'Table not found'
+      });
+    }
+
+    // Get column information
+    const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+
+    // Get row count
+    const rowCountResult = db.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).get() as any;
+    const rowCount = rowCountResult?.count || 0;
+
+    // Get sample data (first 10 rows)
+    const sampleData = db.prepare(`SELECT * FROM ${tableName} LIMIT 10`).all() as any[];
+
+    db.close();
+
+    res.json({
+      success: true,
+      data: {
+        name: tableName,
+        columns: columns.map(col => ({
+          name: col.name,
+          type: col.type,
+          notnull: col.notnull === 1,
+          pk: col.pk === 1
+        })),
+        rowCount,
+        sampleData
+      }
+    });
+  } catch (error) {
+    console.error('Table details error:', error);
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // STDIO bridge endpoint for MCP

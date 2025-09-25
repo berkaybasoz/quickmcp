@@ -1,7 +1,7 @@
 {
   "servers": [
     {
-      "id": "f1",
+      "id": "berkay",
       "name": "",
       "dbConfig": {
         "type": "mssql",
@@ -11,12 +11,12 @@
         "username": "sa",
         "password": "StrongPassword123!"
       },
-      "createdAt": "2025-09-25T18:22:36.804Z"
+      "createdAt": "2025-09-25T18:34:11.006Z"
     }
   ],
   "tools": [
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_flyway_schema_history",
       "description": "Get records from flyway_schema_history table",
       "inputSchema": {
@@ -82,7 +82,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_flyway_schema_history",
       "description": "Create a new record in flyway_schema_history table",
       "inputSchema": {
@@ -146,7 +146,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_exception_records",
       "description": "Get records from exception_records table",
       "inputSchema": {
@@ -256,7 +256,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_exception_records",
       "description": "Create a new record in exception_records table",
       "inputSchema": {
@@ -372,7 +372,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_exception_records",
       "description": "Update a record in exception_records table",
       "inputSchema": {
@@ -474,7 +474,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_exception_records",
       "description": "Delete a record from exception_records table",
       "inputSchema": {
@@ -496,7 +496,7 @@
       "operation": "DELETE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_business_exception_rules",
       "description": "Get records from business_exception_rules table",
       "inputSchema": {
@@ -566,7 +566,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_business_exception_rules",
       "description": "Create a new record in business_exception_rules table",
       "inputSchema": {
@@ -634,7 +634,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_business_exception_rules",
       "description": "Update a record in business_exception_rules table",
       "inputSchema": {
@@ -699,7 +699,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_business_exception_rules",
       "description": "Delete a record from business_exception_rules table",
       "inputSchema": {
@@ -721,7 +721,7 @@
       "operation": "DELETE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_alert_notification_channel",
       "description": "Get records from alert_notification_channel table",
       "inputSchema": {
@@ -775,7 +775,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_alert_notification_channel",
       "description": "Create a new record in alert_notification_channel table",
       "inputSchema": {
@@ -819,7 +819,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_alert_notification_channel",
       "description": "Update a record in alert_notification_channel table",
       "inputSchema": {
@@ -862,7 +862,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_alert_notification_channel",
       "description": "Delete a record from alert_notification_channel table",
       "inputSchema": {
@@ -884,7 +884,7 @@
       "operation": "DELETE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_activities",
       "description": "Get records from activities table",
       "inputSchema": {
@@ -954,7 +954,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_activities",
       "description": "Create a new record in activities table",
       "inputSchema": {
@@ -1028,7 +1028,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_activities",
       "description": "Update a record in activities table",
       "inputSchema": {
@@ -1102,7 +1102,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_activities",
       "description": "Delete a record from activities table",
       "inputSchema": {
@@ -1124,7 +1124,7 @@
       "operation": "DELETE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_shedlock",
       "description": "Get records from shedlock table",
       "inputSchema": {
@@ -1166,7 +1166,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_shedlock",
       "description": "Create a new record in shedlock table",
       "inputSchema": {
@@ -1200,7 +1200,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_user_settings",
       "description": "Get records from user_settings table",
       "inputSchema": {
@@ -1250,7 +1250,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_user_settings",
       "description": "Create a new record in user_settings table",
       "inputSchema": {
@@ -1289,7 +1289,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_user_settings",
       "description": "Update a record in user_settings table",
       "inputSchema": {
@@ -1328,7 +1328,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_user_settings",
       "description": "Delete a record from user_settings table",
       "inputSchema": {
@@ -1350,7 +1350,7 @@
       "operation": "DELETE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "get_users",
       "description": "Get records from users table",
       "inputSchema": {
@@ -1412,7 +1412,7 @@
       "operation": "SELECT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "create_users",
       "description": "Create a new record in users table",
       "inputSchema": {
@@ -1466,7 +1466,7 @@
       "operation": "INSERT"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "update_users",
       "description": "Update a record in users table",
       "inputSchema": {
@@ -1517,7 +1517,7 @@
       "operation": "UPDATE"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "delete_users",
       "description": "Delete a record from users table",
       "inputSchema": {
@@ -1541,56 +1541,56 @@
   ],
   "resources": [
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "flyway_schema_history_list",
       "description": "List all records from flyway_schema_history table",
       "uri_template": "flyway_schema_history://list",
       "sqlQuery": "SELECT [installed_rank], [version], [description], [type], [script], [checksum], [installed_by], [installed_on], [execution_time], [success] FROM [flyway_schema_history]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "exception_records_list",
       "description": "List all records from exception_records table",
       "uri_template": "exception_records://list",
       "sqlQuery": "SELECT [id], [exception_type], [message], [stack_trace], [timestamp], [project_name], [component_name], [pod_name], [pod_ip], [cluster_name], [environment], [service_name], [method], [url], [user_agent], [session_id], [additional_data], [is_business_exception], [created_at], [thread_name], [latency_ms] FROM [exception_records]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "business_exception_rules_list",
       "description": "List all records from business_exception_rules table",
       "uri_template": "business_exception_rules://list",
       "sqlQuery": "SELECT [id], [rule_name], [description], [match_type], [field_type], [pattern], [is_active], [valid_from], [valid_to], [created_at], [updated_at] FROM [business_exception_rules]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "alert_notification_channel_list",
       "description": "List all records from alert_notification_channel table",
       "uri_template": "alert_notification_channel://list",
       "sqlQuery": "SELECT [id], [name], [type], [status], [configuration], [created_at], [updated_at] FROM [alert_notification_channel]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "activities_list",
       "description": "List all records from activities table",
       "uri_template": "activities://list",
       "sqlQuery": "SELECT [id], [activity_type], [description], [user_name], [user_ip], [entity_type], [entity_id], [old_value], [new_value], [created_at], [session_id] FROM [activities]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "shedlock_list",
       "description": "List all records from shedlock table",
       "uri_template": "shedlock://list",
       "sqlQuery": "SELECT [name], [lock_until], [locked_at], [locked_by] FROM [shedlock]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "user_settings_list",
       "description": "List all records from user_settings table",
       "uri_template": "user_settings://list",
       "sqlQuery": "SELECT [id], [username], [setting_key], [setting_value], [created_at], [updated_at] FROM [user_settings]"
     },
     {
-      "server_id": "f1",
+      "server_id": "berkay",
       "name": "users_list",
       "description": "List all records from users table",
       "uri_template": "users://list",

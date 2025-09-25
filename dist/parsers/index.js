@@ -52,6 +52,7 @@ class DataSourceParser {
             dataTypes[header] = this.inferJsonColumnType(sample);
         });
         return [{
+                tableName: 'data',
                 headers,
                 rows,
                 metadata: {

@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CsvParser = void 0;
 const fs = __importStar(require("fs"));
 const csv = __importStar(require("csv-parser"));
+const path = __importStar(require("path"));
 class CsvParser {
     async parse(filePath) {
         return new Promise((resolve, reject) => {
@@ -51,7 +52,9 @@ class CsvParser {
             })
                 .on('end', () => {
                 const dataTypes = this.inferDataTypes(rows, headers);
+                const fileName = path.basename(filePath, path.extname(filePath));
                 resolve({
+                    tableName: fileName,
                     headers,
                     rows,
                     metadata: {
