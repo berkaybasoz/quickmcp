@@ -174,8 +174,17 @@ async function getToolsFromServer() {
           if (serverDetails && serverDetails.config && serverDetails.config.tools) {
             // Add actual tools from server config
             for (const tool of serverDetails.config.tools) {
+              // Truncate tool name if too long (MCP has 64 char limit)
+              let toolName = `${server.id}__${tool.name}`;
+              if (toolName.length > 64) {
+                // Keep server prefix and truncate the tool part
+                const maxToolLength = 64 - server.id.length - 2; // -2 for "__"
+                const truncatedTool = tool.name.substring(0, maxToolLength);
+                toolName = `${server.id}__${truncatedTool}`;
+              }
+
               tools.push({
-                name: `${server.id}__${tool.name}`,
+                name: toolName,
                 description: `[${server.name}] ${tool.description}`,
                 inputSchema: tool.inputSchema
               });
