@@ -1,20 +1,17 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const multer_1 = __importDefault(require("multer"));
-const path_1 = __importDefault(require("path"));
-const promises_1 = __importDefault(require("fs/promises"));
+const express_1 = require("express");
+const cors_1 = require("cors");
+const multer_1 = require("multer");
+const path_1 = require("path");
+const promises_1 = require("fs/promises");
 const parsers_1 = require("../parsers");
 const MCPServerGenerator_new_1 = require("../generators/MCPServerGenerator-new");
 const MCPTestRunner_1 = require("../client/MCPTestRunner");
 const child_process_1 = require("child_process");
 const integrated_mcp_server_new_1 = require("../integrated-mcp-server-new");
 const sqlite_manager_1 = require("../database/sqlite-manager");
-const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
+const better_sqlite3_1 = require("better-sqlite3");
 const app = (0, express_1.default)();
 const upload = (0, multer_1.default)({ dest: 'uploads/' });
 app.use((0, cors_1.default)());
@@ -670,4 +667,3 @@ app.listen(PORT, async () => {
     }
 });
 exports.default = app;
-//# sourceMappingURL=server.js.map

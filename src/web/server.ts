@@ -180,10 +180,10 @@ app.post('/api/generate', async (req, res) => {
       });
     });
 
-    // Generate virtual server (saves to JSON database)
+    // Generate virtual server (saves to SQLite database)
     const result = await generator.generateServer(
-      name,
-      description,
+      name,                                    // serverId
+      name,                                    // serverName (use the name from form as server name)
       parsedDataObject,
       dataSource.connection || { type: 'csv', server: 'local', database: name }
     );
@@ -220,7 +220,7 @@ app.get('/api/servers', (req, res) => {
     return {
       id: server.id,
       name: server.name,
-      description: `Virtual MCP Server (${server.dbConfig.type})`,
+      description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
       version: "1.0.0",
       toolsCount: tools.length,
       resourcesCount: resources.length,
@@ -266,7 +266,7 @@ app.get('/api/servers/:id', (req, res) => {
     data: {
       config: {
         name: server.name,
-        description: `Virtual MCP Server (${server.dbConfig.type})`,
+        description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
         version: "1.0.0",
         tools: tools.map(tool => ({
           name: tool.name,
@@ -511,6 +511,9 @@ app.get('/api/database/tables', (req, res) => {
       const rowCountResult = db.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).get() as any;
       const rowCount = rowCountResult?.count || 0;
 
+      // Get sample data (first 5 rows)
+      const sampleData = db.prepare(`SELECT * FROM ${tableName} LIMIT 5`).all() as any[];
+
       return {
         name: tableName,
         columns: columns.map(col => ({
@@ -519,7 +522,8 @@ app.get('/api/database/tables', (req, res) => {
           notnull: col.notnull === 1,
           pk: col.pk === 1
         })),
-        rowCount
+        rowCount,
+        sampleData
       };
     });
 

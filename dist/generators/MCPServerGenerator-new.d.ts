@@ -1,9 +1,8 @@
-import { ServerConfig, ToolDefinition, ResourceDefinition } from '../database/json-manager.js';
+import { ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager.js';
 interface ParsedData {
     [tableName: string]: any[];
 }
 export declare class MCPServerGenerator {
-    private jsonManager;
     private sqliteManager;
     constructor();
     generateServer(serverId: string, serverName: string, parsedData: ParsedData, dbConfig: any): Promise<{

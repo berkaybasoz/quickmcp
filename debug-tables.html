@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Database Tables</title>
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .tab-navigation { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-button { padding: 10px 20px; background: #f5f5f5; border: none; cursor: pointer; }
+        .tab-button.active { background: #007bff; color: white; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Debug Database Tables</h1>
+
+    <div id="debug-info">
+        <p>Loading API data...</p>
+    </div>
+
+    <div id="tables-tabs" style="display: none;">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-table="servers" onclick="switchTab('servers')">
+                🖥️ Servers (<span id="servers-count">0</span>)
+            </button>
+            <button class="tab-button" data-table="tools" onclick="switchTab('tools')">
+                🔧 Tools (<span id="tools-count">0</span>)
+            </button>
+            <button class="tab-button" data-table="resources" onclick="switchTab('resources')">
+                📦 Resources (<span id="resources-count">0</span>)
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <div id="tab-servers" class="tab-panel active">
+                <!-- Servers table will be loaded here -->
+            </div>
+            <div id="tab-tools" class="tab-panel">
+                <!-- Tools table will be loaded here -->
+            </div>
+            <div id="tab-resources" class="tab-panel">
+                <!-- Resources table will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load tables when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Debug page loaded, calling loadTables');
+            loadTables();
+        });
+
+        // Load database tables
+        async function loadTables() {
+            const debugInfo = document.getElementById('debug-info');
+            const tabsContainer = document.getElementById('tables-tabs');
+
+            console.log('loadTables started');
+            debugInfo.innerHTML = '<p>Fetching data from API...</p>';
+
+            try {
+                const response = await fetch('/api/database/tables');
+                console.log('Response received:', response.status);
+                const result = await response.json();
+                console.log('API Result:', result);
+
+                debugInfo.innerHTML = `
+                    <h3>API Response Debug:</h3>
+                    <p>Success: ${result.success}</p>
+                    <p>Tables count: ${result.data ? result.data.tables.length : 'none'}</p>
+                    <p>Full response: <pre>${JSON.stringify(result, null, 2)}</pre></p>
+                `;
+
+                if (result.success) {
+                    displayTables(result.data.tables);
+                    tabsContainer.style.display = 'block';
+                } else {
+                    debugInfo.innerHTML += '<p style="color: red;">API returned error</p>';
+                }
+            } catch (error) {
+                console.error('Error loading tables:', error);
+                debugInfo.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Display tables in tab format
+        function displayTables(tables) {
+            console.log('displayTables called with:', tables);
+
+            if (!tables || tables.length === 0) {
+                console.log('No tables to display');
+                return;
+            }
+
+            // Update counts in tab buttons
+            tables.forEach(table => {
+                console.log(`Processing table: ${table.name} with ${table.rowCount} rows`);
+                const countSpan = document.getElementById(`${table.name}-count`);
+                if (countSpan) {
+                    countSpan.textContent = table.rowCount || 0;
+                    console.log(`Updated count for ${table.name}: ${table.rowCount}`);
+                } else {
+                    console.error(`Count span not found for table: ${table.name}`);
+                }
+            });
+
+            // Display each table in its tab panel
+            tables.forEach(table => {
+                const tabPanel = document.getElementById(`tab-${table.name}`);
+                if (tabPanel) {
+                    console.log(`Generating HTML for table: ${table.name}`);
+                    const html = generateTableHTML(table);
+                    console.log(`Generated HTML length: ${html.length}`);
+                    tabPanel.innerHTML = html;
+                } else {
+                    console.error(`Tab panel not found for table: ${table.name}`);
+                }
+            });
+        }
+
+        // Generate HTML for a single table
+        function generateTableHTML(table) {
+            console.log(`generateTableHTML called for table: ${table.name}`);
+            console.log(`Table has ${table.sampleData ? table.sampleData.length : 0} sample data rows`);
+
+            if (!table.sampleData || table.sampleData.length === 0) {
+                return `
+                    <div style="padding: 20px; background: #f5f5f5; border-radius: 5px;">
+                        <h3>${table.name} - No data available</h3>
+                        <p>This table is empty</p>
+                    </div>
+                `;
+            }
+
+            return `
+                <div>
+                    <h3>${table.name} (${table.rowCount} rows, ${table.columns.length} columns)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                ${table.columns.map(col => `<th>${col.name}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${table.sampleData.map(row => `
+                                <tr>
+                                    ${table.columns.map(col => `
+                                        <td>${row[col.name] !== null && row[col.name] !== undefined ?
+                                            (typeof row[col.name] === 'string' && row[col.name].length > 50 ?
+                                                row[col.name].substring(0, 50) + '...' :
+                                                row[col.name]) : '<em>NULL</em>'}</td>
+                                    `).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <p>Showing ${table.sampleData.length} of ${table.rowCount} rows</p>
+                </div>
+            `;
+        }
+
+        // Switch between tabs
+        function switchTab(tableName) {
+            console.log(`Switching to tab: ${tableName}`);
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-table="${tableName}"]`).classList.add('active');
+
+            // Update tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            const targetPanel = document.getElementById(`tab-${tableName}`);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+                console.log(`Switched to ${tableName} tab successfully`);
+            } else {
+                console.error(`Target panel not found: tab-${tableName}`);
+            }
+        }
+    </script>
+</body>
+</html>

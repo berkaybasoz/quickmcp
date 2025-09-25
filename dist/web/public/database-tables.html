@@ -6,208 +6,98 @@
     <title>Database Tables - MCP Server Generator</title>
     <link rel="stylesheet" href="shared-styles.css">
     <style>
-        .table-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .table-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .table-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .table-header {
+        .tab-navigation {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .table-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-            display: flex;
-            align-items: center;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 2rem;
             gap: 0.5rem;
         }
 
-        .table-icon {
-            font-size: 1.5rem;
-        }
-
-        .table-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .columns-list {
-            margin-top: 1rem;
-        }
-
-        .columns-header {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .column-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .column-item:last-child {
-            border-bottom: none;
-        }
-
-        .column-name {
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .column-type {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            background: var(--secondary-color);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-        }
-
-        .table-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .btn-small {
-            font-size: 0.85rem;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            color: #718096;
             transition: all 0.2s ease;
+            border-radius: 8px 8px 0 0;
         }
 
-        .btn-view {
-            background: var(--primary-color);
-            color: white;
+        .tab-button:hover {
+            background: #f7fafc;
+            color: #2d3748;
         }
 
-        .btn-view:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
+        .tab-button.active {
+            color: #3182ce;
+            border-bottom-color: #3182ce;
+            background: #f7fafc;
+            font-weight: 600;
         }
 
-        .btn-query {
-            background: var(--secondary-color);
-            color: var(--text-primary);
+        .tab-content {
+            min-height: 400px;
         }
 
-        .btn-query:hover {
-            background: var(--secondary-dark);
-            transform: translateY(-1px);
+        .tab-panel {
+            display: none;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-secondary);
+        .tab-panel.active {
+            display: block;
         }
 
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .refresh-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 56px;
-            height: 56px;
-            border: none;
-            border-radius: 50%;
-            background: var(--primary-color);
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s ease;
-            z-index: 100;
-        }
-
-        .refresh-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.1);
-        }
-
-        .db-info {
-            background: var(--info-background);
-            border: 1px solid var(--info-border);
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
             border-radius: 8px;
-            padding: 1rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
 
-        .db-path {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            word-break: break-all;
+        .data-table th {
+            background: #3182ce;
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85rem;
         }
 
-        @media (max-width: 768px) {
-            .table-grid {
-                grid-template-columns: 1fr;
-            }
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+            color: #2d3748;
+            max-width: 200px;
+            word-wrap: break-word;
+        }
 
-            .refresh-btn {
-                bottom: 1rem;
-                right: 1rem;
-            }
+        .data-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .data-table tr:hover {
+            background: #e3f2fd;
+        }
+
+        .table-header {
+            background: #3182ce;
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
         }
     </style>
 </head>
@@ -266,18 +156,35 @@
                         <p class="section-subtitle">Explore the internal database structure</p>
                     </div>
                     <div class="card-content">
-                        <div class="db-info">
-                            <h3 style="margin-top: 0;">Database Information</h3>
-                            <div class="db-path" id="dbPath">Loading database path...</div>
-                            <div style="margin-top: 0.5rem;">
-                                <strong>Total Tables:</strong> <span id="tableCount">-</span>
+                        <div id="loading" class="loading">Loading database tables...</div>
+                        <div id="content" style="display: none;">
+                            <!-- Tab Navigation -->
+                            <div class="tab-navigation">
+                                <button class="tab-button active" onclick="showTab('servers')">
+                                    🖥️ Servers (<span id="servers-count">0</span>)
+                                </button>
+                                <button class="tab-button" onclick="showTab('tools')">
+                                    🔧 Tools (<span id="tools-count">0</span>)
+                                </button>
+                                <button class="tab-button" onclick="showTab('resources')">
+                                    📦 Resources (<span id="resources-count">0</span>)
+                                </button>
                             </div>
-                        </div>
 
-                        <div id="tables-container">
-                            <div class="loading" id="tablesLoading">Loading database tables...</div>
-                            <div id="tables-list" style="display: none;">
-                                <!-- Tables will be loaded here -->
+                            <!-- Tab Content -->
+                            <div class="tab-content">
+                                <div id="servers" class="tab-panel active">
+                                    <h3 class="table-header">🖥️ Servers</h3>
+                                    <div id="servers-table"></div>
+                                </div>
+                                <div id="tools" class="tab-panel">
+                                    <h3 class="table-header">🔧 Tools</h3>
+                                    <div id="tools-table"></div>
+                                </div>
+                                <div id="resources" class="tab-panel">
+                                    <h3 class="table-header">📦 Resources</h3>
+                                    <div id="resources-table"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -286,248 +193,100 @@
         </div>
     </div>
 
-    <!-- Table Details Modal -->
-    <div id="tableDetailsModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="tableModalTitle">Table Details</h2>
-                <button class="modal-close" onclick="closeTableDetailsModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="tableModalBody">
-                <!-- Table details will be loaded here -->
-            </div>
-        </div>
-        <div class="modal-overlay" onclick="closeTableDetailsModal()"></div>
-    </div>
-
-    <!-- Refresh Button -->
-    <button class="refresh-btn" onclick="loadTables()" title="Refresh Tables">
-        🔄
-    </button>
-
     <script src="shared.js"></script>
     <script>
+        let tablesData = {};
+
         // Load tables when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadTables();
         });
 
-        // Load database tables
         async function loadTables() {
-            const loading = document.getElementById('tablesLoading');
-            const tablesList = document.getElementById('tables-list');
-
-            loading.style.display = 'block';
-            tablesList.style.display = 'none';
-
             try {
                 const response = await fetch('/api/database/tables');
                 const result = await response.json();
 
                 if (result.success) {
-                    displayTables(result.data.tables);
-                    updateDatabaseInfo(result.data);
+                    // Store data
+                    result.data.tables.forEach(table => {
+                        tablesData[table.name] = table;
+                    });
+
+                    // Update counts
+                    document.getElementById('servers-count').textContent = tablesData.servers ? tablesData.servers.rowCount : 0;
+                    document.getElementById('tools-count').textContent = tablesData.tools ? tablesData.tools.rowCount : 0;
+                    document.getElementById('resources-count').textContent = tablesData.resources ? tablesData.resources.rowCount : 0;
+
+                    // Show content
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+
+                    // Load first tab
+                    showTab('servers');
                 } else {
-                    throw new Error(result.error || 'Failed to load tables');
+                    document.getElementById('loading').innerHTML = 'Error loading tables: ' + result.error;
                 }
             } catch (error) {
-                console.error('Error loading tables:', error);
-                tablesList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <h3>Failed to Load Tables</h3>
-                        <p>Error: ${error.message}</p>
-                        <button class="btn btn-primary" onclick="loadTables()">Retry</button>
-                    </div>
-                `;
-            } finally {
-                loading.style.display = 'none';
-                tablesList.style.display = 'block';
+                document.getElementById('loading').innerHTML = 'Error: ' + error.message;
             }
         }
 
-        // Update database info
-        function updateDatabaseInfo(data) {
-            document.getElementById('dbPath').textContent = data.dbPath || 'Unknown';
-            document.getElementById('tableCount').textContent = data.tables.length;
-        }
+        function showTab(tableName) {
+            // Update buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
 
-        // Display tables
-        function displayTables(tables) {
-            const tablesList = document.getElementById('tables-list');
+            // Update panels
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(tableName).classList.add('active');
 
-            if (tables.length === 0) {
-                tablesList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🗃️</div>
-                        <h3>No Tables Found</h3>
-                        <p>The database appears to be empty or not initialized.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const tablesHtml = tables.map(table => `
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3 class="table-name">
-                            <span class="table-icon">${getTableIcon(table.name)}</span>
-                            ${table.name}
-                        </h3>
-                    </div>
-
-                    <div class="table-stats">
-                        <div class="stat-item">
-                            <div class="stat-number">${table.columns.length}</div>
-                            <div class="stat-label">Columns</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${table.rowCount || 0}</div>
-                            <div class="stat-label">Rows</div>
-                        </div>
-                    </div>
-
-                    <div class="columns-list">
-                        <div class="columns-header">Columns</div>
-                        ${table.columns.map(column => `
-                            <div class="column-item">
-                                <div class="column-name">${column.name}</div>
-                                <div class="column-type">${column.type}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <div class="table-actions">
-                        <button class="btn-small btn-view" onclick="viewTableDetails('${table.name}')">
-                            👁️ View Details
-                        </button>
-                        <button class="btn-small btn-query" onclick="queryTable('${table.name}')">
-                            ⚡ Query Data
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            tablesList.innerHTML = `<div class="table-grid">${tablesHtml}</div>`;
-        }
-
-        // Get table icon based on table name
-        function getTableIcon(tableName) {
-            switch(tableName.toLowerCase()) {
-                case 'servers': return '🖥️';
-                case 'tools': return '🔧';
-                case 'resources': return '📦';
-                default: return '📋';
+            // Load table data
+            const table = tablesData[tableName];
+            if (table) {
+                const tableContainer = document.getElementById(tableName + '-table');
+                tableContainer.innerHTML = generateTable(table);
             }
         }
 
-        // View table details
-        async function viewTableDetails(tableName) {
-            const modal = document.getElementById('tableDetailsModal');
-            const title = document.getElementById('tableModalTitle');
-            const body = document.getElementById('tableModalBody');
-
-            title.textContent = `Table: ${tableName}`;
-            body.innerHTML = '<div class="loading">Loading table details...</div>';
-            modal.style.display = 'block';
-
-            try {
-                const response = await fetch(`/api/database/tables/${tableName}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    displayTableDetails(result.data);
-                } else {
-                    throw new Error(result.error || 'Failed to load table details');
-                }
-            } catch (error) {
-                console.error('Error loading table details:', error);
-                body.innerHTML = `<div class="error">Failed to load table details: ${error.message}</div>`;
+        function generateTable(table) {
+            if (!table.sampleData || table.sampleData.length === 0) {
+                return '<p>No data available</p>';
             }
-        }
 
-        // Display table details
-        function displayTableDetails(data) {
-            const body = document.getElementById('tableModalBody');
-
-            let detailsHtml = `
-                <div class="table-details">
-                    <div class="info-section">
-                        <h3>Table Information</h3>
-                        <div class="info-grid">
-                            <div><strong>Name:</strong> ${data.name}</div>
-                            <div><strong>Columns:</strong> ${data.columns.length}</div>
-                            <div><strong>Row Count:</strong> ${data.rowCount}</div>
-                        </div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Column Schema</h3>
-                        <div class="schema-table">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: var(--secondary-color);">
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Column</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Type</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Not Null</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Primary Key</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.columns.map(column => `
-                                        <tr>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color); font-family: monospace;">${column.name}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.type}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.notnull ? '✅' : '❌'}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.pk ? '🔑' : '❌'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            ${table.columns.map(col => `<th>${col.name}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
 
-            if (data.sampleData && data.sampleData.length > 0) {
-                detailsHtml += `
-                    <div class="info-section">
-                        <h3>Sample Data (First 10 rows)</h3>
-                        <div style="overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse; min-width: 500px;">
-                                <thead>
-                                    <tr style="background: var(--secondary-color);">
-                                        ${data.columns.map(col => `<th style="padding: 0.5rem; border: 1px solid var(--border-color); text-align: left; font-size: 0.9rem;">${col.name}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.sampleData.map(row => `
-                                        <tr>
-                                            ${data.columns.map(col => `
-                                                <td style="padding: 0.5rem; border: 1px solid var(--border-color); font-size: 0.85rem; max-width: 200px; word-wrap: break-word;">
-                                                    ${row[col.name] !== null && row[col.name] !== undefined ? row[col.name] : '<em>NULL</em>'}
-                                                </td>
-                                            `).join('')}
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
+            table.sampleData.forEach(row => {
+                html += '<tr>';
+                table.columns.forEach(col => {
+                    let value = row[col.name];
+                    if (value === null || value === undefined) {
+                        value = '<em>NULL</em>';
+                    } else if (typeof value === 'string' && value.length > 100) {
+                        value = value.substring(0, 100) + '...';
+                    }
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
 
-            detailsHtml += '</div>';
-            body.innerHTML = detailsHtml;
-        }
+            html += `
+                    </tbody>
+                </table>
+                <p style="text-align: center; color: #718096; margin-top: 1rem;">
+                    Showing ${table.sampleData.length} of ${table.rowCount} rows
+                </p>
+            `;
 
-        // Close table details modal
-        function closeTableDetailsModal() {
-            document.getElementById('tableDetailsModal').style.display = 'none';
-        }
-
-        // Query table (placeholder for future implementation)
-        function queryTable(tableName) {
-            alert(`Query functionality for table "${tableName}" will be implemented in a future version.`);
+            return html;
         }
     </script>
 </body>
