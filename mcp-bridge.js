@@ -44,60 +44,15 @@ process.stdin.pipe(bridge);
 // Send responses to Claude Desktop (stdout)
 bridge.pipe(process.stdout);
 
-// Handle MCP protocol messages
+// Handle MCP protocol messages - proxy all to QuickMCP Integrated Server
 bridge.on('message', async (message) => {
   console.error('Received message:', JSON.stringify(message, null, 2));
 
   try {
-    let response = null;
+    // Forward all messages to QuickMCP Integrated Server
+    const response = await forwardToQuickMCP(message);
 
-    // Handle initialize request
-    if (message.method === 'initialize') {
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        result: {
-          protocolVersion: '2024-11-05',
-          serverInfo: {
-            name: 'quickmcp-integrated',
-            version: '1.0.0'
-          },
-          capabilities: {
-            tools: {},
-            resources: {},
-            prompts: {}
-          }
-        }
-      };
-    }
-
-    // Handle tools/list request
-    else if (message.method === 'tools/list') {
-      // Make HTTP request to get tools from our server
-      const tools = await getToolsFromServer();
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        result: { tools }
-      };
-    }
-
-    // Handle initialized notification (no response needed)
-    else if (message.method === 'notifications/initialized') {
-      console.error('MCP client initialized');
-      // No response for notifications
-    }
-
-    // Handle other requests
-    else if (message.id) {
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        result: {}
-      };
-    }
-
-    // Send response if we have one
+    // Send response back to Claude Desktop
     if (response) {
       console.error('Sending response:', JSON.stringify(response));
       bridge.sendMessage(response);
@@ -117,132 +72,53 @@ bridge.on('message', async (message) => {
   }
 });
 
-// Function to get tools from our HTTP server
-async function getToolsFromServer() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // First get list of servers
-      const servers = await new Promise((res, rej) => {
-        const req = http.request({
-          hostname: 'localhost',
-          port: 3000,
-          path: '/api/servers',
-          method: 'GET'
-        }, (response) => {
-          let data = '';
-          response.on('data', chunk => data += chunk);
-          response.on('end', () => {
-            try {
-              const result = JSON.parse(data);
-              res(result.success ? result.data : []);
-            } catch (error) {
-              rej(error);
-            }
-          });
-        });
-        req.on('error', rej);
-        req.end();
-      });
+// Forward messages to QuickMCP Integrated Server
+async function forwardToQuickMCP(message) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify(message);
 
-      const tools = [];
-
-      // For each server, get its detailed info and tools
-      for (const server of servers) {
+    const req = http.request({
+      hostname: 'localhost',
+      port: 3001,
+      path: '/api/mcp-stdio',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 10000
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
         try {
-          const serverDetails = await new Promise((res, rej) => {
-            const req = http.request({
-              hostname: 'localhost',
-              port: 3000,
-              path: `/api/servers/${server.id}`,
-              method: 'GET'
-            }, (response) => {
-              let data = '';
-              response.on('data', chunk => data += chunk);
-              response.on('end', () => {
-                try {
-                  const result = JSON.parse(data);
-                  res(result.success ? result.data : null);
-                } catch (error) {
-                  rej(error);
-                }
-              });
-            });
-            req.on('error', rej);
-            req.end();
-          });
-
-          if (serverDetails && serverDetails.config && serverDetails.config.tools) {
-            // Add actual tools from server config
-            const usedNames = new Set();
-            for (const tool of serverDetails.config.tools) {
-              let toolName = `${server.id}__${tool.name}`;
-
-              // Truncate tool name if too long (MCP has 64 char limit)
-              if (toolName.length > 64) {
-                const maxToolLength = 64 - server.id.length - 2; // -2 for "__"
-
-                // Smart truncation: try to keep meaningful parts
-                let truncatedTool = tool.name;
-                if (tool.name.includes('_by_')) {
-                  // For filter tools, keep the "by_" part and shorten the field name
-                  const parts = tool.name.split('_by_');
-                  const prefix = parts[0];
-                  const field = parts[1];
-
-                  if (field && prefix.length + field.length + 4 > maxToolLength) {
-                    // Shorten the field name but keep some context
-                    const availableForField = maxToolLength - prefix.length - 4; // -4 for "_by_"
-                    const shortenedField = field.substring(0, Math.max(availableForField, 8));
-                    truncatedTool = `${prefix}_by_${shortenedField}`;
-                  }
-                } else {
-                  // Generic truncation for other tools
-                  truncatedTool = tool.name.substring(0, maxToolLength);
-                }
-
-                toolName = `${server.id}__${truncatedTool}`;
-              }
-
-              // Handle duplicates by adding a suffix
-              let finalToolName = toolName;
-              let counter = 1;
-              while (usedNames.has(finalToolName)) {
-                const suffix = `_${counter}`;
-                const maxBaseLength = 64 - suffix.length;
-                const baseName = toolName.substring(0, maxBaseLength);
-                finalToolName = `${baseName}${suffix}`;
-                counter++;
-              }
-
-              usedNames.add(finalToolName);
-
-              tools.push({
-                name: finalToolName,
-                description: `[${server.name}] ${tool.description}`,
-                inputSchema: tool.inputSchema
-              });
-            }
+          if (res.statusCode === 200 && data.trim()) {
+            const response = JSON.parse(data);
+            resolve(response);
+          } else {
+            console.error('QuickMCP server responded with:', res.statusCode, data);
+            resolve(null);
           }
-        } catch (error) {
-          console.error(`Error fetching details for server ${server.id}:`, error);
-        }
-      }
-
-      // Add management tools
-      tools.push({
-        name: 'quickmcp__list_servers',
-        description: 'List all generated MCP servers',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: []
+        } catch (err) {
+          console.error('Error parsing QuickMCP response:', err);
+          resolve(null);
         }
       });
+    });
 
-      resolve(tools);
-    } catch (error) {
-      reject(error);
-    }
+    req.on('error', (err) => {
+      console.error('Error connecting to QuickMCP server:', err);
+      resolve(null);
+    });
+
+    req.on('timeout', () => {
+      console.error('Request timeout to QuickMCP server');
+      req.destroy();
+      resolve(null);
+    });
+
+    req.write(postData);
+    req.end();
   });
 }
 
@@ -257,4 +133,4 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-console.error('MCP Bridge started, waiting for messages...');
+console.error('MCP Bridge started, forwarding to QuickMCP Integrated Server on localhost:3001...');
