@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { DataSourceParser } from '../parsers';
-import { MCPServerGenerator } from '../generators/MCPServerGenerator';
+import { MCPServerGenerator } from '../generators/MCPServerGenerator-new';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DataSource, MCPServerConfig, ParsedData } from '../types';
 import { fork } from 'child_process';
@@ -150,10 +150,11 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
 // Generate MCP server endpoint
 app.post('/api/generate', async (req, res) => {
   try {
-    const { name, description, dataSource, customConfig } = req.body;
+    const { name, description, dataSource } = req.body;
 
     // Check if server with this name already exists
-    if (generatedServers.has(name)) {
+    const existingServer = generator.getServer(name);
+    if (existingServer) {
       return res.status(400).json({
         success: false,
         error: `MCP Server with name "${name}" already exists. Please choose a different name.`
@@ -163,46 +164,41 @@ app.post('/api/generate', async (req, res) => {
     // Re-parse the data source to get full data
     const parsedData = await parser.parse(dataSource);
 
-    let config: MCPServerConfig;
+    // Convert to the format expected by new generator
+    const parsedDataObject: { [tableName: string]: any[] } = {};
+    parsedData.forEach((data, index) => {
+      const tableName = data.tableName || `table_${index}`;
+      parsedDataObject[tableName] = data.rows.map(row => {
+        const obj: any = {};
+        data.headers.forEach((header, i) => {
+          obj[header] = row[i];
+        });
+        return obj;
+      });
+    });
 
-    if (customConfig) {
-      config = customConfig;
-      config.dataSource = dataSource;
+    // Generate virtual server (saves to JSON database)
+    const result = await generator.generateServer(
+      name,
+      description,
+      parsedDataObject,
+      dataSource.connection || { type: 'csv', server: 'local', database: name }
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          serverId: name,
+          message: result.message
+        }
+      });
     } else {
-      config = generator.generateConfigFromData(name, description, parsedData);
-      config.dataSource = dataSource;
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
     }
-
-    // Generate server code
-    const serverCode = generator.generateServer(config, parsedData);
-    const packageJson = generator.generatePackageJson(config);
-
-    // Create server directory
-    const serverDir = path.join(process.cwd(), 'generated-servers', config.name);
-    await fs.mkdir(serverDir, { recursive: true });
-
-    // Write server files
-    const serverPath = path.join(serverDir, 'index.ts');
-    const packagePath = path.join(serverDir, 'package.json');
-
-    await fs.writeFile(serverPath, serverCode);
-    await fs.writeFile(packagePath, packageJson);
-
-    // Store server info
-    generatedServers.set(config.name, {
-      config,
-      serverPath,
-      parsedData
-    });
-
-    res.json({
-      success: true,
-      data: {
-        serverId: config.name,
-        serverPath,
-        config
-      }
-    });
   } catch (error) {
     console.error('Generation error:', error);
     res.status(400).json({
@@ -214,16 +210,21 @@ app.post('/api/generate', async (req, res) => {
 
 // List generated servers endpoint
 app.get('/api/servers', (req, res) => {
-  const servers = Array.from(generatedServers.entries()).map(([id, data]) => ({
-    id,
-    name: data.config.name,
-    description: data.config.description,
-    version: data.config.version,
-    toolsCount: data.config.tools.length,
-    resourcesCount: data.config.resources.length,
-    promptsCount: data.config.prompts.length,
-    dataRowsCount: data.parsedData.reduce((acc, d) => acc + d.rows.length, 0)
-  }));
+  const allServers = generator.getAllServers();
+  const servers = allServers.map(server => {
+    const tools = generator.getToolsForServer(server.id);
+    const resources = generator.getResourcesForServer(server.id);
+    return {
+      id: server.id,
+      name: server.name,
+      description: `Virtual MCP Server (${server.dbConfig.type})`,
+      version: "1.0.0",
+      toolsCount: tools.length,
+      resourcesCount: resources.length,
+      promptsCount: 0,
+      dataRowsCount: 0
+    };
+  });
 
   res.json({ success: true, data: servers });
 });
@@ -231,7 +232,8 @@ app.get('/api/servers', (req, res) => {
 // Check if server name is available endpoint
 app.get('/api/servers/check-name/:name', (req, res) => {
   const serverName = req.params.name;
-  const isAvailable = !generatedServers.has(serverName);
+  const existingServer = generator.getServer(serverName);
+  const isAvailable = !existingServer;
 
   res.json({
     success: true,
