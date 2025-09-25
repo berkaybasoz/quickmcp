@@ -47,12 +47,21 @@ class DynamicMCPExecutor {
         this.sqliteManager = new sqlite_manager_js_1.SQLiteManager();
     }
     async getAllTools() {
-        const tools = this.sqliteManager.getAllTools();
-        return tools.map(tool => ({
-            name: `${tool.server_id}__${tool.name}`,
-            description: `[${tool.server_id}] ${tool.description}`,
-            inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
-        }));
+        // Return a single super simple tool for testing
+        return [{
+            name: 'test__simple',
+            description: 'Simple test tool',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    message: {
+                        type: 'string',
+                        description: 'Test message'
+                    }
+                },
+                required: ['message']
+            }
+        }];
     }
     async getAllResources() {
         const resources = this.sqliteManager.getAllResources();

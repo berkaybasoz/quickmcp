@@ -210,7 +210,7 @@ class MCPServerGenerator {
                 continue;
             const baseType = column.type === 'integer' ? 'number' : column.type;
             properties[column.name] = {
-                type: column.nullable ? [baseType, 'null'] : baseType,
+                type: baseType,
                 description: `${column.name} field`
             };
         }

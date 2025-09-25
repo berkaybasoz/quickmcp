@@ -210,9 +210,13 @@ class MCPServerGenerator {
                 continue;
             const baseType = column.type === 'integer' ? 'number' : column.type;
             properties[column.name] = {
-                type: column.nullable ? [baseType, 'null'] : baseType,
+                type: baseType,
                 description: `${column.name} field`
             };
+            // For nullable fields, make them not required instead of using union types
+            if (column.nullable && !isCreate) {
+                // Optional field - will not be added to required array
+            }
         }
         return properties;
     }

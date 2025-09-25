@@ -18,9 +18,9 @@ class IntegratedMCPServer {
             description: 'Dynamic MCP server with SQLite-based tool and resource management'
         }, {
             capabilities: {
-                tools: { listChanged: true },
-                resources: { listChanged: true },
-                prompts: { listChanged: true }
+                tools: {},
+                resources: {},
+                prompts: {}
             }
         });
         this.app = (0, express_1.default)();
@@ -110,7 +110,6 @@ class IntegratedMCPServer {
         // MCP STDIO endpoint for bridge
         this.app.post('/api/mcp-stdio', express_1.default.raw({ type: '*/*' }), async (req, res) => {
             try {
-                console.log('🔍 /api/mcp-stdio endpoint called');
                 let messageData;
                 if (Buffer.isBuffer(req.body)) {
                     messageData = JSON.parse(req.body.toString());
@@ -123,7 +122,6 @@ class IntegratedMCPServer {
                 }
                 console.log('🔄 Processing MCP message:', messageData.method || 'unknown');
                 let response = null;
-                console.log('🔍 MCP Method:', messageData.method);
                 switch (messageData.method) {
                     case 'initialize':
                         response = {
@@ -136,17 +134,15 @@ class IntegratedMCPServer {
                                     version: '1.0.0'
                                 },
                                 capabilities: {
-                                    tools: { listChanged: true },
-                                    resources: { listChanged: true },
-                                    prompts: { listChanged: true }
+                                    tools: {},
+                                    resources: {},
+                                    prompts: {}
                                 }
                             }
                         };
                         break;
                     case 'tools/list':
-                        console.log('📋 Tools/list request received!');
                         const tools = await this.executor.getAllTools();
-                        console.log('📊 Found', tools.length, 'tools');
                         response = {
                             jsonrpc: '2.0',
                             id: messageData.id,

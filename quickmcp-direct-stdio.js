@@ -1,0 +1,165 @@
+#!/usr/bin/env node
+
+const path = require('path');
+const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
+
+// Change to the correct working directory
+process.chdir('/Users/berkaybasoz/Documents/apps/quickmcp');
+
+// Create SQLite manager
+const sqliteManager = new SQLiteManager();
+
+// Direct STDIO MCP implementation
+process.stdin.on('data', async (data) => {
+  const input = data.toString().trim();
+  if (!input) return;
+
+  try {
+    const message = JSON.parse(input);
+    console.error(`[QuickMCP] Received: ${message.method} (id: ${message.id})`);
+
+    let response;
+
+    switch (message.method) {
+      case 'initialize':
+        response = {
+          jsonrpc: '2.0',
+          id: message.id,
+          result: {
+            protocolVersion: '2024-11-05',
+            serverInfo: { name: 'quickmcp-direct', version: '1.0.0' },
+            capabilities: {
+              tools: { listChanged: true },
+              resources: { listChanged: true },
+              prompts: { listChanged: true }
+            }
+          }
+        };
+        break;
+
+      case 'tools/list':
+        try {
+          const tools = sqliteManager.getAllTools();
+          console.error(`[QuickMCP] Got ${tools.length} tools from SQLite`);
+          const formattedTools = tools.slice(0, 60).map(tool => ({
+            name: `${tool.server_id}__${tool.name}`,
+            description: `[${tool.server_id}] ${tool.description}`,
+            inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
+          }));
+          console.error(`[QuickMCP] Formatted ${formattedTools.length} tools`);
+
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { tools: formattedTools }
+          };
+        } catch (error) {
+          console.error('[QuickMCP] Error getting tools:', error);
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { tools: [] }
+          };
+        }
+        break;
+
+      case 'resources/list':
+        try {
+          const resources = sqliteManager.getAllResources();
+          const formattedResources = resources.map(resource => ({
+            name: `${resource.server_id}__${resource.name}`,
+            description: `[${resource.server_id}] ${resource.description}`,
+            uri: resource.uri_template
+          }));
+
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { resources: formattedResources }
+          };
+        } catch (error) {
+          console.error('[QuickMCP] Error getting resources:', error);
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { resources: [] }
+          };
+        }
+        break;
+
+      case 'tools/call':
+        // For now, just return a simple response
+        response = {
+          jsonrpc: '2.0',
+          id: message.id,
+          result: {
+            content: [{
+              type: 'text',
+              text: `Tool ${message.params.name} called with: ${JSON.stringify(message.params.arguments)}`
+            }]
+          }
+        };
+        break;
+
+      case 'notifications/initialized':
+        console.error('[QuickMCP] Client initialized');
+        break;
+
+      default:
+        if (message.id) {
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            error: { code: -32601, message: `Method not found: ${message.method}` }
+          };
+        }
+    }
+
+    if (response) {
+      console.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);
+      process.stdout.write(JSON.stringify(response) + '\n');
+    }
+
+  } catch (error) {
+    console.error('[QuickMCP] Error:', error.message);
+
+    // Send error response for requests with ID
+    try {
+      const message = JSON.parse(input);
+      if (message.id) {
+        const errorResponse = {
+          jsonrpc: '2.0',
+          id: message.id,
+          error: {
+            code: -32603,
+            message: `Server error: ${error.message}`
+          }
+        };
+        process.stdout.write(JSON.stringify(errorResponse) + '\n');
+      }
+    } catch (parseError) {
+      console.error('[QuickMCP] Cannot parse input for error response');
+    }
+  }
+});
+
+process.stdin.on('end', () => {
+  console.error('[QuickMCP] STDIN ended');
+  sqliteManager.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.error('[QuickMCP] Interrupted');
+  sqliteManager.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.error('[QuickMCP] Terminated');
+  sqliteManager.close();
+  process.exit(0);
+});
+
+process.stdin.resume();
+console.error('QuickMCP Direct STDIO Server started...');

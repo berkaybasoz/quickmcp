@@ -20,7 +20,7 @@ export class DynamicMCPExecutor {
   async getAllTools(): Promise<any[]> {
     const tools = this.sqliteManager.getAllTools();
 
-    return tools.map(tool => ({
+    return tools.slice(0, 3).map(tool => ({
       name: `${tool.server_id}__${tool.name}`,
       description: `[${tool.server_id}] ${tool.description}`,
       inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
