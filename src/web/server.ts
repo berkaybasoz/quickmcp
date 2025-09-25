@@ -452,6 +452,10 @@ app.get('/test-servers', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'test-servers.html'));
 });
 
+app.get('/how-to-use', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'how-to-use.html'));
+});
+
 // Serve index.html for root and any other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

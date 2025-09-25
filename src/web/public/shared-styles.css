@@ -976,11 +976,375 @@
         font-size: 14px;
     }
 
+    /* How to Use Page Styles */
+    .method-selector {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .method-btn {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-align: left;
+    }
+
+    .method-btn:hover {
+        border-color: #667eea;
+        background: #f7fafc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+
+    .method-btn.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .method-icon {
+        font-size: 32px;
+        flex-shrink: 0;
+    }
+
+    .method-info h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .method-info p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 14px;
+    }
+
+    .method-content {
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .how-to-section {
+        margin: 32px 0;
+    }
+
+    .how-to-section h3 {
+        margin: 0 0 16px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a202c;
+    }
+
+    .advantage-list {
+        list-style: none;
+        padding: 0;
+        margin: 16px 0;
+    }
+
+    .advantage-list li {
+        background: #f0fff4;
+        border-left: 4px solid #10b981;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        border-radius: 0 6px 6px 0;
+    }
+
+    .advantage-list li:before {
+        content: '✅ ';
+        margin-right: 8px;
+    }
+
+    .setup-steps {
+        margin: 24px 0;
+    }
+
+    .step {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 32px;
+        align-items: flex-start;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .step-content {
+        flex: 1;
+    }
+
+    .step-content h4 {
+        margin: 0 0 12px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a202c;
+    }
+
+    .step-content p {
+        margin: 0 0 16px 0;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 12px 0;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #94a3b8;
+    }
+
+    .status-dot.online {
+        background: #10b981;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dot.offline {
+        background: #ef4444;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .config-block {
+        position: relative;
+        background: #1a202c;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 16px 0;
+    }
+
+    .config-block pre {
+        margin: 0;
+        padding: 20px;
+        color: #e2e8f0;
+        font-family: 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-x: auto;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: #4a5568;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+        background: #2d3748;
+    }
+
+    .tool-naming {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        margin: 16px 0;
+    }
+
+    .naming-example {
+        background: #1a202c;
+        color: #e2e8f0;
+        padding: 16px;
+        border-radius: 6px;
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-size: 16px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .naming-description {
+        color: #4a5568;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .troubleshooting-item {
+        background: #fffbf0;
+        border-left: 4px solid #f59e0b;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .troubleshooting-item h4 {
+        margin: 0 0 12px 0;
+        color: #92400e;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .troubleshooting-item ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #78350f;
+    }
+
+    .troubleshooting-item li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    /* Platform Tabs Styles */
+    .platform-tabs {
+        display: flex;
+        gap: 8px;
+        margin: 20px 0;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 4px;
+    }
+
+    .platform-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.2s;
+        color: #718096;
+        font-size: 14px;
+        font-weight: 500;
+        position: relative;
+    }
+
+    .platform-tab img {
+        width: 20px;
+        height: 20px;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+
+    .platform-tab:hover {
+        background: #f7fafc;
+        color: #4a5568;
+    }
+
+    .platform-tab:hover img {
+        opacity: 0.8;
+    }
+
+    .platform-tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .platform-tab.active img {
+        opacity: 1;
+        filter: brightness(0) invert(1);
+    }
+
+    .platform-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 4px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+
+    .platform-content {
+        animation: fadeIn 0.3s ease;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .container {
             padding: 16px;
         }
+
+        .method-selector {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .method-btn {
+            padding: 20px;
+        }
+
+        .step {
+            gap: 16px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
+
+        .config-block pre {
+            font-size: 12px;
+            padding: 16px;
+        }
+
+        .copy-btn {
+            position: static;
+            margin: 8px 0 0 0;
+            width: 100%;
+        }
+
+        .platform-tabs {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .platform-tab {
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
+        .platform-tab.active::after {
+            display: none;
+        }
+    }
 
         .card-header {
             padding: 24px 24px 0 24px;

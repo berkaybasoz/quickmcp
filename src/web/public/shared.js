@@ -90,7 +90,6 @@ function displayServers(servers) {
                     <button class="btn btn-primary" onclick="viewServer('${server.id}')">View Details</button>
                     <button class="btn btn-secondary" onclick="testServer('${server.id}')">Test</button>
                     <button class="btn btn-secondary" onclick="exportServer('${server.id}')">Export</button>
-                    <button class="btn btn-primary" onclick="showHowToUse('${server.id}')">How To Use</button>
                     <button class="btn btn-danger" onclick="deleteServer('${server.id}')">Delete</button>
                 </div>
             </div>
