@@ -8,96 +8,44 @@
     <style>
         .tab-navigation {
             display: flex;
-            border-bottom: 2px solid #e2e8f0;
+            gap: 1rem;
             margin-bottom: 2rem;
-            gap: 0.5rem;
         }
-
         .tab-button {
-            background: none;
-            border: none;
-            padding: 1rem 1.5rem;
+            padding: 1rem;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #718096;
-            transition: all 0.2s ease;
-            border-radius: 8px 8px 0 0;
         }
-
-        .tab-button:hover {
-            background: #f7fafc;
-            color: #2d3748;
-        }
-
         .tab-button.active {
-            color: #3182ce;
-            border-bottom-color: #3182ce;
-            background: #f7fafc;
-            font-weight: 600;
+            background: #007bff;
+            color: white;
         }
-
-        .tab-content {
-            min-height: 400px;
-        }
-
         .tab-panel {
             display: none;
         }
-
         .tab-panel.active {
             display: block;
         }
-
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+            margin: 1rem 0;
         }
-
-        .data-table th {
-            background: #3182ce;
-            color: white;
-            padding: 0.75rem;
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
             text-align: left;
-            font-weight: 600;
-            font-size: 0.85rem;
         }
-
-        .data-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 0.85rem;
-            color: #2d3748;
-            max-width: 200px;
-            word-wrap: break-word;
+        .data-table th {
+            background: #f5f5f5;
+            font-weight: bold;
         }
-
-        .data-table tr:nth-child(even) {
-            background: #f7fafc;
-        }
-
-        .data-table tr:hover {
-            background: #e3f2fd;
-        }
-
-        .table-header {
-            background: #3182ce;
-            color: white;
+        #debug-info {
+            background: yellow;
             padding: 1rem;
-            font-weight: 600;
-            margin-bottom: 0;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #718096;
+            margin: 1rem 0;
+            border: 2px solid red;
         }
     </style>
 </head>
@@ -133,9 +81,6 @@
             </nav>
         </div>
 
-        <!-- Overlay for mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
         <!-- Main Content -->
         <div class="main-content">
             <div class="topbar">
@@ -144,49 +89,48 @@
                     <span></span>
                     <span></span>
                 </button>
-                <div class="topbar-title">
-                    MCP Server Generator - Database Tables
-                </div>
+                <div class="topbar-title">Database Tables</div>
             </div>
 
             <div class="container">
                 <div class="card">
                     <div class="card-header">
-                        <h1 class="section-title">SQLite Database Tables</h1>
-                        <p class="section-subtitle">Explore the internal database structure</p>
+                        <h1>SQLite Database Tables</h1>
                     </div>
                     <div class="card-content">
-                        <div id="loading" class="loading">Loading database tables...</div>
-                        <div id="content" style="display: none;">
-                            <!-- Tab Navigation -->
-                            <div class="tab-navigation">
-                                <button class="tab-button active" onclick="showTab('servers')">
-                                    🖥️ Servers (<span id="servers-count">0</span>)
-                                </button>
-                                <button class="tab-button" onclick="showTab('tools')">
-                                    🔧 Tools (<span id="tools-count">0</span>)
-                                </button>
-                                <button class="tab-button" onclick="showTab('resources')">
-                                    📦 Resources (<span id="resources-count">0</span>)
-                                </button>
-                            </div>
-
-                            <!-- Tab Content -->
-                            <div class="tab-content">
-                                <div id="servers" class="tab-panel active">
-                                    <h3 class="table-header">🖥️ Servers</h3>
-                                    <div id="servers-table"></div>
-                                </div>
-                                <div id="tools" class="tab-panel">
-                                    <h3 class="table-header">🔧 Tools</h3>
-                                    <div id="tools-table"></div>
-                                </div>
-                                <div id="resources" class="tab-panel">
-                                    <h3 class="table-header">📦 Resources</h3>
-                                    <div id="resources-table"></div>
-                                </div>
-                            </div>
+                        <div id="debug-info">
+                            <strong>Debug:</strong> <span id="debug-text">Starting...</span>
                         </div>
+
+                        <!-- Tab Navigation -->
+                        <div class="tab-navigation">
+                            <button class="tab-button active" onclick="switchToTab('servers')">
+                                🖥️ Servers (<span id="servers-count">0</span>)
+                            </button>
+                            <button class="tab-button" onclick="switchToTab('tools')">
+                                🔧 Tools (<span id="tools-count">0</span>)
+                            </button>
+                            <button class="tab-button" onclick="switchToTab('resources')">
+                                📦 Resources (<span id="resources-count">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- Tab Content - ALL VISIBLE -->
+                        <div id="servers" class="tab-panel active">
+                            <h3>🖥️ Servers</h3>
+                            <div id="servers-data">Loading...</div>
+                        </div>
+
+                        <div id="tools" class="tab-panel">
+                            <h3>🔧 Tools</h3>
+                            <div id="tools-data">Loading...</div>
+                        </div>
+
+                        <div id="resources" class="tab-panel">
+                            <h3>📦 Resources</h3>
+                            <div id="resources-data">Loading...</div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -195,98 +139,89 @@
 
     <script src="shared.js"></script>
     <script>
-        let tablesData = {};
+        let allTables = {};
 
-        // Load tables when page loads
+        function log(msg) {
+            document.getElementById('debug-text').innerHTML = msg;
+            console.log(msg);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            loadTables();
+            log('Starting...');
+            getData();
         });
 
-        async function loadTables() {
+        async function getData() {
             try {
+                log('Getting data...');
                 const response = await fetch('/api/database/tables');
                 const result = await response.json();
 
-                if (result.success) {
-                    // Store data
+                log('Got response: ' + JSON.stringify(result.success));
+
+                if (result.success && result.data.tables) {
                     result.data.tables.forEach(table => {
-                        tablesData[table.name] = table;
+                        allTables[table.name] = table;
+
+                        // Update count
+                        document.getElementById(table.name + '-count').textContent = table.rowCount;
+
+                        // Create table immediately
+                        createTable(table.name);
                     });
-
-                    // Update counts
-                    document.getElementById('servers-count').textContent = tablesData.servers ? tablesData.servers.rowCount : 0;
-                    document.getElementById('tools-count').textContent = tablesData.tools ? tablesData.tools.rowCount : 0;
-                    document.getElementById('resources-count').textContent = tablesData.resources ? tablesData.resources.rowCount : 0;
-
-                    // Show content
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content').style.display = 'block';
-
-                    // Load first tab
-                    showTab('servers');
+                    log('All tables created!');
                 } else {
-                    document.getElementById('loading').innerHTML = 'Error loading tables: ' + result.error;
+                    log('Error: ' + result.error);
                 }
             } catch (error) {
-                document.getElementById('loading').innerHTML = 'Error: ' + error.message;
+                log('Error: ' + error.message);
             }
         }
 
-        function showTab(tableName) {
-            // Update buttons
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        function createTable(name) {
+            const table = allTables[name];
+            const container = document.getElementById(name + '-data');
 
-            // Update panels
-            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-            document.getElementById(tableName).classList.add('active');
-
-            // Load table data
-            const table = tablesData[tableName];
-            if (table) {
-                const tableContainer = document.getElementById(tableName + '-table');
-                tableContainer.innerHTML = generateTable(table);
-            }
-        }
-
-        function generateTable(table) {
-            if (!table.sampleData || table.sampleData.length === 0) {
-                return '<p>No data available</p>';
+            if (!table || !table.sampleData || table.sampleData.length === 0) {
+                container.innerHTML = 'No data';
+                return;
             }
 
-            let html = `
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            ${table.columns.map(col => `<th>${col.name}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+            let html = '<table class="data-table"><tr>';
+            table.columns.forEach(col => {
+                html += '<th>' + col.name + '</th>';
+            });
+            html += '</tr>';
 
             table.sampleData.forEach(row => {
                 html += '<tr>';
                 table.columns.forEach(col => {
-                    let value = row[col.name];
-                    if (value === null || value === undefined) {
-                        value = '<em>NULL</em>';
-                    } else if (typeof value === 'string' && value.length > 100) {
-                        value = value.substring(0, 100) + '...';
+                    let val = row[col.name] || 'NULL';
+                    if (typeof val === 'string' && val.length > 50) {
+                        val = val.substring(0, 50) + '...';
                     }
-                    html += `<td>${value}</td>`;
+                    html += '<td>' + val + '</td>';
                 });
                 html += '</tr>';
             });
 
-            html += `
-                    </tbody>
-                </table>
-                <p style="text-align: center; color: #718096; margin-top: 1rem;">
-                    Showing ${table.sampleData.length} of ${table.rowCount} rows
-                </p>
-            `;
+            html += '</table>';
+            html += '<p>Showing ' + table.sampleData.length + ' of ' + table.rowCount + ' rows</p>';
 
-            return html;
+            container.innerHTML = html;
+            log('Table ' + name + ' created with ' + table.sampleData.length + ' rows');
+        }
+
+        function switchToTab(name) {
+            log('Switching to ' + name);
+
+            // Update buttons
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(name).classList.add('active');
         }
     </script>
 </body>
