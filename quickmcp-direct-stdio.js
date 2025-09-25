@@ -41,7 +41,7 @@ process.stdin.on('data', async (data) => {
         try {
           const tools = sqliteManager.getAllTools();
           console.error(`[QuickMCP] Got ${tools.length} tools from SQLite`);
-          const formattedTools = tools.slice(0, 60).map(tool => ({
+          const formattedTools = tools.map(tool => ({
             name: `${tool.server_id}__${tool.name}`,
             description: `[${tool.server_id}] ${tool.description}`,
             inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
