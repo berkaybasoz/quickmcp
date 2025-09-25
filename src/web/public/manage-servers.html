@@ -577,6 +577,15 @@ npm install</code></pre>
         function closeDeleteConfirmModal() {
             document.getElementById('deleteConfirmModal').style.display = 'none';
             serverToDelete = null;
+
+            // Reset button state
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const btnText = confirmBtn.querySelector('.btn-text');
+            const btnLoading = confirmBtn.querySelector('.btn-loading');
+
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
+            confirmBtn.disabled = false;
         }
 
         // Confirm and execute server deletion

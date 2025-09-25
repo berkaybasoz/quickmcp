@@ -206,10 +206,21 @@ export class DynamicMCPExecutor {
         case 'mssql':
           const request = connection.request();
 
-          // Add parameters
-          for (const [key, value] of Object.entries(args)) {
+          // Extract all @param references from the SQL query
+          const paramRegex = /@(\w+)/g;
+          let match;
+          const sqlParams = new Set();
+          while ((match = paramRegex.exec(sqlQuery)) !== null) {
+            sqlParams.add(match[1]);
+          }
+
+          // Add all SQL parameters, using provided values or NULL
+          for (const paramName of sqlParams) {
+            const value = args[paramName];
             if (value !== undefined && value !== null) {
-              request.input(key, value);
+              request.input(paramName, value);
+            } else {
+              request.input(paramName, null);
             }
           }
 

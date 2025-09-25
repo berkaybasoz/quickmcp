@@ -1,24 +1,152 @@
 {
   "servers": [
     {
-      "id": "test-exceptions",
-      "name": "Test Exception Monitor",
+      "id": "f1",
+      "name": "",
       "dbConfig": {
         "type": "mssql",
-        "server": "localhost",
+        "host": "localhost",
         "port": 1434,
         "database": "exceptionmonitor",
         "username": "sa",
-        "password": "StrongPassword123!",
-        "encrypt": false,
-        "trustServerCertificate": true
+        "password": "StrongPassword123!"
       },
-      "createdAt": "2025-09-25T14:12:19.226Z"
+      "createdAt": "2025-09-25T18:22:36.804Z"
     }
   ],
   "tools": [
     {
-      "server_id": "test-exceptions",
+      "server_id": "f1",
+      "name": "get_flyway_schema_history",
+      "description": "Get records from flyway_schema_history table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_installed_rank": {
+            "type": "number",
+            "description": "Filter by installed_rank"
+          },
+          "filter_version": {
+            "type": "string",
+            "description": "Filter by version"
+          },
+          "filter_description": {
+            "type": "string",
+            "description": "Filter by description"
+          },
+          "filter_type": {
+            "type": "string",
+            "description": "Filter by type"
+          },
+          "filter_script": {
+            "type": "string",
+            "description": "Filter by script"
+          },
+          "filter_checksum": {
+            "type": "number",
+            "description": "Filter by checksum"
+          },
+          "filter_installed_by": {
+            "type": "string",
+            "description": "Filter by installed_by"
+          },
+          "filter_installed_on": {
+            "type": "string",
+            "description": "Filter by installed_on"
+          },
+          "filter_execution_time": {
+            "type": "number",
+            "description": "Filter by execution_time"
+          },
+          "filter_success": {
+            "type": "boolean",
+            "description": "Filter by success"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [installed_rank], [version], [description], [type], [script], [checksum], [installed_by], [installed_on], [execution_time], [success] FROM [flyway_schema_history] WHERE (@filter_installed_rank IS NULL OR [installed_rank] = @filter_installed_rank) AND (@filter_version IS NULL OR [version] = @filter_version) AND (@filter_description IS NULL OR [description] = @filter_description) AND (@filter_type IS NULL OR [type] = @filter_type) AND (@filter_script IS NULL OR [script] = @filter_script) AND (@filter_checksum IS NULL OR [checksum] = @filter_checksum) AND (@filter_installed_by IS NULL OR [installed_by] = @filter_installed_by) AND (@filter_installed_on IS NULL OR [installed_on] = @filter_installed_on) AND (@filter_execution_time IS NULL OR [execution_time] = @filter_execution_time) AND (@filter_success IS NULL OR [success] = @filter_success)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_flyway_schema_history",
+      "description": "Create a new record in flyway_schema_history table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "installed_rank": {
+            "type": "number",
+            "description": "installed_rank field"
+          },
+          "version": {
+            "type": "string",
+            "description": "version field"
+          },
+          "description": {
+            "type": "string",
+            "description": "description field"
+          },
+          "type": {
+            "type": "string",
+            "description": "type field"
+          },
+          "script": {
+            "type": "string",
+            "description": "script field"
+          },
+          "checksum": {
+            "type": "number",
+            "description": "checksum field"
+          },
+          "installed_by": {
+            "type": "string",
+            "description": "installed_by field"
+          },
+          "installed_on": {
+            "type": "string",
+            "description": "installed_on field"
+          },
+          "execution_time": {
+            "type": "number",
+            "description": "execution_time field"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "success field"
+          }
+        },
+        "required": [
+          "installed_rank",
+          "version",
+          "description",
+          "type",
+          "script",
+          "checksum",
+          "installed_by",
+          "installed_on",
+          "execution_time",
+          "success"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [flyway_schema_history] ([installed_rank], [version], [description], [type], [script], [checksum], [installed_by], [installed_on], [execution_time], [success]) VALUES (@installed_rank, @version, @description, @type, @script, @checksum, @installed_by, @installed_on, @execution_time, @success)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
       "name": "get_exception_records",
       "description": "Get records from exception_records table",
       "inputSchema": {
@@ -37,110 +165,316 @@
             "default": 0,
             "minimum": 0
           },
-          "filter_Id": {
-            "type": "number",
-            "description": "Filter by Id"
-          },
-          "filter_Application": {
+          "filter_id": {
             "type": "string",
-            "description": "Filter by Application"
+            "description": "Filter by id"
           },
-          "filter_Message": {
+          "filter_exception_type": {
             "type": "string",
-            "description": "Filter by Message"
+            "description": "Filter by exception_type"
           },
-          "filter_Source": {
+          "filter_message": {
             "type": "string",
-            "description": "Filter by Source"
+            "description": "Filter by message"
           },
-          "filter_TimeCreated": {
+          "filter_stack_trace": {
             "type": "string",
-            "description": "Filter by TimeCreated"
+            "description": "Filter by stack_trace"
+          },
+          "filter_timestamp": {
+            "type": "string",
+            "description": "Filter by timestamp"
+          },
+          "filter_project_name": {
+            "type": "string",
+            "description": "Filter by project_name"
+          },
+          "filter_component_name": {
+            "type": "string",
+            "description": "Filter by component_name"
+          },
+          "filter_pod_name": {
+            "type": "string",
+            "description": "Filter by pod_name"
+          },
+          "filter_pod_ip": {
+            "type": "string",
+            "description": "Filter by pod_ip"
+          },
+          "filter_cluster_name": {
+            "type": "string",
+            "description": "Filter by cluster_name"
+          },
+          "filter_environment": {
+            "type": "string",
+            "description": "Filter by environment"
+          },
+          "filter_service_name": {
+            "type": "string",
+            "description": "Filter by service_name"
+          },
+          "filter_method": {
+            "type": "string",
+            "description": "Filter by method"
+          },
+          "filter_url": {
+            "type": "string",
+            "description": "Filter by url"
+          },
+          "filter_user_agent": {
+            "type": "string",
+            "description": "Filter by user_agent"
+          },
+          "filter_session_id": {
+            "type": "string",
+            "description": "Filter by session_id"
+          },
+          "filter_additional_data": {
+            "type": "string",
+            "description": "Filter by additional_data"
+          },
+          "filter_is_business_exception": {
+            "type": "boolean",
+            "description": "Filter by is_business_exception"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_thread_name": {
+            "type": "string",
+            "description": "Filter by thread_name"
+          },
+          "filter_latency_ms": {
+            "type": "string",
+            "description": "Filter by latency_ms"
           }
         },
         "required": []
       },
-      "sqlQuery": "SELECT [Id], [Application], [Message], [Source], [TimeCreated] FROM [exception_records] WHERE (@filter_Id IS NULL OR [Id] = @filter_Id) AND (@filter_Application IS NULL OR [Application] = @filter_Application) AND (@filter_Message IS NULL OR [Message] = @filter_Message) AND (@filter_Source IS NULL OR [Source] = @filter_Source) AND (@filter_TimeCreated IS NULL OR [TimeCreated] = @filter_TimeCreated) ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY",
+      "sqlQuery": "SELECT TOP (@limit) [id], [exception_type], [message], [stack_trace], [timestamp], [project_name], [component_name], [pod_name], [pod_ip], [cluster_name], [environment], [service_name], [method], [url], [user_agent], [session_id], [additional_data], [is_business_exception], [created_at], [thread_name], [latency_ms] FROM [exception_records] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_exception_type IS NULL OR [exception_type] = @filter_exception_type) AND (@filter_message IS NULL OR [message] = @filter_message) AND (@filter_stack_trace IS NULL OR [stack_trace] = @filter_stack_trace) AND (@filter_timestamp IS NULL OR [timestamp] = @filter_timestamp) AND (@filter_project_name IS NULL OR [project_name] = @filter_project_name) AND (@filter_component_name IS NULL OR [component_name] = @filter_component_name) AND (@filter_pod_name IS NULL OR [pod_name] = @filter_pod_name) AND (@filter_pod_ip IS NULL OR [pod_ip] = @filter_pod_ip) AND (@filter_cluster_name IS NULL OR [cluster_name] = @filter_cluster_name) AND (@filter_environment IS NULL OR [environment] = @filter_environment) AND (@filter_service_name IS NULL OR [service_name] = @filter_service_name) AND (@filter_method IS NULL OR [method] = @filter_method) AND (@filter_url IS NULL OR [url] = @filter_url) AND (@filter_user_agent IS NULL OR [user_agent] = @filter_user_agent) AND (@filter_session_id IS NULL OR [session_id] = @filter_session_id) AND (@filter_additional_data IS NULL OR [additional_data] = @filter_additional_data) AND (@filter_is_business_exception IS NULL OR [is_business_exception] = @filter_is_business_exception) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_thread_name IS NULL OR [thread_name] = @filter_thread_name) AND (@filter_latency_ms IS NULL OR [latency_ms] = @filter_latency_ms)",
       "operation": "SELECT"
     },
     {
-      "server_id": "test-exceptions",
+      "server_id": "f1",
       "name": "create_exception_records",
       "description": "Create a new record in exception_records table",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "Application": {
+          "exception_type": {
             "type": "string",
-            "description": "Application field"
+            "description": "exception_type field"
           },
-          "Message": {
+          "message": {
             "type": "string",
-            "description": "Message field"
+            "description": "message field"
           },
-          "Source": {
+          "stack_trace": {
             "type": "string",
-            "description": "Source field"
+            "description": "stack_trace field"
           },
-          "TimeCreated": {
+          "timestamp": {
             "type": "string",
-            "description": "TimeCreated field"
+            "description": "timestamp field"
+          },
+          "project_name": {
+            "type": "string",
+            "description": "project_name field"
+          },
+          "component_name": {
+            "type": "string",
+            "description": "component_name field"
+          },
+          "pod_name": {
+            "type": "string",
+            "description": "pod_name field"
+          },
+          "pod_ip": {
+            "type": "string",
+            "description": "pod_ip field"
+          },
+          "cluster_name": {
+            "type": "string",
+            "description": "cluster_name field"
+          },
+          "environment": {
+            "type": "string",
+            "description": "environment field"
+          },
+          "service_name": {
+            "type": "string",
+            "description": "service_name field"
+          },
+          "method": {
+            "type": "string",
+            "description": "method field"
+          },
+          "url": {
+            "type": "string",
+            "description": "url field"
+          },
+          "user_agent": {
+            "type": "string",
+            "description": "user_agent field"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "session_id field"
+          },
+          "additional_data": {
+            "type": "string",
+            "description": "additional_data field"
+          },
+          "is_business_exception": {
+            "type": "boolean",
+            "description": "is_business_exception field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "thread_name": {
+            "type": "string",
+            "description": "thread_name field"
+          },
+          "latency_ms": {
+            "type": "string",
+            "description": "latency_ms field"
           }
         },
         "required": [
-          "Application",
-          "Message",
-          "Source",
-          "TimeCreated"
+          "exception_type",
+          "message",
+          "stack_trace",
+          "timestamp",
+          "project_name",
+          "component_name",
+          "pod_name",
+          "pod_ip",
+          "cluster_name",
+          "environment",
+          "service_name",
+          "method",
+          "url",
+          "user_agent",
+          "additional_data",
+          "is_business_exception",
+          "created_at",
+          "thread_name",
+          "latency_ms"
         ]
       },
-      "sqlQuery": "INSERT INTO [exception_records] ([Application], [Message], [Source], [TimeCreated]) VALUES (@Application, @Message, @Source, @TimeCreated)",
+      "sqlQuery": "INSERT INTO [exception_records] ([exception_type], [message], [stack_trace], [timestamp], [project_name], [component_name], [pod_name], [pod_ip], [cluster_name], [environment], [service_name], [method], [url], [user_agent], [session_id], [additional_data], [is_business_exception], [created_at], [thread_name], [latency_ms]) VALUES (@exception_type, @message, @stack_trace, @timestamp, @project_name, @component_name, @pod_name, @pod_ip, @cluster_name, @environment, @service_name, @method, @url, @user_agent, @session_id, @additional_data, @is_business_exception, @created_at, @thread_name, @latency_ms)",
       "operation": "INSERT"
     },
     {
-      "server_id": "test-exceptions",
+      "server_id": "f1",
       "name": "update_exception_records",
       "description": "Update a record in exception_records table",
       "inputSchema": {
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "exception_type": {
+            "type": "string",
+            "description": "exception_type field"
+          },
+          "message": {
+            "type": "string",
+            "description": "message field"
+          },
+          "stack_trace": {
+            "type": "string",
+            "description": "stack_trace field"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "timestamp field"
+          },
+          "project_name": {
+            "type": "string",
+            "description": "project_name field"
+          },
+          "component_name": {
+            "type": "string",
+            "description": "component_name field"
+          },
+          "pod_name": {
+            "type": "string",
+            "description": "pod_name field"
+          },
+          "pod_ip": {
+            "type": "string",
+            "description": "pod_ip field"
+          },
+          "cluster_name": {
+            "type": "string",
+            "description": "cluster_name field"
+          },
+          "environment": {
+            "type": "string",
+            "description": "environment field"
+          },
+          "service_name": {
+            "type": "string",
+            "description": "service_name field"
+          },
+          "method": {
+            "type": "string",
+            "description": "method field"
+          },
+          "url": {
+            "type": "string",
+            "description": "url field"
+          },
+          "user_agent": {
+            "type": "string",
+            "description": "user_agent field"
+          },
+          "session_id": {
             "type": [
               "string",
-              "number"
+              "null"
             ],
-            "description": "ID of the record to update"
+            "description": "session_id field"
           },
-          "Id": {
-            "type": "number",
-            "description": "Id field"
-          },
-          "Application": {
+          "additional_data": {
             "type": "string",
-            "description": "Application field"
+            "description": "additional_data field"
           },
-          "Message": {
-            "type": "string",
-            "description": "Message field"
+          "is_business_exception": {
+            "type": "boolean",
+            "description": "is_business_exception field"
           },
-          "Source": {
+          "created_at": {
             "type": "string",
-            "description": "Source field"
+            "description": "created_at field"
           },
-          "TimeCreated": {
+          "thread_name": {
             "type": "string",
-            "description": "TimeCreated field"
+            "description": "thread_name field"
+          },
+          "latency_ms": {
+            "type": "string",
+            "description": "latency_ms field"
           }
         },
         "required": [
           "id"
         ]
       },
-      "sqlQuery": "UPDATE [exception_records] SET [Application] = @Application, [Message] = @Message, [Source] = @Source, [TimeCreated] = @TimeCreated WHERE [Id] = @id",
+      "sqlQuery": "UPDATE [exception_records] SET [exception_type] = @exception_type, [message] = @message, [stack_trace] = @stack_trace, [timestamp] = @timestamp, [project_name] = @project_name, [component_name] = @component_name, [pod_name] = @pod_name, [pod_ip] = @pod_ip, [cluster_name] = @cluster_name, [environment] = @environment, [service_name] = @service_name, [method] = @method, [url] = @url, [user_agent] = @user_agent, [session_id] = @session_id, [additional_data] = @additional_data, [is_business_exception] = @is_business_exception, [created_at] = @created_at, [thread_name] = @thread_name, [latency_ms] = @latency_ms WHERE [Id] = @id",
       "operation": "UPDATE"
     },
     {
-      "server_id": "test-exceptions",
+      "server_id": "f1",
       "name": "delete_exception_records",
       "description": "Delete a record from exception_records table",
       "inputSchema": {
@@ -160,15 +494,1107 @@
       },
       "sqlQuery": "DELETE FROM [exception_records] WHERE [Id] = @id",
       "operation": "DELETE"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_business_exception_rules",
+      "description": "Get records from business_exception_rules table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_id": {
+            "type": "string",
+            "description": "Filter by id"
+          },
+          "filter_rule_name": {
+            "type": "string",
+            "description": "Filter by rule_name"
+          },
+          "filter_description": {
+            "type": "string",
+            "description": "Filter by description"
+          },
+          "filter_match_type": {
+            "type": "string",
+            "description": "Filter by match_type"
+          },
+          "filter_field_type": {
+            "type": "string",
+            "description": "Filter by field_type"
+          },
+          "filter_pattern": {
+            "type": "string",
+            "description": "Filter by pattern"
+          },
+          "filter_is_active": {
+            "type": "boolean",
+            "description": "Filter by is_active"
+          },
+          "filter_valid_from": {
+            "type": "string",
+            "description": "Filter by valid_from"
+          },
+          "filter_valid_to": {
+            "type": "string",
+            "description": "Filter by valid_to"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_updated_at": {
+            "type": "string",
+            "description": "Filter by updated_at"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [id], [rule_name], [description], [match_type], [field_type], [pattern], [is_active], [valid_from], [valid_to], [created_at], [updated_at] FROM [business_exception_rules] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_rule_name IS NULL OR [rule_name] = @filter_rule_name) AND (@filter_description IS NULL OR [description] = @filter_description) AND (@filter_match_type IS NULL OR [match_type] = @filter_match_type) AND (@filter_field_type IS NULL OR [field_type] = @filter_field_type) AND (@filter_pattern IS NULL OR [pattern] = @filter_pattern) AND (@filter_is_active IS NULL OR [is_active] = @filter_is_active) AND (@filter_valid_from IS NULL OR [valid_from] = @filter_valid_from) AND (@filter_valid_to IS NULL OR [valid_to] = @filter_valid_to) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_updated_at IS NULL OR [updated_at] = @filter_updated_at)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_business_exception_rules",
+      "description": "Create a new record in business_exception_rules table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "rule_name": {
+            "type": "string",
+            "description": "rule_name field"
+          },
+          "description": {
+            "type": "string",
+            "description": "description field"
+          },
+          "match_type": {
+            "type": "string",
+            "description": "match_type field"
+          },
+          "field_type": {
+            "type": "string",
+            "description": "field_type field"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "pattern field"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "is_active field"
+          },
+          "valid_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "valid_from field"
+          },
+          "valid_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "valid_to field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "rule_name",
+          "description",
+          "match_type",
+          "field_type",
+          "pattern",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [business_exception_rules] ([rule_name], [description], [match_type], [field_type], [pattern], [is_active], [valid_from], [valid_to], [created_at], [updated_at]) VALUES (@rule_name, @description, @match_type, @field_type, @pattern, @is_active, @valid_from, @valid_to, @created_at, @updated_at)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "update_business_exception_rules",
+      "description": "Update a record in business_exception_rules table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "rule_name": {
+            "type": "string",
+            "description": "rule_name field"
+          },
+          "description": {
+            "type": "string",
+            "description": "description field"
+          },
+          "match_type": {
+            "type": "string",
+            "description": "match_type field"
+          },
+          "field_type": {
+            "type": "string",
+            "description": "field_type field"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "pattern field"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "is_active field"
+          },
+          "valid_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "valid_from field"
+          },
+          "valid_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "valid_to field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [business_exception_rules] SET [rule_name] = @rule_name, [description] = @description, [match_type] = @match_type, [field_type] = @field_type, [pattern] = @pattern, [is_active] = @is_active, [valid_from] = @valid_from, [valid_to] = @valid_to, [created_at] = @created_at, [updated_at] = @updated_at WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "f1",
+      "name": "delete_business_exception_rules",
+      "description": "Delete a record from business_exception_rules table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [business_exception_rules] WHERE [Id] = @id",
+      "operation": "DELETE"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_alert_notification_channel",
+      "description": "Get records from alert_notification_channel table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_id": {
+            "type": "string",
+            "description": "Filter by id"
+          },
+          "filter_name": {
+            "type": "string",
+            "description": "Filter by name"
+          },
+          "filter_type": {
+            "type": "string",
+            "description": "Filter by type"
+          },
+          "filter_status": {
+            "type": "string",
+            "description": "Filter by status"
+          },
+          "filter_configuration": {
+            "type": "string",
+            "description": "Filter by configuration"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_updated_at": {
+            "type": "string",
+            "description": "Filter by updated_at"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [id], [name], [type], [status], [configuration], [created_at], [updated_at] FROM [alert_notification_channel] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_name IS NULL OR [name] = @filter_name) AND (@filter_type IS NULL OR [type] = @filter_type) AND (@filter_status IS NULL OR [status] = @filter_status) AND (@filter_configuration IS NULL OR [configuration] = @filter_configuration) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_updated_at IS NULL OR [updated_at] = @filter_updated_at)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_alert_notification_channel",
+      "description": "Create a new record in alert_notification_channel table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name field"
+          },
+          "type": {
+            "type": "string",
+            "description": "type field"
+          },
+          "status": {
+            "type": "string",
+            "description": "status field"
+          },
+          "configuration": {
+            "type": "string",
+            "description": "configuration field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "status",
+          "configuration",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [alert_notification_channel] ([name], [type], [status], [configuration], [created_at], [updated_at]) VALUES (@name, @type, @status, @configuration, @created_at, @updated_at)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "update_alert_notification_channel",
+      "description": "Update a record in alert_notification_channel table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "name": {
+            "type": "string",
+            "description": "name field"
+          },
+          "type": {
+            "type": "string",
+            "description": "type field"
+          },
+          "status": {
+            "type": "string",
+            "description": "status field"
+          },
+          "configuration": {
+            "type": "string",
+            "description": "configuration field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [alert_notification_channel] SET [name] = @name, [type] = @type, [status] = @status, [configuration] = @configuration, [created_at] = @created_at, [updated_at] = @updated_at WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "f1",
+      "name": "delete_alert_notification_channel",
+      "description": "Delete a record from alert_notification_channel table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [alert_notification_channel] WHERE [Id] = @id",
+      "operation": "DELETE"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_activities",
+      "description": "Get records from activities table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_id": {
+            "type": "string",
+            "description": "Filter by id"
+          },
+          "filter_activity_type": {
+            "type": "string",
+            "description": "Filter by activity_type"
+          },
+          "filter_description": {
+            "type": "string",
+            "description": "Filter by description"
+          },
+          "filter_user_name": {
+            "type": "string",
+            "description": "Filter by user_name"
+          },
+          "filter_user_ip": {
+            "type": "string",
+            "description": "Filter by user_ip"
+          },
+          "filter_entity_type": {
+            "type": "string",
+            "description": "Filter by entity_type"
+          },
+          "filter_entity_id": {
+            "type": "string",
+            "description": "Filter by entity_id"
+          },
+          "filter_old_value": {
+            "type": "string",
+            "description": "Filter by old_value"
+          },
+          "filter_new_value": {
+            "type": "string",
+            "description": "Filter by new_value"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_session_id": {
+            "type": "string",
+            "description": "Filter by session_id"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [id], [activity_type], [description], [user_name], [user_ip], [entity_type], [entity_id], [old_value], [new_value], [created_at], [session_id] FROM [activities] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_activity_type IS NULL OR [activity_type] = @filter_activity_type) AND (@filter_description IS NULL OR [description] = @filter_description) AND (@filter_user_name IS NULL OR [user_name] = @filter_user_name) AND (@filter_user_ip IS NULL OR [user_ip] = @filter_user_ip) AND (@filter_entity_type IS NULL OR [entity_type] = @filter_entity_type) AND (@filter_entity_id IS NULL OR [entity_id] = @filter_entity_id) AND (@filter_old_value IS NULL OR [old_value] = @filter_old_value) AND (@filter_new_value IS NULL OR [new_value] = @filter_new_value) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_session_id IS NULL OR [session_id] = @filter_session_id)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_activities",
+      "description": "Create a new record in activities table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activity_type": {
+            "type": "string",
+            "description": "activity_type field"
+          },
+          "description": {
+            "type": "string",
+            "description": "description field"
+          },
+          "user_name": {
+            "type": "string",
+            "description": "user_name field"
+          },
+          "user_ip": {
+            "type": "string",
+            "description": "user_ip field"
+          },
+          "entity_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "entity_type field"
+          },
+          "entity_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "entity_id field"
+          },
+          "old_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "old_value field"
+          },
+          "new_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "new_value field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "session_id field"
+          }
+        },
+        "required": [
+          "activity_type",
+          "description",
+          "user_name",
+          "user_ip",
+          "created_at"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [activities] ([activity_type], [description], [user_name], [user_ip], [entity_type], [entity_id], [old_value], [new_value], [created_at], [session_id]) VALUES (@activity_type, @description, @user_name, @user_ip, @entity_type, @entity_id, @old_value, @new_value, @created_at, @session_id)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "update_activities",
+      "description": "Update a record in activities table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "activity_type": {
+            "type": "string",
+            "description": "activity_type field"
+          },
+          "description": {
+            "type": "string",
+            "description": "description field"
+          },
+          "user_name": {
+            "type": "string",
+            "description": "user_name field"
+          },
+          "user_ip": {
+            "type": "string",
+            "description": "user_ip field"
+          },
+          "entity_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "entity_type field"
+          },
+          "entity_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "entity_id field"
+          },
+          "old_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "old_value field"
+          },
+          "new_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "new_value field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "session_id field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [activities] SET [activity_type] = @activity_type, [description] = @description, [user_name] = @user_name, [user_ip] = @user_ip, [entity_type] = @entity_type, [entity_id] = @entity_id, [old_value] = @old_value, [new_value] = @new_value, [created_at] = @created_at, [session_id] = @session_id WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "f1",
+      "name": "delete_activities",
+      "description": "Delete a record from activities table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [activities] WHERE [Id] = @id",
+      "operation": "DELETE"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_shedlock",
+      "description": "Get records from shedlock table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_name": {
+            "type": "string",
+            "description": "Filter by name"
+          },
+          "filter_lock_until": {
+            "type": "string",
+            "description": "Filter by lock_until"
+          },
+          "filter_locked_at": {
+            "type": "string",
+            "description": "Filter by locked_at"
+          },
+          "filter_locked_by": {
+            "type": "string",
+            "description": "Filter by locked_by"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [name], [lock_until], [locked_at], [locked_by] FROM [shedlock] WHERE (@filter_name IS NULL OR [name] = @filter_name) AND (@filter_lock_until IS NULL OR [lock_until] = @filter_lock_until) AND (@filter_locked_at IS NULL OR [locked_at] = @filter_locked_at) AND (@filter_locked_by IS NULL OR [locked_by] = @filter_locked_by)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_shedlock",
+      "description": "Create a new record in shedlock table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name field"
+          },
+          "lock_until": {
+            "type": "string",
+            "description": "lock_until field"
+          },
+          "locked_at": {
+            "type": "string",
+            "description": "locked_at field"
+          },
+          "locked_by": {
+            "type": "string",
+            "description": "locked_by field"
+          }
+        },
+        "required": [
+          "name",
+          "lock_until",
+          "locked_at",
+          "locked_by"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [shedlock] ([name], [lock_until], [locked_at], [locked_by]) VALUES (@name, @lock_until, @locked_at, @locked_by)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_user_settings",
+      "description": "Get records from user_settings table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_id": {
+            "type": "string",
+            "description": "Filter by id"
+          },
+          "filter_username": {
+            "type": "string",
+            "description": "Filter by username"
+          },
+          "filter_setting_key": {
+            "type": "string",
+            "description": "Filter by setting_key"
+          },
+          "filter_setting_value": {
+            "type": "string",
+            "description": "Filter by setting_value"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_updated_at": {
+            "type": "string",
+            "description": "Filter by updated_at"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [id], [username], [setting_key], [setting_value], [created_at], [updated_at] FROM [user_settings] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_username IS NULL OR [username] = @filter_username) AND (@filter_setting_key IS NULL OR [setting_key] = @filter_setting_key) AND (@filter_setting_value IS NULL OR [setting_value] = @filter_setting_value) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_updated_at IS NULL OR [updated_at] = @filter_updated_at)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_user_settings",
+      "description": "Create a new record in user_settings table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "username field"
+          },
+          "setting_key": {
+            "type": "string",
+            "description": "setting_key field"
+          },
+          "setting_value": {
+            "type": "string",
+            "description": "setting_value field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "username",
+          "setting_key",
+          "setting_value",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [user_settings] ([username], [setting_key], [setting_value], [created_at], [updated_at]) VALUES (@username, @setting_key, @setting_value, @created_at, @updated_at)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "update_user_settings",
+      "description": "Update a record in user_settings table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "username": {
+            "type": "string",
+            "description": "username field"
+          },
+          "setting_key": {
+            "type": "string",
+            "description": "setting_key field"
+          },
+          "setting_value": {
+            "type": "string",
+            "description": "setting_value field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [user_settings] SET [username] = @username, [setting_key] = @setting_key, [setting_value] = @setting_value, [created_at] = @created_at, [updated_at] = @updated_at WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "f1",
+      "name": "delete_user_settings",
+      "description": "Delete a record from user_settings table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [user_settings] WHERE [Id] = @id",
+      "operation": "DELETE"
+    },
+    {
+      "server_id": "f1",
+      "name": "get_users",
+      "description": "Get records from users table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_id": {
+            "type": "string",
+            "description": "Filter by id"
+          },
+          "filter_username": {
+            "type": "string",
+            "description": "Filter by username"
+          },
+          "filter_password": {
+            "type": "string",
+            "description": "Filter by password"
+          },
+          "filter_display_name": {
+            "type": "string",
+            "description": "Filter by display_name"
+          },
+          "filter_email": {
+            "type": "string",
+            "description": "Filter by email"
+          },
+          "filter_team_name": {
+            "type": "string",
+            "description": "Filter by team_name"
+          },
+          "filter_active": {
+            "type": "boolean",
+            "description": "Filter by active"
+          },
+          "filter_created_at": {
+            "type": "string",
+            "description": "Filter by created_at"
+          },
+          "filter_updated_at": {
+            "type": "string",
+            "description": "Filter by updated_at"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT TOP (@limit) [id], [username], [password], [display_name], [email], [team_name], [active], [created_at], [updated_at] FROM [users] WHERE (@filter_id IS NULL OR [id] = @filter_id) AND (@filter_username IS NULL OR [username] = @filter_username) AND (@filter_password IS NULL OR [password] = @filter_password) AND (@filter_display_name IS NULL OR [display_name] = @filter_display_name) AND (@filter_email IS NULL OR [email] = @filter_email) AND (@filter_team_name IS NULL OR [team_name] = @filter_team_name) AND (@filter_active IS NULL OR [active] = @filter_active) AND (@filter_created_at IS NULL OR [created_at] = @filter_created_at) AND (@filter_updated_at IS NULL OR [updated_at] = @filter_updated_at)",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "f1",
+      "name": "create_users",
+      "description": "Create a new record in users table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "username field"
+          },
+          "password": {
+            "type": "string",
+            "description": "password field"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "display_name field"
+          },
+          "email": {
+            "type": "string",
+            "description": "email field"
+          },
+          "team_name": {
+            "type": "string",
+            "description": "team_name field"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "active field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "display_name",
+          "email",
+          "team_name",
+          "active",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [users] ([username], [password], [display_name], [email], [team_name], [active], [created_at], [updated_at]) VALUES (@username, @password, @display_name, @email, @team_name, @active, @created_at, @updated_at)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "f1",
+      "name": "update_users",
+      "description": "Update a record in users table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id field"
+          },
+          "username": {
+            "type": "string",
+            "description": "username field"
+          },
+          "password": {
+            "type": "string",
+            "description": "password field"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "display_name field"
+          },
+          "email": {
+            "type": "string",
+            "description": "email field"
+          },
+          "team_name": {
+            "type": "string",
+            "description": "team_name field"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "active field"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "created_at field"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "updated_at field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [users] SET [username] = @username, [password] = @password, [display_name] = @display_name, [email] = @email, [team_name] = @team_name, [active] = @active, [created_at] = @created_at, [updated_at] = @updated_at WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "f1",
+      "name": "delete_users",
+      "description": "Delete a record from users table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [users] WHERE [Id] = @id",
+      "operation": "DELETE"
     }
   ],
   "resources": [
     {
-      "server_id": "test-exceptions",
+      "server_id": "f1",
+      "name": "flyway_schema_history_list",
+      "description": "List all records from flyway_schema_history table",
+      "uri_template": "flyway_schema_history://list",
+      "sqlQuery": "SELECT [installed_rank], [version], [description], [type], [script], [checksum], [installed_by], [installed_on], [execution_time], [success] FROM [flyway_schema_history]"
+    },
+    {
+      "server_id": "f1",
       "name": "exception_records_list",
       "description": "List all records from exception_records table",
       "uri_template": "exception_records://list",
-      "sqlQuery": "SELECT [Id], [Application], [Message], [Source], [TimeCreated] FROM [exception_records]"
+      "sqlQuery": "SELECT [id], [exception_type], [message], [stack_trace], [timestamp], [project_name], [component_name], [pod_name], [pod_ip], [cluster_name], [environment], [service_name], [method], [url], [user_agent], [session_id], [additional_data], [is_business_exception], [created_at], [thread_name], [latency_ms] FROM [exception_records]"
+    },
+    {
+      "server_id": "f1",
+      "name": "business_exception_rules_list",
+      "description": "List all records from business_exception_rules table",
+      "uri_template": "business_exception_rules://list",
+      "sqlQuery": "SELECT [id], [rule_name], [description], [match_type], [field_type], [pattern], [is_active], [valid_from], [valid_to], [created_at], [updated_at] FROM [business_exception_rules]"
+    },
+    {
+      "server_id": "f1",
+      "name": "alert_notification_channel_list",
+      "description": "List all records from alert_notification_channel table",
+      "uri_template": "alert_notification_channel://list",
+      "sqlQuery": "SELECT [id], [name], [type], [status], [configuration], [created_at], [updated_at] FROM [alert_notification_channel]"
+    },
+    {
+      "server_id": "f1",
+      "name": "activities_list",
+      "description": "List all records from activities table",
+      "uri_template": "activities://list",
+      "sqlQuery": "SELECT [id], [activity_type], [description], [user_name], [user_ip], [entity_type], [entity_id], [old_value], [new_value], [created_at], [session_id] FROM [activities]"
+    },
+    {
+      "server_id": "f1",
+      "name": "shedlock_list",
+      "description": "List all records from shedlock table",
+      "uri_template": "shedlock://list",
+      "sqlQuery": "SELECT [name], [lock_until], [locked_at], [locked_by] FROM [shedlock]"
+    },
+    {
+      "server_id": "f1",
+      "name": "user_settings_list",
+      "description": "List all records from user_settings table",
+      "uri_template": "user_settings://list",
+      "sqlQuery": "SELECT [id], [username], [setting_key], [setting_value], [created_at], [updated_at] FROM [user_settings]"
+    },
+    {
+      "server_id": "f1",
+      "name": "users_list",
+      "description": "List all records from users table",
+      "uri_template": "users://list",
+      "sqlQuery": "SELECT [id], [username], [password], [display_name], [email], [team_name], [active], [created_at], [updated_at] FROM [users]"
     }
   ]
 }

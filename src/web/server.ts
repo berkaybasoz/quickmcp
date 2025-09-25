@@ -347,21 +347,29 @@ app.delete('/api/servers/:id', async (req, res) => {
   try {
     const serverId = req.params.id;
     console.log(`Attempting to delete server with ID: ${serverId}`);
-    console.log(`Available servers:`, Array.from(generatedServers.keys()));
 
-    const serverInfo = generatedServers.get(serverId);
-
-    if (!serverInfo) {
-      console.log(`Server with ID "${serverId}" not found`);
+    // Check if server exists in JSON database
+    const existingServer = generator.getServer(serverId);
+    if (!existingServer) {
+      console.log(`Server with ID "${serverId}" not found in database`);
       return res.status(404).json({
         success: false,
-        error: `Server with ID "${serverId}" not found. Available servers: ${Array.from(generatedServers.keys()).join(', ') || 'None'}`
+        error: `Server with ID "${serverId}" not found`
       });
     }
 
-    // Remove server files
-    const serverDir = path.dirname(serverInfo.serverPath);
-    await fs.rm(serverDir, { recursive: true, force: true });
+    // Delete from JSON database (primary storage)
+    generator.deleteServer(serverId);
+    console.log(`Deleted server "${serverId}" from JSON database`);
+
+    // Also check and remove from in-memory store if exists
+    const serverInfo = generatedServers.get(serverId);
+    if (serverInfo) {
+      // Remove server files
+      const serverDir = path.dirname(serverInfo.serverPath);
+      await fs.rm(serverDir, { recursive: true, force: true });
+      console.log(`Removed server files from ${serverDir}`);
+    }
 
     // Remove from memory
     generatedServers.delete(req.params.id);

@@ -265,7 +265,9 @@ export class MCPServerGenerator {
       query += ` WHERE ${whereConditions}`;
 
       if (dbType === 'mssql') {
-        query += ' ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
+        // Use TOP for SQL Server to avoid OFFSET/FETCH complexity
+        // Replace SELECT with SELECT TOP
+        query = query.replace('SELECT ', 'SELECT TOP (@limit) ');
       } else {
         query += ' LIMIT @limit OFFSET @offset';
       }
