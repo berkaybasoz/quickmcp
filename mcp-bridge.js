@@ -173,18 +173,51 @@ async function getToolsFromServer() {
 
           if (serverDetails && serverDetails.config && serverDetails.config.tools) {
             // Add actual tools from server config
+            const usedNames = new Set();
             for (const tool of serverDetails.config.tools) {
-              // Truncate tool name if too long (MCP has 64 char limit)
               let toolName = `${server.id}__${tool.name}`;
+
+              // Truncate tool name if too long (MCP has 64 char limit)
               if (toolName.length > 64) {
-                // Keep server prefix and truncate the tool part
                 const maxToolLength = 64 - server.id.length - 2; // -2 for "__"
-                const truncatedTool = tool.name.substring(0, maxToolLength);
+
+                // Smart truncation: try to keep meaningful parts
+                let truncatedTool = tool.name;
+                if (tool.name.includes('_by_')) {
+                  // For filter tools, keep the "by_" part and shorten the field name
+                  const parts = tool.name.split('_by_');
+                  const prefix = parts[0];
+                  const field = parts[1];
+
+                  if (field && prefix.length + field.length + 4 > maxToolLength) {
+                    // Shorten the field name but keep some context
+                    const availableForField = maxToolLength - prefix.length - 4; // -4 for "_by_"
+                    const shortenedField = field.substring(0, Math.max(availableForField, 8));
+                    truncatedTool = `${prefix}_by_${shortenedField}`;
+                  }
+                } else {
+                  // Generic truncation for other tools
+                  truncatedTool = tool.name.substring(0, maxToolLength);
+                }
+
                 toolName = `${server.id}__${truncatedTool}`;
               }
 
+              // Handle duplicates by adding a suffix
+              let finalToolName = toolName;
+              let counter = 1;
+              while (usedNames.has(finalToolName)) {
+                const suffix = `_${counter}`;
+                const maxBaseLength = 64 - suffix.length;
+                const baseName = toolName.substring(0, maxBaseLength);
+                finalToolName = `${baseName}${suffix}`;
+                counter++;
+              }
+
+              usedNames.add(finalToolName);
+
               tools.push({
-                name: toolName,
+                name: finalToolName,
                 description: `[${server.name}] ${tool.description}`,
                 inputSchema: tool.inputSchema
               });
