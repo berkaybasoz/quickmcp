@@ -9,7 +9,7 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
 const parsers_1 = require("../parsers");
-const MCPServerGenerator_new_1 = require("../generators/MCPServerGenerator-new");
+const MCPServerGenerator_1 = require("../generators/MCPServerGenerator");
 const MCPTestRunner_1 = require("../client/MCPTestRunner");
 const child_process_1 = require("child_process");
 const integrated_mcp_server_new_1 = require("../integrated-mcp-server-new");
@@ -21,7 +21,7 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
 const parser = new parsers_1.DataSourceParser();
-const generator = new MCPServerGenerator_new_1.MCPServerGenerator();
+const generator = new MCPServerGenerator_1.MCPServerGenerator();
 const testRunner = new MCPTestRunner_1.MCPTestRunner();
 const sqliteManager = new sqlite_manager_1.SQLiteManager();
 let nextAvailablePort = 3001;
@@ -155,6 +155,7 @@ app.post('/api/generate', async (req, res) => {
             });
         });
         // Generate virtual server (saves to SQLite database)
+        console.log(`🎯 API calling generateServer with name: "${name}"`);
         const result = await generator.generateServer(name, // serverId
         name, // serverName (use the name from form as server name)
         parsedDataObject, dataSource.connection || { type: 'csv', server: 'local', database: name });

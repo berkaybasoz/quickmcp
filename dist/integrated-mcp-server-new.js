@@ -232,7 +232,7 @@ class IntegratedMCPServer {
         // Setup SSE transport for MCP - skip for now due to compatibility issues
         // const transport = new SSEServerTransport('/sse', httpServer);
         // await this.server.connect(transport);
-        console.log('✅ MCP server connected with dynamic JSON-based execution (HTTP endpoints active)');
+        console.log('✅ MCP server connected with dynamic SQLite-based execution (HTTP endpoints active)');
         // Graceful shutdown
         process.on('SIGINT', async () => {
             console.log('\n🔄 Shutting down QuickMCP Integrated Server...');

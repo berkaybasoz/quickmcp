@@ -1,4 +1,4 @@
-import { JSONManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/json-manager.js';
+import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager.js';
 
 interface ParsedColumn {
   name: string;
@@ -11,10 +11,10 @@ interface ParsedData {
 }
 
 export class MCPServerGenerator {
-  private jsonManager: JSONManager;
+  private sqliteManager: SQLiteManager;
 
   constructor() {
-    // this.jsonManager = new JSONManager(); // Temporarily disabled
+    this.sqliteManager = new SQLiteManager();
   }
 
   async generateServer(
@@ -23,554 +23,322 @@ export class MCPServerGenerator {
     parsedData: ParsedData,
     dbConfig: any
   ): Promise<{ success: boolean; message: string }> {
-    const isDatabaseConnection = config.dataSource.type === 'database';
-    const isMSSQLConnection = isDatabaseConnection && config.dataSource.connection?.type === 'mssql';
+    try {
+      console.log(`🚀 Generating virtual MCP server: ${serverId}`);
 
-    const serverCode = `#!/usr/bin/env node
+      // Create server config
+      console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
+      const serverConfig: ServerConfig = {
+        id: serverId,
+        name: serverName,
+        dbConfig: dbConfig,
+        createdAt: new Date().toISOString()
+      };
+      console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ErrorCode,
-  ListPromptsRequestSchema,
-  ListResourcesRequestSchema,
-  ListToolsRequestSchema,
-  McpError,
-  ReadResourceRequestSchema,
-  GetPromptRequestSchema
-} from '@modelcontextprotocol/sdk/types.js';
-import * as sql from 'mssql';
+      // Save server to SQLite database only
+      this.sqliteManager.saveServer(serverConfig);
+      console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
-class ${this.toPascalCase(config.name)}Server {
-  private server: Server;
-  private pool: sql.ConnectionPool;
-
-  constructor() {
-    // Database configuration - all servers now use MSSQL
-    const dbConfig = {
-      user: '${config.dataSource.connection?.username || 'sa'}',
-      password: '${config.dataSource.connection?.password || 'StrongPassword123!'}',
-      database: '${config.dataSource.connection?.database || 'exceptionmonitor'}',
-      server: '${config.dataSource.connection?.host || 'localhost'}',
-      port: ${config.dataSource.connection?.port || 1434},
-      pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000
-      },
-      options: {
-        encrypt: false,
-        trustServerCertificate: true
+      // Generate and save tools
+      const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
+      if (tools.length > 0) {
+        this.sqliteManager.saveTools(tools);
+        console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
-    };
 
-    this.pool = new sql.ConnectionPool(dbConfig);
-    this.server = new Server(
-      {
-        name: '${config.name}',
-        version: '${config.version}',
-        description: '${config.description}'
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
+      // Generate and save resources
+      const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
+      if (resources.length > 0) {
+        this.sqliteManager.saveResources(resources);
+        console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
+      }
+
+      return {
+        success: true,
+        message: `Virtual MCP server '${serverId}' created successfully with ${tools.length} tools and ${resources.length} resources`
+      };
+    } catch (error) {
+      console.error(`❌ Error generating server ${serverId}:`, error);
+      return {
+        success: false,
+        message: `Failed to generate server: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any): ToolDefinition[] {
+    const tools: ToolDefinition[] = [];
+
+    for (const [tableName, rows] of Object.entries(parsedData)) {
+      if (!rows || rows.length === 0) continue;
+
+      const columns = this.analyzeColumns(rows);
+      const cleanTableName = this.sanitizeName(tableName);
+
+      // GET tool
+      tools.push({
+        server_id: serverId,
+        name: `get_${cleanTableName}`,
+        description: `Get records from ${tableName} table`,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Maximum number of records to return',
+              default: 100,
+              minimum: 1,
+              maximum: 1000
+            },
+            offset: {
+              type: 'number',
+              description: 'Number of records to skip',
+              default: 0,
+              minimum: 0
+            },
+            ...this.generateFilterProperties(columns)
+          },
+          required: []
+        },
+        sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
+        operation: 'SELECT'
+      });
+
+      // CREATE tool
+      tools.push({
+        server_id: serverId,
+        name: `create_${cleanTableName}`,
+        description: `Create a new record in ${tableName} table`,
+        inputSchema: {
+          type: 'object',
+          properties: this.generateInputProperties(columns, true),
+          required: columns.filter(col => !col.nullable && col.name.toLowerCase() !== 'id').map(col => col.name)
+        },
+        sqlQuery: this.generateInsertQuery(tableName, columns, dbConfig.type),
+        operation: 'INSERT'
+      });
+
+      // UPDATE tool
+      if (columns.some(col => col.name.toLowerCase() === 'id')) {
+        tools.push({
+          server_id: serverId,
+          name: `update_${cleanTableName}`,
+          description: `Update a record in ${tableName} table`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              id: {
+                type: ['string', 'number'],
+                description: 'ID of the record to update'
+              },
+              ...this.generateInputProperties(columns, false)
+            },
+            required: ['id']
+          },
+          sqlQuery: this.generateUpdateQuery(tableName, columns, dbConfig.type),
+          operation: 'UPDATE'
+        });
+
+        // DELETE tool
+        tools.push({
+          server_id: serverId,
+          name: `delete_${cleanTableName}`,
+          description: `Delete a record from ${tableName} table`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              id: {
+                type: ['string', 'number'],
+                description: 'ID of the record to delete'
+              }
+            },
+            required: ['id']
+          },
+          sqlQuery: this.generateDeleteQuery(tableName, dbConfig.type),
+          operation: 'DELETE'
+        });
+      }
+    }
+
+    return tools;
+  }
+
+  private generateResourcesForData(serverId: string, parsedData: ParsedData, dbConfig: any): ResourceDefinition[] {
+    const resources: ResourceDefinition[] = [];
+
+    for (const [tableName, rows] of Object.entries(parsedData)) {
+      if (!rows || rows.length === 0) continue;
+
+      const cleanTableName = this.sanitizeName(tableName);
+
+      resources.push({
+        server_id: serverId,
+        name: `${cleanTableName}_list`,
+        description: `List all records from ${tableName} table`,
+        uri_template: `${cleanTableName}://list`,
+        sqlQuery: this.generateSelectQuery(tableName, this.analyzeColumns(rows), dbConfig.type, false)
+      });
+    }
+
+    return resources;
+  }
+
+  private analyzeColumns(rows: any[]): ParsedColumn[] {
+    if (!rows || rows.length === 0) return [];
+
+    const firstRow = rows[0];
+    const columns: ParsedColumn[] = [];
+
+    for (const [key, value] of Object.entries(firstRow)) {
+      let type = 'string';
+
+      if (typeof value === 'number') {
+        type = Number.isInteger(value) ? 'integer' : 'number';
+      } else if (typeof value === 'boolean') {
+        type = 'boolean';
+      } else if (value instanceof Date) {
+        type = 'string'; // Dates are handled as strings in JSON
+      } else if (value === null || value === undefined) {
+        // Check other rows to determine type
+        for (let i = 1; i < Math.min(rows.length, 10); i++) {
+          const otherValue = rows[i][key];
+          if (otherValue !== null && otherValue !== undefined) {
+            if (typeof otherValue === 'number') {
+              type = Number.isInteger(otherValue) ? 'integer' : 'number';
+            } else if (typeof otherValue === 'boolean') {
+              type = 'boolean';
+            }
+            break;
+          }
         }
       }
-    );
 
-    this.setupHandlers();
-  }
-
-  private setupHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [
-        ${config.tools.map(tool => this.generateToolDefinition(tool)).join(',\n        ')}
-      ]
-    }));
-
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-      resources: [
-        ${config.resources.map(resource => this.generateResourceDefinition(resource)).join(',\n        ')}
-      ]
-    }));
-
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-      prompts: [
-        ${config.prompts.map(prompt => this.generatePromptDefinition(prompt)).join(',\n        ')}
-      ]
-    }));
-
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-
-      switch (name) {
-        ${config.tools.map(tool => this.generateToolHandler(tool, config)).join('\n        ')}
-        default:
-          throw new McpError(ErrorCode.MethodNotFound, \`Unknown tool: \${name}\`);
-      }
-    });
-
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      const { uri } = request.params;
-
-      switch (uri) {
-        ${config.resources.map(resource => this.generateResourceHandler(resource)).join('\n        ')}
-        default:
-          throw new McpError(ErrorCode.InvalidParams, \`Unknown resource: \${uri}\`);
-      }
-    });
-
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-
-      switch (name) {
-        ${config.prompts.map(prompt => this.generatePromptHandler(prompt)).join('\n        ')}
-        default:
-          throw new McpError(ErrorCode.MethodNotFound, \`Unknown prompt: \${name}\`);
-      }
-    });
-  }
-
-${this.generateUtilityMethods(config, parsedData)}
-
-  private toSafeIdentifier(str: string): string {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, '_')
-      .replace(/^[0-9]/, '_$&')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
-  }
-
-  async run() {
-    // Initialize database connection - all servers now use MSSQL
-    try {
-      await this.pool.connect();
-      console.error('✅ Database connection established');
-    } catch (error) {
-      console.error('❌ Database connection failed:', error.message);
-      process.exit(1);
-    }
-    // Check if we should run as TCP server for runtime mode
-    const port = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT) : null;
-
-    if (port) {
-      // TCP Server mode for runtime
-      const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
-      const transport = new SSEServerTransport(\`/message\`, this.server);
-
-      const express = await import('express');
-      const app = express.default();
-
-      app.use(express.json());
-      app.use('/sse', transport.handler);
-
-      app.listen(port, () => {
-        console.error(\`${config.name} MCP server running on http://localhost:\${port}\`);
+      columns.push({
+        name: key,
+        type: type,
+        nullable: rows.some(row => row[key] === null || row[key] === undefined)
       });
-    } else {
-      // Standard stdio mode
-      const transport = new StdioServerTransport();
-      await this.server.connect(transport);
-      console.error('${config.name} MCP server running on stdio');
-    }
-  }
-}
-
-const server = new ${this.toPascalCase(config.name)}Server();
-server.run().catch(console.error);
-`;
-
-    return serverCode;
-  }
-
-  generatePackageJson(config: MCPServerConfig): string {
-    const dependencies: any = {
-      "@modelcontextprotocol/sdk": "^0.4.0",
-      "express": "^4.18.0",
-      "mssql": "^11.0.1"  // All servers now use MSSQL
-    };
-
-    return JSON.stringify({
-      name: `mcp-server-${config.name.toLowerCase()}`,
-      version: config.version,
-      description: config.description,
-      type: "module",
-      main: "index.js",
-      scripts: {
-        build: "tsc",
-        start: "node dist/index.js",
-        dev: "tsx index.ts",
-        "start:runtime": "MCP_PORT=3001 tsx index.ts"
-      },
-      dependencies,
-      devDependencies: {
-        typescript: "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/express": "^4.17.0",
-        "tsx": "^4.0.0"
-      }
-    }, null, 2);
-  }
-
-  generateConfigFromData(name: string, description: string, parsedData: ParsedData[]): MCPServerConfig {
-    const tools: MCPTool[] = [];
-    const resources: MCPResource[] = [];
-    const prompts: MCPPrompt[] = [];
-
-    parsedData.forEach((data, tableIndex) => {
-      const tableName = data.tableName || `table_${tableIndex}`;
-      const safeTableName = this.toSafeIdentifier(tableName);
-
-      // Generate search tool
-      tools.push({
-        name: `search_${safeTableName}`,
-        description: `Search records in ${tableName}`,
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: { type: "string", description: "Search query" },
-            limit: { type: "number", description: "Maximum number of results", default: 10 }
-          },
-          required: ["query"]
-        },
-        handler: `searchTable(${tableIndex}, args.query, args.limit || 10)`
-      });
-
-      // Generate get all tool
-      tools.push({
-        name: `get_all_${safeTableName}`,
-        description: `Get all records from ${tableName}`,
-        inputSchema: {
-          type: "object",
-          properties: {
-            limit: { type: "number", description: "Maximum number of results", default: 100 }
-          }
-        },
-        handler: `getAllFromTable(${tableIndex}, args.limit || 100)`
-      });
-
-      // Generate filter tool for each column
-      data.headers.forEach(header => {
-        const columnType = data.metadata.dataTypes[header];
-        const filterSchema = this.getFilterSchema(columnType);
-        const safeHeaderName = this.toSafeIdentifier(header);
-
-        tools.push({
-          name: `filter_${safeTableName}_by_${safeHeaderName}`,
-          description: `Filter ${tableName} by ${header}`,
-          inputSchema: {
-            type: "object",
-            properties: {
-              value: filterSchema,
-              limit: { type: "number", description: "Maximum number of results", default: 50 }
-            },
-            required: ["value"]
-          },
-          handler: `filterTableByColumn(${tableIndex}, '${header}', args.value, args.limit || 50)`
-        });
-      });
-
-      // Generate resource for table schema
-      resources.push({
-        uri: `schema://${safeTableName}`,
-        name: `${tableName} Schema`,
-        description: `Schema information for ${tableName}`,
-        mimeType: "application/json"
-      });
-
-      // Generate resource for sample data
-      resources.push({
-        uri: `data://${safeTableName}/sample`,
-        name: `${tableName} Sample Data`,
-        description: `Sample data from ${tableName}`,
-        mimeType: "application/json"
-      });
-
-      // Generate analysis prompt
-      prompts.push({
-        name: `analyze_${safeTableName}`,
-        description: `Analyze data patterns in ${tableName}`,
-        arguments: [
-          { name: "focus", description: "What aspect to focus on", required: false }
-        ],
-        template: `Analyze the data in ${tableName}. The table has ${data.metadata.rowCount} rows and ${data.metadata.columnCount} columns.
-Columns: ${data.headers.join(', ')}
-
-{{args.focus ? \`Focus on: \${args.focus}\` : 'Provide a general analysis of the data patterns, distributions, and any interesting insights.'}}`
-      });
-    });
-
-    return {
-      name,
-      description,
-      version: "1.0.0",
-      dataSource: { type: 'json', name, data: [] },
-      tools,
-      resources,
-      prompts
-    };
-  }
-
-  private generateDataStorage(parsedData: ParsedData[]): string {
-    return `const DATA = ${JSON.stringify(parsedData, null, 2)};`;
-  }
-
-  private generateToolDefinition(tool: MCPTool): string {
-    return `{
-          name: '${tool.name}',
-          description: '${tool.description}',
-          inputSchema: ${JSON.stringify(tool.inputSchema, null, 10)}
-        }`;
-  }
-
-  private generateResourceDefinition(resource: MCPResource): string {
-    return `{
-          uri: '${resource.uri}',
-          name: '${resource.name}',
-          description: '${resource.description}'${resource.mimeType ? `, mimeType: '${resource.mimeType}'` : ''}
-        }`;
-  }
-
-  private generatePromptDefinition(prompt: MCPPrompt): string {
-    return `{
-          name: '${prompt.name}',
-          description: '${prompt.description}',
-          arguments: ${JSON.stringify(prompt.arguments, null, 10)}
-        }`;
-  }
-
-  private generateToolHandler(tool: MCPTool, config: MCPServerConfig): string {
-    const isDatabaseConnection = config.dataSource.type === 'database';
-    const isMSSQLConnection = isDatabaseConnection && config.dataSource.connection?.type === 'mssql';
-
-    if (isMSSQLConnection && (tool.handler.includes('getAllFromTable') ||
-                             tool.handler.includes('searchTable') ||
-                             tool.handler.includes('filterTableByColumn'))) {
-      // Add await for database methods
-      const asyncHandler = tool.handler.replace(/(\w+)\((.*?)\)/g, 'await this.$1($2)');
-      return `case '${tool.name}':
-          return { content: [{ type: 'text', text: JSON.stringify(${asyncHandler}) }] };`;
-    } else {
-      return `case '${tool.name}':
-          return { content: [{ type: 'text', text: JSON.stringify(${tool.handler}) }] };`;
-    }
-  }
-
-  private generateResourceHandler(resource: MCPResource): string {
-    const uriParts = resource.uri.split('://');
-    const resourceType = uriParts[0];
-    const resourcePath = uriParts[1];
-
-    if (resourceType === 'schema') {
-      // Find table index by matching the resource path with actual table names
-      return `case '${resource.uri}':
-          const schemaTableIndex = DATA.findIndex(table =>
-            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${resourcePath}'
-          );
-          return {
-            contents: [{
-              uri: '${resource.uri}',
-              mimeType: 'application/json',
-              text: JSON.stringify({
-                headers: DATA[schemaTableIndex].headers,
-                metadata: DATA[schemaTableIndex].metadata
-              }, null, 2)
-            }]
-          };`;
-    } else if (resourceType === 'data') {
-      const [tableName, dataType] = resourcePath.split('/');
-      return `case '${resource.uri}':
-          const dataTableIndex = DATA.findIndex(table =>
-            this.toSafeIdentifier(table.tableName || \`table_\${DATA.indexOf(table)}\`) === '${tableName}'
-          );
-          return {
-            contents: [{
-              uri: '${resource.uri}',
-              mimeType: 'application/json',
-              text: JSON.stringify(DATA[dataTableIndex].rows.slice(0, 10), null, 2)
-            }]
-          };`;
     }
 
-    return `case '${resource.uri}':
-          return {
-            contents: [{
-              uri: '${resource.uri}',
-              mimeType: '${resource.mimeType || 'text/plain'}',
-              text: 'Resource data'
-            }]
-          };`;
+    return columns;
   }
 
-  private generatePromptHandler(prompt: MCPPrompt): string {
-    const escapedTemplate = prompt.template.replace(/`/g, '\\`').replace(/\${/g, '\\${');
-    return `case '${prompt.name}':
-          return {
-            description: '${prompt.description}',
-            messages: [{
-              role: 'user',
-              content: {
-                type: 'text',
-                text: \`${escapedTemplate}\`
-              }
-            }]
-          };`;
-  }
+  private generateFilterProperties(columns: ParsedColumn[]): any {
+    const properties: any = {};
 
-  private generateUtilityMethods(config: MCPServerConfig, parsedData: ParsedData[]): string {
-    // All servers now use MSSQL database connections - no static data
-    return this.generateMSSQLUtilityMethods(parsedData);
-  }
-
-  private generateStaticUtilityMethods(): string {
-    // Static methods removed - all servers now use database connections
-    return `
-  // Static utility methods are deprecated - using database connections only
-  private searchTable() { throw new Error('Static methods removed - use database connection'); }
-  private getAllFromTable() { throw new Error('Static methods removed - use database connection'); }
-  private filterTableByColumn() { throw new Error('Static methods removed - use database connection'); }
-`;
-  }
-
-  private generateMSSQLUtilityMethods(parsedData: ParsedData[]): string {
-    const tableNames = parsedData.map(data => data.tableName);
-    const tableNamesArray = tableNames.map(name => `'${name}'`).join(', ');
-
-    return `
-  private async searchTable(tableIndex: number, query: string, limit: number) {
-    const tableNames = [${tableNamesArray}];
-    const tableName = tableNames[tableIndex];
-
-    try {
-      await this.pool.connect();
-      const request = this.pool.request();
-
-      // Get table columns for dynamic search
-      const columnsResult = await request.query(\`
-        SELECT COLUMN_NAME
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_NAME = '\${tableName}'
-        AND DATA_TYPE IN ('varchar', 'nvarchar', 'text', 'ntext', 'char', 'nchar')
-      \`);
-
-      const textColumns = columnsResult.recordset.map(row => row.COLUMN_NAME);
-
-      if (textColumns.length === 0) {
-        return { headers: [], rows: [], total: 0 };
-      }
-
-      const searchConditions = textColumns.map(col => \\\`\\\${col} LIKE @query\\\`).join(' OR ');
-      const searchQuery = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} WHERE \\\${searchConditions} ORDER BY (SELECT NULL)\\\`;
-
-      const searchRequest = this.pool.request();
-      searchRequest.input('query', sql.NVarChar, \`%\${query}%\`);
-      const result = await searchRequest.query(searchQuery);
-
-      const headers = Object.keys(result.recordset[0] || {});
-      const rows = result.recordset.map(row => headers.map(header => row[header]));
-
-      return {
-        headers: headers,
-        rows: rows,
-        total: rows.length
+    for (const column of columns) {
+      const baseType = column.type === 'integer' ? 'number' : column.type;
+      properties[`filter_${column.name}`] = {
+        type: baseType,
+        description: `Filter by ${column.name}`
       };
-    } catch (error) {
-      console.error('Database search error:', error);
-      return { headers: [], rows: [], total: 0 };
     }
+
+    return properties;
   }
 
-  private async getAllFromTable(tableIndex: number, limit: number) {
-    const tableNames = [${tableNamesArray}];
-    const tableName = tableNames[tableIndex];
+  private generateInputProperties(columns: ParsedColumn[], isCreate: boolean): any {
+    const properties: any = {};
 
-    try {
-      await this.pool.connect();
-      const request = this.pool.request();
-      const query = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} ORDER BY (SELECT NULL)\\\`;
-      const result = await request.query(query);
+    for (const column of columns) {
+      // Skip ID field for create operations
+      if (isCreate && column.name.toLowerCase() === 'id') continue;
 
-      const headers = Object.keys(result.recordset[0] || {});
-      const rows = result.recordset.map(row => headers.map(header => row[header]));
-
-      return {
-        headers: headers,
-        rows: rows,
-        total: rows.length
+      const baseType = column.type === 'integer' ? 'number' : column.type;
+      properties[column.name] = {
+        type: column.nullable ? [baseType, 'null'] : baseType,
+        description: `${column.name} field`
       };
-    } catch (error) {
-      console.error('Database error:', error);
-      return { headers: [], rows: [], total: 0 };
     }
+
+    return properties;
   }
 
-  private async filterTableByColumn(tableIndex: number, column: string, value: any, limit: number) {
-    const tableNames = [${tableNamesArray}];
-    const tableName = tableNames[tableIndex];
+  private generateSelectQuery(tableName: string, columns: ParsedColumn[], dbType: string, withParams: boolean = true): string {
+    const columnList = columns.map(col => `[${col.name}]`).join(', ');
+    let query = `SELECT ${columnList} FROM [${tableName}]`;
 
-    try {
-      await this.pool.connect();
-      const request = this.pool.request();
+    if (withParams) {
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+      ).join(' AND ');
 
-      let query: string;
-      if (typeof value === 'string') {
-        query = \\\`SELECT TOP (\\\${limit}) * FROM \\\${tableName} WHERE \\\${column} LIKE @value ORDER BY (SELECT NULL)\\\`;
-        request.input('value', sql.NVarChar, \`%\${value}%\`);
-      } else if (typeof value === 'boolean') {
-        query = \`SELECT TOP (\${limit}) * FROM \${tableName} WHERE \${column} = @value ORDER BY (SELECT NULL)\`;
-        request.input('value', sql.Bit, value);
+      query += ` WHERE ${whereConditions}`;
+
+      if (dbType === 'mssql') {
+        // Use TOP for SQL Server to avoid OFFSET/FETCH complexity
+        // Replace SELECT with SELECT TOP
+        query = query.replace('SELECT ', 'SELECT TOP (@limit) ');
       } else {
-        query = \`SELECT TOP (\${limit}) * FROM \${tableName} WHERE \${column} = @value ORDER BY (SELECT NULL)\`;
-        request.input('value', value);
+        query += ' LIMIT @limit OFFSET @offset';
       }
-
-      const result = await request.query(query);
-      const headers = Object.keys(result.recordset[0] || {});
-      const rows = result.recordset.map(row => headers.map(header => row[header]));
-
-      return {
-        headers: headers,
-        rows: rows,
-        total: rows.length
-      };
-    } catch (error) {
-      console.error('Database error:', error);
-      return { headers: [], rows: [], total: 0 };
     }
-  }`;
+
+    return query;
   }
 
-  private getFilterSchema(columnType: string): any {
-    switch (columnType) {
-      case 'integer':
-        return { type: "number", description: "Integer value to filter by" };
-      case 'number':
-        return { type: "number", description: "Number value to filter by" };
-      case 'boolean':
-        return { type: "boolean", description: "Boolean value to filter by" };
-      case 'date':
-        return { type: "string", description: "Date value to filter by (ISO format)" };
-      default:
-        return { type: "string", description: "String value to search for" };
-    }
+  private generateInsertQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
+    const insertColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
+    const columnNames = insertColumns.map(col => `[${col.name}]`).join(', ');
+    const paramNames = insertColumns.map(col => `@${col.name}`).join(', ');
+
+    return `INSERT INTO [${tableName}] (${columnNames}) VALUES (${paramNames})`;
   }
 
-  private toSafeIdentifier(str: string): string {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, '_')
-      .replace(/^[0-9]/, '_$&')
-      .replace(/_+/g, '_')
+  private generateUpdateQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
+    const updateColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
+    const setClause = updateColumns.map(col => `[${col.name}] = @${col.name}`).join(', ');
+
+    return `UPDATE [${tableName}] SET ${setClause} WHERE [Id] = @id`;
+  }
+
+  private generateDeleteQuery(tableName: string, dbType: string): string {
+    return `DELETE FROM [${tableName}] WHERE [Id] = @id`;
+  }
+
+  private sanitizeName(name: string): string {
+    return name.toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_{2,}/g, '_')
       .replace(/^_|_$/g, '');
   }
 
-  private toPascalCase(str: string): string {
-    return str
-      .replace(/[-_\\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '')
-      .replace(/^(.)/, (char) => char.toUpperCase());
+  // Public methods for management
+  getAllServers(): ServerConfig[] {
+    return this.sqliteManager.getAllServers();
+  }
+
+  getServer(serverId: string): ServerConfig | null {
+    return this.sqliteManager.getServer(serverId);
+  }
+
+  deleteServer(serverId: string): void {
+    this.sqliteManager.deleteServer(serverId);
+    console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
+  }
+
+  getAllTools(): ToolDefinition[] {
+    return this.sqliteManager.getAllTools();
+  }
+
+  getToolsForServer(serverId: string): ToolDefinition[] {
+    return this.sqliteManager.getToolsForServer(serverId);
+  }
+
+  getAllResources(): ResourceDefinition[] {
+    return this.sqliteManager.getAllResources();
+  }
+
+  getResourcesForServer(serverId: string): ResourceDefinition[] {
+    return this.sqliteManager.getResourcesForServer(serverId);
+  }
+
+  getStats(): { servers: number; tools: number; resources: number } {
+    return this.sqliteManager.getStats();
+  }
+
+  close(): void {
+    this.sqliteManager.close();
   }
 }

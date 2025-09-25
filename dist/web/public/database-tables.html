@@ -196,9 +196,9 @@
             table.sampleData.forEach(row => {
                 html += '<tr>';
                 table.columns.forEach(col => {
-                    let val = row[col.name] || 'NULL';
-                    if (typeof val === 'string' && val.length > 50) {
-                        val = val.substring(0, 50) + '...';
+                    let val = row[col.name];
+                    if (val === null || val === undefined) {
+                        val = '<em>NULL</em>';
                     }
                     html += '<td>' + val + '</td>';
                 });

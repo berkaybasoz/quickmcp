@@ -10,12 +10,14 @@ class MCPServerGenerator {
         try {
             console.log(`🚀 Generating virtual MCP server: ${serverId}`);
             // Create server config
+            console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
             const serverConfig = {
                 id: serverId,
                 name: serverName,
                 dbConfig: dbConfig,
                 createdAt: new Date().toISOString()
             };
+            console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
             // Save server to SQLite database only
             this.sqliteManager.saveServer(serverConfig);
             console.log(`✅ Server config saved to SQLite database: ${serverId}`);

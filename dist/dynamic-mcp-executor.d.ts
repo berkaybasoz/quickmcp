@@ -1,5 +1,5 @@
 export declare class DynamicMCPExecutor {
-    private jsonManager;
+    private sqliteManager;
     private dbConnections;
     constructor();
     getAllTools(): Promise<any[]>;

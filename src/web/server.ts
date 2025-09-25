@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { DataSourceParser } from '../parsers';
-import { MCPServerGenerator } from '../generators/MCPServerGenerator-new';
+import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DataSource, MCPServerConfig, ParsedData } from '../types';
 import { fork } from 'child_process';
@@ -181,6 +181,7 @@ app.post('/api/generate', async (req, res) => {
     });
 
     // Generate virtual server (saves to SQLite database)
+    console.log(`🎯 API calling generateServer with name: "${name}"`);
     const result = await generator.generateServer(
       name,                                    // serverId
       name,                                    // serverName (use the name from form as server name)

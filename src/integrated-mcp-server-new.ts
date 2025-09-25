@@ -279,7 +279,7 @@ export class IntegratedMCPServer {
     // const transport = new SSEServerTransport('/sse', httpServer);
     // await this.server.connect(transport);
 
-    console.log('✅ MCP server connected with dynamic JSON-based execution (HTTP endpoints active)');
+    console.log('✅ MCP server connected with dynamic SQLite-based execution (HTTP endpoints active)');
 
     // Graceful shutdown
     process.on('SIGINT', async () => {

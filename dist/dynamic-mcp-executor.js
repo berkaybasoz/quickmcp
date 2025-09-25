@@ -37,17 +37,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DynamicMCPExecutor = void 0;
-const json_manager_js_1 = require("./database/json-manager.js");
+const sqlite_manager_js_1 = require("./database/sqlite-manager.js");
 const sql = __importStar(require("mssql"));
 const promise_1 = __importDefault(require("mysql2/promise"));
 const pg_1 = require("pg");
 class DynamicMCPExecutor {
     constructor() {
         this.dbConnections = new Map();
-        this.jsonManager = new json_manager_js_1.JSONManager();
+        this.sqliteManager = new sqlite_manager_js_1.SQLiteManager();
     }
     async getAllTools() {
-        const tools = this.jsonManager.getAllTools();
+        const tools = this.sqliteManager.getAllTools();
         return tools.map(tool => ({
             name: `${tool.server_id}__${tool.name}`,
             description: `[${tool.server_id}] ${tool.description}`,
@@ -55,7 +55,7 @@ class DynamicMCPExecutor {
         }));
     }
     async getAllResources() {
-        const resources = this.jsonManager.getAllResources();
+        const resources = this.sqliteManager.getAllResources();
         return resources.map(resource => ({
             name: `${resource.server_id}__${resource.name}`,
             description: `[${resource.server_id}] ${resource.description}`,
@@ -71,13 +71,13 @@ class DynamicMCPExecutor {
             }
             const [serverId, actualToolName] = parts;
             // Get tool definition from JSON database
-            const tools = this.jsonManager.getToolsForServer(serverId);
+            const tools = this.sqliteManager.getToolsForServer(serverId);
             const tool = tools.find(t => t.name === actualToolName);
             if (!tool) {
                 throw new Error(`Tool not found: ${toolName}`);
             }
             // Get server config from JSON database
-            const serverConfig = this.jsonManager.getServer(serverId);
+            const serverConfig = this.sqliteManager.getServer(serverId);
             if (!serverConfig) {
                 throw new Error(`Server not found: ${serverId}`);
             }
@@ -106,13 +106,13 @@ class DynamicMCPExecutor {
             }
             const [serverId, actualResourceName] = parts;
             // Get resource definition from JSON database
-            const resources = this.jsonManager.getResourcesForServer(serverId);
+            const resources = this.sqliteManager.getResourcesForServer(serverId);
             const resource = resources.find(r => r.name === actualResourceName);
             if (!resource) {
                 throw new Error(`Resource not found: ${resourceName}`);
             }
             // Get server config from JSON database
-            const serverConfig = this.jsonManager.getServer(serverId);
+            const serverConfig = this.sqliteManager.getServer(serverId);
             if (!serverConfig) {
                 throw new Error(`Server not found: ${serverId}`);
             }
@@ -254,7 +254,7 @@ class DynamicMCPExecutor {
     }
     getStats() {
         return {
-            ...this.jsonManager.getStats(),
+            ...this.sqliteManager.getStats(),
             activeConnections: this.dbConnections.size
         };
     }
@@ -280,7 +280,7 @@ class DynamicMCPExecutor {
             }
         }
         this.dbConnections.clear();
-        this.jsonManager.close();
+        this.sqliteManager.close();
     }
 }
 exports.DynamicMCPExecutor = DynamicMCPExecutor;
