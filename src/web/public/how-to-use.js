@@ -78,11 +78,8 @@ function copyConfig(type) {
         configText = `{
   "mcpServers": {
     "quickmcp-integrated": {
-      "command": "curl",
-      "args": ["-X", "POST", "http://localhost:3001/sse/message"],
-      "env": {
-        "MCP_TRANSPORT": "sse"
-      }
+      "command": "node",
+      "args": ["~/mcp-bridge.js"]
     }
   }
 }`;

@@ -456,6 +456,141 @@ app.get('/how-to-use', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'how-to-use.html'));
 });
 
+// STDIO bridge endpoint for MCP
+app.post('/api/mcp-stdio', (req, res) => {
+  console.log('MCP STDIO bridge connection established');
+
+  // Set headers for keeping connection alive
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+
+  let buffer = '';
+
+  req.on('data', (chunk) => {
+    buffer += chunk.toString();
+    console.log('Received chunk:', chunk.toString());
+
+    // Process complete JSON-RPC messages
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+    for (const line of lines) {
+      if (line.trim()) {
+        try {
+          const message = JSON.parse(line);
+          console.log('Processing MCP message:', JSON.stringify(message, null, 2));
+
+          let response = null;
+
+          // Handle MCP initialize request
+          if (message.method === 'initialize') {
+            response = {
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {
+                protocolVersion: '2024-11-05',
+                serverInfo: {
+                  name: 'quickmcp-integrated',
+                  version: '1.0.0'
+                },
+                capabilities: {
+                  tools: {},
+                  resources: {},
+                  prompts: {}
+                }
+              }
+            };
+          }
+
+          // Handle tools/list request
+          else if (message.method === 'tools/list') {
+            const tools = [];
+
+            // Add tools from all generated servers
+            for (const [serverId, serverInfo] of generatedServers) {
+              for (const tool of serverInfo.config.tools) {
+                tools.push({
+                  name: `${serverId}__${tool.name}`,
+                  description: `[${serverInfo.config.name}] ${tool.description}`,
+                  inputSchema: tool.inputSchema
+                });
+              }
+            }
+
+            // Add management tools
+            tools.push({
+              name: 'quickmcp__list_servers',
+              description: 'List all generated MCP servers',
+              inputSchema: {
+                type: 'object',
+                properties: {},
+                required: []
+              }
+            });
+
+            response = {
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { tools }
+            };
+          }
+
+          // Handle initialized notification (no response needed)
+          else if (message.method === 'notifications/initialized') {
+            console.log('MCP client initialized');
+            // No response for notifications
+          }
+
+          // Handle other requests with placeholder responses
+          else if (message.id) {
+            response = {
+              jsonrpc: '2.0',
+              id: message.id,
+              result: {}
+            };
+          }
+
+          // Send response if we have one
+          if (response) {
+            const responseStr = JSON.stringify(response) + '\n';
+            console.log('Sending response:', responseStr.trim());
+            res.write(responseStr);
+            res.flush && res.flush();
+          }
+        } catch (error) {
+          console.error('Error processing MCP message:', error);
+          if (message && message.id) {
+            const errorResponse = {
+              jsonrpc: '2.0',
+              id: message.id,
+              error: {
+                code: -32603,
+                message: 'Internal error'
+              }
+            };
+            res.write(JSON.stringify(errorResponse) + '\n');
+            res.flush && res.flush();
+          }
+        }
+      }
+    }
+  });
+
+  req.on('end', () => {
+    console.log('MCP stdio connection ended');
+    res.end();
+  });
+
+  req.on('error', (error) => {
+    console.error('MCP stdio connection error:', error);
+    res.end();
+  });
+
+  req.on('close', () => {
+    console.log('MCP stdio connection closed');
+  });
+});
+
 // Serve index.html for root and any other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

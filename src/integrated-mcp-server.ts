@@ -449,6 +449,7 @@ class IntegratedMCPServer {
   async start(port: number = 3001): Promise<void> {
     // Setup express middleware
     this.app.use(express.json());
+    this.app.use(express.raw({ type: 'application/json', limit: '10mb' }));
 
     // Health check endpoint
     this.app.get('/health', (req, res) => {
@@ -459,40 +460,195 @@ class IntegratedMCPServer {
       });
     });
 
-    // Create SSE transport and add to app
-    try {
-      const transport = new SSEServerTransport('/message', this.server);
-      // Check if transport has the correct method
-      if (transport.requestHandler) {
-        this.app.use('/sse', transport.requestHandler);
-      } else {
-        console.log('Warning: SSE transport requestHandler not found');
-        // Fallback manual SSE implementation
-        this.app.post('/sse/message', (req, res) => {
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type'
-          });
+    // STDIO bridge endpoint for MCP - handles persistent STDIO connection
+    this.app.post('/api/mcp-stdio', express.raw({ type: '*/*' }), (req, res) => {
+      console.log('MCP STDIO bridge connection established');
 
-          // Send ping every 30 seconds
-          const pingInterval = setInterval(() => {
-            res.write('event: ping\ndata: {}\n\n');
-          }, 30000);
+      // Set headers for persistent connection
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
-          req.on('close', () => {
-            clearInterval(pingInterval);
-          });
+      let buffer = '';
 
-          // Handle MCP message
-          res.write('event: message\ndata: {"method":"list_tools","params":{}}\n\n');
-        });
+      // Handle data streaming
+      req.on('data', (chunk) => {
+        buffer += chunk.toString();
+
+        // Process complete lines (JSON-RPC messages)
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const message = JSON.parse(line);
+              console.log('Processing MCP message:', JSON.stringify(message, null, 2));
+
+              let response = null;
+
+              // Handle MCP initialize request
+              if (message.method === 'initialize') {
+                response = {
+                  jsonrpc: '2.0',
+                  id: message.id,
+                  result: {
+                    protocolVersion: '2024-11-05',
+                    serverInfo: {
+                      name: 'quickmcp-integrated',
+                      version: '1.0.0'
+                    },
+                    capabilities: {
+                      tools: {},
+                      resources: {},
+                      prompts: {}
+                    }
+                  }
+                };
+              }
+
+              // Handle tools/list request
+              else if (message.method === 'tools/list') {
+                const tools = [];
+
+                // Add tools from all generated servers
+                for (const [serverId, serverInfo] of this.generatedServers) {
+                  for (const tool of serverInfo.config.tools) {
+                    tools.push({
+                      name: `${serverId}__${tool.name}`,
+                      description: `[${serverInfo.config.name}] ${tool.description}`,
+                      inputSchema: tool.inputSchema
+                    });
+                  }
+                }
+
+                // Add management tools
+                tools.push({
+                  name: 'quickmcp__list_servers',
+                  description: 'List all generated MCP servers',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {},
+                    required: []
+                  }
+                });
+
+                response = {
+                  jsonrpc: '2.0',
+                  id: message.id,
+                  result: { tools }
+                };
+              }
+
+              // Handle initialized notification (no response needed)
+              else if (message.method === 'notifications/initialized') {
+                console.log('MCP client initialized');
+                // No response for notifications
+              }
+
+              // Handle other requests with placeholder responses
+              else if (message.id) {
+                response = {
+                  jsonrpc: '2.0',
+                  id: message.id,
+                  result: {}
+                };
+              }
+
+              // Send response if we have one
+              if (response) {
+                const responseStr = JSON.stringify(response) + '\n';
+                console.log('Sending response:', responseStr.trim());
+                res.write(responseStr);
+              }
+            } catch (parseError) {
+              console.error('Error parsing JSON message:', parseError, 'Line:', line);
+            }
+          }
+        }
+      });
+
+      // Handle connection close
+      req.on('end', () => {
+        console.log('MCP STDIO connection ended');
+        res.end();
+      });
+
+      req.on('close', () => {
+        console.log('MCP STDIO connection closed');
+      });
+
+      req.on('error', (error) => {
+        console.error('MCP STDIO connection error:', error);
+        res.end();
+      });
+    });
+
+    // Set up proper SSE endpoint for MCP
+    this.app.post('/sse/message', (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+      });
+
+      let isConnected = true;
+
+      // Handle client disconnect
+      req.on('close', () => {
+        isConnected = false;
+        console.log('SSE client disconnected');
+      });
+
+      req.on('error', (err) => {
+        isConnected = false;
+        console.error('SSE connection error:', err);
+      });
+
+      // Send initial response to curl request
+      if (isConnected) {
+        res.write('event: message\ndata: {"jsonrpc":"2.0","result":{"protocolVersion":"2025-06-18","serverInfo":{"name":"quickmcp-integrated","version":"1.0.0"},"capabilities":{"tools":{},"resources":{},"prompts":{}}},"id":0}\n\n');
       }
-    } catch (error) {
-      console.error('Error setting up SSE transport:', error);
-    }
+
+      // Keep connection alive with periodic pings
+      const pingInterval = setInterval(() => {
+        if (isConnected) {
+          try {
+            res.write('event: ping\ndata: {}\n\n');
+          } catch (err) {
+            console.error('Error sending ping:', err);
+            isConnected = false;
+            clearInterval(pingInterval);
+          }
+        } else {
+          clearInterval(pingInterval);
+        }
+      }, 30000);
+
+      // Clean up on timeout
+      setTimeout(() => {
+        if (isConnected) {
+          try {
+            res.end();
+          } catch (err) {
+            console.error('Error ending response:', err);
+          }
+          isConnected = false;
+          clearInterval(pingInterval);
+        }
+      }, 2000); // End connection after 2 seconds for curl
+    });
+
+    // Handle OPTIONS for CORS
+    this.app.options('/sse/message', (req, res) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.sendStatus(200);
+    });
 
     return new Promise((resolve) => {
       this.app.listen(port, () => {

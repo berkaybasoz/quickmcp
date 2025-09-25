@@ -126,6 +126,17 @@
                                 <div class="step">
                                     <div class="step-number">2</div>
                                     <div class="step-content">
+                                        <h4>Copy the MCP Bridge Script</h4>
+                                        <p>Copy the <code>mcp-bridge.js</code> file from your QuickMCP directory to your home directory:</p>
+                                        <div class="config-block">
+                                            <pre><code>cp /path/to/quickmcp/mcp-bridge.js ~/mcp-bridge.js</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="step">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
                                         <h4>Add to Claude Desktop Config</h4>
                                         <p>Copy this configuration to your Claude Desktop config file:</p>
                                         <div class="config-location">
@@ -141,11 +152,8 @@
                                             <pre id="integratedConfig"><code>{
   "mcpServers": {
     "quickmcp-integrated": {
-      "command": "curl",
-      "args": ["-X", "POST", "http://localhost:3001/sse/message"],
-      "env": {
-        "MCP_TRANSPORT": "sse"
-      }
+      "command": "node",
+      "args": ["~/mcp-bridge.js"]
     }
   }
 }</code></pre>
@@ -154,7 +162,7 @@
                                 </div>
 
                                 <div class="step">
-                                    <div class="step-number">3</div>
+                                    <div class="step-number">4</div>
                                     <div class="step-content">
                                         <h4>Restart Claude Desktop</h4>
                                         <p>Close and reopen Claude Desktop for the changes to take effect.</p>
