@@ -85,7 +85,7 @@ class DynamicMCPExecutor {
             const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
             // Execute the SQL query
             const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
-            console.log(`✅ Executed tool ${toolName} successfully`);
+            console.error(`✅ Executed tool ${toolName} successfully`);
             return {
                 success: true,
                 data: result,
