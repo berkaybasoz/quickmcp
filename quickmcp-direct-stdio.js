@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 
-// Change to the correct working directory
+// Change to the correct working directory first
 process.chdir('/Users/berkaybasoz/Documents/apps/quickmcp');
+
+const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 
 // Create SQLite manager
 const sqliteManager = new SQLiteManager();

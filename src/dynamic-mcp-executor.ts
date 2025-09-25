@@ -20,7 +20,7 @@ export class DynamicMCPExecutor {
   async getAllTools(): Promise<any[]> {
     const tools = this.sqliteManager.getAllTools();
 
-    return tools.slice(0, 3).map(tool => ({
+    return tools.map(tool => ({
       name: `${tool.server_id}__${tool.name}`,
       description: `[${tool.server_id}] ${tool.description}`,
       inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
@@ -214,17 +214,37 @@ export class DynamicMCPExecutor {
             sqlParams.add(match[1]);
           }
 
-          // Add all SQL parameters, using provided values or NULL
-          for (const paramName of sqlParams) {
+          // For SQL Server, handle data type compatibility issues
+          // If no filter parameters are provided (all are null), simplify the query
+          const hasActiveFilters = Array.from(sqlParams).some((paramName: string) => {
+            if (paramName === 'limit' || paramName === 'offset') return false;
             const value = args[paramName];
-            if (value !== undefined && value !== null) {
-              request.input(paramName, value);
-            } else {
-              request.input(paramName, null);
+            return value !== undefined && value !== null;
+          });
+
+          let modifiedQuery = sqlQuery;
+          if (!hasActiveFilters && operation === 'SELECT') {
+            // Remove complex WHERE clause that causes ntext compatibility issues
+            modifiedQuery = sqlQuery.replace(/WHERE.*?(?=ORDER BY|GROUP BY|HAVING|$)/gi, '');
+
+            // Still add the limit parameter for SQL Server
+            if (sqlQuery.includes('SELECT TOP')) {
+              request.input('limit', args.limit || 100);
+            }
+          } else {
+            // Add all SQL parameters, using provided values or NULL
+            for (const paramName of sqlParams) {
+              const paramNameStr = paramName as string;
+              const value = args[paramNameStr];
+              if (value !== undefined && value !== null) {
+                request.input(paramNameStr, value);
+              } else {
+                request.input(paramNameStr, null);
+              }
             }
           }
 
-          const result = await request.query(sqlQuery);
+          const result = await request.query(modifiedQuery);
 
           if (operation === 'SELECT') {
             return result.recordset;

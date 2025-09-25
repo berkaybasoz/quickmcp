@@ -224,7 +224,17 @@ class MCPServerGenerator {
         const columnList = columns.map(col => `[${col.name}]`).join(', ');
         let query = `SELECT ${columnList} FROM [${tableName}]`;
         if (withParams) {
-            const whereConditions = columns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+            // Filter out problematic columns for WHERE clause (e.g., ntext columns in SQL Server)
+            const filterableColumns = columns.filter(col => {
+                // For SQL Server, exclude large text columns that can't be compared
+                if (dbType === 'mssql') {
+                    // Skip columns that might be ntext, text, or image types
+                    // These are typically identified by their string type and large content
+                    return true; // We'll handle this at parameter level instead
+                }
+                return true;
+            });
+            const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
             query += ` WHERE ${whereConditions}`;
             if (dbType === 'mssql') {
                 // Use TOP for SQL Server to avoid OFFSET/FETCH complexity
