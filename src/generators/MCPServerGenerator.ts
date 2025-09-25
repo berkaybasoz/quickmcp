@@ -20,7 +20,7 @@ import {
   GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';${isMSSQLConnection ? '\nimport * as sql from \'mssql\';' : ''}
 
-${this.generateDataStorage(parsedData)}
+${isMSSQLConnection ? '' : this.generateDataStorage(parsedData)}
 
 class ${this.toPascalCase(config.name)}Server {
   private server: Server;${isMSSQLConnection ? '\n  private pool: sql.ConnectionPool;' : ''}
@@ -468,9 +468,12 @@ Columns: ${data.headers.join(', ')}
   }
 
   private generateMSSQLUtilityMethods(parsedData: ParsedData[]): string {
+    const tableNames = parsedData.map(data => data.tableName);
+    const tableNamesArray = tableNames.map(name => `'${name}'`).join(', ');
     return `
   private async searchTable(tableIndex: number, query: string, limit: number) {
-    const tableName = DATA[tableIndex].tableName;
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
 
     try {
       await this.pool.connect();
@@ -487,14 +490,7 @@ Columns: ${data.headers.join(', ')}
       const textColumns = columnsResult.recordset.map(row => row.COLUMN_NAME);
 
       if (textColumns.length === 0) {
-        // Fallback to static data if no text columns
-        const data = DATA[tableIndex];
-        const results = data.rows.filter(row =>
-          row.some(cell =>
-            cell && cell.toString().toLowerCase().includes(query.toLowerCase())
-          )
-        ).slice(0, limit);
-        return { headers: data.headers, rows: results, total: results.length };
+        return { headers: [], rows: [], total: 0 };
       }
 
       const searchConditions = textColumns.map(col => \`\${col} LIKE @query\`).join(' OR ');
@@ -514,19 +510,13 @@ Columns: ${data.headers.join(', ')}
       };
     } catch (error) {
       console.error('Database search error:', error);
-      // Fallback to static data
-      const data = DATA[tableIndex];
-      const results = data.rows.filter(row =>
-        row.some(cell =>
-          cell && cell.toString().toLowerCase().includes(query.toLowerCase())
-        )
-      ).slice(0, limit);
-      return { headers: data.headers, rows: results, total: results.length };
+      return { headers: [], rows: [], total: 0 };
     }
   }
 
   private async getAllFromTable(tableIndex: number, limit: number) {
-    const tableName = DATA[tableIndex].tableName;
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
 
     try {
       await this.pool.connect();
@@ -544,18 +534,13 @@ Columns: ${data.headers.join(', ')}
       };
     } catch (error) {
       console.error('Database error:', error);
-      // Fallback to static data
-      const data = DATA[tableIndex];
-      return {
-        headers: data.headers,
-        rows: data.rows.slice(0, limit),
-        total: Math.min(data.rows.length, limit)
-      };
+      return { headers: [], rows: [], total: 0 };
     }
   }
 
   private async filterTableByColumn(tableIndex: number, column: string, value: any, limit: number) {
-    const tableName = DATA[tableIndex].tableName;
+    const tableNames = [${tableNamesArray}];
+    const tableName = tableNames[tableIndex];
 
     try {
       await this.pool.connect();
@@ -584,27 +569,7 @@ Columns: ${data.headers.join(', ')}
       };
     } catch (error) {
       console.error('Database error:', error);
-      // Fallback to static data
-      const data = DATA[tableIndex];
-      const columnIndex = data.headers.indexOf(column);
-
-      if (columnIndex === -1) {
-        throw new Error(\`Column '\${column}' not found\`);
-      }
-
-      const results = data.rows.filter(row => {
-        const cellValue = row[columnIndex];
-        if (typeof value === 'string') {
-          return cellValue && cellValue.toString().toLowerCase().includes(value.toLowerCase());
-        }
-        return cellValue === value;
-      }).slice(0, limit);
-
-      return {
-        headers: data.headers,
-        rows: results,
-        total: results.length
-      };
+      return { headers: [], rows: [], total: 0 };
     }
   }`;
   }
