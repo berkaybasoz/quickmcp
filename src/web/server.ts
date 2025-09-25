@@ -8,7 +8,7 @@ import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DataSource, MCPServerConfig, ParsedData } from '../types';
 import { fork } from 'child_process';
-import { IntegratedMCPServer } from '../integrated-mcp-server';
+import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -600,7 +600,7 @@ const PORT = process.env.PORT || 3000;
 const MCP_PORT = 3001;
 
 // Initialize integrated MCP server
-const integratedMCPServer = new IntegratedMCPServer(generatedServers);
+const integratedMCPServer = new IntegratedMCPServer();
 
 app.listen(PORT, async () => {
   console.log(`🌐 MCP Server Generator running on http://localhost:${PORT}`);

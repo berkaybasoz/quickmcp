@@ -1,0 +1,174 @@
+{
+  "servers": [
+    {
+      "id": "test-exceptions",
+      "name": "Test Exception Monitor",
+      "dbConfig": {
+        "type": "mssql",
+        "server": "localhost",
+        "port": 1434,
+        "database": "exceptionmonitor",
+        "username": "sa",
+        "password": "StrongPassword123!",
+        "encrypt": false,
+        "trustServerCertificate": true
+      },
+      "createdAt": "2025-09-25T14:12:19.226Z"
+    }
+  ],
+  "tools": [
+    {
+      "server_id": "test-exceptions",
+      "name": "get_exception_records",
+      "description": "Get records from exception_records table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of records to return",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "offset": {
+            "type": "number",
+            "description": "Number of records to skip",
+            "default": 0,
+            "minimum": 0
+          },
+          "filter_Id": {
+            "type": "number",
+            "description": "Filter by Id"
+          },
+          "filter_Application": {
+            "type": "string",
+            "description": "Filter by Application"
+          },
+          "filter_Message": {
+            "type": "string",
+            "description": "Filter by Message"
+          },
+          "filter_Source": {
+            "type": "string",
+            "description": "Filter by Source"
+          },
+          "filter_TimeCreated": {
+            "type": "string",
+            "description": "Filter by TimeCreated"
+          }
+        },
+        "required": []
+      },
+      "sqlQuery": "SELECT [Id], [Application], [Message], [Source], [TimeCreated] FROM [exception_records] WHERE (@filter_Id IS NULL OR [Id] = @filter_Id) AND (@filter_Application IS NULL OR [Application] = @filter_Application) AND (@filter_Message IS NULL OR [Message] = @filter_Message) AND (@filter_Source IS NULL OR [Source] = @filter_Source) AND (@filter_TimeCreated IS NULL OR [TimeCreated] = @filter_TimeCreated) ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY",
+      "operation": "SELECT"
+    },
+    {
+      "server_id": "test-exceptions",
+      "name": "create_exception_records",
+      "description": "Create a new record in exception_records table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "Application": {
+            "type": "string",
+            "description": "Application field"
+          },
+          "Message": {
+            "type": "string",
+            "description": "Message field"
+          },
+          "Source": {
+            "type": "string",
+            "description": "Source field"
+          },
+          "TimeCreated": {
+            "type": "string",
+            "description": "TimeCreated field"
+          }
+        },
+        "required": [
+          "Application",
+          "Message",
+          "Source",
+          "TimeCreated"
+        ]
+      },
+      "sqlQuery": "INSERT INTO [exception_records] ([Application], [Message], [Source], [TimeCreated]) VALUES (@Application, @Message, @Source, @TimeCreated)",
+      "operation": "INSERT"
+    },
+    {
+      "server_id": "test-exceptions",
+      "name": "update_exception_records",
+      "description": "Update a record in exception_records table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to update"
+          },
+          "Id": {
+            "type": "number",
+            "description": "Id field"
+          },
+          "Application": {
+            "type": "string",
+            "description": "Application field"
+          },
+          "Message": {
+            "type": "string",
+            "description": "Message field"
+          },
+          "Source": {
+            "type": "string",
+            "description": "Source field"
+          },
+          "TimeCreated": {
+            "type": "string",
+            "description": "TimeCreated field"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "UPDATE [exception_records] SET [Application] = @Application, [Message] = @Message, [Source] = @Source, [TimeCreated] = @TimeCreated WHERE [Id] = @id",
+      "operation": "UPDATE"
+    },
+    {
+      "server_id": "test-exceptions",
+      "name": "delete_exception_records",
+      "description": "Delete a record from exception_records table",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "ID of the record to delete"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "sqlQuery": "DELETE FROM [exception_records] WHERE [Id] = @id",
+      "operation": "DELETE"
+    }
+  ],
+  "resources": [
+    {
+      "server_id": "test-exceptions",
+      "name": "exception_records_list",
+      "description": "List all records from exception_records table",
+      "uri_template": "exception_records://list",
+      "sqlQuery": "SELECT [Id], [Application], [Message], [Source], [TimeCreated] FROM [exception_records]"
+    }
+  ]
+}

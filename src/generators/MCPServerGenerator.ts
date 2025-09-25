@@ -1,7 +1,28 @@
-import { MCPServerConfig, ParsedData, MCPTool, MCPResource, MCPPrompt } from '../types';
+import { JSONManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/json-manager.js';
+
+interface ParsedColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+interface ParsedData {
+  [tableName: string]: any[];
+}
 
 export class MCPServerGenerator {
-  generateServer(config: MCPServerConfig, parsedData: ParsedData[]): string {
+  private jsonManager: JSONManager;
+
+  constructor() {
+    // this.jsonManager = new JSONManager(); // Temporarily disabled
+  }
+
+  async generateServer(
+    serverId: string,
+    serverName: string,
+    parsedData: ParsedData,
+    dbConfig: any
+  ): Promise<{ success: boolean; message: string }> {
     const isDatabaseConnection = config.dataSource.type === 'database';
     const isMSSQLConnection = isDatabaseConnection && config.dataSource.connection?.type === 'mssql';
 
