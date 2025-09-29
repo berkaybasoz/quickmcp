@@ -723,34 +723,54 @@ function displaySingleTestResult(testResult) {
 
 // Server management functions
 async function viewServer(serverId) {
+    console.log('🔍 viewServer called with serverId:', serverId);
+    
     try {
+        console.log('🔍 Fetching server details from:', `/api/servers/${serverId}`);
         const response = await fetch(`/api/servers/${serverId}`);
+        console.log('🔍 Response status:', response.status);
+        
         const result = await response.json();
+        console.log('🔍 Response result:', result);
 
         if (result.success) {
+            console.log('🔍 Server data structure:', result.data);
+            console.log('🔍 Config tools:', result.data?.config?.tools);
+            console.log('🔍 Config resources:', result.data?.config?.resources);
             showServerDetailsModal(result.data);
         } else {
-            console.error('Failed to load server details:', result.error);
+            console.error('❌ Failed to load server details:', result.error);
             alert('Failed to load server details: ' + result.error);
         }
     } catch (error) {
-        console.error('Error loading server details:', error);
+        console.error('❌ Error loading server details:', error);
         alert('Error loading server details: ' + error.message);
     }
 }
 
 function showServerDetailsModal(serverData) {
+    console.log('🔍 showServerDetailsModal called with:', serverData);
+    
+    // Safely extract data with defaults
+    const config = serverData?.config || {};
+    const tools = config.tools || [];
+    const resources = config.resources || [];
+    const serverName = config.name || 'Unknown Server';
+    const serverDescription = config.description || 'No description available';
+    
+    console.log('🔍 Modal data:', { tools: tools.length, resources: resources.length, serverName });
+
     const modalHtml = `
         <div id="server-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-bold text-gray-900">${serverData.config.name}</h2>
+                        <h2 class="text-2xl font-bold text-gray-900">${serverName}</h2>
                         <button onclick="closeServerDetailsModal()" class="text-gray-400 hover:text-gray-600">
                             <i class="fas fa-times text-xl"></i>
                         </button>
                     </div>
-                    <p class="text-gray-600 mt-2">${serverData.config.description}</p>
+                    <p class="text-gray-600 mt-2">${serverDescription}</p>
                 </div>
 
                 <div class="p-6">
@@ -759,16 +779,16 @@ function showServerDetailsModal(serverData) {
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-tools mr-2 text-blue-500"></i>
-                                Tools (${serverData.config.tools.length})
+                                Tools (${tools.length})
                             </h3>
                             <div class="space-y-3 max-h-60 overflow-y-auto">
-                                ${serverData.config.tools.map(tool => `
+                                ${tools.length > 0 ? tools.map(tool => `
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="font-medium text-gray-900">${tool.name}</div>
-                                        <div class="text-sm text-gray-600 mt-1">${tool.description}</div>
-                                        <div class="text-xs text-gray-500 mt-1">Operation: ${tool.operation}</div>
+                                        <div class="font-medium text-gray-900">${tool.name || 'Unnamed Tool'}</div>
+                                        <div class="text-sm text-gray-600 mt-1">${tool.description || 'No description'}</div>
+                                        <div class="text-xs text-gray-500 mt-1">Operation: ${tool.operation || 'Unknown'}</div>
                                     </div>
-                                `).join('')}
+                                `).join('') : '<div class="text-gray-500 text-sm">No tools available</div>'}
                             </div>
                         </div>
 
@@ -776,31 +796,31 @@ function showServerDetailsModal(serverData) {
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
                                 <i class="fas fa-database mr-2 text-green-500"></i>
-                                Resources (${serverData.config.resources.length})
+                                Resources (${resources.length})
                             </h3>
                             <div class="space-y-3 max-h-60 overflow-y-auto">
-                                ${serverData.config.resources.map(resource => `
+                                ${resources.length > 0 ? resources.map(resource => `
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="font-medium text-gray-900">${resource.name}</div>
-                                        <div class="text-sm text-gray-600 mt-1">${resource.description}</div>
-                                        <div class="text-xs text-gray-500 mt-1 font-mono">${resource.uri_template}</div>
+                                        <div class="font-medium text-gray-900">${resource.name || 'Unnamed Resource'}</div>
+                                        <div class="text-sm text-gray-600 mt-1">${resource.description || 'No description'}</div>
+                                        <div class="text-xs text-gray-500 mt-1 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
                                     </div>
-                                `).join('')}
+                                `).join('') : '<div class="text-gray-500 text-sm">No resources available</div>'}
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex flex-wrap gap-4">
-                            <button onclick="testServer('${serverId}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
+                            <button onclick="testServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
                                 <i class="fas fa-vial mr-2"></i>
                                 Test Server
                             </button>
-                            <button onclick="exportServer('${serverId}')" class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
+                            <button onclick="exportServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
                                 <i class="fas fa-download mr-2"></i>
                                 Export Server
                             </button>
-                            <button onclick="deleteServer('${serverId}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                            <button onclick="deleteServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
                                 <i class="fas fa-trash mr-2"></i>
                                 Delete Server
                             </button>
@@ -813,6 +833,7 @@ function showServerDetailsModal(serverData) {
 
     // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+    console.log('🔍 Modal added to DOM');
 }
 
 function closeServerDetailsModal() {
