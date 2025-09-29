@@ -453,7 +453,6 @@ function displayServers(servers) {
                     <span>Tools: ${server.toolsCount}</span>
                     <span>Resources: ${server.resourcesCount}</span>
                     <span>Prompts: ${server.promptsCount}</span>
-                    <span>Data Rows: ${server.dataRowsCount}</span>
                 </div>
                 <div class="server-actions">
                     <button class="btn btn-primary" onclick="viewServer('${server.id}')">View Details</button>

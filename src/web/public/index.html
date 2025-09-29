@@ -669,8 +669,15 @@
                     <!-- Manage Servers Tab -->
                     <div id="manage-tab" class="tab-content">
                         <div class="card-header">
-                            <h1 class="section-title">Generated Servers</h1>
-                            <p class="section-subtitle">Manage and deploy your created MCP servers</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h1 class="section-title">Generated Servers</h1>
+                                    <p class="section-subtitle">Manage and deploy your created MCP servers</p>
+                                </div>
+                                <button class="btn-compact" onclick="switchTab('generator')">
+                                    <span>➕</span> Generate Server
+                                </button>
+                            </div>
                         </div>
                         <div class="card-content">
                             <div id="server-list" class="server-list">

@@ -190,11 +190,18 @@ app.post('/api/generate', async (req, res) => {
     );
 
     if (result.success) {
+      // Get counts for display
+      const tools = generator.getToolsForServer(name);
+      const resources = generator.getResourcesForServer(name);
+
       res.json({
         success: true,
         data: {
           serverId: name,
-          message: result.message
+          message: result.message,
+          toolsCount: tools.length,
+          resourcesCount: resources.length,
+          promptsCount: 0 // We don't generate prompts yet
         }
       });
     } else {
@@ -226,7 +233,6 @@ app.get('/api/servers', (req, res) => {
       toolsCount: tools.length,
       resourcesCount: resources.length,
       promptsCount: 0,
-      dataRowsCount: 0
     };
   });
 
