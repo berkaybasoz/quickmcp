@@ -154,7 +154,7 @@ export class DynamicMCPExecutor {
 
         case 'mysql':
           connection = mysql.createConnection({
-            host: dbConfig.server,
+            host: dbConfig.host,
             port: dbConfig.port || 3306,
             database: dbConfig.database,
             user: dbConfig.username,
@@ -167,7 +167,7 @@ export class DynamicMCPExecutor {
 
         case 'postgresql':
           connection = new Pool({
-            host: dbConfig.server,
+            host: dbConfig.host,
             port: dbConfig.port || 5432,
             database: dbConfig.database,
             user: dbConfig.username,

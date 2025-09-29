@@ -85,7 +85,7 @@ class DynamicMCPExecutor {
             const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
             // Execute the SQL query
             const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
-            console.error(`✅ Executed tool ${toolName} successfully`);
+            console.debug(`Executed tool ${toolName} successfully`);
             return {
                 success: true,
                 data: result,
@@ -144,7 +144,7 @@ class DynamicMCPExecutor {
             switch (dbConfig.type) {
                 case 'mssql':
                     connection = new sql.ConnectionPool({
-                        server: dbConfig.host,
+                        server: dbConfig.server || dbConfig.host,
                         port: dbConfig.port || 1433,
                         database: dbConfig.database,
                         user: dbConfig.username,
@@ -159,7 +159,7 @@ class DynamicMCPExecutor {
                     break;
                 case 'mysql':
                     connection = promise_1.default.createConnection({
-                        host: dbConfig.server,
+                        host: dbConfig.host,
                         port: dbConfig.port || 3306,
                         database: dbConfig.database,
                         user: dbConfig.username,
@@ -170,7 +170,7 @@ class DynamicMCPExecutor {
                     break;
                 case 'postgresql':
                     connection = new pg_1.Pool({
-                        host: dbConfig.server,
+                        host: dbConfig.host,
                         port: dbConfig.port || 5432,
                         database: dbConfig.database,
                         user: dbConfig.username,
@@ -211,7 +211,7 @@ class DynamicMCPExecutor {
                     }
                     // For SQL Server, handle data type compatibility issues
                     // If no filter parameters are provided (all are null), simplify the query
-                    const hasActiveFilters = Array.from(sqlParams).some(paramName => {
+                    const hasActiveFilters = Array.from(sqlParams).some((paramName) => {
                         if (paramName === 'limit' || paramName === 'offset')
                             return false;
                         const value = args[paramName];
@@ -229,12 +229,13 @@ class DynamicMCPExecutor {
                     else {
                         // Add all SQL parameters, using provided values or NULL
                         for (const paramName of sqlParams) {
-                            const value = args[paramName];
+                            const paramNameStr = paramName;
+                            const value = args[paramNameStr];
                             if (value !== undefined && value !== null) {
-                                request.input(paramName, value);
+                                request.input(paramNameStr, value);
                             }
                             else {
-                                request.input(paramName, null);
+                                request.input(paramNameStr, null);
                             }
                         }
                     }

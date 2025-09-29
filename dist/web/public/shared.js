@@ -150,13 +150,23 @@ async function loadTestServers() {
 // Server action functions
 async function viewServer(serverId) {
     try {
-        const response = await fetch(`/api/servers/${serverId}`);
-        const result = await response.json();
+        // Fetch both server config and data
+        const [configResponse, dataResponse] = await Promise.all([
+            fetch(`/api/servers/${serverId}`),
+            fetch(`/api/servers/${serverId}`)
+        ]);
 
-        if (result.success) {
-            showServerDetails(result.data);
+        const configResult = await configResponse.json();
+        const dataResult = await dataResponse.json();
+
+        if (configResult.success) {
+            // Add data to the server config if available
+            if (dataResult.success && dataResult.data && dataResult.data.length > 0) {
+                configResult.data.actualData = dataResult.data;
+            }
+            showServerDetails(configResult.data);
         } else {
-            alert('Failed to load server details: ' + result.error);
+            alert('Failed to load server details: ' + configResult.error);
         }
     } catch (error) {
         console.error('Error viewing server:', error);
@@ -215,7 +225,29 @@ function showServerDetails(serverData) {
 
                     <div class="detail-section">
                         <h3>Data Preview</h3>
-                        ${serverData.parsedData.map((data, index) => `
+                        ${serverData.actualData && serverData.actualData.length > 0 ? `
+                            <div class="data-table">
+                                <h4>Sample Data</h4>
+                                <p>Records: ${serverData.actualData.length}, Columns: ${Object.keys(serverData.actualData[0]).length}</p>
+                                <div class="table-container">
+                                    <table class="data-preview-table">
+                                        <thead>
+                                            <tr>
+                                                ${Object.keys(serverData.actualData[0]).map(header => `<th>${header}</th>`).join('')}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${serverData.actualData.slice(0, 10).map(row => `
+                                                <tr>
+                                                    ${Object.values(row).map(cell => `<td>${cell || ''}</td>`).join('')}
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                    ${serverData.actualData.length > 10 ? `<p><em>... and ${serverData.actualData.length - 10} more rows</em></p>` : ''}
+                                </div>
+                            </div>
+                        ` : serverData.parsedData && serverData.parsedData.length > 0 ? serverData.parsedData.map((data, index) => `
                             <div class="data-table">
                                 <h4>${data.tableName || `Table ${index + 1}`}</h4>
                                 <p>Rows: ${data.metadata.rowCount}, Columns: ${data.metadata.columnCount}</p>
@@ -237,7 +269,7 @@ function showServerDetails(serverData) {
                                     ${data.rows.length > 5 ? `<p><em>... and ${data.rows.length - 5} more rows</em></p>` : ''}
                                 </div>
                             </div>
-                        `).join('')}
+                        `).join('') : '<p>No data available</p>'}
                     </div>
                 </div>
             </div>

@@ -250,6 +250,54 @@ app.get('/api/servers/:id', (req, res) => {
         }
     });
 });
+// Get server data endpoint - provides sample data from database
+app.get('/api/servers/:id/data', async (req, res) => {
+    try {
+        const serverId = req.params.id;
+        const limit = parseInt(req.query.limit) || 10;
+        const server = generator.getServer(serverId);
+        if (!server) {
+            return res.status(404).json({
+                success: false,
+                error: 'Server not found'
+            });
+        }
+        // Use the DynamicMCPExecutor to get data from first available SELECT tool
+        const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
+        const executor = new DynamicMCPExecutor();
+        const tools = generator.getToolsForServer(serverId);
+        const selectTool = tools.find(tool => tool.operation === 'SELECT');
+        if (!selectTool) {
+            return res.json({
+                success: true,
+                data: []
+            });
+        }
+        // Execute the first SELECT tool to get sample data
+        const result = await executor.executeTool(`${serverId}__${selectTool.name}`, { limit: limit });
+        if (result.success && result.data) {
+            // Transform the data to match expected format
+            const sampleData = Array.isArray(result.data) ? result.data : [];
+            res.json({
+                success: true,
+                data: sampleData.slice(0, limit)
+            });
+        }
+        else {
+            res.json({
+                success: true,
+                data: []
+            });
+        }
+    }
+    catch (error) {
+        console.error('Error getting server data:', error);
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
 // Test server endpoint
 app.post('/api/servers/:id/test', async (req, res) => {
     try {
