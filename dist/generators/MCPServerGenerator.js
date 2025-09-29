@@ -6,7 +6,7 @@ class MCPServerGenerator {
     constructor() {
         this.sqliteManager = new sqlite_manager_js_1.SQLiteManager();
     }
-    async generateServer(serverId, serverName, parsedData, dbConfig) {
+    async generateServer(serverId, serverName, parsedData, dbConfig, selectedTables) {
         try {
             console.log(`🚀 Generating virtual MCP server: ${serverId}`);
             // Create server config
@@ -22,7 +22,7 @@ class MCPServerGenerator {
             this.sqliteManager.saveServer(serverConfig);
             console.log(`✅ Server config saved to SQLite database: ${serverId}`);
             // Generate and save tools
-            const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
+            const tools = this.generateToolsForData(serverId, parsedData, dbConfig, selectedTables);
             if (tools.length > 0) {
                 this.sqliteManager.saveTools(tools);
                 console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
@@ -46,56 +46,75 @@ class MCPServerGenerator {
             };
         }
     }
-    generateToolsForData(serverId, parsedData, dbConfig) {
+    generateToolsForData(serverId, parsedData, dbConfig, selectedTables) {
         const tools = [];
+        console.log('🔍 generateToolsForData called with selectedTables:', selectedTables);
         for (const [tableName, rows] of Object.entries(parsedData)) {
             if (!rows || rows.length === 0)
                 continue;
+            // Find table configuration in selectedTables
+            const tableIndex = Object.keys(parsedData).indexOf(tableName);
+            const tableConfig = selectedTables?.find(config => config.index === tableIndex);
+            // Skip table if not selected
+            if (selectedTables && selectedTables.length > 0 && !tableConfig) {
+                console.log(`🔍 Skipping table ${tableName} - not selected`);
+                continue;
+            }
+            console.log(`🔍 Processing table ${tableName} with config:`, tableConfig?.tools);
             const columns = this.analyzeColumns(rows);
             const cleanTableName = this.sanitizeName(tableName);
+            // Get tools configuration (default all true if no config)
+            const toolsConfig = tableConfig?.tools || {
+                get: true, create: true, update: true, delete: true, count: true,
+                min: true, max: true, sum: true, avg: true
+            };
             // GET tool
-            tools.push({
-                server_id: serverId,
-                name: `get_${cleanTableName}`,
-                description: `Get records from ${tableName} table`,
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        limit: {
-                            type: 'number',
-                            description: 'Maximum number of records to return',
-                            default: 100,
-                            minimum: 1,
-                            maximum: 1000
+            if (toolsConfig.get) {
+                tools.push({
+                    server_id: serverId,
+                    name: `get_${cleanTableName}`,
+                    description: `Get records from ${tableName} table`,
+                    inputSchema: {
+                        type: 'object',
+                        properties: {
+                            limit: {
+                                type: 'number',
+                                description: 'Maximum number of records to return',
+                                default: 100,
+                                minimum: 1,
+                                maximum: 1000
+                            },
+                            offset: {
+                                type: 'number',
+                                description: 'Number of records to skip',
+                                default: 0,
+                                minimum: 0
+                            },
+                            ...this.generateFilterProperties(columns)
                         },
-                        offset: {
-                            type: 'number',
-                            description: 'Number of records to skip',
-                            default: 0,
-                            minimum: 0
-                        },
-                        ...this.generateFilterProperties(columns)
+                        required: []
                     },
-                    required: []
-                },
-                sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
-                operation: 'SELECT'
-            });
+                    sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
+                    operation: 'SELECT'
+                });
+            }
             // CREATE tool
-            tools.push({
-                server_id: serverId,
-                name: `create_${cleanTableName}`,
-                description: `Create a new record in ${tableName} table`,
-                inputSchema: {
-                    type: 'object',
-                    properties: this.generateInputProperties(columns, true),
-                    required: columns.filter(col => !col.nullable && col.name.toLowerCase() !== 'id').map(col => col.name)
-                },
-                sqlQuery: this.generateInsertQuery(tableName, columns, dbConfig.type),
-                operation: 'INSERT'
-            });
+            if (toolsConfig.create && columns.length > 0) {
+                tools.push({
+                    server_id: serverId,
+                    name: `create_${cleanTableName}`,
+                    description: `Create a new record in ${tableName} table`,
+                    inputSchema: {
+                        type: 'object',
+                        properties: this.generateInputProperties(columns, true),
+                        required: columns.filter(col => !col.nullable && col.name.toLowerCase() !== 'id').map(col => col.name)
+                    },
+                    sqlQuery: this.generateInsertQuery(tableName, columns, dbConfig.type),
+                    operation: 'INSERT'
+                });
+            }
             // UPDATE tool
-            if (columns.some(col => col.name.toLowerCase() === 'id')) {
+            if (toolsConfig.update && columns.some(col => col.name.toLowerCase() === 'id')) {
                 tools.push({
                     server_id: serverId,
                     name: `update_${cleanTableName}`,
@@ -114,7 +133,9 @@ class MCPServerGenerator {
                     sqlQuery: this.generateUpdateQuery(tableName, columns, dbConfig.type),
                     operation: 'UPDATE'
                 });
-                // DELETE tool
+            }
+            // DELETE tool
+            if (toolsConfig.delete && columns.some(col => col.name.toLowerCase() === 'id')) {
                 tools.push({
                     server_id: serverId,
                     name: `delete_${cleanTableName}`,
@@ -134,19 +155,107 @@ class MCPServerGenerator {
                 });
             }
             // COUNT tool
-            tools.push({
-                server_id: serverId,
-                name: `count_${cleanTableName}`,
-                description: `Get total count of records in ${tableName} table`,
-                inputSchema: {
-                    type: 'object',
-                    properties: this.generateFilterProperties(columns),
-                    required: []
-                },
-                sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
-                operation: 'SELECT'
+            if (toolsConfig.count) {
+                tools.push({
+                    server_id: serverId,
+                    name: `count_${cleanTableName}`,
+                    description: `Get total count of records in ${tableName} table`,
+                    inputSchema: {
+                        type: 'object',
+                        properties: this.generateFilterProperties(columns),
+                        required: []
+                    },
+                    sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
+                    operation: 'SELECT'
+                });
+            }
+            // Get numeric columns for aggregate functions
+            //console.log(`🔍 Table ${tableName} columns:`, columns.map(col => ({ name: col.name, type: col.type })));
+            const numericColumns = columns.filter(col => {
+                const type = col.type.toLowerCase();
+                return type.includes('int') || type.includes('float') || type.includes('decimal') ||
+                    type.includes('numeric') || type.includes('real') || type.includes('double') ||
+                    type === 'number';
             });
+            //console.log(`🔍 Numeric columns found in ${tableName}:`, numericColumns.map(col => ({ name: col.name, type: col.type })));
+            if (numericColumns.length > 0) {
+                // MIN tools for each numeric column
+                if (toolsConfig.min) {
+                    numericColumns.forEach(col => {
+                        const toolName = `min_${cleanTableName}_${this.sanitizeName(col.name)}`;
+                        console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
+                        tools.push({
+                            server_id: serverId,
+                            name: toolName,
+                            description: `Get minimum value of ${col.name} in ${tableName} table`,
+                            inputSchema: {
+                                type: 'object',
+                                properties: this.generateFilterProperties(columns),
+                                required: []
+                            },
+                            sqlQuery: this.generateMinQuery(tableName, col.name, columns, dbConfig.type),
+                            operation: 'SELECT'
+                        });
+                    });
+                }
+                // MAX tools for each numeric column
+                if (toolsConfig.max) {
+                    numericColumns.forEach(col => {
+                        const toolName = `max_${cleanTableName}_${this.sanitizeName(col.name)}`;
+                        tools.push({
+                            server_id: serverId,
+                            name: toolName,
+                            description: `Get maximum value of ${col.name} in ${tableName} table`,
+                            inputSchema: {
+                                type: 'object',
+                                properties: this.generateFilterProperties(columns),
+                                required: []
+                            },
+                            sqlQuery: this.generateMaxQuery(tableName, col.name, columns, dbConfig.type),
+                            operation: 'SELECT'
+                        });
+                    });
+                }
+                // SUM tools for each numeric column
+                if (toolsConfig.sum) {
+                    numericColumns.forEach(col => {
+                        const toolName = `sum_${cleanTableName}_${this.sanitizeName(col.name)}`;
+                        tools.push({
+                            server_id: serverId,
+                            name: toolName,
+                            description: `Get sum of all values of ${col.name} in ${tableName} table`,
+                            inputSchema: {
+                                type: 'object',
+                                properties: this.generateFilterProperties(columns),
+                                required: []
+                            },
+                            sqlQuery: this.generateSumQuery(tableName, col.name, columns, dbConfig.type),
+                            operation: 'SELECT'
+                        });
+                    });
+                }
+                // AVG tools for each numeric column
+                if (toolsConfig.avg) {
+                    numericColumns.forEach(col => {
+                        const toolName = `avg_${cleanTableName}_${this.sanitizeName(col.name)}`;
+                        tools.push({
+                            server_id: serverId,
+                            name: toolName,
+                            description: `Get average value of ${col.name} in ${tableName} table`,
+                            inputSchema: {
+                                type: 'object',
+                                properties: this.generateFilterProperties(columns),
+                                required: []
+                            },
+                            sqlQuery: this.generateAvgQuery(tableName, col.name, columns, dbConfig.type),
+                            operation: 'SELECT'
+                        });
+                    });
+                }
+            }
         }
+        //console.log(`🔍 Total tools created: ${tools.length}`);
+        //console.log(`🔍 Tool names:`, tools.map(tool => tool.name));
         return tools;
     }
     generateResourcesForData(serverId, parsedData, dbConfig) {
@@ -289,6 +398,54 @@ class MCPServerGenerator {
             if (dbType === 'mssql') {
                 // Skip columns that might be ntext, text, or image types
                 // These are typically identified by their string type and large content
+                return true; // We'll handle this at parameter level instead
+            }
+            return true;
+        });
+        const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+        query += ` WHERE ${whereConditions}`;
+        return query;
+    }
+    generateMinQuery(tableName, columnName, columns, dbType) {
+        let query = `SELECT MIN([${columnName}]) as min_value FROM [${tableName}]`;
+        const filterableColumns = columns.filter(col => {
+            if (dbType === 'mssql') {
+                return true; // We'll handle this at parameter level instead
+            }
+            return true;
+        });
+        const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+        query += ` WHERE ${whereConditions}`;
+        return query;
+    }
+    generateMaxQuery(tableName, columnName, columns, dbType) {
+        let query = `SELECT MAX([${columnName}]) as max_value FROM [${tableName}]`;
+        const filterableColumns = columns.filter(col => {
+            if (dbType === 'mssql') {
+                return true; // We'll handle this at parameter level instead
+            }
+            return true;
+        });
+        const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+        query += ` WHERE ${whereConditions}`;
+        return query;
+    }
+    generateSumQuery(tableName, columnName, columns, dbType) {
+        let query = `SELECT SUM([${columnName}]) as sum_value FROM [${tableName}]`;
+        const filterableColumns = columns.filter(col => {
+            if (dbType === 'mssql') {
+                return true; // We'll handle this at parameter level instead
+            }
+            return true;
+        });
+        const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+        query += ` WHERE ${whereConditions}`;
+        return query;
+    }
+    generateAvgQuery(tableName, columnName, columns, dbType) {
+        let query = `SELECT AVG(CAST([${columnName}] AS FLOAT)) as avg_value FROM [${tableName}]`;
+        const filterableColumns = columns.filter(col => {
+            if (dbType === 'mssql') {
                 return true; // We'll handle this at parameter level instead
             }
             return true;

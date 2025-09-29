@@ -20,9 +20,13 @@ function setupEventListeners() {
     // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
-            e.preventDefault();
             const tabName = item.getAttribute('data-tab');
-            switchTab(tabName);
+            // Only prevent default for tab navigation, allow normal URL navigation
+            if (tabName) {
+                e.preventDefault();
+                switchTab(tabName);
+            }
+            // If no data-tab, allow normal link navigation to href
         });
     });
 
@@ -698,7 +702,7 @@ function displayServers(servers) {
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">No Servers Generated Yet</h3>
                     <p class="text-gray-600 mb-6">Create your first MCP server by uploading data or connecting to a database.</p>
-                    <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="switchTab('generate')">
+                    <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="window.location.href='/'">
                         <i class="fas fa-rocket mr-2"></i>
                         Generate Your First Server
                     </button>

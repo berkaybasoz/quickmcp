@@ -131,7 +131,11 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
 // Generate MCP server endpoint
 app.post('/api/generate', async (req, res) => {
     try {
-        const { name, description, dataSource } = req.body;
+        const { name, description, version, dataSource, selectedTables, parsedData } = req.body;
+        console.log('🔍 Generate request received:');
+        console.log('- Name:', name);
+        console.log('- Selected tables:', selectedTables?.length || 0);
+        console.log('- Parsed data tables:', parsedData?.length || 0);
         // Check if server with this name already exists
         const existingServer = generator.getServer(name);
         if (existingServer) {
@@ -140,11 +144,11 @@ app.post('/api/generate', async (req, res) => {
                 error: `MCP Server with name "${name}" already exists. Please choose a different name.`
             });
         }
-        // Re-parse the data source to get full data
-        const parsedData = await parser.parse(dataSource);
+        // Use provided parsed data or re-parse if not available
+        const fullParsedData = parsedData || await parser.parse(dataSource);
         // Convert to the format expected by new generator
         const parsedDataObject = {};
-        parsedData.forEach((data, index) => {
+        fullParsedData.forEach((data, index) => {
             const tableName = data.tableName || `table_${index}`;
             parsedDataObject[tableName] = data.rows.map(row => {
                 const obj = {};
@@ -158,7 +162,8 @@ app.post('/api/generate', async (req, res) => {
         console.log(`🎯 API calling generateServer with name: "${name}"`);
         const result = await generator.generateServer(name, // serverId
         name, // serverName (use the name from form as server name)
-        parsedDataObject, dataSource.connection || { type: 'csv', server: 'local', database: name });
+        parsedDataObject, dataSource.connection || { type: 'csv', server: 'local', database: name }, selectedTables // selectedTables configuration
+        );
         if (result.success) {
             // Get counts for display
             const tools = generator.getToolsForServer(name);
@@ -203,7 +208,6 @@ app.get('/api/servers', (req, res) => {
             toolsCount: tools.length,
             resourcesCount: resources.length,
             promptsCount: 0,
-            dataRowsCount: 0
         };
     });
     res.json({ success: true, data: servers });
@@ -708,16 +712,7 @@ app.listen(PORT, async () => {
     // Start integrated MCP server
     try {
         await integratedMCPServer.start(MCP_PORT);
-        console.log(`🔗 Add to Claude Desktop config:`);
-        console.log(`{`);
-        console.log(`  "quickmcp-integrated": {`);
-        console.log(`    "command": "curl",`);
-        console.log(`    "args": ["-X", "POST", "http://localhost:${MCP_PORT}/sse/message"],`);
-        console.log(`    "env": {`);
-        console.log(`      "MCP_TRANSPORT": "sse"`);
-        console.log(`    }`);
-        console.log(`  }`);
-        console.log(`}`);
+        // Configuration info is now available in the How to Use page
     }
     catch (error) {
         console.error('❌ Failed to start integrated MCP server:', error);

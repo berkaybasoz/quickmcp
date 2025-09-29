@@ -1,354 +1,442 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>How to Use - MCP Server Generator</title>
-    <link rel="stylesheet" href="shared-styles.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Custom animations */
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Glassmorphism effect */
+        .glass {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-dark {
+            backdrop-filter: blur(20px);
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e'
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite'
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="main-layout">
+<body class="h-full bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <!-- Main App Container -->
+    <div id="app" class="flex h-full">
+
         <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">QM</div>
-                <div class="sidebar-title">QuickMCP</div>
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/90 backdrop-blur-xl border-r border-gray-200/50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="flex flex-col h-full">
+                <!-- Sidebar Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-200/50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-rocket text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">QuickMCP</h1>
+                            <p class="text-xs text-gray-500">Server Generator</p>
+                        </div>
+                    </div>
+                    <button id="closeSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-times text-gray-500"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="/" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-magic mr-3 text-gray-400"></i>
+                        Generate Server
+                    </a>
+                    <a href="/manage-servers" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-server mr-3 text-gray-400"></i>
+                        Manage Servers
+                    </a>
+                    <a href="/test-servers" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-vial mr-3 text-gray-400"></i>
+                        Test Servers
+                    </a>
+                    <a href="/database-tables" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-database mr-3 text-gray-400"></i>
+                        Database Tables
+                    </a>
+                    <a href="/how-to-use" class="nav-item active flex items-center px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200">
+                        <i class="fas fa-book mr-3 text-blue-500"></i>
+                        How to Use
+                    </a>
+                </nav>
+
+                <!-- Sidebar Footer -->
+                <div class="p-4 border-t border-gray-200/50">
+                    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">All systems online</p>
+                                <p class="text-xs text-gray-500">Ready to guide you</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <nav class="sidebar-nav">
-                <a href="/" class="sidebar-nav-item">
-                    <div class="icon">🚀</div>
-                    <span>Generate Server</span>
-                </a>
-                <a href="/manage-servers" class="sidebar-nav-item">
-                    <div class="icon">📋</div>
-                    <span>Manage Servers</span>
-                </a>
-                <a href="/test-servers" class="sidebar-nav-item">
-                    <div class="icon">🧪</div>
-                    <span>Test Servers</span>
-                </a>
-                <a href="/database-tables" class="sidebar-nav-item">
-                    <div class="icon">🗃️</div>
-                    <span>Database Tables</span>
-                </a>
-                <a href="/how-to-use" class="sidebar-nav-item active">
-                    <div class="icon">📖</div>
-                    <span>How to Use</span>
-                </a>
-            </nav>
         </div>
 
-        <!-- Overlay for mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+        <!-- Sidebar Overlay for mobile -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
         <!-- Main Content -->
-        <div class="main-content">
-            <div class="topbar">
-                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="topbar-title">
-                    How to Use MCP Servers
-                </div>
-            </div>
-
-            <div class="container">
-                <!-- Method Selection -->
-                <div class="card" style="margin-bottom: 24px;">
-                    <div class="card-header">
-                        <h1 class="section-title">Choose Your Integration Method</h1>
-                        <p class="section-subtitle">Select how you want to use your MCP servers with Claude Desktop</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="method-selector">
-                            <button class="method-btn active" onclick="showMethod('integrated')" id="integratedBtn">
-                                <div class="method-icon">🔗</div>
-                                <div class="method-info">
-                                    <h3>Integrated Server</h3>
-                                    <p>Use all servers through one configuration</p>
-                                </div>
+        <div class="flex-1 lg:pl-64">
+            <!-- Top Navigation -->
+            <header class="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center space-x-4">
+                            <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-bars text-gray-600"></i>
                             </button>
-                            <button class="method-btn" onclick="showMethod('individual')" id="individualBtn">
-                                <div class="method-icon">📦</div>
-                                <div class="method-info">
-                                    <h3>Individual Export</h3>
-                                    <p>Export and use servers separately</p>
-                                </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">How to Use</h2>
+                                <p class="text-sm text-gray-500">Learn how to use your MCP servers with Claude Desktop</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <div class="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span>Online</span>
+                            </div>
+                            <button class="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                             </button>
                         </div>
                     </div>
                 </div>
+            </header>
 
-                <!-- Integrated Method -->
-                <div id="integratedMethod" class="card method-content">
-                    <div class="card-header">
-                        <h2 class="section-title">🔗 Integrated Server Method</h2>
-                        <p class="section-subtitle">Access all your MCP servers through a single configuration</p>
+            <!-- Main Content -->
+            <main class="p-4 sm:p-6 lg:p-8">
+                <div class="max-w-7xl mx-auto space-y-8">
+                    <!-- Hero Section -->
+                    <div class="text-center">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4">MCP Server Integration Guide</h1>
+                        <p class="text-gray-600">Learn how to integrate your generated MCP servers with Claude Desktop and other platforms</p>
                     </div>
-                    <div class="card-content">
-                        <!-- Platform Tabs for Integrated Method -->
-                        <div class="platform-tabs">
-                            <button class="platform-tab active" onclick="showIntegratedPlatform('claude')" id="integratedClaudeTab">
-                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyUzYuNDggMjIgMTIgMjJTMjIgMTcuNTIgMjIgMTJTMTcuNTIgMiAxMiAyWiIgZmlsbD0iIzY2N0VFQSIvPgo8L3N2Zz4=" alt="Claude">
-                                Claude Desktop
-                            </button>
-                            <button class="platform-tab" onclick="showIntegratedPlatform('openai')" id="integratedOpenAITab">
-                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyUzYuNDggMjIgMTIgMjJTMjIgMTcuNTIgMjIgMTJTMTcuNTIgMiAxMiAyWiIgZmlsbD0iIzEwQTM3RiIvPgo8L3N2Zz4=" alt="OpenAI">
-                                OpenAI Desktop
-                            </button>
-                        </div>
 
-                        <!-- Claude Desktop Content for Integrated -->
-                        <div id="integratedClaude" class="platform-content">
-                            <div class="how-to-section">
-                                <h3>✅ Advantages</h3>
-                                <ul class="advantage-list">
-                                    <li>Single configuration for all servers</li>
-                                    <li>Automatic updates when you create new servers</li>
-                                    <li>Unified tool naming with server prefixes</li>
-                                    <li>No need to restart Claude Desktop when adding servers</li>
-                                </ul>
-                            </div>
-
-                            <div class="how-to-section">
-                                <h3>🚀 Quick Setup for Claude Desktop</h3>
-                            <div class="setup-steps">
-                                <div class="step">
-                                    <div class="step-number">1</div>
-                                    <div class="step-content">
-                                        <h4>Make sure QuickMCP is running</h4>
-                                        <p>Keep this application running with <code>npm run dev</code></p>
-                                        <div class="status-indicator" id="serverStatus">
-                                            <span class="status-dot"></span>
-                                            <span id="statusText">Checking server status...</span>
-                                        </div>
-                                    </div>
+                    <!-- Method Selection -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-route text-white"></i>
                                 </div>
-
-                                <div class="step">
-                                    <div class="step-number">2</div>
-                                    <div class="step-content">
-                                        <h4>Copy the MCP Bridge Script</h4>
-                                        <p>Copy the <code>mcp-bridge.js</code> file from your QuickMCP directory to your home directory:</p>
-                                        <div class="config-block">
-                                            <pre><code>cp /path/to/quickmcp/mcp-bridge.js ~/mcp-bridge.js</code></pre>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="step">
-                                    <div class="step-number">3</div>
-                                    <div class="step-content">
-                                        <h4>Add to Claude Desktop Config</h4>
-                                        <p>Copy this configuration to your Claude Desktop config file:</p>
-                                        <div class="config-location">
-                                            <h5>📁 Config file locations:</h5>
-                                            <ul class="location-list">
-                                                <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-                                                <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-                                                <li><strong>Linux:</strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
-                                            </ul>
-                                        </div>
-                                        <div class="config-block">
-                                            <button class="copy-btn" onclick="copyConfig('integrated')">📋 Copy</button>
-                                            <pre id="integratedConfig"><code>{
-  "mcpServers": {
-    "quickmcp-integrated": {
-      "command": "node",
-      "args": ["~/mcp-bridge.js"]
-    }
-  }
-}</code></pre>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="step">
-                                    <div class="step-number">4</div>
-                                    <div class="step-content">
-                                        <h4>Restart Claude Desktop</h4>
-                                        <p>Close and reopen Claude Desktop for the changes to take effect.</p>
-                                    </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Choose Your Integration Method</h3>
+                                    <p class="text-sm text-gray-600">Select how you want to use your MCP servers</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="how-to-section">
-                            <h3>🛠️ Using Your Tools</h3>
-                            <p>In Claude Desktop, your tools will be available with this naming pattern:</p>
-                            <div class="tool-naming">
-                                <div class="naming-example">
-                                    <code>serverName__toolName</code>
-                                </div>
-                                <p class="naming-description">
-                                    Example: If you have a server called "sales-data" with a tool called "search_customers",
-                                    it will appear as <code>sales-data__search_customers</code>
-                                </p>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <button class="method-btn text-left p-6 border-2 border-blue-200 bg-blue-50 rounded-xl hover:border-blue-300 transition-all duration-200" onclick="showMethod('integrated')" id="integratedBtn">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-link text-white text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Integrated Server</h3>
+                                            <p class="text-sm text-gray-600">Use all servers through one configuration</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                
+                                <button class="method-btn text-left p-6 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-gray-300 transition-all duration-200" onclick="showMethod('individual')" id="individualBtn">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-box text-white text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Individual Export</h3>
+                                            <p class="text-sm text-gray-600">Export and use servers separately</p>
+                                        </div>
+                                    </div>
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                        <!-- OpenAI Desktop Content for Integrated -->
-                        <div id="integratedOpenAI" class="platform-content" style="display: none;">
-                            <div class="how-to-section">
-                                <h3>✅ Advantages</h3>
-                                <ul class="advantage-list">
-                                    <li>Single configuration for all servers</li>
-                                    <li>Automatic updates when you create new servers</li>
-                                    <li>Works seamlessly with ChatGPT</li>
-                                    <li>No need to restart ChatGPT when adding servers</li>
+                    <!-- Integrated Method -->
+                    <div id="integratedMethod" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-link text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Integrated Server Method</h3>
+                                    <p class="text-sm text-gray-600">Access all your MCP servers through a single configuration</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-6">
+                            <!-- Advantages -->
+                            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                                <h4 class="font-semibold text-green-900 mb-3">✅ Advantages</h4>
+                                <ul class="space-y-2 text-green-800">
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Single configuration for all servers</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Automatic updates when you create new servers</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Unified tool naming with server prefixes</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>No need to restart Claude Desktop when adding servers</li>
                                 </ul>
                             </div>
 
-                            <div class="how-to-section">
-                                <h3>🚀 Quick Setup for OpenAI Desktop</h3>
-                                <div class="setup-steps">
-                                    <div class="step">
-                                        <div class="step-number">1</div>
-                                        <div class="step-content">
-                                            <h4>Make sure QuickMCP is running</h4>
-                                            <p>Keep this application running with <code>npm run dev</code></p>
-                                            <div class="status-indicator" id="openaiServerStatus">
-                                                <span class="status-dot"></span>
-                                                <span id="openaiStatusText">Checking server status...</span>
+                            <!-- Setup Steps -->
+                            <div class="space-y-6">
+                                <h4 class="text-lg font-semibold text-gray-900">🚀 Quick Setup for Claude Desktop</h4>
+                                
+                                <div class="space-y-4">
+                                    <!-- Step 1 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">1</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Make sure QuickMCP is running</h5>
+                                            <p class="text-gray-600 mb-2">Keep this application running with <code class="bg-gray-100 px-2 py-1 rounded">npm run dev</code></p>
+                                            <div class="flex items-center space-x-2 text-sm">
+                                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span class="text-green-700">Server is running</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="step">
-                                        <div class="step-number">2</div>
-                                        <div class="step-content">
-                                            <h4>Add to OpenAI Desktop Config</h4>
-                                            <p>Copy this configuration to your OpenAI Desktop config file:</p>
-                                            <div class="config-location">
-                                                <h5>📁 Config file locations:</h5>
-                                                <ul class="location-list">
-                                                    <li><strong>macOS:</strong> <code>~/Library/Application Support/ChatGPT/config.json</code></li>
-                                                    <li><strong>Windows:</strong> <code>%APPDATA%\OpenAI\ChatGPT\config.json</code></li>
-                                                    <li><strong>Linux:</strong> <code>~/.config/chatgpt-desktop/config.json</code></li>
+                                    <!-- Step 2 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">2</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Add to Claude Desktop Config</h5>
+                                            <p class="text-gray-600 mb-3">Copy this configuration to your Claude Desktop config file:</p>
+                                            
+                                            <div class="mb-3">
+                                                <h6 class="font-medium text-gray-700 mb-2">📁 Config file locations:</h6>
+                                                <ul class="text-sm text-gray-600 space-y-1">
+                                                    <li><strong>macOS:</strong> <code class="bg-gray-100 px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
+                                                    <li><strong>Windows:</strong> <code class="bg-gray-100 px-1 rounded">%APPDATA%\\Claude\\claude_desktop_config.json</code></li>
+                                                    <li><strong>Linux:</strong> <code class="bg-gray-100 px-1 rounded">~/.config/Claude/claude_desktop_config.json</code></li>
                                                 </ul>
                                             </div>
-                                            <div class="config-block">
-                                                <button class="copy-btn" onclick="copyConfig('openai-integrated')">📋 Copy</button>
-                                                <pre id="openaiIntegratedConfig"><code>{
+                                            
+                                            <div class="relative bg-gray-50 border border-gray-200 rounded-lg">
+                                                <button class="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors" onclick="copyConfig('integrated')">
+                                                    <i class="fas fa-copy mr-1"></i>Copy
+                                                </button>
+                                                <pre class="p-4 text-sm overflow-x-auto"><code>{
   "mcpServers": {
-    "quickmcp-integrated": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sse-client",
-        "http://localhost:3001/sse/message"
-      ]
+    "quickmcp-stdio": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
     }
   }
 }</code></pre>
                                             </div>
+                                            
+                                            <!-- Configuration Process Screenshots -->
+                                            <div class="space-y-4 mt-4">
+                                                <h6 class="font-medium text-gray-700">📸 Step-by-step configuration:</h6>
+                                                
+                                                <!-- Image 3: Developer Settings -->
+                                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <h6 class="text-sm font-medium text-gray-700 mb-2">2a. Open Developer Settings in Claude Desktop:</h6>
+                                                    <img src="images/3-claude-developer-settings.png" alt="Claude Desktop Developer Settings" class="w-full rounded border border-gray-200 shadow-sm">
+                                                </div>
+
+                                                <!-- Image 4: Config File -->
+                                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <h6 class="text-sm font-medium text-gray-700 mb-2">2b. View/Edit Configuration File:</h6>
+                                                    <img src="images/4-claude-config.png" alt="Claude Desktop Configuration File" class="w-full rounded border border-gray-200 shadow-sm">
+                                                </div>
+
+                                                <!-- Image 5: Config Edit -->
+                                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <h6 class="text-sm font-medium text-gray-700 mb-2">2c. Add QuickMCP Configuration:</h6>
+                                                    <img src="images/5-claude-config-edit.png" alt="Editing Claude Desktop Configuration" class="w-full rounded border border-gray-200 shadow-sm">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="step">
-                                        <div class="step-number">3</div>
-                                        <div class="step-content">
-                                            <h4>Restart OpenAI Desktop</h4>
-                                            <p>Close and reopen OpenAI Desktop for the changes to take effect.</p>
+                                    <!-- Step 3 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">3</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Restart Claude Desktop</h5>
+                                            <p class="text-gray-600">Close and reopen Claude Desktop for the changes to take effect.</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="how-to-section">
-                                <h3>🛠️ Using Your Tools</h3>
-                                <p>In OpenAI Desktop, your tools will be available with this naming pattern:</p>
-                                <div class="tool-naming">
-                                    <div class="naming-example">
-                                        <code>serverName__toolName</code>
+                            <!-- Tool Naming -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                <h4 class="font-semibold text-blue-900 mb-3">🛠️ Using Your Tools</h4>
+                                <p class="text-blue-800 mb-3">In Claude Desktop, your tools will be available with this naming pattern:</p>
+                                <div class="bg-white border border-blue-200 rounded-lg p-3">
+                                    <code class="text-lg font-mono text-blue-700">serverName__toolName</code>
+                                </div>
+                                <p class="text-blue-700 text-sm mt-2 mb-4">
+                                    Example: If you have a server called "sales-data" with a tool called "search_customers",
+                                    it will appear as <code class="bg-white px-1 rounded">sales-data__search_customers</code>
+                                </p>
+
+                                <!-- Screenshots -->
+                                <div class="space-y-4">
+                                    <h5 class="font-semibold text-blue-900">📸 See it in action:</h5>
+                                    
+                                    <!-- Image 1: Configuration -->
+                                    <div class="bg-white border border-blue-200 rounded-lg p-3">
+                                        <h6 class="text-sm font-medium text-blue-800 mb-2">1. QuickMCP configured in Claude Desktop:</h6>
+                                        <img src="images/1-claude-quickmcp-stdio.png" alt="QuickMCP configuration in Claude Desktop" class="w-full rounded border border-gray-200 shadow-sm">
                                     </div>
-                                    <p class="naming-description">
-                                        Example: If you have a server called "sales-data" with a tool called "search_customers",
-                                        it will appear as <code>sales-data__search_customers</code>
-                                    </p>
+
+                                    <!-- Image 2: Tools Available -->
+                                    <div class="bg-white border border-blue-200 rounded-lg p-3">
+                                        <h6 class="text-sm font-medium text-blue-800 mb-2">2. Your tools available in Claude Desktop:</h6>
+                                        <img src="images/2-claude-tools.png" alt="QuickMCP tools available in Claude Desktop" class="w-full rounded border border-gray-200 shadow-sm">
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Individual Method -->
-                <div id="individualMethod" class="card method-content" style="display: none;">
-                    <div class="card-header">
-                        <h2 class="section-title">📦 Individual Export Method</h2>
-                        <p class="section-subtitle">Export and configure each server separately</p>
-                    </div>
-                    <div class="card-content">
-                        <!-- Platform Tabs for Individual Method -->
-                        <div class="platform-tabs">
-                            <button class="platform-tab active" onclick="showIndividualPlatform('claude')" id="individualClaudeTab">
-                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyUzYuNDggMjIgMTIgMjJTMjIgMTcuNTIgMjIgMTJTMTcuNTIgMiAxMiAyWiIgZmlsbD0iIzY2N0VFQSIvPgo8L3N2Zz4=" alt="Claude">
-                                Claude Desktop
-                            </button>
-                            <button class="platform-tab" onclick="showIndividualPlatform('openai')" id="individualOpenAITab">
-                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyUzYuNDggMjIgMTIgMjJTMjIgMTcuNTIgMjIgMTJTMTcuNTIgMiAxMiAyWiIgZmlsbD0iIzEwQTM3RiIvPgo8L3N2Zz4=" alt="OpenAI">
-                                OpenAI Desktop
-                            </button>
+                    <!-- Individual Method -->
+                    <div id="individualMethod" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden" style="display: none;">
+                        <div class="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-box text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Individual Export Method</h3>
+                                    <p class="text-sm text-gray-600">Export and configure each server separately</p>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Claude Desktop Content for Individual -->
-                        <div id="individualClaude" class="platform-content">
-                        <div class="how-to-section">
-                            <h3>✅ Advantages</h3>
-                            <ul class="advantage-list">
-                                <li>Independent server management</li>
-                                <li>Clean tool naming without prefixes</li>
-                                <li>Better performance for individual servers</li>
-                                <li>Portable server packages</li>
-                            </ul>
-                        </div>
+                        <div class="p-6 space-y-6">
+                            <!-- Advantages -->
+                            <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                                <h4 class="font-semibold text-orange-900 mb-3">✅ Advantages</h4>
+                                <ul class="space-y-2 text-orange-800">
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Independent server management</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Clean tool naming without prefixes</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Better performance for individual servers</li>
+                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Portable server packages</li>
+                                </ul>
+                            </div>
 
-                        <div class="how-to-section">
-                            <h3>🚀 Export Process for Claude Desktop</h3>
-                            <div class="setup-steps">
-                                <div class="step">
-                                    <div class="step-number">1</div>
-                                    <div class="step-content">
-                                        <h4>Go to Manage Servers</h4>
-                                        <p>Navigate to the <a href="/manage-servers">Manage Servers</a> page.</p>
-                                    </div>
-                                </div>
-
-                                <div class="step">
-                                    <div class="step-number">2</div>
-                                    <div class="step-content">
-                                        <h4>Export Your Server</h4>
-                                        <p>Click the "Export" button for the server you want to use.</p>
-                                    </div>
-                                </div>
-
-                                <div class="step">
-                                    <div class="step-number">3</div>
-                                    <div class="step-content">
-                                        <h4>Extract and Install</h4>
-                                        <p>Extract the downloaded package and run <code>npm install</code> in the extracted folder.</p>
-                                    </div>
-                                </div>
-
-                                <div class="step">
-                                    <div class="step-number">4</div>
-                                    <div class="step-content">
-                                        <h4>Configure Claude Desktop</h4>
-                                        <p>Add the server to your Claude Desktop config:</p>
-                                        <div class="config-location">
-                                            <h5>📁 Config file locations:</h5>
-                                            <ul class="location-list">
-                                                <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-                                                <li><strong>Windows:</strong> <code>%APPDATA%\Claude\claude_desktop_config.json</code></li>
-                                                <li><strong>Linux:</strong> <code>~/.config/Claude/claude_desktop_config.json</code></li>
-                                            </ul>
+                            <!-- Export Process -->
+                            <div class="space-y-6">
+                                <h4 class="text-lg font-semibold text-gray-900">🚀 Export Process for Claude Desktop</h4>
+                                
+                                <div class="space-y-4">
+                                    <!-- Step 1 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">1</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Go to Manage Servers</h5>
+                                            <p class="text-gray-600">Navigate to the <a href="/manage-servers" class="text-blue-600 hover:text-blue-700">Manage Servers</a> page.</p>
                                         </div>
-                                        <div class="config-block">
-                                            <button class="copy-btn" onclick="copyConfig('claude-individual')">📋 Copy</button>
-                                            <pre><code>{
+                                    </div>
+
+                                    <!-- Step 2 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">2</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Export Your Server</h5>
+                                            <p class="text-gray-600">Click the "Export" button for the server you want to use.</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 3 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">3</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Extract and Install</h5>
+                                            <p class="text-gray-600">Extract the downloaded package and run <code class="bg-gray-100 px-2 py-1 rounded">npm install</code> in the extracted folder.</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 4 -->
+                                    <div class="flex space-x-4">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">4</div>
+                                        <div class="flex-1">
+                                            <h5 class="font-semibold text-gray-900">Configure Claude Desktop</h5>
+                                            <p class="text-gray-600 mb-3">Add the server to your Claude Desktop config:</p>
+                                            
+                                            <div class="relative bg-gray-50 border border-gray-200 rounded-lg">
+                                                <button class="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors" onclick="copyConfig('claude-individual')">
+                                                    <i class="fas fa-copy mr-1"></i>Copy
+                                                </button>
+                                                <pre class="p-4 text-sm overflow-x-auto"><code>{
   "mcpServers": {
     "your-server-name": {
       "command": "node",
@@ -356,78 +444,6 @@
     }
   }
 }</code></pre>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                        <!-- OpenAI Desktop Content for Individual -->
-                        <div id="individualOpenAI" class="platform-content" style="display: none;">
-                            <div class="how-to-section">
-                                <h3>✅ Advantages</h3>
-                                <ul class="advantage-list">
-                                    <li>Independent server management</li>
-                                    <li>Clean tool naming without prefixes</li>
-                                    <li>Better performance for individual servers</li>
-                                    <li>Compatible with ChatGPT</li>
-                                </ul>
-                            </div>
-
-                            <div class="how-to-section">
-                                <h3>🚀 Export Process for OpenAI Desktop</h3>
-                                <div class="setup-steps">
-                                    <div class="step">
-                                        <div class="step-number">1</div>
-                                        <div class="step-content">
-                                            <h4>Go to Manage Servers</h4>
-                                            <p>Navigate to the <a href="/manage-servers">Manage Servers</a> page.</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="step">
-                                        <div class="step-number">2</div>
-                                        <div class="step-content">
-                                            <h4>Export Your Server</h4>
-                                            <p>Click the "Export" button for the server you want to use.</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="step">
-                                        <div class="step-number">3</div>
-                                        <div class="step-content">
-                                            <h4>Extract and Install</h4>
-                                            <p>Extract the downloaded package and run <code>npm install</code> in the extracted folder.</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="step">
-                                        <div class="step-number">4</div>
-                                        <div class="step-content">
-                                            <h4>Configure OpenAI Desktop</h4>
-                                            <p>Add the server to your OpenAI Desktop config:</p>
-                                            <div class="config-location">
-                                                <h5>📁 Config file locations:</h5>
-                                                <ul class="location-list">
-                                                    <li><strong>macOS:</strong> <code>~/Library/Application Support/ChatGPT/config.json</code></li>
-                                                    <li><strong>Windows:</strong> <code>%APPDATA%\OpenAI\ChatGPT\config.json</code></li>
-                                                    <li><strong>Linux:</strong> <code>~/.config/chatgpt-desktop/config.json</code></li>
-                                                </ul>
-                                            </div>
-                                            <div class="config-block">
-                                                <button class="copy-btn" onclick="copyConfig('openai-individual')">📋 Copy</button>
-                                                <pre><code>{
-  "mcpServers": {
-    "your-server-name": {
-      "command": "npx",
-      "args": [
-        "tsx",
-        "path/to/your/server/index.ts"
-      ]
-    }
-  }
-}</code></pre>
                                             </div>
                                         </div>
                                     </div>
@@ -435,62 +451,125 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Server List for Individual Method -->
-                <div id="serverListSection" class="card" style="display: none;">
-                    <div class="card-header">
-                        <h3>Available Servers</h3>
-                        <p class="section-subtitle">Export individual servers for standalone use</p>
-                    </div>
-                    <div class="card-content">
-                        <div id="exportServerList" class="server-list">
-                            <!-- Servers will be loaded here -->
+                    <!-- Troubleshooting -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                        <div class="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-wrench text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Troubleshooting</h3>
+                                    <p class="text-sm text-gray-600">Common issues and solutions</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-6">
+                            <div class="space-y-4">
+                                <!-- Issue 1 -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">❌ Tools not showing up in Claude Desktop</h4>
+                                    <ul class="space-y-1 text-gray-600 text-sm">
+                                        <li>• Make sure QuickMCP is running (check server status above)</li>
+                                        <li>• Verify the configuration is correct in Claude Desktop</li>
+                                        <li>• Restart Claude Desktop completely</li>
+                                        <li>• Check that port 3001 is not blocked by firewall</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Issue 2 -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">🔄 Server status shows offline</h4>
+                                    <ul class="space-y-1 text-gray-600 text-sm">
+                                        <li>• Run <code class="bg-gray-100 px-1 rounded">npm run dev</code> in your QuickMCP directory</li>
+                                        <li>• Check if port 3001 is already in use</li>
+                                        <li>• Look at the console for error messages</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Issue 3 -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">⚠️ Individual exported servers not working</h4>
+                                    <ul class="space-y-1 text-gray-600 text-sm">
+                                        <li>• Make sure you ran <code class="bg-gray-100 px-1 rounded">npm install</code> in the exported folder</li>
+                                        <li>• Check that the path in Claude Desktop config is correct</li>
+                                        <li>• Ensure Node.js is installed and accessible</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Troubleshooting -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="section-title">🔧 Troubleshooting</h2>
-                        <p class="section-subtitle">Common issues and solutions</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="troubleshooting-item">
-                            <h4>❌ Tools not showing up in Claude Desktop</h4>
-                            <ul>
-                                <li>Make sure QuickMCP is running (check server status above)</li>
-                                <li>Verify the configuration is correct in Claude Desktop</li>
-                                <li>Restart Claude Desktop completely</li>
-                                <li>Check that port 3001 is not blocked by firewall</li>
-                            </ul>
-                        </div>
-
-                        <div class="troubleshooting-item">
-                            <h4>🔄 Server status shows offline</h4>
-                            <ul>
-                                <li>Run <code>npm run dev</code> in your QuickMCP directory</li>
-                                <li>Check if port 3001 is already in use</li>
-                                <li>Look at the console for error messages</li>
-                            </ul>
-                        </div>
-
-                        <div class="troubleshooting-item">
-                            <h4>⚠️ Individual exported servers not working</h4>
-                            <ul>
-                                <li>Make sure you ran <code>npm install</code> in the exported folder</li>
-                                <li>Check that the path in Claude Desktop config is correct</li>
-                                <li>Ensure Node.js is installed and accessible</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </main>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="shared.js"></script>
-    <script src="how-to-use.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Method switching functionality
+        function showMethod(method) {
+            const integratedMethod = document.getElementById('integratedMethod');
+            const individualMethod = document.getElementById('individualMethod');
+            const integratedBtn = document.getElementById('integratedBtn');
+            const individualBtn = document.getElementById('individualBtn');
+
+            if (method === 'integrated') {
+                integratedMethod.style.display = 'block';
+                individualMethod.style.display = 'none';
+                integratedBtn.className = 'method-btn text-left p-6 border-2 border-blue-200 bg-blue-50 rounded-xl hover:border-blue-300 transition-all duration-200';
+                individualBtn.className = 'method-btn text-left p-6 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-gray-300 transition-all duration-200';
+            } else {
+                integratedMethod.style.display = 'none';
+                individualMethod.style.display = 'block';
+                integratedBtn.className = 'method-btn text-left p-6 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-gray-300 transition-all duration-200';
+                individualBtn.className = 'method-btn text-left p-6 border-2 border-orange-200 bg-orange-50 rounded-xl hover:border-orange-300 transition-all duration-200';
+            }
+        }
+
+        // Copy configuration function
+        function copyConfig(type) {
+            let configText = '';
+            
+            switch(type) {
+                case 'integrated':
+                    configText = `{
+  "mcpServers": {
+    "quickmcp-stdio": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    }
+  }
+}`;
+                    break;
+                case 'claude-individual':
+                    configText = `{
+  "mcpServers": {
+    "your-server-name": {
+      "command": "node",
+      "args": ["path/to/your/server/index.js"]
+    }
+  }
+}`;
+                    break;
+            }
+            
+            navigator.clipboard.writeText(configText).then(() => {
+                // Show feedback
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                button.className = button.className.replace('bg-blue-500 hover:bg-blue-600', 'bg-green-500').replace('bg-orange-500 hover:bg-orange-600', 'bg-green-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.className = button.className.replace('bg-green-500', type === 'integrated' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600');
+                }, 2000);
+            });
+        }
+    </script>
 </body>
 </html>

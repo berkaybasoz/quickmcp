@@ -828,16 +828,7 @@ app.listen(PORT, async () => {
   // Start integrated MCP server
   try {
     await integratedMCPServer.start(MCP_PORT);
-    console.log(`🔗 Add to Claude Desktop config:`);
-    console.log(`{`);
-    console.log(`  "quickmcp-integrated": {`);
-    console.log(`    "command": "curl",`);
-    console.log(`    "args": ["-X", "POST", "http://localhost:${MCP_PORT}/sse/message"],`);
-    console.log(`    "env": {`);
-    console.log(`      "MCP_TRANSPORT": "sse"`);
-    console.log(`    }`);
-    console.log(`  }`);
-    console.log(`}`);
+    // Configuration info is now available in the How to Use page
   } catch (error) {
     console.error('❌ Failed to start integrated MCP server:', error);
   }

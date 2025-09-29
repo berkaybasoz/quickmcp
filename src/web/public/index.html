@@ -101,17 +101,25 @@
 
                 <!-- Navigation -->
                 <nav class="flex-1 px-4 py-6 space-y-2">
-                    <a href="#" class="nav-item active flex items-center px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200" data-tab="generate">
+                    <a href="/" class="nav-item active flex items-center px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200">
                         <i class="fas fa-magic mr-3 text-blue-500"></i>
                         Generate Server
                     </a>
-                    <a href="#" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200" data-tab="manage">
+                    <a href="/manage-servers" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
                         <i class="fas fa-server mr-3 text-gray-400"></i>
                         Manage Servers
                     </a>
-                    <a href="#" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200" data-tab="test">
+                    <a href="/test-servers" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
                         <i class="fas fa-vial mr-3 text-gray-400"></i>
                         Test Servers
+                    </a>
+                    <a href="/database-tables" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-database mr-3 text-gray-400"></i>
+                        Database Tables
+                    </a>
+                    <a href="/how-to-use" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                        <i class="fas fa-book mr-3 text-gray-400"></i>
+                        How to Use
                     </a>
                 </nav>
 
@@ -460,7 +468,7 @@
                                 <h1 class="text-3xl font-bold text-gray-900">Generated Servers</h1>
                                 <p class="text-gray-600 mt-2">Manage and deploy your created MCP servers</p>
                             </div>
-                            <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="switchTab('generate')">
+                            <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="window.location.href='/'"
                                 <i class="fas fa-plus mr-2"></i>
                                 Generate New Server
                             </button>

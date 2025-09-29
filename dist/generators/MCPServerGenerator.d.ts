@@ -5,7 +5,7 @@ interface ParsedData {
 export declare class MCPServerGenerator {
     private sqliteManager;
     constructor();
-    generateServer(serverId: string, serverName: string, parsedData: ParsedData, dbConfig: any): Promise<{
+    generateServer(serverId: string, serverName: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): Promise<{
         success: boolean;
         message: string;
     }>;
@@ -19,6 +19,10 @@ export declare class MCPServerGenerator {
     private generateUpdateQuery;
     private generateDeleteQuery;
     private generateCountQuery;
+    private generateMinQuery;
+    private generateMaxQuery;
+    private generateSumQuery;
+    private generateAvgQuery;
     private sanitizeName;
     getAllServers(): ServerConfig[];
     getServer(serverId: string): ServerConfig | null;
