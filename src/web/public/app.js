@@ -33,6 +33,14 @@ function setupEventListeners() {
 
     // Database type change
     document.getElementById('dbType')?.addEventListener('change', updateDefaultPort);
+    
+    // Database field changes to update navigation
+    document.getElementById('dbType')?.addEventListener('change', updateWizardNavigation);
+    document.getElementById('dbHost')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('dbPort')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('dbName')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('dbUser')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('dbPassword')?.addEventListener('input', updateWizardNavigation);
 
     // Parse button (now triggers next step automatically)
     document.getElementById('parseBtn')?.addEventListener('click', parseDataSource);
@@ -987,11 +995,29 @@ function updateWizardProgress(activeStep) {
 function updateWizardNavigation() {
     const nextToStep2 = document.getElementById('next-to-step-2');
 
-    // Only enable step 2 if data source is configured and parsed
+    // Only enable step 2 if data source is configured and parsed, or if database connection is ready
     if (nextToStep2) {
         const hasDataSource = document.querySelector('input[name="dataSourceType"]:checked');
+        const selectedType = hasDataSource?.value;
         const hasParsedData = currentParsedData !== null;
-        nextToStep2.disabled = !hasDataSource || !hasParsedData;
+        
+        let canProceed = false;
+        
+        if (selectedType === 'csv' || selectedType === 'excel') {
+            // For file uploads, need parsed data
+            canProceed = hasParsedData;
+        } else if (selectedType === 'database') {
+            // For database, check if all required fields are filled
+            const dbType = document.getElementById('dbType')?.value;
+            const dbHost = document.getElementById('dbHost')?.value;
+            const dbName = document.getElementById('dbName')?.value;
+            const dbUser = document.getElementById('dbUser')?.value;
+            const dbPassword = document.getElementById('dbPassword')?.value;
+            
+            canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
+        }
+        
+        nextToStep2.disabled = !hasDataSource || !canProceed;
     }
 }
 
