@@ -90,15 +90,24 @@ process.stdin.on('data', async (data) => {
 
       case 'tools/call':
         try {
+          console.error(`[QuickMCP] Executing tool: ${message.params.name}`);
+          console.error(`[QuickMCP] Arguments:`, JSON.stringify(message.params.arguments));
+          
           // Import DynamicMCPExecutor
           const { DynamicMCPExecutor } = require('./dist/dynamic-mcp-executor.js');
           const executor = new DynamicMCPExecutor();
 
-          // Execute the tool
-          const toolResult = await executor.executeTool(
-            message.params.name,
-            message.params.arguments || {}
-          );
+          // Execute the tool with timeout
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Tool execution timeout')), 10000);
+          });
+          
+          const toolResult = await Promise.race([
+            executor.executeTool(message.params.name, message.params.arguments || {}),
+            timeoutPromise
+          ]);
+
+          console.error(`[QuickMCP] Tool result:`, JSON.stringify(toolResult, null, 2));
 
           response = {
             jsonrpc: '2.0',
@@ -111,6 +120,7 @@ process.stdin.on('data', async (data) => {
             }
           };
         } catch (error) {
+          console.error(`[QuickMCP] Tool execution error:`, error);
           response = {
             jsonrpc: '2.0',
             id: message.id,

@@ -183,4 +183,3 @@ class SQLiteManager {
     }
 }
 exports.SQLiteManager = SQLiteManager;
-//# sourceMappingURL=sqlite-manager.js.map

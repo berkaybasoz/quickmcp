@@ -221,22 +221,23 @@ class DynamicMCPExecutor {
                     if (!hasActiveFilters && operation === 'SELECT') {
                         // Remove complex WHERE clause that causes ntext compatibility issues
                         modifiedQuery = sqlQuery.replace(/WHERE.*?(?=ORDER BY|GROUP BY|HAVING|$)/gi, '');
-                        // Still add the limit parameter for SQL Server
-                        if (sqlQuery.includes('SELECT TOP')) {
-                            request.input('limit', args.limit || 100);
-                        }
                     }
-                    else {
-                        // Add all SQL parameters, using provided values or NULL
-                        for (const paramName of sqlParams) {
-                            const paramNameStr = paramName;
-                            const value = args[paramNameStr];
-                            if (value !== undefined && value !== null) {
-                                request.input(paramNameStr, value);
-                            }
-                            else {
-                                request.input(paramNameStr, null);
-                            }
+                    // Always add all SQL parameters, using provided values or defaults
+                    for (const paramName of sqlParams) {
+                        const paramNameStr = paramName;
+                        let value = args[paramNameStr];
+                        // Set defaults for limit and offset if not provided
+                        if (paramNameStr === 'limit' && (value === undefined || value === null)) {
+                            value = 100;
+                        }
+                        else if (paramNameStr === 'offset' && (value === undefined || value === null)) {
+                            value = 0;
+                        }
+                        if (value !== undefined && value !== null) {
+                            request.input(paramNameStr, value);
+                        }
+                        else {
+                            request.input(paramNameStr, null);
                         }
                     }
                     const result = await request.query(modifiedQuery);
@@ -304,4 +305,3 @@ class DynamicMCPExecutor {
     }
 }
 exports.DynamicMCPExecutor = DynamicMCPExecutor;
-//# sourceMappingURL=dynamic-mcp-executor.js.map
