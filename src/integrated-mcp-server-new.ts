@@ -25,15 +25,7 @@ export class IntegratedMCPServer {
     this.server = new Server(
       {
         name: 'quickmcp-integrated-server',
-        version: '1.0.0',
-        description: 'Dynamic MCP server with SQLite-based tool and resource management'
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
+        version: '1.0.0'
       }
     );
 
@@ -47,7 +39,7 @@ export class IntegratedMCPServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       try {
         const tools = await this.executor.getAllTools();
-        console.log(`📋 Listed ${tools.length} dynamic tools`);
+        console.error(`📋 Listed ${tools.length} dynamic tools`);
 
         return { tools };
       } catch (error) {

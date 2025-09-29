@@ -24,12 +24,7 @@ class QuickMCPServer {
   constructor() {
     this.server = new Server({
       name: 'quickmcp-generator',
-      version: '1.0.0',
-      description: 'Live MCP Server Generator - Connect to databases and generate MCP servers on the fly'
-    }, {
-      capabilities: {
-        tools: {}
-      }
+      version: '1.0.0'
     });
 
     this.dbParser = new DatabaseParser();
@@ -252,17 +247,27 @@ class QuickMCPServer {
         prompts: this.generateBasicPrompts()
       };
 
-      // Generate the server code
-      const serverCode = this.generator.generateServer(config, this.currentParsedData);
+      // Convert ParsedData[] to ParsedData format expected by generator
+      const parsedDataForGenerator: { [tableName: string]: any[] } = {};
+      this.currentParsedData.forEach(data => {
+        const tableName = data.tableName || `table_${Date.now()}`;
+        // Convert rows array to objects using headers
+        parsedDataForGenerator[tableName] = data.rows.map(row => {
+          const obj: any = {};
+          data.headers.forEach((header, index) => {
+            obj[header] = row[index];
+          });
+          return obj;
+        });
+      });
 
-      // Save to a temporary file
-      const outputDir = path.join(process.cwd(), 'generated-servers');
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      const serverPath = path.join(outputDir, `${args.name}.js`);
-      fs.writeFileSync(serverPath, serverCode);
+      // Generate the server using the new virtual method
+      const result = await this.generator.generateServer(
+        args.name,
+        config.name,
+        parsedDataForGenerator,
+        this.currentConnection
+      );
 
       const totalRows = this.currentParsedData.reduce((sum, data) => sum + data.metadata.rowCount, 0);
 
@@ -270,7 +275,9 @@ class QuickMCPServer {
         content: [
           {
             type: 'text',
-            text: `Successfully generated MCP server "${args.name}"!\n\nServer saved to: ${serverPath}\n\nGenerated:\n• ${config.tools.length} tools\n• ${config.resources.length} resources\n• ${config.prompts.length} prompts\n• ${totalRows} total data rows\n\nTo use this server:\n1. Extract and run 'npm install' in the server directory\n2. Configure Claude Desktop to use the generated server.js file`
+            text: result.success ?
+              `Successfully generated virtual MCP server "${args.name}"!\n\n${result.message}\n\nGenerated:\n• ${config.tools.length} tools\n• ${config.resources.length} resources\n• ${config.prompts.length} prompts\n• ${totalRows} total data rows\n\nServer is now available as a virtual MCP server in the integrated system.` :
+              `Failed to generate MCP server: ${result.message}`
           }
         ]
       };

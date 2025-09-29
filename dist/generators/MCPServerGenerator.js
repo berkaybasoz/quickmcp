@@ -8,30 +8,30 @@ class MCPServerGenerator {
     }
     async generateServer(serverId, serverName, parsedData, dbConfig) {
         try {
-            console.error(`🚀 Generating virtual MCP server: ${serverId}`);
+            console.log(`🚀 Generating virtual MCP server: ${serverId}`);
             // Create server config
-            console.error(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
+            console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
             const serverConfig = {
                 id: serverId,
                 name: serverName,
                 dbConfig: dbConfig,
                 createdAt: new Date().toISOString()
             };
-            console.error('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
+            console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
             // Save server to SQLite database only
             this.sqliteManager.saveServer(serverConfig);
-            console.error(`✅ Server config saved to SQLite database: ${serverId}`);
+            console.log(`✅ Server config saved to SQLite database: ${serverId}`);
             // Generate and save tools
             const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
             if (tools.length > 0) {
                 this.sqliteManager.saveTools(tools);
-                console.error(`✅ Generated ${tools.length} tools for server ${serverId}`);
+                console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
             }
             // Generate and save resources
             const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
             if (resources.length > 0) {
                 this.sqliteManager.saveResources(resources);
-                console.error(`✅ Generated ${resources.length} resources for server ${serverId}`);
+                console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
             }
             return {
                 success: true,
@@ -133,6 +133,19 @@ class MCPServerGenerator {
                     operation: 'DELETE'
                 });
             }
+            // COUNT tool
+            tools.push({
+                server_id: serverId,
+                name: `count_${cleanTableName}`,
+                description: `Get total count of records in ${tableName} table`,
+                inputSchema: {
+                    type: 'object',
+                    properties: this.generateFilterProperties(columns),
+                    required: []
+                },
+                sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
+                operation: 'SELECT'
+            });
         }
         return tools;
     }
@@ -236,10 +249,17 @@ class MCPServerGenerator {
             });
             const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
             query += ` WHERE ${whereConditions}`;
+            // Add ORDER BY clause for consistent pagination
+            // Find the first suitable column for ordering (prefer id, created_at, or first column)
+            const orderColumn = columns.find(col => col.name.toLowerCase() === 'id' ||
+                col.name.toLowerCase().includes('created') ||
+                col.name.toLowerCase().includes('timestamp')) || columns[0];
+            if (orderColumn) {
+                query += ` ORDER BY [${orderColumn.name}]`;
+            }
             if (dbType === 'mssql') {
-                // Use TOP for SQL Server to avoid OFFSET/FETCH complexity
-                // Replace SELECT with SELECT TOP
-                query = query.replace('SELECT ', 'SELECT TOP (@limit) ');
+                // Use OFFSET/FETCH for proper pagination with ORDER BY
+                query += ' OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
             }
             else {
                 query += ' LIMIT @limit OFFSET @offset';
@@ -261,6 +281,22 @@ class MCPServerGenerator {
     generateDeleteQuery(tableName, dbType) {
         return `DELETE FROM [${tableName}] WHERE [Id] = @id`;
     }
+    generateCountQuery(tableName, columns, dbType) {
+        let query = `SELECT COUNT(*) as total_count FROM [${tableName}]`;
+        // Filter out problematic columns for WHERE clause (e.g., ntext columns in SQL Server)
+        const filterableColumns = columns.filter(col => {
+            // For SQL Server, exclude large text columns that can't be compared
+            if (dbType === 'mssql') {
+                // Skip columns that might be ntext, text, or image types
+                // These are typically identified by their string type and large content
+                return true; // We'll handle this at parameter level instead
+            }
+            return true;
+        });
+        const whereConditions = filterableColumns.map(col => `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`).join(' AND ');
+        query += ` WHERE ${whereConditions}`;
+        return query;
+    }
     sanitizeName(name) {
         return name.toLowerCase()
             .replace(/[^a-z0-9]/g, '_')
@@ -276,7 +312,7 @@ class MCPServerGenerator {
     }
     deleteServer(serverId) {
         this.sqliteManager.deleteServer(serverId);
-        console.error(`🗑️ Deleted server from SQLite database: ${serverId}`);
+        console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
     }
     getAllTools() {
         return this.sqliteManager.getAllTools();

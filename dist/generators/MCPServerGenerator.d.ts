@@ -18,6 +18,7 @@ export declare class MCPServerGenerator {
     private generateInsertQuery;
     private generateUpdateQuery;
     private generateDeleteQuery;
+    private generateCountQuery;
     private sanitizeName;
     getAllServers(): ServerConfig[];
     getServer(serverId: string): ServerConfig | null;

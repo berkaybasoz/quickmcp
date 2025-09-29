@@ -159,6 +159,20 @@ export class MCPServerGenerator {
           operation: 'DELETE'
         });
       }
+
+      // COUNT tool
+      tools.push({
+        server_id: serverId,
+        name: `count_${cleanTableName}`,
+        description: `Get total count of records in ${tableName} table`,
+        inputSchema: {
+          type: 'object',
+          properties: this.generateFilterProperties(columns),
+          required: []
+        },
+        sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
+        operation: 'SELECT'
+      });
     }
 
     return tools;
@@ -282,10 +296,21 @@ export class MCPServerGenerator {
 
       query += ` WHERE ${whereConditions}`;
 
+      // Add ORDER BY clause for consistent pagination
+      // Find the first suitable column for ordering (prefer id, created_at, or first column)
+      const orderColumn = columns.find(col =>
+        col.name.toLowerCase() === 'id' ||
+        col.name.toLowerCase().includes('created') ||
+        col.name.toLowerCase().includes('timestamp')
+      ) || columns[0];
+
+      if (orderColumn) {
+        query += ` ORDER BY [${orderColumn.name}]`;
+      }
+
       if (dbType === 'mssql') {
-        // Use TOP for SQL Server to avoid OFFSET/FETCH complexity
-        // Replace SELECT with SELECT TOP
-        query = query.replace('SELECT ', 'SELECT TOP (@limit) ');
+        // Use OFFSET/FETCH for proper pagination with ORDER BY
+        query += ' OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
       } else {
         query += ' LIMIT @limit OFFSET @offset';
       }
@@ -311,6 +336,29 @@ export class MCPServerGenerator {
 
   private generateDeleteQuery(tableName: string, dbType: string): string {
     return `DELETE FROM [${tableName}] WHERE [Id] = @id`;
+  }
+
+  private generateCountQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
+    let query = `SELECT COUNT(*) as total_count FROM [${tableName}]`;
+
+    // Filter out problematic columns for WHERE clause (e.g., ntext columns in SQL Server)
+    const filterableColumns = columns.filter(col => {
+      // For SQL Server, exclude large text columns that can't be compared
+      if (dbType === 'mssql') {
+        // Skip columns that might be ntext, text, or image types
+        // These are typically identified by their string type and large content
+        return true; // We'll handle this at parameter level instead
+      }
+      return true;
+    });
+
+    const whereConditions = filterableColumns.map(col =>
+      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+    ).join(' AND ');
+
+    query += ` WHERE ${whereConditions}`;
+
+    return query;
   }
 
   private sanitizeName(name: string): string {

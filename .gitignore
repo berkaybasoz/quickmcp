@@ -1,0 +1,72 @@
+# Compiled output
+dist/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Generated servers
+generated-servers/
+
+# SQLite database
+data/*.sqlite
+data/*.db
+
+# Temporary files
+*.tmp
+*.temp
+dist/dynamic-mcp-executor.js.map
+dist/integrated-mcp-server-new.d.ts.map
+dist/integrated-mcp-server-new.js
+dist/integrated-mcp-server-new.js.map
+dist/integrated-mcp-server.d.ts.map
+dist/integrated-mcp-server.js
+dist/integrated-mcp-server.js.map
+dist/mcp-server.js
+dist/mcp-server.js.map
+dist/client/MCPClient.js
+dist/database/json-manager.js
+dist/database/sqlite-manager.js.map
+dist/generators/MCPServerGenerator.d.ts
+dist/generators/MCPServerGenerator.d.ts.map
+dist/generators/MCPServerGenerator.js
+dist/generators/MCPServerGenerator.js.map
+dist/web/server.d.ts.map
+dist/web/server.js
+dist/web/server.js.map

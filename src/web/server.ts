@@ -685,8 +685,9 @@ app.post('/api/mcp-stdio', (req, res) => {
 
     for (const line of lines) {
       if (line.trim()) {
+        let message: any = null;
         try {
-          const message = JSON.parse(line);
+          message = JSON.parse(line);
           console.log('Processing MCP message:', JSON.stringify(message, null, 2));
 
           let response = null;
@@ -764,7 +765,6 @@ app.post('/api/mcp-stdio', (req, res) => {
             const responseStr = JSON.stringify(response) + '\n';
             console.log('Sending response:', responseStr.trim());
             res.write(responseStr);
-            res.flush && res.flush();
           }
         } catch (error) {
           console.error('Error processing MCP message:', error);
@@ -778,7 +778,6 @@ app.post('/api/mcp-stdio', (req, res) => {
               }
             };
             res.write(JSON.stringify(errorResponse) + '\n');
-            res.flush && res.flush();
           }
         }
       }

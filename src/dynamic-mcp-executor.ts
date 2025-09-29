@@ -137,7 +137,7 @@ export class DynamicMCPExecutor {
       switch (dbConfig.type) {
         case 'mssql':
           connection = new sql.ConnectionPool({
-            server: dbConfig.server,
+            server: dbConfig.host,
             port: dbConfig.port || 1433,
             database: dbConfig.database,
             user: dbConfig.username,

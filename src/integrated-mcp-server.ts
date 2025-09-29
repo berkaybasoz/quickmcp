@@ -34,15 +34,7 @@ class IntegratedMCPServer {
     this.server = new Server(
       {
         name: 'quickmcp-integrated-server',
-        version: '1.0.0',
-        description: 'Integrated MCP server providing access to all generated QuickMCP servers'
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
+        version: '1.0.0'
       }
     );
 

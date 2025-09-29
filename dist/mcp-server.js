@@ -1,58 +1,18 @@
 #!/usr/bin/env node
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const DatabaseParser_js_1 = require("./parsers/DatabaseParser.js");
 const MCPServerGenerator_js_1 = require("./generators/MCPServerGenerator.js");
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
 class QuickMCPServer {
     constructor() {
         this.currentConnection = null;
         this.currentParsedData = [];
         this.server = new index_js_1.Server({
             name: 'quickmcp-generator',
-            version: '1.0.0',
-            description: 'Live MCP Server Generator - Connect to databases and generate MCP servers on the fly'
-        }, {
-            capabilities: {
-                tools: {}
-            }
+            version: '1.0.0'
         });
         this.dbParser = new DatabaseParser_js_1.DatabaseParser();
         this.generator = new MCPServerGenerator_js_1.MCPServerGenerator();
@@ -256,21 +216,29 @@ class QuickMCPServer {
                 resources: this.generateBasicResources(),
                 prompts: this.generateBasicPrompts()
             };
-            // Generate the server code
-            const serverCode = this.generator.generateServer(config, this.currentParsedData);
-            // Save to a temporary file
-            const outputDir = path.join(process.cwd(), 'generated-servers');
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir, { recursive: true });
-            }
-            const serverPath = path.join(outputDir, `${args.name}.js`);
-            fs.writeFileSync(serverPath, serverCode);
+            // Convert ParsedData[] to ParsedData format expected by generator
+            const parsedDataForGenerator = {};
+            this.currentParsedData.forEach(data => {
+                const tableName = data.tableName || `table_${Date.now()}`;
+                // Convert rows array to objects using headers
+                parsedDataForGenerator[tableName] = data.rows.map(row => {
+                    const obj = {};
+                    data.headers.forEach((header, index) => {
+                        obj[header] = row[index];
+                    });
+                    return obj;
+                });
+            });
+            // Generate the server using the new virtual method
+            const result = await this.generator.generateServer(args.name, config.name, parsedDataForGenerator, this.currentConnection);
             const totalRows = this.currentParsedData.reduce((sum, data) => sum + data.metadata.rowCount, 0);
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `Successfully generated MCP server "${args.name}"!\n\nServer saved to: ${serverPath}\n\nGenerated:\n• ${config.tools.length} tools\n• ${config.resources.length} resources\n• ${config.prompts.length} prompts\n• ${totalRows} total data rows\n\nTo use this server:\n1. Extract and run 'npm install' in the server directory\n2. Configure Claude Desktop to use the generated server.js file`
+                        text: result.success ?
+                            `Successfully generated virtual MCP server "${args.name}"!\n\n${result.message}\n\nGenerated:\n• ${config.tools.length} tools\n• ${config.resources.length} resources\n• ${config.prompts.length} prompts\n• ${totalRows} total data rows\n\nServer is now available as a virtual MCP server in the integrated system.` :
+                            `Failed to generate MCP server: ${result.message}`
                     }
                 ]
             };
