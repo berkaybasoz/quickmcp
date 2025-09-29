@@ -26,7 +26,7 @@ class MCPClient {
                 reject(error);
             });
             this.process.on('exit', (code) => {
-                console.log('MCP Server process exited with code:', code);
+                console.error('MCP Server process exited with code:', code);
                 this.isConnected = false;
             });
             // Initialize the connection

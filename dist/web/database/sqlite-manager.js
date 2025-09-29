@@ -55,7 +55,7 @@ class SQLiteManager {
         UNIQUE(server_id, name)
       )
     `);
-        console.log('✅ SQLite database initialized:', this.dbPath);
+        console.error('✅ SQLite database initialized:', this.dbPath);
     }
     // Server operations
     saveServer(server) {

@@ -38,7 +38,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
         }
         const port = getNextPort();
         const serverDir = path_1.default.dirname(serverPath);
-        console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
+        console.error(`Starting runtime MCP server for ${serverId} on port ${port}`);
         // Fork the MCP server process
         const mcpProcess = (0, child_process_1.fork)(serverPath, [], {
             cwd: serverDir,
@@ -50,7 +50,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
         });
         mcpProcess.on('message', (message) => {
             if (message === 'ready') {
-                console.log(`MCP Server ${serverId} ready on port ${port}`);
+                console.error(`MCP Server ${serverId} ready on port ${port}`);
                 resolve(port);
             }
         });
@@ -59,7 +59,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
             reject(error);
         });
         mcpProcess.on('exit', (code) => {
-            console.log(`MCP Server ${serverId} exited with code ${code}`);
+            console.error(`MCP Server ${serverId} exited with code ${code}`);
             if (serverInfo.runtimeProcess === mcpProcess) {
                 serverInfo.runtimeProcess = undefined;
                 serverInfo.runtimePort = undefined;
@@ -300,11 +300,11 @@ app.post('/api/servers/:id/test', async (req, res) => {
 app.delete('/api/servers/:id', async (req, res) => {
     try {
         const serverId = req.params.id;
-        console.log(`Attempting to delete server with ID: ${serverId}`);
+        console.error(`Attempting to delete server with ID: ${serverId}`);
         // Check if server exists in JSON database
         const existingServer = generator.getServer(serverId);
         if (!existingServer) {
-            console.log(`Server with ID "${serverId}" not found in database`);
+            console.error(`Server with ID "${serverId}" not found in database`);
             return res.status(404).json({
                 success: false,
                 error: `Server with ID "${serverId}" not found`
@@ -312,14 +312,14 @@ app.delete('/api/servers/:id', async (req, res) => {
         }
         // Delete from JSON database (primary storage)
         generator.deleteServer(serverId);
-        console.log(`Deleted server "${serverId}" from JSON database`);
+        console.error(`Deleted server "${serverId}" from JSON database`);
         // Also check and remove from in-memory store if exists
         const serverInfo = generatedServers.get(serverId);
         if (serverInfo) {
             // Remove server files
             const serverDir = path_1.default.dirname(serverInfo.serverPath);
             await promises_1.default.rm(serverDir, { recursive: true, force: true });
-            console.log(`Removed server files from ${serverDir}`);
+            console.error(`Removed server files from ${serverDir}`);
         }
         // Remove from memory
         generatedServers.delete(req.params.id);
@@ -522,14 +522,14 @@ app.get('/api/database/tables/:tableName', (req, res) => {
 });
 // STDIO bridge endpoint for MCP
 app.post('/api/mcp-stdio', (req, res) => {
-    console.log('MCP STDIO bridge connection established');
+    console.error('MCP STDIO bridge connection established');
     // Set headers for keeping connection alive
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache');
     let buffer = '';
     req.on('data', (chunk) => {
         buffer += chunk.toString();
-        console.log('Received chunk:', chunk.toString());
+        console.error('Received chunk:', chunk.toString());
         // Process complete JSON-RPC messages
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -537,7 +537,7 @@ app.post('/api/mcp-stdio', (req, res) => {
             if (line.trim()) {
                 try {
                     const message = JSON.parse(line);
-                    console.log('Processing MCP message:', JSON.stringify(message, null, 2));
+                    console.error('Processing MCP message:', JSON.stringify(message, null, 2));
                     let response = null;
                     // Handle MCP initialize request
                     if (message.method === 'initialize') {
@@ -589,7 +589,7 @@ app.post('/api/mcp-stdio', (req, res) => {
                     }
                     // Handle initialized notification (no response needed)
                     else if (message.method === 'notifications/initialized') {
-                        console.log('MCP client initialized');
+                        console.error('MCP client initialized');
                         // No response for notifications
                     }
                     // Handle other requests with placeholder responses
@@ -603,7 +603,7 @@ app.post('/api/mcp-stdio', (req, res) => {
                     // Send response if we have one
                     if (response) {
                         const responseStr = JSON.stringify(response) + '\n';
-                        console.log('Sending response:', responseStr.trim());
+                        console.error('Sending response:', responseStr.trim());
                         res.write(responseStr);
                         res.flush && res.flush();
                     }
@@ -627,7 +627,7 @@ app.post('/api/mcp-stdio', (req, res) => {
         }
     });
     req.on('end', () => {
-        console.log('MCP stdio connection ended');
+        console.error('MCP stdio connection ended');
         res.end();
     });
     req.on('error', (error) => {
@@ -635,7 +635,7 @@ app.post('/api/mcp-stdio', (req, res) => {
         res.end();
     });
     req.on('close', () => {
-        console.log('MCP stdio connection closed');
+        console.error('MCP stdio connection closed');
     });
 });
 // Serve index.html for root and any other routes
@@ -647,20 +647,20 @@ const MCP_PORT = 3001;
 // Initialize integrated MCP server
 const integratedMCPServer = new integrated_mcp_server_new_1.IntegratedMCPServer();
 app.listen(PORT, async () => {
-    console.log(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
+    console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
     // Start integrated MCP server
     try {
         await integratedMCPServer.start(MCP_PORT);
-        console.log(`🔗 Add to Claude Desktop config:`);
-        console.log(`{`);
-        console.log(`  "quickmcp-integrated": {`);
-        console.log(`    "command": "curl",`);
-        console.log(`    "args": ["-X", "POST", "http://localhost:${MCP_PORT}/sse/message"],`);
-        console.log(`    "env": {`);
-        console.log(`      "MCP_TRANSPORT": "sse"`);
-        console.log(`    }`);
-        console.log(`  }`);
-        console.log(`}`);
+        console.error(`🔗 Add to Claude Desktop config:`);
+        console.error(`{`);
+        console.error(`  "quickmcp-integrated": {`);
+        console.error(`    "command": "curl",`);
+        console.error(`    "args": ["-X", "POST", "http://localhost:${MCP_PORT}/sse/message"],`);
+        console.error(`    "env": {`);
+        console.error(`      "MCP_TRANSPORT": "sse"`);
+        console.error(`    }`);
+        console.error(`  }`);
+        console.error(`}`);
     }
     catch (error) {
         console.error('❌ Failed to start integrated MCP server:', error);

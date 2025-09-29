@@ -67,7 +67,7 @@ export class DynamicMCPExecutor {
       // Execute the SQL query
       const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
 
-      console.log(`✅ Executed tool ${toolName} successfully`);
+      console.error(`✅ Executed tool ${toolName} successfully`);
       return {
         success: true,
         data: result,
@@ -110,7 +110,7 @@ export class DynamicMCPExecutor {
       // Execute the SQL query
       const result = await this.executeQuery(dbConnection, resource.sqlQuery, {}, 'SELECT');
 
-      console.log(`✅ Read resource ${resourceName} successfully`);
+      console.error(`✅ Read resource ${resourceName} successfully`);
       return {
         contents: [{
           uri: resource.uri_template,
@@ -149,7 +149,7 @@ export class DynamicMCPExecutor {
           });
 
           await connection.connect();
-          console.log(`🔗 Connected to MSSQL database for server ${serverId}`);
+          console.error(`🔗 Connected to MSSQL database for server ${serverId}`);
           break;
 
         case 'mysql':
@@ -162,7 +162,7 @@ export class DynamicMCPExecutor {
           });
 
           await connection.connect();
-          console.log(`🔗 Connected to MySQL database for server ${serverId}`);
+          console.error(`🔗 Connected to MySQL database for server ${serverId}`);
           break;
 
         case 'postgresql':
@@ -176,7 +176,7 @@ export class DynamicMCPExecutor {
 
           // Test connection
           await connection.query('SELECT 1');
-          console.log(`🔗 Connected to PostgreSQL database for server ${serverId}`);
+          console.error(`🔗 Connected to PostgreSQL database for server ${serverId}`);
           break;
 
         default:
@@ -302,7 +302,7 @@ export class DynamicMCPExecutor {
             await dbConnection.connection.end();
             break;
         }
-        console.log(`🔌 Closed database connection for server ${serverId}`);
+        console.error(`🔌 Closed database connection for server ${serverId}`);
       } catch (error) {
         console.error(`❌ Error closing connection for server ${serverId}:`, error);
       }

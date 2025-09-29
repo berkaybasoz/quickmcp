@@ -8,30 +8,30 @@ class MCPServerGenerator {
     }
     async generateServer(serverId, serverName, parsedData, dbConfig) {
         try {
-            console.log(`🚀 Generating virtual MCP server: ${serverId}`);
+            console.error(`🚀 Generating virtual MCP server: ${serverId}`);
             // Create server config
-            console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
+            console.error(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
             const serverConfig = {
                 id: serverId,
                 name: serverName,
                 dbConfig: dbConfig,
                 createdAt: new Date().toISOString()
             };
-            console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
+            console.error('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
             // Save server to SQLite database only
             this.sqliteManager.saveServer(serverConfig);
-            console.log(`✅ Server config saved to SQLite database: ${serverId}`);
+            console.error(`✅ Server config saved to SQLite database: ${serverId}`);
             // Generate and save tools
             const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
             if (tools.length > 0) {
                 this.sqliteManager.saveTools(tools);
-                console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
+                console.error(`✅ Generated ${tools.length} tools for server ${serverId}`);
             }
             // Generate and save resources
             const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
             if (resources.length > 0) {
                 this.sqliteManager.saveResources(resources);
-                console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
+                console.error(`✅ Generated ${resources.length} resources for server ${serverId}`);
             }
             return {
                 success: true,
@@ -262,7 +262,7 @@ class MCPServerGenerator {
     }
     deleteServer(serverId) {
         this.sqliteManager.deleteServer(serverId);
-        console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
+        console.error(`🗑️ Deleted server from SQLite database: ${serverId}`);
     }
     getAllTools() {
         return this.sqliteManager.getAllTools();

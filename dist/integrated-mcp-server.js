@@ -368,7 +368,7 @@ class IntegratedMCPServer {
         });
         // STDIO bridge endpoint for MCP - handles persistent STDIO connection
         this.app.post('/api/mcp-stdio', express_1.default.raw({ type: '*/*' }), (req, res) => {
-            console.log('MCP STDIO bridge connection established');
+            console.error('MCP STDIO bridge connection established');
             // Set headers for persistent connection
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Cache-Control', 'no-cache');
@@ -384,7 +384,7 @@ class IntegratedMCPServer {
                     if (line.trim()) {
                         try {
                             const message = JSON.parse(line);
-                            console.log('Processing MCP message:', JSON.stringify(message, null, 2));
+                            console.error('Processing MCP message:', JSON.stringify(message, null, 2));
                             let response = null;
                             // Handle MCP initialize request
                             if (message.method === 'initialize') {
@@ -436,7 +436,7 @@ class IntegratedMCPServer {
                             }
                             // Handle initialized notification (no response needed)
                             else if (message.method === 'notifications/initialized') {
-                                console.log('MCP client initialized');
+                                console.error('MCP client initialized');
                                 // No response for notifications
                             }
                             // Handle other requests with placeholder responses
@@ -450,7 +450,7 @@ class IntegratedMCPServer {
                             // Send response if we have one
                             if (response) {
                                 const responseStr = JSON.stringify(response) + '\n';
-                                console.log('Sending response:', responseStr.trim());
+                                console.error('Sending response:', responseStr.trim());
                                 res.write(responseStr);
                             }
                         }
@@ -462,11 +462,11 @@ class IntegratedMCPServer {
             });
             // Handle connection close
             req.on('end', () => {
-                console.log('MCP STDIO connection ended');
+                console.error('MCP STDIO connection ended');
                 res.end();
             });
             req.on('close', () => {
-                console.log('MCP STDIO connection closed');
+                console.error('MCP STDIO connection closed');
             });
             req.on('error', (error) => {
                 console.error('MCP STDIO connection error:', error);
@@ -487,7 +487,7 @@ class IntegratedMCPServer {
             // Handle client disconnect
             req.on('close', () => {
                 isConnected = false;
-                console.log('SSE client disconnected');
+                console.error('SSE client disconnected');
             });
             req.on('error', (err) => {
                 isConnected = false;
@@ -536,9 +536,9 @@ class IntegratedMCPServer {
         });
         return new Promise((resolve) => {
             this.app.listen(port, () => {
-                console.log(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
-                console.log(`📊 Managing ${this.generatedServers.size} MCP servers`);
-                console.log(`🔗 Claude Desktop config: http://localhost:${port}/sse/message`);
+                console.error(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
+                console.error(`📊 Managing ${this.generatedServers.size} MCP servers`);
+                console.error(`🔗 Claude Desktop config: http://localhost:${port}/sse/message`);
                 resolve();
             });
         });
