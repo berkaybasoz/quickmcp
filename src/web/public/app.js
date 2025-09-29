@@ -3,10 +3,66 @@ let currentDataSource = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
 });
+
+// Setup event listeners
+function setupEventListeners() {
+    // Sidebar controls
+    document.getElementById('openSidebar')?.addEventListener('click', openSidebar);
+    document.getElementById('closeSidebar')?.addEventListener('click', closeSidebar);
+    document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
+
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = item.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+
+    // Data source type selection
+    document.querySelectorAll('input[name="dataSourceType"]').forEach(radio => {
+        radio.addEventListener('change', toggleDataSourceFields);
+    });
+
+    // Database type change
+    document.getElementById('dbType')?.addEventListener('change', updateDefaultPort);
+
+    // Parse button
+    document.getElementById('parseBtn')?.addEventListener('click', parseDataSource);
+
+    // Generate button
+    document.getElementById('generateBtn')?.addEventListener('click', generateServer);
+
+    // Server name validation
+    document.getElementById('serverName')?.addEventListener('input', checkServerName);
+
+    // Test buttons
+    document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
+    document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
+}
+
+// Sidebar functions
+function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    sidebar.classList.remove('-translate-x-full');
+    overlay.classList.remove('opacity-0', 'invisible');
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('opacity-0', 'invisible');
+}
 
 // Setup URL routing
 function setupRouting() {
@@ -38,59 +94,55 @@ function handleRoute() {
 function switchTabByRoute(tabName) {
     // Hide all tab contents
     const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
+    tabs.forEach(tab => tab.classList.add('hidden'));
 
-    // Hide all sidebar nav items active state
-    const navItems = document.querySelectorAll('.sidebar-nav-item');
-    navItems.forEach(item => item.classList.remove('active'));
+    // Remove active state from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active', 'bg-gradient-to-r', 'from-blue-50', 'to-cyan-50', 'text-blue-700', 'border', 'border-blue-200');
+        item.classList.add('text-gray-700', 'hover:bg-gray-50');
+    });
 
     // Show selected tab
     const selectedTab = document.getElementById(`${tabName}-tab`);
-    console.log('Selected tab element:', selectedTab, 'Adding active class');
-    selectedTab.classList.add('active');
+    if (selectedTab) {
+        selectedTab.classList.remove('hidden');
+    }
 
-    // Set active sidebar item
+    // Set active nav item
     const activeItem = document.querySelector(`[data-tab="${tabName}"]`);
     if (activeItem) {
-        activeItem.classList.add('active');
+        activeItem.classList.remove('text-gray-700', 'hover:bg-gray-50');
+        activeItem.classList.add('active', 'bg-gradient-to-r', 'from-blue-50', 'to-cyan-50', 'text-blue-700', 'border', 'border-blue-200');
+    }
+
+    // Update page title
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSubtitle = pageTitle?.nextElementSibling;
+
+    if (pageTitle) {
+        switch(tabName) {
+            case 'generate':
+                pageTitle.textContent = 'Generate Server';
+                if (pageSubtitle) pageSubtitle.textContent = 'Create powerful MCP servers from your data';
+                break;
+            case 'manage':
+                pageTitle.textContent = 'Manage Servers';
+                if (pageSubtitle) pageSubtitle.textContent = 'Manage and deploy your created MCP servers';
+                break;
+            case 'test':
+                pageTitle.textContent = 'Test Servers';
+                if (pageSubtitle) pageSubtitle.textContent = 'Run automated tests or create custom test scenarios';
+                break;
+        }
     }
 
     // Load data for specific tabs
     if (tabName === 'manage') {
-        console.log('Loading servers for manage tab');
-        const manageTab = document.getElementById('manage-tab');
-        console.log('Manage tab element:', manageTab, 'Active:', manageTab?.classList.contains('active'));
         loadServers();
     } else if (tabName === 'test') {
-        console.log('Loading test servers for test tab');
-        const testTab = document.getElementById('test-tab');
-        console.log('Test tab element:', testTab, 'Active:', testTab?.classList.contains('active'));
         loadTestServers();
     }
-
-    // Close sidebar
-    closeSidebar();
-}
-
-// Sidebar management
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const hamburger = document.getElementById('hamburger');
-
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
-    hamburger.classList.toggle('active');
-}
-
-function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const hamburger = document.getElementById('hamburger');
-
-    sidebar.classList.remove('open');
-    overlay.classList.remove('show');
-    hamburger.classList.remove('active');
 }
 
 // Tab management with URL update
@@ -108,6 +160,11 @@ function switchTab(tabName) {
 
     // Switch the tab
     switchTabByRoute(tabName);
+
+    // Close sidebar on mobile
+    if (window.innerWidth < 1024) {
+        closeSidebar();
+    }
 }
 
 // File upload setup
@@ -115,55 +172,101 @@ function setupFileUpload() {
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
 
+    if (!fileUpload || !fileInput) return;
+
     fileUpload.addEventListener('click', () => fileInput.click());
 
     fileUpload.addEventListener('dragover', (e) => {
         e.preventDefault();
-        fileUpload.classList.add('dragover');
+        fileUpload.classList.add('border-blue-400', 'bg-blue-50');
     });
 
     fileUpload.addEventListener('dragleave', () => {
-        fileUpload.classList.remove('dragover');
+        fileUpload.classList.remove('border-blue-400', 'bg-blue-50');
     });
 
     fileUpload.addEventListener('drop', (e) => {
         e.preventDefault();
-        fileUpload.classList.remove('dragover');
+        fileUpload.classList.remove('border-blue-400', 'bg-blue-50');
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             fileInput.files = files;
-            fileUpload.innerHTML = `<p>Selected: ${files[0].name}</p>`;
+            updateFileUploadDisplay(files[0].name);
         }
     });
 
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            fileUpload.innerHTML = `<p>Selected: ${e.target.files[0].name}</p>`;
+            updateFileUploadDisplay(e.target.files[0].name);
         }
     });
 }
 
+function updateFileUploadDisplay(fileName) {
+    const fileUpload = document.getElementById('fileUpload');
+    if (fileUpload) {
+        fileUpload.innerHTML = `
+            <div class="space-y-4">
+                <div class="w-16 h-16 mx-auto bg-green-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check text-2xl text-green-500"></i>
+                </div>
+                <div>
+                    <p class="text-lg font-medium text-gray-900">File Selected</p>
+                    <p class="text-sm text-gray-500">${fileName}</p>
+                </div>
+                <button type="button" onclick="resetFileUpload()" class="text-xs text-blue-500 hover:text-blue-600">Choose different file</button>
+            </div>
+        `;
+    }
+}
+
+function resetFileUpload() {
+    const fileUpload = document.getElementById('fileUpload');
+    const fileInput = document.getElementById('fileInput');
+
+    if (fileInput) fileInput.value = '';
+
+    if (fileUpload) {
+        fileUpload.innerHTML = `
+            <div class="space-y-4">
+                <div class="w-16 h-16 mx-auto bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-2xl text-blue-500"></i>
+                </div>
+                <div>
+                    <p class="text-lg font-medium text-gray-900">Drop your file here</p>
+                    <p class="text-sm text-gray-500">or click to browse files</p>
+                </div>
+                <p class="text-xs text-gray-400">Supports CSV, Excel files up to 10MB</p>
+            </div>
+        `;
+    }
+}
+
 // Toggle data source fields
 function toggleDataSourceFields() {
-    const type = document.getElementById('dataSourceType').value;
+    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
     const fileSection = document.getElementById('file-upload-section');
     const dbSection = document.getElementById('database-section');
+    const parseBtn = document.getElementById('parseBtn');
 
-    fileSection.classList.add('hidden');
-    dbSection.classList.add('hidden');
+    // Hide all sections first
+    fileSection?.classList.add('hidden');
+    dbSection?.classList.add('hidden');
 
-    if (type === 'csv' || type === 'excel') {
-        fileSection.classList.remove('hidden');
-    } else if (type === 'database') {
-        dbSection.classList.remove('hidden');
-        updateDefaultPort(); // Set default port for the selected database type
+    if (selectedType === 'csv' || selectedType === 'excel') {
+        fileSection?.classList.remove('hidden');
+        if (parseBtn) parseBtn.disabled = false;
+    } else if (selectedType === 'database') {
+        dbSection?.classList.remove('hidden');
+        updateDefaultPort();
+        if (parseBtn) parseBtn.disabled = false;
     }
 }
 
 // Update default port based on database type
 function updateDefaultPort() {
-    const dbType = document.getElementById('dbType').value;
+    const dbType = document.getElementById('dbType')?.value;
     const dbPort = document.getElementById('dbPort');
 
     const defaultPorts = {
@@ -173,45 +276,49 @@ function updateDefaultPort() {
         'mssql': 1433
     };
 
-    dbPort.placeholder = defaultPorts[dbType] || '';
-    if (!dbPort.value && defaultPorts[dbType]) {
-        dbPort.value = defaultPorts[dbType];
+    if (dbPort) {
+        dbPort.placeholder = defaultPorts[dbType] || '';
+        if (!dbPort.value && defaultPorts[dbType]) {
+            dbPort.value = defaultPorts[dbType];
+        }
     }
 }
 
 // Parse data source
 async function parseDataSource() {
-    const type = document.getElementById('dataSourceType').value;
+    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
 
-    if (!type) {
+    if (!selectedType) {
         showError('parse-error', 'Please select a data source type');
         return;
     }
 
     const loading = document.getElementById('parse-loading');
     const errorDiv = document.getElementById('parse-error');
+    const parseBtn = document.getElementById('parseBtn');
 
-    loading.classList.add('show');
-    errorDiv.classList.remove('show');
+    loading?.classList.remove('hidden');
+    errorDiv?.classList.add('hidden');
+    if (parseBtn) parseBtn.disabled = true;
 
     try {
         const formData = new FormData();
-        formData.append('type', type);
+        formData.append('type', selectedType);
 
-        if (type === 'csv' || type === 'excel') {
+        if (selectedType === 'csv' || selectedType === 'excel') {
             const fileInput = document.getElementById('fileInput');
-            if (!fileInput.files[0]) {
+            if (!fileInput?.files[0]) {
                 throw new Error('Please select a file');
             }
             formData.append('file', fileInput.files[0]);
-        } else if (type === 'database') {
+        } else if (selectedType === 'database') {
             const connection = {
-                type: document.getElementById('dbType').value,
-                host: document.getElementById('dbHost').value,
-                port: parseInt(document.getElementById('dbPort').value),
-                database: document.getElementById('dbName').value,
-                username: document.getElementById('dbUser').value,
-                password: document.getElementById('dbPassword').value
+                type: document.getElementById('dbType')?.value,
+                host: document.getElementById('dbHost')?.value,
+                port: parseInt(document.getElementById('dbPort')?.value),
+                database: document.getElementById('dbName')?.value,
+                username: document.getElementById('dbUser')?.value,
+                password: document.getElementById('dbPassword')?.value
             };
             formData.append('connection', JSON.stringify(connection));
         }
@@ -227,20 +334,27 @@ async function parseDataSource() {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
             displayDataPreview(result.data.parsedData);
-            document.getElementById('data-preview-section').classList.remove('hidden');
+            document.getElementById('data-preview-section')?.classList.remove('hidden');
+
+            // Enable generate button
+            const generateBtn = document.getElementById('generateBtn');
+            if (generateBtn) generateBtn.disabled = false;
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
         showError('parse-error', error.message);
     } finally {
-        loading.classList.remove('show');
+        loading?.classList.add('hidden');
+        if (parseBtn) parseBtn.disabled = false;
     }
 }
 
 // Display data preview
 function displayDataPreview(parsedData) {
     const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
     let html = '';
 
     parsedData.forEach((data, index) => {
@@ -248,49 +362,44 @@ function displayDataPreview(parsedData) {
         const panelId = `table-panel-${index}`;
 
         html += `
-            <div class="collapsible-panel" style="margin-bottom: 15px;">
-                <div class="panel-header" onclick="togglePanel('${panelId}')" style="
-                    background: #f7fafc;
-                    padding: 12px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    border: 1px solid #e1e1e1;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f7fafc'">
-                    <div>
-                        <strong>${tableName}</strong>
-                        <span style="color: #718096; margin-left: 10px;">
-                            ${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns
-                        </span>
+            <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden mb-4">
+                <div class="bg-white p-4 border-b border-gray-200 cursor-pointer" onclick="togglePanel('${panelId}')">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">${tableName}</h4>
+                            <p class="text-sm text-gray-500">${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns</p>
+                        </div>
+                        <i id="${panelId}-icon" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
                     </div>
-                    <span id="${panelId}-icon" style="font-size: 18px;">▶</span>
                 </div>
-                <div id="${panelId}" class="panel-content" style="margin-top: 10px; display: none;">
-                    <table>
-                        <thead><tr>`;
+                <div id="${panelId}" class="p-4 hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-100">`;
 
         data.headers.forEach(header => {
             const dataType = data.metadata.dataTypes[header];
-            html += `<th>${header} <small>(${dataType})</small></th>`;
+            html += `<th class="px-3 py-2 text-left font-medium text-gray-700">${header} <span class="text-xs text-gray-500">(${dataType})</span></th>`;
         });
         html += '</tr></thead><tbody>';
 
-        data.rows.slice(0, 5).forEach(row => {
-            html += '<tr>';
+        data.rows.slice(0, 5).forEach((row, rowIndex) => {
+            html += `<tr class="${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">`;
             row.forEach(cell => {
-                html += `<td>${cell || ''}</td>`;
+                html += `<td class="px-3 py-2 text-gray-900">${cell || ''}</td>`;
             });
             html += '</tr>';
         });
 
         if (data.rows.length > 5) {
-            html += `<tr><td colspan="${data.headers.length}"><em>... and ${data.rows.length - 5} more rows</em></td></tr>`;
+            html += `<tr><td colspan="${data.headers.length}" class="px-3 py-2 text-center text-gray-500 italic">... and ${data.rows.length - 5} more rows</td></tr>`;
         }
 
-        html += '</tbody></table></div></div>';
+        html += `</tbody></table>
+                    </div>
+                </div>
+            </div>`;
     });
 
     preview.innerHTML = html;
@@ -301,30 +410,23 @@ function togglePanel(panelId) {
     const panel = document.getElementById(panelId);
     const icon = document.getElementById(`${panelId}-icon`);
 
-    if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        icon.textContent = '▼';
+    if (panel?.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        icon?.classList.add('rotate-180');
     } else {
-        panel.style.display = 'none';
-        icon.textContent = '▶';
+        panel?.classList.add('hidden');
+        icon?.classList.remove('rotate-180');
     }
 }
 
 // Generate server
 async function generateServer() {
-    const name = document.getElementById('serverName').value;
-    const description = document.getElementById('serverDescription').value;
-    const version = document.getElementById('serverVersion').value;
+    const name = document.getElementById('serverName')?.value;
+    const description = document.getElementById('serverDescription')?.value;
+    const version = document.getElementById('serverVersion')?.value;
 
     if (!name) {
         showError('generate-error', 'Please provide server name');
-        return;
-    }
-
-    // Check if name is available (client-side validation)
-    const nameInput = document.getElementById('serverName');
-    if (nameInput.style.borderColor === 'rgb(252, 129, 129)') {
-        showError('generate-error', 'Please choose a different server name - this name already exists');
         return;
     }
 
@@ -336,10 +438,12 @@ async function generateServer() {
     const loading = document.getElementById('generate-loading');
     const successDiv = document.getElementById('generate-success');
     const errorDiv = document.getElementById('generate-error');
+    const generateBtn = document.getElementById('generateBtn');
 
-    loading.classList.add('show');
-    successDiv.classList.remove('show');
-    errorDiv.classList.remove('show');
+    loading?.classList.remove('hidden');
+    successDiv?.classList.add('hidden');
+    errorDiv?.classList.add('hidden');
+    if (generateBtn) generateBtn.disabled = true;
 
     try {
         const response = await fetch('/api/generate', {
@@ -357,30 +461,47 @@ async function generateServer() {
         const result = await response.json();
 
         if (result.success) {
-            // Show success modal instead of inline message
             showSuccessModal(name, result.data);
-            // Reset form
-            document.getElementById('serverName').value = '';
-            document.getElementById('serverDescription').value = '';
-            document.getElementById('serverVersion').value = '1.0.0';
-            document.getElementById('data-preview-section').classList.add('hidden');
+            resetForm();
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
         showError('generate-error', error.message);
     } finally {
-        loading.classList.remove('show');
+        loading?.classList.add('hidden');
+        if (generateBtn) generateBtn.disabled = false;
     }
+}
+
+function resetForm() {
+    document.getElementById('serverName').value = '';
+    document.getElementById('serverDescription').value = '';
+    document.getElementById('serverVersion').value = '1.0.0';
+    document.getElementById('data-preview-section')?.classList.add('hidden');
+
+    // Reset data source selection
+    document.querySelectorAll('input[name="dataSourceType"]').forEach(radio => {
+        radio.checked = false;
+    });
+
+    document.getElementById('file-upload-section')?.classList.add('hidden');
+    document.getElementById('database-section')?.classList.add('hidden');
+
+    resetFileUpload();
+
+    currentParsedData = null;
+    currentDataSource = null;
+
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) generateBtn.disabled = true;
 }
 
 // Load servers list
 async function loadServers() {
-    console.log('loadServers function called');
     try {
         const response = await fetch('/api/servers');
         const result = await response.json();
-        console.log('Servers API response:', result);
 
         if (result.success) {
             displayServers(result.data);
@@ -395,71 +516,82 @@ async function loadServers() {
 
 // Display servers
 function displayServers(servers) {
-    console.log('displayServers called with:', servers);
     const serverList = document.getElementById('server-list');
-    console.log('server-list element:', serverList);
-
-    if (!serverList) {
-        console.error('server-list element not found');
-        return;
-    }
+    if (!serverList) return;
 
     if (!servers || servers.length === 0) {
-        console.log('Showing empty state for servers');
-        serverList.classList.remove('has-servers');
-        serverList.style.display = 'block';
-        serverList.style.minHeight = '400px';
-        serverList.style.width = '100%';
-        const emptyStateHTML = `
-            <div style="text-align: center; padding: 40px; color: #718096; min-height: 300px; width: 100%; display: block;">
-                <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
-                <h3 style="margin-bottom: 8px; color: #2d3748;">No Servers Generated Yet</h3>
-                <p style="margin-bottom: 20px;">Create your first MCP server by uploading data or connecting to a database.</p>
-                <button class="btn btn-primary" onclick="switchTab('generate'); closeSidebar();">
-                    🚀 Generate Your First Server
-                </button>
+        serverList.innerHTML = `
+            <div class="col-span-full">
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                        <i class="fas fa-server text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Servers Generated Yet</h3>
+                    <p class="text-gray-600 mb-6">Create your first MCP server by uploading data or connecting to a database.</p>
+                    <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="switchTab('generate')">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Generate Your First Server
+                    </button>
+                </div>
             </div>
         `;
-        serverList.innerHTML = emptyStateHTML;
-        console.log('Empty state HTML set, serverList innerHTML:', serverList.innerHTML);
-
-        // Debug parent containers
-        const manageTab = document.getElementById('manage-tab');
-        const cardContent = serverList.closest('.card-content');
-        console.log('Manage tab styles:', {
-            display: getComputedStyle(manageTab).display,
-            height: getComputedStyle(manageTab).height,
-            visibility: getComputedStyle(manageTab).visibility
-        });
-        console.log('Card content styles:', {
-            display: getComputedStyle(cardContent).display,
-            height: getComputedStyle(cardContent).height,
-            visibility: getComputedStyle(cardContent).visibility
-        });
         return;
     }
-
-    // Has servers - use grid layout
-    serverList.classList.add('has-servers');
 
     let html = '';
     servers.forEach(server => {
         html += `
-            <div class="server-card">
-                <h3>${server.name}</h3>
-                <p>${server.description}</p>
-                <div class="server-stats">
-                    <span>Version: ${server.version}</span>
-                    <span>Tools: ${server.toolsCount}</span>
-                    <span>Resources: ${server.resourcesCount}</span>
-                    <span>Prompts: ${server.promptsCount}</span>
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
+                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${server.name}</h3>
+                            <p class="text-sm text-gray-600">${server.description}</p>
+                        </div>
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-server text-white"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="server-actions">
-                    <button class="btn btn-primary" onclick="viewServer('${server.id}')">View Details</button>
-                    <button class="btn btn-secondary" onclick="testServer('${server.id}')">Test</button>
-                    <button class="btn btn-secondary" onclick="exportServer('${server.id}')">Export</button>
-                    <button class="btn btn-primary" onclick="showHowToUse('${server.id}')">How To Use</button>
-                    <button class="btn btn-danger" onclick="deleteServer('${server.id}')">Delete</button>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">${server.toolsCount}</div>
+                            <div class="text-sm text-gray-500">Tools</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">${server.resourcesCount}</div>
+                            <div class="text-sm text-gray-500">Resources</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">v${server.version}</span>
+                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${server.promptsCount} prompts</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200" onclick="viewServer('${server.id}')">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Details
+                        </button>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="testServer('${server.id}')">
+                                <i class="fas fa-vial text-xs mr-1"></i>
+                                Test
+                            </button>
+                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="exportServer('${server.id}')">
+                                <i class="fas fa-download text-xs mr-1"></i>
+                                Export
+                            </button>
+                            <button class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200" onclick="deleteServer('${server.id}')">
+                                <i class="fas fa-trash text-xs mr-1"></i>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -468,26 +600,14 @@ function displayServers(servers) {
     serverList.innerHTML = html;
 }
 
-// Load test servers dropdown
+// Load test servers
 async function loadTestServers() {
-    console.log('loadTestServers function called');
     try {
         const response = await fetch('/api/servers');
         const result = await response.json();
-        console.log('Test servers API response:', result);
-
-        // Test tab should be active by now since we removed the delays
-        const testTab = document.getElementById('test-tab');
-        if (!testTab || !testTab.classList.contains('active')) {
-            console.log('Test tab not active, skipping loadTestServers');
-            return;
-        }
 
         const select = document.getElementById('testServerSelect');
-        if (!select) {
-            console.error('testServerSelect element not found');
-            return;
-        }
+        if (!select) return;
 
         if (result.success && result.data.length > 0) {
             select.innerHTML = '<option value="">Select a server to test</option>';
@@ -496,24 +616,6 @@ async function loadTestServers() {
             });
         } else {
             select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
-
-            // Show empty state message
-            const testContent = document.querySelector('#test-tab .card-content');
-            console.log('Test content element:', testContent);
-            console.log('Existing test-empty-state:', document.getElementById('test-empty-state'));
-            if (testContent && !document.getElementById('test-empty-state')) {
-                console.log('Creating test empty state');
-                testContent.innerHTML = `
-                    <div id="test-empty-state" style="text-align: center; padding: 40px; color: #718096;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">🧪</div>
-                        <h3 style="margin-bottom: 8px; color: #2d3748;">No Servers to Test</h3>
-                        <p style="margin-bottom: 20px;">Create an MCP server first before testing its functionality.</p>
-                        <button class="btn btn-primary" onclick="switchTab('generate'); closeSidebar();">
-                            🚀 Generate Your First Server
-                        </button>
-                    </div>
-                `;
-            }
         }
     } catch (error) {
         console.error('Failed to load test servers:', error);
@@ -524,14 +626,9 @@ async function loadTestServers() {
     }
 }
 
-// Test server functions
-function showCustomTest() {
-    const section = document.getElementById('custom-test-section');
-    section.classList.toggle('hidden');
-}
-
+// Test functions
 async function runAutoTests() {
-    const serverId = document.getElementById('testServerSelect').value;
+    const serverId = document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server to test');
         return;
@@ -539,11 +636,13 @@ async function runAutoTests() {
 
     const loading = document.getElementById('test-loading');
     const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
 
-    loading.classList.add('show');
-    resultsDiv.classList.add('hidden');
-    errorDiv.classList.remove('show');
+    loading?.classList.remove('hidden');
+    resultsDiv?.classList.add('hidden');
+    noResults?.classList.add('hidden');
+    errorDiv?.classList.add('hidden');
 
     try {
         const response = await fetch(`/api/servers/${serverId}/test`, {
@@ -563,16 +662,17 @@ async function runAutoTests() {
         }
     } catch (error) {
         showError('test-error', error.message);
+        noResults?.classList.remove('hidden');
     } finally {
-        loading.classList.remove('show');
+        loading?.classList.add('hidden');
     }
 }
 
 async function runCustomTest() {
-    const serverId = document.getElementById('testServerSelect').value;
-    const testType = document.getElementById('testType').value;
-    const testName = document.getElementById('testName').value;
-    const testParams = document.getElementById('testParams').value;
+    const serverId = document.getElementById('testServerSelect')?.value;
+    const testType = document.getElementById('testType')?.value;
+    const testName = document.getElementById('testName')?.value;
+    const testParams = document.getElementById('testParams')?.value;
 
     if (!serverId || !testName) {
         showError('test-error', 'Please select a server and enter test name');
@@ -591,11 +691,13 @@ async function runCustomTest() {
 
     const loading = document.getElementById('test-loading');
     const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
 
-    loading.classList.add('show');
-    resultsDiv.classList.add('hidden');
-    errorDiv.classList.remove('show');
+    loading?.classList.remove('hidden');
+    resultsDiv?.classList.add('hidden');
+    noResults?.classList.add('hidden');
+    errorDiv?.classList.add('hidden');
 
     try {
         const response = await fetch(`/api/servers/${serverId}/test`, {
@@ -622,14 +724,18 @@ async function runCustomTest() {
         }
     } catch (error) {
         showError('test-error', error.message);
+        noResults?.classList.remove('hidden');
     } finally {
-        loading.classList.remove('show');
+        loading?.classList.add('hidden');
     }
 }
 
 // Display test results
 function displayTestResults(testSuiteResult) {
     const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
+
+    if (!resultsDiv) return;
 
     let output = `=== Test Suite: ${testSuiteResult.testSuite.name} ===\n`;
     output += `Description: ${testSuiteResult.testSuite.description}\n`;
@@ -654,10 +760,14 @@ function displayTestResults(testSuiteResult) {
 
     resultsDiv.textContent = output;
     resultsDiv.classList.remove('hidden');
+    noResults?.classList.add('hidden');
 }
 
 function displaySingleTestResult(testResult) {
     const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
+
+    if (!resultsDiv) return;
 
     let output = `=== Custom Test Result ===\n`;
     output += `Test: ${testResult.testCase.name}\n`;
@@ -674,230 +784,21 @@ function displaySingleTestResult(testResult) {
 
     resultsDiv.textContent = output;
     resultsDiv.classList.remove('hidden');
+    noResults?.classList.add('hidden');
 }
 
 // Server management functions
 async function viewServer(serverId) {
-    try {
-        const response = await fetch(`/api/servers/${serverId}`);
-        const result = await response.json();
-
-        if (!result.success) {
-            alert('Server not found');
-            return;
-        }
-
-        const server = result.data;
-
-        // Update modal title
-        document.getElementById('modal-server-name').textContent = server.config.name;
-
-        // Build content HTML
-        let html = `
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #2d3748; margin-bottom: 15px;">Server Information</h3>
-                <div style="background: #f7fafc; padding: 15px; border-radius: 8px;">
-                    <p><strong>Name:</strong> ${server.config.name}</p>
-                    <p><strong>Version:</strong> ${server.config.version}</p>
-                    <p><strong>Description:</strong> ${server.config.description || 'No description provided'}</p>
-                    <p><strong>Data Source:</strong> ${server.config.dataSource.type}</p>
-                    ${server.config.dataSource.connection ?
-                        `<p><strong>Database:</strong> ${server.config.dataSource.connection.type} - ${server.config.dataSource.connection.database}</p>` :
-                        ''}
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #2d3748; margin-bottom: 15px;">Tools (${server.config.tools.length})</h3>
-                <div style="max-height: 300px; overflow-y: auto;">
-        `;
-
-        // Add tools
-        server.config.tools.forEach(tool => {
-            html += `
-                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
-                            <strong style="color: #4a5568;">${tool.name}</strong>
-                            <p style="color: #718096; margin: 5px 0 0 0; font-size: 14px;">${tool.description}</p>
-                        </div>
-                        <button onclick="toggleDetails('tool-${tool.name}')" style="
-                            background: #e2e8f0;
-                            border: none;
-                            padding: 4px 8px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 12px;
-                        ">Schema</button>
-                    </div>
-                    <div id="tool-${tool.name}" style="display: none; margin-top: 10px;">
-                        <pre style="background: white; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${JSON.stringify(tool.inputSchema, null, 2)}</pre>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #2d3748; margin-bottom: 15px;">Resources (${server.config.resources.length})</h3>
-                <div style="max-height: 300px; overflow-y: auto;">
-        `;
-
-        // Add resources
-        server.config.resources.forEach(resource => {
-            html += `
-                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
-                    <strong style="color: #4a5568;">${resource.name}</strong>
-                    <p style="color: #718096; margin: 5px 0; font-size: 14px;">${resource.description}</p>
-                    <p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">URI: ${resource.uri}</p>
-                    ${resource.mimeType ? `<p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">Type: ${resource.mimeType}</p>` : ''}
-                </div>
-            `;
-        });
-
-        html += `
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #2d3748; margin-bottom: 15px;">Prompts (${server.config.prompts.length})</h3>
-                <div style="max-height: 300px; overflow-y: auto;">
-        `;
-
-        // Add prompts
-        server.config.prompts.forEach(prompt => {
-            html += `
-                <div style="background: #f7fafc; padding: 12px; margin-bottom: 10px; border-radius: 6px;">
-                    <strong style="color: #4a5568;">${prompt.name}</strong>
-                    <p style="color: #718096; margin: 5px 0; font-size: 14px;">${prompt.description}</p>
-                    ${prompt.arguments && prompt.arguments.length > 0 ?
-                        `<p style="color: #a0aec0; margin: 5px 0; font-size: 12px;">Arguments: ${prompt.arguments.map(arg => arg.name).join(', ')}</p>` :
-                        ''}
-                </div>
-            `;
-        });
-
-        html += `
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #2d3748; margin-bottom: 15px;">Data Statistics</h3>
-                <div style="background: #f7fafc; padding: 15px; border-radius: 8px;">
-                    <p><strong>Total Data Rows:</strong> ${server.parsedData.reduce((sum, data) => sum + data.metadata.rowCount, 0)}</p>
-                    <p><strong>Tables/Sheets:</strong> ${server.parsedData.length}</p>
-        `;
-
-        // Add table details
-        server.parsedData.forEach(data => {
-            const tableName = data.tableName || 'Data';
-            html += `<p style="margin-left: 20px;">• ${tableName}: ${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns</p>`;
-        });
-
-        html += `
-                </div>
-            </div>
-        `;
-
-        // Update content
-        document.getElementById('server-details-content').innerHTML = html;
-
-        // Show modal
-        document.getElementById('server-details-modal').style.display = 'block';
-
-    } catch (error) {
-        console.error('Error fetching server details:', error);
-        alert('Failed to load server details');
-    }
-}
-
-function closeServerDetails() {
-    document.getElementById('server-details-modal').style.display = 'none';
-}
-
-function toggleDetails(elementId) {
-    const element = document.getElementById(elementId);
-    if (element.style.display === 'none') {
-        element.style.display = 'block';
-    } else {
-        element.style.display = 'none';
-    }
-}
-
-// How To Use Modal Functions
-async function showHowToUse(serverId) {
-    try {
-        const response = await fetch(`/api/servers/${serverId}`);
-        const result = await response.json();
-
-        if (!result.success) {
-            alert('Server not found');
-            return;
-        }
-
-        const server = result.data;
-        const serverName = server.config.name;
-
-        // Update server name in configurations
-        document.getElementById('claude-server-name').textContent = serverName;
-        document.getElementById('openai-server-name').textContent = serverName;
-
-        // Use a typical installation path
-        const serverPath = `~/mcp-servers/${serverName}`;
-        document.getElementById('claude-server-path').textContent = serverPath;
-        document.getElementById('openai-server-path').textContent = serverPath;
-
-        // Show the modal
-        document.getElementById('how-to-use-modal').style.display = 'block';
-
-        // Default to Claude tab
-        switchIntegrationTab('claude');
-
-    } catch (error) {
-        console.error('Error loading server info:', error);
-        alert('Failed to load integration instructions');
-    }
-}
-
-function closeHowToUse() {
-    document.getElementById('how-to-use-modal').style.display = 'none';
-}
-
-function switchIntegrationTab(platform) {
-    // Hide all content
-    document.getElementById('claude-instructions').style.display = 'none';
-    document.getElementById('openai-instructions').style.display = 'none';
-
-    // Reset all tab buttons
-    document.getElementById('claude-tab-btn').style.background = 'transparent';
-    document.getElementById('claude-tab-btn').style.borderBottom = '2px solid transparent';
-    document.getElementById('claude-tab-btn').style.color = '#4a5568';
-
-    document.getElementById('openai-tab-btn').style.background = 'transparent';
-    document.getElementById('openai-tab-btn').style.borderBottom = '2px solid transparent';
-    document.getElementById('openai-tab-btn').style.color = '#4a5568';
-
-    // Show selected content and highlight tab
-    if (platform === 'claude') {
-        document.getElementById('claude-instructions').style.display = 'block';
-        document.getElementById('claude-tab-btn').style.background = 'white';
-        document.getElementById('claude-tab-btn').style.borderBottom = '2px solid #667eea';
-        document.getElementById('claude-tab-btn').style.color = '#667eea';
-    } else if (platform === 'openai') {
-        document.getElementById('openai-instructions').style.display = 'block';
-        document.getElementById('openai-tab-btn').style.background = 'white';
-        document.getElementById('openai-tab-btn').style.borderBottom = '2px solid #667eea';
-        document.getElementById('openai-tab-btn').style.color = '#667eea';
-    }
+    // For now, just switch to manage tab - you can implement detailed view later
+    console.log('View server:', serverId);
 }
 
 function testServer(serverId) {
-    // Switch to test tab and select the server
     switchTab('test');
-    document.getElementById('testServerSelect').value = serverId;
+    setTimeout(() => {
+        const select = document.getElementById('testServerSelect');
+        if (select) select.value = serverId;
+    }, 100);
 }
 
 async function exportServer(serverId) {
@@ -906,16 +807,19 @@ async function exportServer(serverId) {
         const result = await response.json();
 
         if (result.success) {
-            alert(`Server export ready: ${result.data.filename}`);
-            // In a real implementation, you'd trigger a download here
+            // Create download link
+            const link = document.createElement('a');
+            link.href = result.data.downloadUrl;
+            link.download = result.data.filename;
+            link.click();
         }
     } catch (error) {
-        alert(`Export failed: ${error.message}`);
+        console.error('Export failed:', error);
     }
 }
 
 async function deleteServer(serverId) {
-    if (!confirm('Are you sure you want to delete this server?')) {
+    if (!confirm('Are you sure you want to delete this server? This action cannot be undone.')) {
         return;
     }
 
@@ -927,28 +831,16 @@ async function deleteServer(serverId) {
         const result = await response.json();
 
         if (result.success) {
-            loadServers(); // Refresh the list
+            loadServers(); // Reload the servers list
             loadTestServers(); // Refresh test dropdown
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
-        alert(`Delete failed: ${error.message}`);
+        console.error('Delete failed:', error);
     }
 }
 
-// Utility functions
-function showError(elementId, message) {
-    const errorDiv = document.getElementById(elementId);
-    errorDiv.textContent = message;
-    errorDiv.classList.add('show');
-}
-
-function showSuccess(elementId, message) {
-    const successDiv = document.getElementById(elementId);
-    successDiv.textContent = message;
-    successDiv.classList.add('show');
-}
 // Success Modal Functions
 function showSuccessModal(serverName, serverData) {
     const modal = document.getElementById("success-modal");
@@ -960,18 +852,25 @@ function showSuccessModal(serverName, serverData) {
         message += ` Generated ${serverData.toolsCount || 0} tools, ${serverData.resourcesCount || 0} resources, and ${serverData.promptsCount || 0} prompts.`;
     }
 
-    messageElement.textContent = message;
-    modal.style.display = "block";
+    if (messageElement) messageElement.textContent = message;
+
+    if (modal) {
+        modal.classList.remove('opacity-0', 'invisible');
+        modal.querySelector('.bg-white').classList.remove('scale-95');
+    }
 }
 
 function closeSuccessModal() {
     const modal = document.getElementById("success-modal");
-    modal.style.display = "none";
+    if (modal) {
+        modal.classList.add('opacity-0', 'invisible');
+        modal.querySelector('.bg-white').classList.add('scale-95');
+    }
 }
 
 function goToManageServers() {
     closeSuccessModal();
-    window.location.href = "/manage-servers";
+    switchTab('manage');
 }
 
 // Server name validation
@@ -980,7 +879,7 @@ let nameCheckTimeout;
 async function checkServerName() {
     const nameInput = document.getElementById('serverName');
     const validationDiv = document.getElementById('name-validation');
-    const serverName = nameInput.value.trim();
+    const serverName = nameInput?.value.trim();
 
     // Clear previous timeout
     if (nameCheckTimeout) {
@@ -989,8 +888,8 @@ async function checkServerName() {
 
     // Hide validation if empty
     if (!serverName) {
-        validationDiv.style.display = 'none';
-        nameInput.style.borderColor = '#e1e1e1';
+        if (validationDiv) validationDiv.style.display = 'none';
+        if (nameInput) nameInput.classList.remove('border-green-300', 'border-red-300');
         return;
     }
 
@@ -1000,20 +899,39 @@ async function checkServerName() {
             const response = await fetch(`/api/servers/check-name/${encodeURIComponent(serverName)}`);
             const result = await response.json();
 
-            if (result.success) {
+            if (result.success && validationDiv && nameInput) {
                 validationDiv.style.display = 'block';
                 if (result.available) {
                     validationDiv.textContent = '✓ Server name is available';
-                    validationDiv.style.color = '#2f855a';
-                    nameInput.style.borderColor = '#68d391';
+                    validationDiv.className = 'mt-2 text-sm text-green-600';
+                    nameInput.classList.remove('border-red-300');
+                    nameInput.classList.add('border-green-300');
                 } else {
                     validationDiv.textContent = '✗ Server name already exists';
-                    validationDiv.style.color = '#c53030';
-                    nameInput.style.borderColor = '#fc8181';
+                    validationDiv.className = 'mt-2 text-sm text-red-600';
+                    nameInput.classList.remove('border-green-300');
+                    nameInput.classList.add('border-red-300');
                 }
             }
         } catch (error) {
             console.error('Error checking server name:', error);
         }
-    }, 500); // 500ms debounce
+    }, 500);
+}
+
+// Utility functions
+function showError(elementId, message) {
+    const errorDiv = document.getElementById(elementId);
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+function showSuccess(elementId, message) {
+    const successDiv = document.getElementById(elementId);
+    if (successDiv) {
+        successDiv.textContent = message;
+        successDiv.classList.remove('hidden');
+    }
 }

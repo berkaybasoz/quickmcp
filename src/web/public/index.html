@@ -1,1058 +1,557 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Server Generator</title>
+    <title>QuickMCP - Modern MCP Server Generator</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8fafc;
-            min-height: 100vh;
-            color: #1a202c;
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 280px;
-            height: 100vh;
-            background: #1a202c;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar.open {
-            transform: translateX(0);
-        }
-
-        .sidebar-header {
-            padding: 24px;
-            border-bottom: 1px solid #2d3748;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar-logo {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .sidebar-title {
-            color: white;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .sidebar-nav {
-            padding: 16px 0;
-        }
-
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 24px;
-            color: #a0aec0;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-        }
-
-        .sidebar-nav-item:hover {
-            background: #2d3748;
-            color: white;
-        }
-
-        .sidebar-nav-item.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .sidebar-nav-item .icon {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Main Content Styles */
-        .main-layout {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .main-content {
-            flex: 1;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            background: white;
-            padding: 16px 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .hamburger {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            padding: 8px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-
-        .hamburger:hover {
-            background: #f7fafc;
-        }
-
-        .hamburger span {
-            width: 20px;
-            height: 2px;
-            background: #4a5568;
-            transition: all 0.2s;
-        }
-
-        .hamburger.active span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .hamburger.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -6px);
-        }
-
-        .topbar-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1a202c;
-        }
-
-        .topbar-subtitle {
-            color: #718096;
-            margin-left: 8px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 32px 32px 0 32px;
-        }
-
-        .card-content {
-            padding: 32px;
-        }
-
-        .section-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1a202c;
-            margin-bottom: 8px;
-        }
-
-        .section-subtitle {
-            color: #718096;
-            font-size: 16px;
-            margin-bottom: 32px;
-        }
-
-        .tabs {
-            display: flex;
-            background: #f5f5f5;
-            border-radius: 8px;
-            padding: 4px;
-            margin-bottom: 20px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px 20px;
-            text-align: center;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .tab.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content {
-            display: none;
-        }
+        body { font-family: 'Inter', sans-serif; }
 
-        .tab-content.active {
-            display: block;
+        /* Custom animations */
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .form-group label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e1e1;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a67d8;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        .btn-danger {
-            background: #e53e3e;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c53030;
-        }
-
-        .file-upload {
-            border: 2px dashed #e1e1e1;
-            border-radius: 6px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .file-upload:hover {
-            border-color: #667eea;
-            background: #f7fafc;
-        }
-
-        .file-upload.dragover {
-            border-color: #667eea;
-            background: #ebf4ff;
-        }
-
-        .data-preview {
-            background: #f7fafc;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 15px 0;
-            max-height: 300px;
-            overflow: auto;
-        }
-
-        .data-preview table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-preview th,
-        .data-preview td {
-            padding: 8px;
-            border: 1px solid #e1e1e1;
-            text-align: left;
-        }
-
-        .data-preview th {
-            background: #e2e8f0;
-            font-weight: 500;
-        }
-
-        .server-list {
-            display: block;
-            gap: 20px;
-        }
-
-        .server-list.has-servers {
-            display: grid;
-        }
-
-        .server-card {
-            background: #f7fafc;
-            border-radius: 8px;
-            padding: 20px;
-            border: 1px solid #e1e1e1;
-        }
-
-        .server-card h3 {
-            margin-bottom: 10px;
-            color: #2d3748;
-        }
-
-        .server-stats {
-            display: flex;
-            gap: 20px;
-            margin: 10px 0;
-            font-size: 14px;
-            color: #718096;
-        }
-
-        .server-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .test-results {
-            background: #f7fafc;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 15px 0;
-            max-height: 400px;
-            overflow: auto;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .loading.show {
-            display: block;
-        }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
 
-        .error {
-            background: #fed7d7;
-            color: #c53030;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            display: none;
-        }
-
-        .error.show {
-            display: block;
-        }
-
-        .success {
-            background: #c6f6d5;
-            color: #2f855a;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            display: none;
-        }
-
-        .success.show {
-            display: block;
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 16px;
-            }
-
-            .card-header {
-                padding: 24px 24px 0 24px;
-            }
-
-            .card-content {
-                padding: 24px;
-            }
-
-            .section-title {
-                font-size: 24px;
-            }
-
-            .topbar-subtitle {
-                display: none;
-            }
-
-            .form-group {
-                margin-bottom: 16px;
-            }
+        /* Glassmorphism effect */
+        .glass {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        @media (max-width: 480px) {
-            .sidebar {
-                width: 100%;
-            }
-
-            .topbar-title {
-                font-size: 20px;
-            }
-
-            .section-title {
-                font-size: 20px;
-            }
-
-            .card-header {
-                padding: 20px 20px 0 20px;
-            }
 
-            .card-content {
-                padding: 20px;
-            }
+        .glass-dark {
+            backdrop-filter: blur(20px);
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e'
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite'
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="main-layout">
+<body class="h-full bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <!-- Main App Container -->
+    <div id="app" class="flex h-full">
+
         <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">QM</div>
-                <div class="sidebar-title">QuickMCP</div>
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/90 backdrop-blur-xl border-r border-gray-200/50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="flex flex-col h-full">
+                <!-- Sidebar Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-200/50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-rocket text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">QuickMCP</h1>
+                            <p class="text-xs text-gray-500">Server Generator</p>
+                        </div>
+                    </div>
+                    <button id="closeSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-times text-gray-500"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" class="nav-item active flex items-center px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200" data-tab="generate">
+                        <i class="fas fa-magic mr-3 text-blue-500"></i>
+                        Generate Server
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200" data-tab="manage">
+                        <i class="fas fa-server mr-3 text-gray-400"></i>
+                        Manage Servers
+                    </a>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200" data-tab="test">
+                        <i class="fas fa-vial mr-3 text-gray-400"></i>
+                        Test Servers
+                    </a>
+                </nav>
+
+                <!-- Sidebar Footer -->
+                <div class="p-4 border-t border-gray-200/50">
+                    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">All systems online</p>
+                                <p class="text-xs text-gray-500">Ready to generate servers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <nav class="sidebar-nav">
-                <a href="/" class="sidebar-nav-item active">
-                    <div class="icon">🚀</div>
-                    <span>Generate Server</span>
-                </a>
-                <a href="/manage-servers" class="sidebar-nav-item">
-                    <div class="icon">📋</div>
-                    <span>Manage Servers</span>
-                </a>
-                <a href="/test-servers" class="sidebar-nav-item">
-                    <div class="icon">🧪</div>
-                    <span>Test Servers</span>
-                </a>
-                <a href="/database-tables" class="sidebar-nav-item">
-                    <div class="icon">🗃️</div>
-                    <span>Database Tables</span>
-                </a>
-                <a href="/how-to-use" class="sidebar-nav-item">
-                    <div class="icon">📖</div>
-                    <span>How to Use</span>
-                </a>
-            </nav>
         </div>
 
-        <!-- Overlay for mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+        <!-- Sidebar Overlay for mobile -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
         <!-- Main Content -->
-        <div class="main-content">
-            <div class="topbar">
-                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="topbar-title">
-                    MCP Server Generator
-                </div>
-            </div>
-
-            <div class="container">
-                <div class="card">
-                    <!-- Generate Server Tab -->
-                    <div id="generate-tab" class="tab-content active">
-                        <div class="card-header">
-                            <h1 class="section-title">Generate MCP Server</h1>
-                            <p class="section-subtitle">Create powerful Model Context Protocol servers from your data sources</p>
+        <div class="flex-1 lg:pl-64">
+            <!-- Top Navigation -->
+            <header class="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center space-x-4">
+                            <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-bars text-gray-600"></i>
+                            </button>
+                            <div>
+                                <h2 id="pageTitle" class="text-2xl font-bold text-gray-900">Generate Server</h2>
+                                <p class="text-sm text-gray-500">Create powerful MCP servers from your data</p>
+                            </div>
                         </div>
-                        <div class="card-content">
 
-                <!-- Server Configuration -->
-                <div id="server-config-section">
-                    <div class="form-group">
-                        <label>Server Name</label>
-                        <input type="text" id="serverName" placeholder="my-data-server" oninput="checkServerName()">
-                        <div id="name-validation" style="margin-top: 8px; font-size: 14px; display: none;"></div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="form-group">
-                            <label>Version</label>
-                            <input type="text" id="serverVersion" value="1.0.0">
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <input type="text" id="serverDescription" placeholder="Describe what your MCP server does...">
+                        <div class="flex items-center space-x-4">
+                            <div class="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span>Online</span>
+                            </div>
+                            <button class="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                            </button>
                         </div>
                     </div>
                 </div>
+            </header>
 
-                <hr style="margin: 30px 0; border: none; border-top: 1px solid #e1e1e1;">
+            <!-- Tab Content -->
+            <main class="p-4 sm:p-6 lg:p-8">
 
-                <div class="form-group">
-                    <label>Data Source Type</label>
-                    <select id="dataSourceType" onchange="toggleDataSourceFields()">
-                        <option value="">Select data source type</option>
-                        <option value="csv">CSV File</option>
-                        <option value="excel">Excel File</option>
-                        <option value="database">Database</option>
-                    </select>
-                </div>
+                <!-- Generate Server Tab -->
+                <div id="generate-tab" class="tab-content fade-in">
+                    <div class="max-w-7xl mx-auto space-y-8">
 
-                <!-- File Upload -->
-                <div id="file-upload-section" class="form-group hidden">
-                    <label>Upload File</label>
-                    <div class="file-upload" id="fileUpload">
-                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;">
-                        <p>Click to select file or drag and drop</p>
-                        <p style="font-size: 12px; color: #718096; margin-top: 5px;">Supports CSV and Excel files</p>
-                    </div>
-                </div>
-
-                <!-- Database Connection -->
-                <div id="database-section" class="hidden">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="form-group">
-                            <label>Database Type</label>
-                            <select id="dbType" onchange="updateDefaultPort()">
-                                <option value="mssql">Microsoft SQL Server</option>
-                                <option value="mysql">MySQL</option>
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="sqlite">SQLite</option>
-                            </select>
+                        <!-- Hero Section -->
+                        <div class="text-center py-8">
+                            <div class="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                                <i class="fas fa-sparkles"></i>
+                                <span>AI-Powered Server Generation</span>
+                            </div>
+                            <h1 class="text-4xl font-bold text-gray-900 mb-4">Generate Your MCP Server</h1>
+                            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Transform your data into powerful MCP servers in minutes. Upload files, connect databases, and watch the magic happen.</p>
                         </div>
-                        <div class="form-group">
-                            <label>Host</label>
-                            <input type="text" id="dbHost" placeholder="localhost">
-                        </div>
-                        <div class="form-group">
-                            <label>Port</label>
-                            <input type="number" id="dbPort" placeholder="1433">
-                        </div>
-                        <div class="form-group">
-                            <label>Database Name</label>
-                            <input type="text" id="dbName" placeholder="my_database">
-                        </div>
-                        <div class="form-group">
-                            <label>Username</label>
-                            <input type="text" id="dbUser" placeholder="username">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="dbPassword" placeholder="password">
-                        </div>
-                    </div>
-                </div>
 
-                <button class="btn btn-primary" onclick="parseDataSource()">Parse Data Source</button>
+                        <!-- Main Generation Flow -->
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                <div id="parse-loading" class="loading">
-                    <p>Parsing data source...</p>
-                </div>
-
-                <div id="parse-error" class="error"></div>
-
-                <!-- Data Preview -->
-                <div id="data-preview-section" class="hidden">
-                    <h3>Data Preview</h3>
-                    <div id="data-preview" class="data-preview"></div>
-
-                    <button class="btn btn-primary" onclick="generateServer()">Generate MCP Server</button>
-
-                    <div id="generate-loading" class="loading">
-                        <p>Generating MCP server...</p>
-                    </div>
-
-                    <div id="generate-success" class="success"></div>
-                    <div id="generate-error" class="error"></div>
-                        </div>
-                    </div>
-
-                    <!-- Manage Servers Tab -->
-                    <div id="manage-tab" class="tab-content">
-                        <div class="card-header">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <h1 class="section-title">Generated Servers</h1>
-                                    <p class="section-subtitle">Manage and deploy your created MCP servers</p>
+                            <!-- Data Source Configuration -->
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-database text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Data Source</h3>
+                                            <p class="text-sm text-gray-600">Choose your data source</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button class="btn-compact" onclick="switchTab('generator')">
-                                    <span>➕</span> Generate Server
-                                </button>
+
+                                <div class="p-6 space-y-6">
+                                    <!-- Data Source Type -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-3">Data Source Type</label>
+                                        <div class="grid grid-cols-1 gap-3">
+                                            <label class="relative">
+                                                <input type="radio" name="dataSourceType" value="csv" class="sr-only peer">
+                                                <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all duration-200 hover:border-gray-300">
+                                                    <div class="flex items-center space-x-3">
+                                                        <i class="fas fa-file-csv text-2xl text-gray-400 peer-checked:text-blue-500"></i>
+                                                        <div>
+                                                            <p class="font-medium text-gray-900">CSV File</p>
+                                                            <p class="text-sm text-gray-500">Upload comma-separated values file</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </label>
+
+                                            <label class="relative">
+                                                <input type="radio" name="dataSourceType" value="excel" class="sr-only peer">
+                                                <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all duration-200 hover:border-gray-300">
+                                                    <div class="flex items-center space-x-3">
+                                                        <i class="fas fa-file-excel text-2xl text-gray-400 peer-checked:text-blue-500"></i>
+                                                        <div>
+                                                            <p class="font-medium text-gray-900">Excel File</p>
+                                                            <p class="text-sm text-gray-500">Upload Excel spreadsheet file</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </label>
+
+                                            <label class="relative">
+                                                <input type="radio" name="dataSourceType" value="database" class="sr-only peer">
+                                                <div class="p-4 border-2 border-gray-200 rounded-xl cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all duration-200 hover:border-gray-300">
+                                                    <div class="flex items-center space-x-3">
+                                                        <i class="fas fa-database text-2xl text-gray-400 peer-checked:text-blue-500"></i>
+                                                        <div>
+                                                            <p class="font-medium text-gray-900">Database Connection</p>
+                                                            <p class="text-sm text-gray-500">Connect to existing database</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- File Upload Area -->
+                                    <div id="file-upload-section" class="hidden">
+                                        <div id="fileUpload" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer group">
+                                            <div class="space-y-4">
+                                                <div class="w-16 h-16 mx-auto bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                                                    <i class="fas fa-cloud-upload-alt text-2xl text-blue-500"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-lg font-medium text-gray-900">Drop your file here</p>
+                                                    <p class="text-sm text-gray-500">or click to browse files</p>
+                                                </div>
+                                                <p class="text-xs text-gray-400">Supports CSV, Excel files up to 10MB</p>
+                                            </div>
+                                            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                                        </div>
+                                    </div>
+
+                                    <!-- Database Configuration -->
+                                    <div id="database-section" class="hidden space-y-4">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Database Type</label>
+                                                <select id="dbType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                    <option value="mysql">MySQL</option>
+                                                    <option value="postgresql">PostgreSQL</option>
+                                                    <option value="sqlite">SQLite</option>
+                                                    <option value="mssql">SQL Server</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Host</label>
+                                                <input type="text" id="dbHost" placeholder="localhost" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                                <input type="number" id="dbPort" placeholder="3306" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Database Name</label>
+                                                <input type="text" id="dbName" placeholder="my_database" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                                <input type="text" id="dbUser" placeholder="username" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                                <input type="password" id="dbPassword" placeholder="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Parse Button -->
+                                    <button id="parseBtn" class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fas fa-search mr-2"></i>
+                                        Parse Data Source
+                                    </button>
+
+                                    <!-- Loading and Error States -->
+                                    <div id="parse-loading" class="hidden text-center py-4">
+                                        <div class="inline-flex items-center space-x-2 text-blue-600">
+                                            <div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Parsing data source...</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="parse-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"></div>
+                                </div>
+                            </div>
+
+                            <!-- Server Configuration -->
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 border-b border-gray-200/50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-cog text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Server Configuration</h3>
+                                            <p class="text-sm text-gray-600">Configure your MCP server</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Server Name</label>
+                                        <input type="text" id="serverName" placeholder="my-awesome-server" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <div id="name-validation" class="mt-2 text-sm"></div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                        <textarea id="serverDescription" rows="3" placeholder="Describe your MCP server..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Version</label>
+                                        <input type="text" id="serverVersion" value="1.0.0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    </div>
+
+                                    <button id="generateBtn" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                        <i class="fas fa-rocket mr-2"></i>
+                                        Generate MCP Server
+                                    </button>
+
+                                    <!-- Loading and Status -->
+                                    <div id="generate-loading" class="hidden text-center py-4">
+                                        <div class="inline-flex items-center space-x-2 text-purple-600">
+                                            <div class="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Generating MCP server...</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="generate-success" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg"></div>
+                                    <div id="generate-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-content">
-                            <div id="server-list" class="server-list">
-                                <!-- Servers will be loaded here -->
+
+                        <!-- Data Preview Section -->
+                        <div id="data-preview-section" class="hidden">
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                                <div class="bg-gradient-to-r from-green-50 to-blue-50 p-6 border-b border-gray-200/50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-eye text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Data Preview</h3>
+                                            <p class="text-sm text-gray-600">Review your parsed data</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <div id="data-preview"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Test Servers Tab -->
-                    <div id="test-tab" class="tab-content">
-                        <div class="card-header">
-                            <h1 class="section-title">Test MCP Server</h1>
-                            <p class="section-subtitle">Test and validate your MCP servers functionality</p>
-                        </div>
-                        <div class="card-content">
-
-                <div class="form-group">
-                    <label>Select Server</label>
-                    <select id="testServerSelect">
-                        <option value="">Select a server to test</option>
-                    </select>
                 </div>
 
-                <button class="btn btn-primary" onclick="runAutoTests()">Run Auto Tests</button>
-                <button class="btn btn-secondary" onclick="showCustomTest()">Custom Test</button>
-
-                <div id="custom-test-section" class="hidden">
-                    <h3>Custom Test</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px;">
-                        <div class="form-group">
-                            <label>Test Type</label>
-                            <select id="testType">
-                                <option value="tool">Tool</option>
-                                <option value="resource">Resource</option>
-                                <option value="prompt">Prompt</option>
-                            </select>
+                <!-- Manage Servers Tab -->
+                <div id="manage-tab" class="tab-content hidden">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900">Generated Servers</h1>
+                                <p class="text-gray-600 mt-2">Manage and deploy your created MCP servers</p>
+                            </div>
+                            <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="switchTab('generate')">
+                                <i class="fas fa-plus mr-2"></i>
+                                Generate New Server
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" id="testName" placeholder="Enter tool/resource/prompt name">
-                        </div>
-                        <div class="form-group">
-                            <label>Parameters (JSON)</label>
-                            <textarea id="testParams" placeholder='{"param1": "value1"}'></textarea>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="runCustomTest()">Run Custom Test</button>
-                </div>
 
-                <div id="test-loading" class="loading">
-                    <p>Running tests...</p>
-                </div>
-
-                            <div id="test-results" class="test-results hidden"></div>
-                            <div id="test-error" class="error"></div>
+                        <div id="server-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <!-- Server cards will be populated here -->
                         </div>
                     </div>
                 </div>
-        </div>
-    </div>
 
-    <!-- How To Use Modal -->
-    <div id="how-to-use-modal" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-    ">
-        <div style="
-            position: relative;
-            width: 90%;
-            max-width: 800px;
-            height: 85%;
-            margin: 5% auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        ">
-            <div style="
-                padding: 20px;
-                border-bottom: 1px solid #e1e1e1;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            ">
-                <h2>How to Use Your MCP Server</h2>
-                <button onclick="closeHowToUse()" style="
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    color: #718096;
-                ">✕</button>
-            </div>
+                <!-- Test Servers Tab -->
+                <div id="test-tab" class="tab-content hidden">
+                    <div class="max-w-7xl mx-auto space-y-8">
+                        <div class="text-center">
+                            <h1 class="text-3xl font-bold text-gray-900 mb-4">Test Your Servers</h1>
+                            <p class="text-gray-600">Run automated tests or create custom test scenarios for your MCP servers</p>
+                        </div>
 
-            <!-- Platform Tabs -->
-            <div style="
-                display: flex;
-                background: #f5f5f5;
-                border-bottom: 1px solid #e1e1e1;
-            ">
-                <button id="claude-tab-btn" class="integration-tab active" onclick="switchIntegrationTab('claude')" style="
-                    flex: 1;
-                    padding: 12px 20px;
-                    background: white;
-                    border: none;
-                    border-bottom: 2px solid #667eea;
-                    cursor: pointer;
-                    font-weight: 500;
-                    color: #667eea;
-                ">Claude Desktop</button>
-                <button id="openai-tab-btn" class="integration-tab" onclick="switchIntegrationTab('openai')" style="
-                    flex: 1;
-                    padding: 12px 20px;
-                    background: transparent;
-                    border: none;
-                    border-bottom: 2px solid transparent;
-                    cursor: pointer;
-                    font-weight: 500;
-                    color: #4a5568;
-                ">OpenAI Desktop</button>
-            </div>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <!-- Auto Test -->
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-200/50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-play text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Auto Test</h3>
+                                            <p class="text-sm text-gray-600">Automated testing suite</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-            <div style="
-                flex: 1;
-                overflow-y: auto;
-                padding: 20px;
-            ">
-                <!-- Claude Desktop Instructions -->
-                <div id="claude-instructions" class="integration-content">
-                    <h3 style="color: #2d3748; margin-bottom: 20px;">Using with Claude Desktop</h3>
+                                <div class="p-6 space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Server</label>
+                                        <select id="testServerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                            <option value="">Loading servers...</option>
+                                        </select>
+                                    </div>
 
-                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #81e6d9;">
-                        <h4 style="color: #234e52; margin-bottom: 10px;">🚀 Direct Integration (Recommended)</h4>
-                        <p style="color: #2c7a7b; margin-bottom: 10px;">Use this MCP Server Generator directly as a live MCP server. Your databases and tools will be available in real-time.</p>
-                    </div>
+                                    <button id="runAutoTestsBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-[1.02]">
+                                        <i class="fas fa-play mr-2"></i>
+                                        Run Auto Tests
+                                    </button>
 
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Keep This App Running</h4>
-                        <p style="color: #718096; margin-bottom: 10px;">Make sure this application is running in MCP server mode:</p>
-                        <pre style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">cd /path/to/quickmcp
-npm run mcp-server</pre>
-                    </div>
+                                    <div id="test-loading" class="hidden text-center py-4">
+                                        <div class="inline-flex items-center space-x-2 text-green-600">
+                                            <div class="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Running tests...</span>
+                                        </div>
+                                    </div>
 
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Configure Claude Desktop</h4>
-                        <p style="color: #718096; margin-bottom: 10px;">Add this configuration to your Claude Desktop config file:</p>
-                        <p style="color: #718096; margin-bottom: 10px;"><strong>Location:</strong></p>
-                        <ul style="color: #718096; margin-left: 20px; margin-bottom: 10px;">
-                            <li>macOS: <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
-                            <li>Windows: <code style="background: white; padding: 2px 4px; border-radius: 3px;">%APPDATA%\\Claude\\claude_desktop_config.json</code></li>
-                        </ul>
-                        <p style="color: #718096; margin-bottom: 10px;">Add this to your configuration:</p>
-                        <pre id="claude-config" style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">{
-  "mcpServers": {
-    "quickmcp-generator": {
-      "command": "node",
-      "args": ["/path/to/quickmcp/src/mcp-server.js"]
-    }
-  }
-}</pre>
-                    </div>
+                                    <div id="test-error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"></div>
+                                </div>
+                            </div>
 
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Available Tools in Claude</h4>
-                        <ul style="color: #718096; margin-left: 20px;">
-                            <li><strong>connect_database</strong> - Connect to MySQL, PostgreSQL, SQLite, or MSSQL</li>
-                            <li><strong>list_tables</strong> - List all tables in connected database</li>
-                            <li><strong>execute_query</strong> - Run custom SQL queries</li>
-                            <li><strong>get_table_schema</strong> - Get table structure and column info</li>
-                            <li><strong>generate_mcp_server</strong> - Generate and export MCP servers</li>
-                        </ul>
-                    </div>
+                            <!-- Custom Test -->
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                                <div class="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 border-b border-gray-200/50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                                            <i class="fas fa-code text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">Custom Test</h3>
+                                            <p class="text-sm text-gray-600">Create custom test scenarios</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Restart Claude Desktop</h4>
-                        <p style="color: #718096;">Restart the Claude Desktop app to load the MCP server. You can then ask Claude to:</p>
-                        <ul style="color: #718096; margin-left: 20px;">
-                            <li>"Connect to my MySQL database"</li>
-                            <li>"Show me all tables in the database"</li>
-                            <li>"Run a query to find all users"</li>
-                            <li>"Generate an MCP server from this data"</li>
-                        </ul>
-                    </div>
+                                <div class="p-6 space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Test Type</label>
+                                        <select id="testType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                            <option value="tools/call">Tool Call</option>
+                                            <option value="resources/list">Resource List</option>
+                                            <option value="resources/read">Resource Read</option>
+                                            <option value="prompts/list">Prompt List</option>
+                                            <option value="prompts/get">Prompt Get</option>
+                                        </select>
+                                    </div>
 
-                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e1e1;">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+                                        <input type="text" id="testName" placeholder="my-test-tool" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                    </div>
 
-                    <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d1d5db;">
-                        <h4 style="color: #374151; margin-bottom: 10px;">📦 Alternative: Export Static Servers</h4>
-                        <p style="color: #6b7280; margin-bottom: 10px;">You can also export individual servers as standalone files:</p>
-                        <ol style="color: #6b7280; margin-left: 20px;">
-                            <li>Click "Export" on any generated server</li>
-                            <li>Extract the ZIP file to a folder</li>
-                            <li>Run <code style="background: white; padding: 2px 4px; border-radius: 3px;">npm install</code> in the folder</li>
-                            <li>Configure Claude Desktop to use the exported server.js</li>
-                        </ol>
-                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Parameters (JSON)</label>
+                                        <textarea id="testParams" rows="4" placeholder='{"param1": "value1"}' class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm resize-none"></textarea>
+                                    </div>
 
-                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #81e6d9;">
-                        <h4 style="color: #234e52; margin-bottom: 10px;">💡 Tips</h4>
-                        <ul style="color: #2c7a7b; margin-left: 20px;">
-                            <li>Keep this app running in the background for live database access</li>
-                            <li>Use absolute paths in the Claude Desktop configuration</li>
-                            <li>Check Claude Desktop logs if the server doesn't appear</li>
-                            <li>The live server provides more flexibility than exported static servers</li>
-                        </ul>
+                                    <button id="runCustomTestBtn" class="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-3 rounded-xl font-medium hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 transform hover:scale-[1.02]">
+                                        <i class="fas fa-flask mr-2"></i>
+                                        Run Custom Test
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Test Results -->
+                        <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                            <div class="bg-gradient-to-r from-gray-50 to-slate-50 p-6 border-b border-gray-200/50">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-gray-500 to-slate-500 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-chart-line text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">Test Results</h3>
+                                        <p class="text-sm text-gray-600">View test execution results</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <pre id="test-results" class="hidden bg-gray-50 p-4 rounded-xl text-sm overflow-auto max-h-96 font-mono border border-gray-200"></pre>
+                                <div id="no-results" class="text-center py-12 text-gray-500">
+                                    <i class="fas fa-chart-line text-4xl mb-4 opacity-50"></i>
+                                    <p>No test results yet. Run a test to see results here.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- OpenAI Desktop Instructions -->
-                <div id="openai-instructions" class="integration-content" style="display: none;">
-                    <h3 style="color: #2d3748; margin-bottom: 20px;">Integrating with OpenAI Desktop</h3>
-
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">📋 Prerequisites</h4>
-                        <ul style="color: #718096; margin-left: 20px;">
-                            <li>OpenAI Desktop app (ChatGPT desktop) installed</li>
-                            <li>Node.js installed on your system</li>
-                            <li>Your exported MCP server files</li>
-                        </ul>
-                    </div>
-
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">1️⃣ Export Your Server</h4>
-                        <ol style="color: #718096; margin-left: 20px;">
-                            <li>Click the "Export" button for your server</li>
-                            <li>Save the ZIP file to your desired location</li>
-                            <li>Extract the ZIP file to a folder (e.g., <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/mcp-servers/your-server</code>)</li>
-                        </ol>
-                    </div>
-
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">2️⃣ Install Dependencies</h4>
-                        <p style="color: #718096; margin-bottom: 10px;">Navigate to your server folder and install dependencies:</p>
-                        <pre style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">cd ~/mcp-servers/your-server
-npm install</pre>
-                    </div>
-
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">3️⃣ Configure OpenAI Desktop</h4>
-                        <p style="color: #718096; margin-bottom: 10px;">Add your server to OpenAI Desktop's configuration:</p>
-                        <p style="color: #718096; margin-bottom: 10px;"><strong>Location:</strong></p>
-                        <ul style="color: #718096; margin-left: 20px; margin-bottom: 10px;">
-                            <li>macOS: <code style="background: white; padding: 2px 4px; border-radius: 3px;">~/Library/Application Support/OpenAI/mcp_config.json</code></li>
-                            <li>Windows: <code style="background: white; padding: 2px 4px; border-radius: 3px;">%APPDATA%\\OpenAI\\mcp_config.json</code></li>
-                        </ul>
-                        <p style="color: #718096; margin-bottom: 10px;">Add this to your configuration:</p>
-                        <pre id="openai-config" style="background: #2d3748; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto;">{
-  "servers": {
-    "<span id="openai-server-name">your-server</span>": {
-      "command": "node",
-      "args": ["<span id="openai-server-path">/path/to/your-server</span>/server.js"],
-      "enabled": true
-    }
-  }
-}</pre>
-                    </div>
-
-                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #4a5568; margin-bottom: 10px;">4️⃣ Restart OpenAI Desktop</h4>
-                        <p style="color: #718096;">Restart the OpenAI Desktop app to load your new MCP server. Your server's capabilities will be available in ChatGPT!</p>
-                    </div>
-
-                    <div style="background: #fef5e7; padding: 15px; border-radius: 8px; border: 1px solid #f9c74f;">
-                        <h4 style="color: #7c3f00; margin-bottom: 10px;">⚠️ Note</h4>
-                        <p style="color: #a05a00;">OpenAI Desktop MCP support may vary. Check the latest OpenAI documentation for the most current integration steps.</p>
-                    </div>
-
-                    <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #81e6d9; margin-top: 20px;">
-                        <h4 style="color: #234e52; margin-bottom: 10px;">💡 Tips</h4>
-                        <ul style="color: #2c7a7b; margin-left: 20px;">
-                            <li>Ensure your server follows the MCP protocol specification</li>
-                            <li>Test your server locally first using the Test feature</li>
-                            <li>Check application logs for debugging</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Server Details Modal -->
-    <div id="server-details-modal" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-    ">
-        <div style="
-            position: relative;
-            width: 90%;
-            max-width: 900px;
-            height: 90%;
-            margin: 5% auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        ">
-            <div style="
-                padding: 20px;
-                border-bottom: 1px solid #e1e1e1;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            ">
-                <h2 id="modal-server-name">Server Details</h2>
-                <button onclick="closeServerDetails()" style="
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    color: #718096;
-                ">✕</button>
-            </div>
-            <div id="server-details-content" style="
-                flex: 1;
-                overflow-y: auto;
-                padding: 20px;
-            ">
-                <!-- Content will be loaded here -->
-            </div>
-            </div>
+            </main>
         </div>
     </div>
 
     <!-- Success Modal -->
-    <div id="success-modal" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 2000;
-    ">
-        <div style="
-            position: relative;
-            width: 90%;
-            max-width: 500px;
-            margin: 15% auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            text-align: center;
-            padding: 40px 30px;
-        ">
-            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-            <h2 style="color: #2d3748; margin-bottom: 16px;">MCP Server Created Successfully!</h2>
-            <p id="success-message" style="color: #718096; margin-bottom: 30px; line-height: 1.5;">
-                Your MCP server has been generated and is ready to use.
-            </p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button onclick="closeSuccessModal()" class="btn btn-secondary">
-                    Close
-                </button>
-                <button onclick="goToManageServers()" class="btn btn-primary">
-                    View Servers
-                </button>
+    <div id="success-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 opacity-0 invisible transition-all duration-300">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform scale-95 transition-transform duration-300">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Server Generated!</h3>
+                    <p id="success-message" class="text-gray-600 mb-6"></p>
+                    <div class="flex space-x-3">
+                        <button class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200" onclick="goToManageServers()">
+                            <i class="fas fa-server mr-2"></i>
+                            Manage Servers
+                        </button>
+                        <button class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200" onclick="closeSuccessModal()">
+                            <i class="fas fa-plus mr-2"></i>
+                            Create Another
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="shared.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
