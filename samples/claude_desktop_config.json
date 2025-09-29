@@ -29,7 +29,7 @@
       "command": "node",
       "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/simple-mcp-test.js"]
     },
-    "quickmcp-direct": {
+    "quickmcp-stdio": {
       "command": "/opt/homebrew/bin/node",
       "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
     }

@@ -1,0 +1,19 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: quickmcp_mssql_order_db
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: OrderApp123!
+      MSSQL_PID: Express
+    ports:
+      - "1435:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./init-db-startup.sql:/init-db-startup.sql
+      - ./entrypoint.sh:/entrypoint.sh
+    command: ["/bin/bash", "/entrypoint.sh"]
+    restart: unless-stopped
+
+volumes:
+  mssql_data:
