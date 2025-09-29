@@ -1,5 +1,6 @@
 let currentParsedData = null;
 let currentDataSource = null;
+let currentWizardStep = 1;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -33,7 +34,7 @@ function setupEventListeners() {
     // Database type change
     document.getElementById('dbType')?.addEventListener('change', updateDefaultPort);
 
-    // Parse button
+    // Parse button (now triggers next step automatically)
     document.getElementById('parseBtn')?.addEventListener('click', parseDataSource);
 
     // Generate button
@@ -45,6 +46,12 @@ function setupEventListeners() {
     // Test buttons
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
+
+    // Wizard navigation
+    document.getElementById('next-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
+    document.getElementById('back-to-step-1')?.addEventListener('click', () => goToWizardStep(1));
+    document.getElementById('next-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
+    document.getElementById('back-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
 }
 
 // Sidebar functions
@@ -243,26 +250,6 @@ function resetFileUpload() {
     }
 }
 
-// Toggle data source fields
-function toggleDataSourceFields() {
-    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
-    const fileSection = document.getElementById('file-upload-section');
-    const dbSection = document.getElementById('database-section');
-    const parseBtn = document.getElementById('parseBtn');
-
-    // Hide all sections first
-    fileSection?.classList.add('hidden');
-    dbSection?.classList.add('hidden');
-
-    if (selectedType === 'csv' || selectedType === 'excel') {
-        fileSection?.classList.remove('hidden');
-        if (parseBtn) parseBtn.disabled = false;
-    } else if (selectedType === 'database') {
-        dbSection?.classList.remove('hidden');
-        updateDefaultPort();
-        if (parseBtn) parseBtn.disabled = false;
-    }
-}
 
 // Update default port based on database type
 function updateDefaultPort() {
@@ -334,11 +321,13 @@ async function parseDataSource() {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
             displayDataPreview(result.data.parsedData);
-            document.getElementById('data-preview-section')?.classList.remove('hidden');
 
-            // Enable generate button
-            const generateBtn = document.getElementById('generateBtn');
-            if (generateBtn) generateBtn.disabled = false;
+            // Enable next step and automatically advance
+            const nextBtn = document.getElementById('next-to-step-2');
+            if (nextBtn) nextBtn.disabled = false;
+
+            // Auto-advance to step 2 after successful parse
+            setTimeout(() => goToWizardStep(2), 1000);
         } else {
             throw new Error(result.error);
         }
@@ -478,7 +467,6 @@ function resetForm() {
     document.getElementById('serverName').value = '';
     document.getElementById('serverDescription').value = '';
     document.getElementById('serverVersion').value = '1.0.0';
-    document.getElementById('data-preview-section')?.classList.add('hidden');
 
     // Reset data source selection
     document.querySelectorAll('input[name="dataSourceType"]').forEach(radio => {
@@ -492,9 +480,16 @@ function resetForm() {
 
     currentParsedData = null;
     currentDataSource = null;
+    currentWizardStep = 1;
+
+    // Reset wizard to step 1
+    goToWizardStep(1);
 
     const generateBtn = document.getElementById('generateBtn');
     if (generateBtn) generateBtn.disabled = true;
+
+    const nextBtn = document.getElementById('next-to-step-2');
+    if (nextBtn) nextBtn.disabled = true;
 }
 
 // Load servers list
@@ -917,6 +912,108 @@ async function checkServerName() {
             console.error('Error checking server name:', error);
         }
     }, 500);
+}
+
+// Wizard Navigation Functions
+function goToWizardStep(stepNumber) {
+    // Hide all steps
+    document.querySelectorAll('.wizard-step').forEach(step => {
+        step.classList.add('hidden');
+    });
+
+    // Show target step
+    const targetStep = document.getElementById(`wizard-step-${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.remove('hidden');
+    }
+
+    // Update progress indicators
+    updateWizardProgress(stepNumber);
+
+    currentWizardStep = stepNumber;
+
+    // Enable/disable navigation based on step and data state
+    updateWizardNavigation();
+}
+
+function updateWizardProgress(activeStep) {
+    // Reset all step indicators
+    for (let i = 1; i <= 3; i++) {
+        const indicator = document.getElementById(`step-${i}-indicator`);
+        const stepText = indicator?.parentElement.nextElementSibling.querySelector('p');
+
+        if (i < activeStep) {
+            // Completed step
+            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-blue-500');
+            indicator?.classList.add('bg-green-500', 'text-white');
+            stepText?.classList.remove('text-gray-500', 'text-blue-600');
+            stepText?.classList.add('text-green-600');
+        } else if (i === activeStep) {
+            // Current step
+            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-green-500');
+            indicator?.classList.add('bg-blue-500', 'text-white');
+            stepText?.classList.remove('text-gray-500', 'text-green-600');
+            stepText?.classList.add('text-blue-600');
+        } else {
+            // Future step
+            indicator?.classList.remove('bg-blue-500', 'bg-green-500', 'text-white');
+            indicator?.classList.add('bg-gray-300', 'text-gray-600');
+            stepText?.classList.remove('text-blue-600', 'text-green-600');
+            stepText?.classList.add('text-gray-500');
+        }
+    }
+
+    // Update progress bars
+    const progress12 = document.getElementById('progress-1-2');
+    const progress23 = document.getElementById('progress-2-3');
+
+    if (activeStep >= 2) {
+        progress12?.classList.remove('bg-gray-200');
+        progress12?.classList.add('bg-green-500');
+    } else {
+        progress12?.classList.remove('bg-green-500');
+        progress12?.classList.add('bg-gray-200');
+    }
+
+    if (activeStep >= 3) {
+        progress23?.classList.remove('bg-gray-200');
+        progress23?.classList.add('bg-green-500');
+    } else {
+        progress23?.classList.remove('bg-green-500');
+        progress23?.classList.add('bg-gray-200');
+    }
+}
+
+function updateWizardNavigation() {
+    const nextToStep2 = document.getElementById('next-to-step-2');
+
+    // Only enable step 2 if data source is configured and parsed
+    if (nextToStep2) {
+        const hasDataSource = document.querySelector('input[name="dataSourceType"]:checked');
+        const hasParsedData = currentParsedData !== null;
+        nextToStep2.disabled = !hasDataSource || !hasParsedData;
+    }
+}
+
+// Toggle data source fields (updated to enable navigation)
+function toggleDataSourceFields() {
+    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
+    const fileSection = document.getElementById('file-upload-section');
+    const dbSection = document.getElementById('database-section');
+
+    // Hide all sections first
+    fileSection?.classList.add('hidden');
+    dbSection?.classList.add('hidden');
+
+    if (selectedType === 'csv' || selectedType === 'excel') {
+        fileSection?.classList.remove('hidden');
+    } else if (selectedType === 'database') {
+        dbSection?.classList.remove('hidden');
+        updateDefaultPort();
+    }
+
+    // Update wizard navigation state
+    updateWizardNavigation();
 }
 
 // Utility functions
