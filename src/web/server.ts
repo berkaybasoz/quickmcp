@@ -153,7 +153,12 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
 // Generate MCP server endpoint
 app.post('/api/generate', async (req, res) => {
   try {
-    const { name, description, dataSource } = req.body;
+    const { name, description, version, dataSource, selectedTables, parsedData } = req.body;
+    
+    console.log('🔍 Generate request received:');
+    console.log('- Name:', name);
+    console.log('- Selected tables:', selectedTables?.length || 0);
+    console.log('- Parsed data tables:', parsedData?.length || 0);
 
     // Check if server with this name already exists
     const existingServer = generator.getServer(name);
@@ -164,12 +169,12 @@ app.post('/api/generate', async (req, res) => {
       });
     }
 
-    // Re-parse the data source to get full data
-    const parsedData = await parser.parse(dataSource);
+    // Use provided parsed data or re-parse if not available
+    const fullParsedData = parsedData || await parser.parse(dataSource);
 
     // Convert to the format expected by new generator
     const parsedDataObject: { [tableName: string]: any[] } = {};
-    parsedData.forEach((data, index) => {
+    fullParsedData.forEach((data, index) => {
       const tableName = data.tableName || `table_${index}`;
       parsedDataObject[tableName] = data.rows.map(row => {
         const obj: any = {};
@@ -186,7 +191,8 @@ app.post('/api/generate', async (req, res) => {
       name,                                    // serverId
       name,                                    // serverName (use the name from form as server name)
       parsedDataObject,
-      dataSource.connection || { type: 'csv', server: 'local', database: name }
+      dataSource.connection || { type: 'csv', server: 'local', database: name },
+      selectedTables                           // selectedTables configuration
     );
 
     if (result.success) {

@@ -283,23 +283,166 @@ function displayDataPreview(parsedData) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
 
-    let html = '';
+    let html = '<div class="space-y-4">';
+
+    // Header with instructions
+    html += `
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                <div>
+                    <h3 class="font-semibold text-blue-900 mb-1">Configure Your MCP Server</h3>
+                    <p class="text-blue-800 text-sm">Select which tables to include and choose which tools to generate for each table. All tools are enabled by default.</p>
+                </div>
+            </div>
+        </div>
+    `;
 
     parsedData.forEach((data, index) => {
         const tableName = data.tableName || `Table ${index + 1}`;
         const panelId = `table-panel-${index}`;
+        const cleanTableName = tableName.replace(/[^a-zA-Z0-9]/g, '_');
+
+        // Check if table has numeric columns
+        const numericColumns = data.headers.filter(header => {
+            const dataType = data.metadata.dataTypes[header]?.toLowerCase() || '';
+            return dataType.includes('int') || dataType.includes('float') || dataType.includes('decimal') || 
+                   dataType.includes('numeric') || dataType.includes('real') || dataType.includes('double') ||
+                   dataType === 'number';
+        });
 
         html += `
-            <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden mb-4">
-                <div class="bg-white p-4 border-b border-gray-200 cursor-pointer" onclick="togglePanel('${panelId}')">
+            <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4 table-selection-panel">
+                <!-- Table Header with Selection -->
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-semibold text-gray-900">${tableName}</h4>
-                            <p class="text-sm text-gray-500">${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns</p>
+                        <div class="flex items-center space-x-3">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" 
+                                       id="table-select-${index}" 
+                                       class="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                       checked 
+                                       onchange="toggleTableSelection(${index})">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 text-lg">${tableName}</h4>
+                                    <p class="text-sm text-gray-600">${data.metadata.rowCount} rows, ${data.metadata.columnCount} columns</p>
+                                </div>
+                            </label>
                         </div>
-                        <i id="${panelId}-icon" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+                        <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="toggleTableDetails('${panelId}')">
+                            <i id="${panelId}-icon" class="fas fa-chevron-down transition-transform"></i>
+                        </button>
                     </div>
                 </div>
+
+                <!-- Tool Selection Panel -->
+                <div id="table-tools-${index}" class="bg-blue-50 p-4 border-b border-gray-200">
+                    <h5 class="font-medium text-gray-900 mb-3">
+                        <i class="fas fa-tools mr-2 text-blue-500"></i>
+                        Select Tools to Generate
+                    </h5>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <!-- Basic CRUD Tools -->
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                            <input type="checkbox" 
+                                   id="tool-get-${index}" 
+                                   class="w-4 h-4 text-blue-600 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                   checked>
+                            <span class="text-sm font-medium text-gray-700">GET</span>
+                        </label>
+                        
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                            <input type="checkbox" 
+                                   id="tool-create-${index}" 
+                                   class="w-4 h-4 text-green-600 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                   checked>
+                            <span class="text-sm font-medium text-gray-700">CREATE</span>
+                        </label>
+                        
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                            <input type="checkbox" 
+                                   id="tool-update-${index}" 
+                                   class="w-4 h-4 text-yellow-600 border border-gray-300 rounded focus:ring-2 focus:ring-yellow-500"
+                                   checked>
+                            <span class="text-sm font-medium text-gray-700">UPDATE</span>
+                        </label>
+                        
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                            <input type="checkbox" 
+                                   id="tool-delete-${index}" 
+                                   class="w-4 h-4 text-red-600 border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                                   checked>
+                            <span class="text-sm font-medium text-gray-700">DELETE</span>
+                        </label>
+                        
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                            <input type="checkbox" 
+                                   id="tool-count-${index}" 
+                                   class="w-4 h-4 text-purple-600 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                                   checked>
+                            <span class="text-sm font-medium text-gray-700">COUNT</span>
+                        </label>
+                        
+                        <!-- Aggregate Tools (only if numeric columns exist) -->
+                        ${numericColumns.length > 0 ? `
+                            <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                                <input type="checkbox" 
+                                       id="tool-min-${index}" 
+                                       class="w-4 h-4 text-indigo-600 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                                       checked>
+                                <span class="text-sm font-medium text-gray-700">MIN</span>
+                            </label>
+                            
+                            <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                                <input type="checkbox" 
+                                       id="tool-max-${index}" 
+                                       class="w-4 h-4 text-pink-600 border border-gray-300 rounded focus:ring-2 focus:ring-pink-500"
+                                       checked>
+                                <span class="text-sm font-medium text-gray-700">MAX</span>
+                            </label>
+                            
+                            <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                                <input type="checkbox" 
+                                       id="tool-sum-${index}" 
+                                       class="w-4 h-4 text-teal-600 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
+                                       checked>
+                                <span class="text-sm font-medium text-gray-700">SUM</span>
+                            </label>
+                            
+                            <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+                                <input type="checkbox" 
+                                       id="tool-avg-${index}" 
+                                       class="w-4 h-4 text-orange-600 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500"
+                                       checked>
+                                <span class="text-sm font-medium text-gray-700">AVG</span>
+                            </label>
+                        ` : ''}
+                    </div>
+                    ${numericColumns.length > 0 ? `
+                        <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p class="text-sm text-green-800">
+                                <i class="fas fa-calculator mr-2"></i>
+                                <strong>Aggregate tools available:</strong> This table has ${numericColumns.length} numeric column(s): 
+                                <span class="font-mono">${numericColumns.join(', ')}</span>
+                            </p>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Quick Actions -->
+                    <div class="mt-4 flex items-center space-x-4">
+                        <button onclick="selectAllTools(${index})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            <i class="fas fa-check-square mr-1"></i>Select All
+                        </button>
+                        <button onclick="deselectAllTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fas fa-square mr-1"></i>Deselect All
+                        </button>
+                        <button onclick="selectOnlyBasicTools(${index})" class="text-sm text-green-600 hover:text-green-800 font-medium">
+                            <i class="fas fa-check mr-1"></i>Basic Only
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Data Preview (Collapsible) -->
                 <div id="${panelId}" class="p-4 hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
@@ -330,11 +473,12 @@ function displayDataPreview(parsedData) {
             </div>`;
     });
 
+    html += '</div>';
     preview.innerHTML = html;
 }
 
-// Toggle collapsible panel
-function togglePanel(panelId) {
+// Toggle table details panel
+function toggleTableDetails(panelId) {
     const panel = document.getElementById(panelId);
     const icon = document.getElementById(`${panelId}-icon`);
 
@@ -345,6 +489,85 @@ function togglePanel(panelId) {
         panel?.classList.add('hidden');
         icon?.classList.remove('rotate-180');
     }
+}
+
+// Legacy function for backward compatibility
+function togglePanel(panelId) {
+    toggleTableDetails(panelId);
+}
+
+// Toggle table selection
+function toggleTableSelection(tableIndex) {
+    const checkbox = document.getElementById(`table-select-${tableIndex}`);
+    const toolsPanel = document.getElementById(`table-tools-${tableIndex}`);
+    
+    if (checkbox?.checked) {
+        toolsPanel?.classList.remove('opacity-50');
+        toolsPanel?.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            input.disabled = false;
+        });
+    } else {
+        toolsPanel?.classList.add('opacity-50');
+        toolsPanel?.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            input.disabled = true;
+        });
+    }
+}
+
+// Tool selection helper functions
+function selectAllTools(tableIndex) {
+    const toolInputs = document.querySelectorAll(`#table-tools-${tableIndex} input[type="checkbox"]`);
+    toolInputs.forEach(input => {
+        if (!input.disabled) input.checked = true;
+    });
+}
+
+function deselectAllTools(tableIndex) {
+    const toolInputs = document.querySelectorAll(`#table-tools-${tableIndex} input[type="checkbox"]`);
+    toolInputs.forEach(input => {
+        if (!input.disabled) input.checked = false;
+    });
+}
+
+function selectOnlyBasicTools(tableIndex) {
+    // First deselect all
+    deselectAllTools(tableIndex);
+    
+    // Then select only basic CRUD tools
+    const basicTools = ['get', 'create', 'update', 'delete'];
+    basicTools.forEach(tool => {
+        const input = document.getElementById(`tool-${tool}-${tableIndex}`);
+        if (input && !input.disabled) input.checked = true;
+    });
+}
+
+// Get selected tables and their tools configuration
+function getSelectedTablesAndTools() {
+    const selectedTables = [];
+    
+    // Find all table selection checkboxes
+    document.querySelectorAll('[id^="table-select-"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const toolsConfig = {
+                get: document.getElementById(`tool-get-${index}`)?.checked || false,
+                create: document.getElementById(`tool-create-${index}`)?.checked || false,
+                update: document.getElementById(`tool-update-${index}`)?.checked || false,
+                delete: document.getElementById(`tool-delete-${index}`)?.checked || false,
+                count: document.getElementById(`tool-count-${index}`)?.checked || false,
+                min: document.getElementById(`tool-min-${index}`)?.checked || false,
+                max: document.getElementById(`tool-max-${index}`)?.checked || false,
+                sum: document.getElementById(`tool-sum-${index}`)?.checked || false,
+                avg: document.getElementById(`tool-avg-${index}`)?.checked || false
+            };
+            
+            selectedTables.push({
+                index: index,
+                tools: toolsConfig
+            });
+        }
+    });
+    
+    return selectedTables;
 }
 
 // Generate server
@@ -362,6 +585,16 @@ async function generateServer() {
         showError('generate-error', 'Please parse a data source first');
         return;
     }
+
+    // Get selected tables and their tool configurations
+    const selectedTablesConfig = getSelectedTablesAndTools();
+    
+    if (selectedTablesConfig.length === 0) {
+        showError('generate-error', 'Please select at least one table to generate server for');
+        return;
+    }
+
+    console.log('🔍 Selected tables and tools:', selectedTablesConfig);
 
     const loading = document.getElementById('generate-loading');
     const successDiv = document.getElementById('generate-success');
@@ -382,7 +615,10 @@ async function generateServer() {
             body: JSON.stringify({
                 name,
                 description: description || '',
-                dataSource: currentDataSource
+                version: version || '1.0.0',
+                dataSource: currentDataSource,
+                selectedTables: selectedTablesConfig,
+                parsedData: currentParsedData
             })
         });
 

@@ -21,7 +21,8 @@ export class MCPServerGenerator {
     serverId: string,
     serverName: string,
     parsedData: ParsedData,
-    dbConfig: any
+    dbConfig: any,
+    selectedTables?: any[]
   ): Promise<{ success: boolean; message: string }> {
     try {
       console.log(`🚀 Generating virtual MCP server: ${serverId}`);
@@ -41,7 +42,7 @@ export class MCPServerGenerator {
       console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
-      const tools = this.generateToolsForData(serverId, parsedData, dbConfig);
+      const tools = this.generateToolsForData(serverId, parsedData, dbConfig, selectedTables);
       if (tools.length > 0) {
         this.sqliteManager.saveTools(tools);
         console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
@@ -67,46 +68,69 @@ export class MCPServerGenerator {
     }
   }
 
-  private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any): ToolDefinition[] {
+  private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {
     const tools: ToolDefinition[] = [];
+
+    console.log('🔍 generateToolsForData called with selectedTables:', selectedTables);
 
     for (const [tableName, rows] of Object.entries(parsedData)) {
       if (!rows || rows.length === 0) continue;
 
+      // Find table configuration in selectedTables
+      const tableIndex = Object.keys(parsedData).indexOf(tableName);
+      const tableConfig = selectedTables?.find(config => config.index === tableIndex);
+      
+      // Skip table if not selected
+      if (selectedTables && selectedTables.length > 0 && !tableConfig) {
+        console.log(`🔍 Skipping table ${tableName} - not selected`);
+        continue;
+      }
+      
+      console.log(`🔍 Processing table ${tableName} with config:`, tableConfig?.tools);
+
       const columns = this.analyzeColumns(rows);
       const cleanTableName = this.sanitizeName(tableName);
+      
+      // Get tools configuration (default all true if no config)
+      const toolsConfig = tableConfig?.tools || {
+        get: true, create: true, update: true, delete: true, count: true,
+        min: true, max: true, sum: true, avg: true
+      };
 
       // GET tool
-      tools.push({
-        server_id: serverId,
-        name: `get_${cleanTableName}`,
-        description: `Get records from ${tableName} table`,
-        inputSchema: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'number',
-              description: 'Maximum number of records to return',
-              default: 100,
-              minimum: 1,
-              maximum: 1000
+      if (toolsConfig.get) {
+        tools.push({
+          server_id: serverId,
+          name: `get_${cleanTableName}`,
+          description: `Get records from ${tableName} table`,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              limit: {
+                type: 'number',
+                description: 'Maximum number of records to return',
+                default: 100,
+                minimum: 1,
+                maximum: 1000
+              },
+              offset: {
+                type: 'number',
+                description: 'Number of records to skip',
+                default: 0,
+                minimum: 0
+              },
+              ...this.generateFilterProperties(columns)
             },
-            offset: {
-              type: 'number',
-              description: 'Number of records to skip',
-              default: 0,
-              minimum: 0
-            },
-            ...this.generateFilterProperties(columns)
+            required: []
           },
-          required: []
-        },
-        sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
-        operation: 'SELECT'
-      });
+          sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
+          operation: 'SELECT'
+        });
+      }
 
       // CREATE tool
-      tools.push({
+      if (toolsConfig.create && columns.length > 0) {
+        tools.push({
         server_id: serverId,
         name: `create_${cleanTableName}`,
         description: `Create a new record in ${tableName} table`,
@@ -117,10 +141,11 @@ export class MCPServerGenerator {
         },
         sqlQuery: this.generateInsertQuery(tableName, columns, dbConfig.type),
         operation: 'INSERT'
-      });
+        });
+      }
 
       // UPDATE tool
-      if (columns.some(col => col.name.toLowerCase() === 'id')) {
+      if (toolsConfig.update && columns.some(col => col.name.toLowerCase() === 'id')) {
         tools.push({
           server_id: serverId,
           name: `update_${cleanTableName}`,
@@ -139,8 +164,10 @@ export class MCPServerGenerator {
           sqlQuery: this.generateUpdateQuery(tableName, columns, dbConfig.type),
           operation: 'UPDATE'
         });
+      }
 
-        // DELETE tool
+      // DELETE tool
+      if (toolsConfig.delete && columns.some(col => col.name.toLowerCase() === 'id')) {
         tools.push({
           server_id: serverId,
           name: `delete_${cleanTableName}`,
@@ -161,18 +188,20 @@ export class MCPServerGenerator {
       }
 
       // COUNT tool
-      tools.push({
-        server_id: serverId,
-        name: `count_${cleanTableName}`,
-        description: `Get total count of records in ${tableName} table`,
-        inputSchema: {
-          type: 'object',
-          properties: this.generateFilterProperties(columns),
-          required: []
-        },
-        sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
-        operation: 'SELECT'
-      });
+      if (toolsConfig.count) {
+        tools.push({
+          server_id: serverId,
+          name: `count_${cleanTableName}`,
+          description: `Get total count of records in ${tableName} table`,
+          inputSchema: {
+            type: 'object',
+            properties: this.generateFilterProperties(columns),
+            required: []
+          },
+          sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
+          operation: 'SELECT'
+        });
+      }
 
       // Get numeric columns for aggregate functions
       //console.log(`🔍 Table ${tableName} columns:`, columns.map(col => ({ name: col.name, type: col.type })));
@@ -188,47 +217,50 @@ export class MCPServerGenerator {
 
       if (numericColumns.length > 0) {
         // MIN tools for each numeric column
-        numericColumns.forEach(col => {
-          const toolName = `min_${cleanTableName}_${this.sanitizeName(col.name)}`;
-          console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
-          
-          tools.push({
-            server_id: serverId,
-            name: toolName,
-            description: `Get minimum value of ${col.name} in ${tableName} table`,
-            inputSchema: {
-              type: 'object',
-              properties: this.generateFilterProperties(columns),
-              required: []
-            },
-            sqlQuery: this.generateMinQuery(tableName, col.name, columns, dbConfig.type),
-            operation: 'SELECT'
+        if (toolsConfig.min) {
+          numericColumns.forEach(col => {
+            const toolName = `min_${cleanTableName}_${this.sanitizeName(col.name)}`;
+            console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
+            
+            tools.push({
+              server_id: serverId,
+              name: toolName,
+              description: `Get minimum value of ${col.name} in ${tableName} table`,
+              inputSchema: {
+                type: 'object',
+                properties: this.generateFilterProperties(columns),
+                required: []
+              },
+              sqlQuery: this.generateMinQuery(tableName, col.name, columns, dbConfig.type),
+              operation: 'SELECT'
+            });
           });
-        });
+        }
 
         // MAX tools for each numeric column
-        numericColumns.forEach(col => {
-          const toolName = `max_${cleanTableName}_${this.sanitizeName(col.name)}`;
-          //console.log(`🔍 Creating MAX tool: ${toolName} for column ${col.name}`);
-          
-          tools.push({
-            server_id: serverId,
-            name: toolName,
-            description: `Get maximum value of ${col.name} in ${tableName} table`,
-            inputSchema: {
-              type: 'object',
-              properties: this.generateFilterProperties(columns),
-              required: []
-            },
-            sqlQuery: this.generateMaxQuery(tableName, col.name, columns, dbConfig.type),
-            operation: 'SELECT'
+        if (toolsConfig.max) {
+          numericColumns.forEach(col => {
+            const toolName = `max_${cleanTableName}_${this.sanitizeName(col.name)}`;
+            
+            tools.push({
+              server_id: serverId,
+              name: toolName,
+              description: `Get maximum value of ${col.name} in ${tableName} table`,
+              inputSchema: {
+                type: 'object',
+                properties: this.generateFilterProperties(columns),
+                required: []
+              },
+              sqlQuery: this.generateMaxQuery(tableName, col.name, columns, dbConfig.type),
+              operation: 'SELECT'
+            });
           });
-        });
+        }
 
         // SUM tools for each numeric column
-        numericColumns.forEach(col => {
-          const toolName = `sum_${cleanTableName}_${this.sanitizeName(col.name)}`;
-          console.log(`🔍 Creating SUM tool: ${toolName} for column ${col.name}`);
+        if (toolsConfig.sum) {
+          numericColumns.forEach(col => {
+            const toolName = `sum_${cleanTableName}_${this.sanitizeName(col.name)}`;
           
           tools.push({
             server_id: serverId,
@@ -243,25 +275,27 @@ export class MCPServerGenerator {
             operation: 'SELECT'
           });
         });
+        }
 
         // AVG tools for each numeric column
-        numericColumns.forEach(col => {
-          const toolName = `avg_${cleanTableName}_${this.sanitizeName(col.name)}`;
-          //console.log(`🔍 Creating AVG tool: ${toolName} for column ${col.name}`);
-          
-          tools.push({
-            server_id: serverId,
-            name: toolName,
-            description: `Get average value of ${col.name} in ${tableName} table`,
-            inputSchema: {
-              type: 'object',
-              properties: this.generateFilterProperties(columns),
-              required: []
-            },
-            sqlQuery: this.generateAvgQuery(tableName, col.name, columns, dbConfig.type),
-            operation: 'SELECT'
+        if (toolsConfig.avg) {
+          numericColumns.forEach(col => {
+            const toolName = `avg_${cleanTableName}_${this.sanitizeName(col.name)}`;
+            
+            tools.push({
+              server_id: serverId,
+              name: toolName,
+              description: `Get average value of ${col.name} in ${tableName} table`,
+              inputSchema: {
+                type: 'object',
+                properties: this.generateFilterProperties(columns),
+                required: []
+              },
+              sqlQuery: this.generateAvgQuery(tableName, col.name, columns, dbConfig.type),
+              operation: 'SELECT'
+            });
           });
-        });
+        }
       }
     }
 
