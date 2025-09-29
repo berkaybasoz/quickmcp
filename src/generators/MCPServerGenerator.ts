@@ -173,7 +173,100 @@ export class MCPServerGenerator {
         sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
         operation: 'SELECT'
       });
+
+      // Get numeric columns for aggregate functions
+      //console.log(`🔍 Table ${tableName} columns:`, columns.map(col => ({ name: col.name, type: col.type })));
+      
+      const numericColumns = columns.filter(col => {
+        const type = col.type.toLowerCase();
+        return type.includes('int') || type.includes('float') || type.includes('decimal') || 
+               type.includes('numeric') || type.includes('real') || type.includes('double') ||
+               type === 'number';
+      });
+
+      //console.log(`🔍 Numeric columns found in ${tableName}:`, numericColumns.map(col => ({ name: col.name, type: col.type })));
+
+      if (numericColumns.length > 0) {
+        // MIN tools for each numeric column
+        numericColumns.forEach(col => {
+          const toolName = `min_${cleanTableName}_${this.sanitizeName(col.name)}`;
+          console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
+          
+          tools.push({
+            server_id: serverId,
+            name: toolName,
+            description: `Get minimum value of ${col.name} in ${tableName} table`,
+            inputSchema: {
+              type: 'object',
+              properties: this.generateFilterProperties(columns),
+              required: []
+            },
+            sqlQuery: this.generateMinQuery(tableName, col.name, columns, dbConfig.type),
+            operation: 'SELECT'
+          });
+        });
+
+        // MAX tools for each numeric column
+        numericColumns.forEach(col => {
+          const toolName = `max_${cleanTableName}_${this.sanitizeName(col.name)}`;
+          //console.log(`🔍 Creating MAX tool: ${toolName} for column ${col.name}`);
+          
+          tools.push({
+            server_id: serverId,
+            name: toolName,
+            description: `Get maximum value of ${col.name} in ${tableName} table`,
+            inputSchema: {
+              type: 'object',
+              properties: this.generateFilterProperties(columns),
+              required: []
+            },
+            sqlQuery: this.generateMaxQuery(tableName, col.name, columns, dbConfig.type),
+            operation: 'SELECT'
+          });
+        });
+
+        // SUM tools for each numeric column
+        numericColumns.forEach(col => {
+          const toolName = `sum_${cleanTableName}_${this.sanitizeName(col.name)}`;
+          console.log(`🔍 Creating SUM tool: ${toolName} for column ${col.name}`);
+          
+          tools.push({
+            server_id: serverId,
+            name: toolName,
+            description: `Get sum of all values of ${col.name} in ${tableName} table`,
+            inputSchema: {
+              type: 'object',
+              properties: this.generateFilterProperties(columns),
+              required: []
+            },
+            sqlQuery: this.generateSumQuery(tableName, col.name, columns, dbConfig.type),
+            operation: 'SELECT'
+          });
+        });
+
+        // AVG tools for each numeric column
+        numericColumns.forEach(col => {
+          const toolName = `avg_${cleanTableName}_${this.sanitizeName(col.name)}`;
+          //console.log(`🔍 Creating AVG tool: ${toolName} for column ${col.name}`);
+          
+          tools.push({
+            server_id: serverId,
+            name: toolName,
+            description: `Get average value of ${col.name} in ${tableName} table`,
+            inputSchema: {
+              type: 'object',
+              properties: this.generateFilterProperties(columns),
+              required: []
+            },
+            sqlQuery: this.generateAvgQuery(tableName, col.name, columns, dbConfig.type),
+            operation: 'SELECT'
+          });
+        });
+      }
     }
+
+    //console.log(`🔍 Total tools created: ${tools.length}`);
+    //console.log(`🔍 Tool names:`, tools.map(tool => tool.name));
 
     return tools;
   }
@@ -347,6 +440,82 @@ export class MCPServerGenerator {
       if (dbType === 'mssql') {
         // Skip columns that might be ntext, text, or image types
         // These are typically identified by their string type and large content
+        return true; // We'll handle this at parameter level instead
+      }
+      return true;
+    });
+
+    const whereConditions = filterableColumns.map(col =>
+      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+    ).join(' AND ');
+
+    query += ` WHERE ${whereConditions}`;
+
+    return query;
+  }
+
+  private generateMinQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
+    let query = `SELECT MIN([${columnName}]) as min_value FROM [${tableName}]`;
+
+    const filterableColumns = columns.filter(col => {
+      if (dbType === 'mssql') {
+        return true; // We'll handle this at parameter level instead
+      }
+      return true;
+    });
+
+    const whereConditions = filterableColumns.map(col =>
+      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+    ).join(' AND ');
+
+    query += ` WHERE ${whereConditions}`;
+
+    return query;
+  }
+
+  private generateMaxQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
+    let query = `SELECT MAX([${columnName}]) as max_value FROM [${tableName}]`;
+
+    const filterableColumns = columns.filter(col => {
+      if (dbType === 'mssql') {
+        return true; // We'll handle this at parameter level instead
+      }
+      return true;
+    });
+
+    const whereConditions = filterableColumns.map(col =>
+      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+    ).join(' AND ');
+
+    query += ` WHERE ${whereConditions}`;
+
+    return query;
+  }
+
+  private generateSumQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
+    let query = `SELECT SUM([${columnName}]) as sum_value FROM [${tableName}]`;
+
+    const filterableColumns = columns.filter(col => {
+      if (dbType === 'mssql') {
+        return true; // We'll handle this at parameter level instead
+      }
+      return true;
+    });
+
+    const whereConditions = filterableColumns.map(col =>
+      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
+    ).join(' AND ');
+
+    query += ` WHERE ${whereConditions}`;
+
+    return query;
+  }
+
+  private generateAvgQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
+    let query = `SELECT AVG(CAST([${columnName}] AS FLOAT)) as avg_value FROM [${tableName}]`;
+
+    const filterableColumns = columns.filter(col => {
+      if (dbType === 'mssql') {
         return true; // We'll handle this at parameter level instead
       }
       return true;
