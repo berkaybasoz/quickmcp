@@ -42,8 +42,6 @@ function setupEventListeners() {
     document.getElementById('dbUser')?.addEventListener('input', updateWizardNavigation);
     document.getElementById('dbPassword')?.addEventListener('input', updateWizardNavigation);
 
-    // Parse button (now triggers next step automatically)
-    document.getElementById('parseBtn')?.addEventListener('click', parseDataSource);
 
     // Generate button
     document.getElementById('generateBtn')?.addEventListener('click', generateServer);
@@ -56,7 +54,7 @@ function setupEventListeners() {
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
 
     // Wizard navigation
-    document.getElementById('next-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
+    document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
     document.getElementById('back-to-step-1')?.addEventListener('click', () => goToWizardStep(1));
     document.getElementById('next-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
     document.getElementById('back-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
@@ -279,73 +277,6 @@ function updateDefaultPort() {
     }
 }
 
-// Parse data source
-async function parseDataSource() {
-    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
-
-    if (!selectedType) {
-        showError('parse-error', 'Please select a data source type');
-        return;
-    }
-
-    const loading = document.getElementById('parse-loading');
-    const errorDiv = document.getElementById('parse-error');
-    const parseBtn = document.getElementById('parseBtn');
-
-    loading?.classList.remove('hidden');
-    errorDiv?.classList.add('hidden');
-    if (parseBtn) parseBtn.disabled = true;
-
-    try {
-        const formData = new FormData();
-        formData.append('type', selectedType);
-
-        if (selectedType === 'csv' || selectedType === 'excel') {
-            const fileInput = document.getElementById('fileInput');
-            if (!fileInput?.files[0]) {
-                throw new Error('Please select a file');
-            }
-            formData.append('file', fileInput.files[0]);
-        } else if (selectedType === 'database') {
-            const connection = {
-                type: document.getElementById('dbType')?.value,
-                host: document.getElementById('dbHost')?.value,
-                port: parseInt(document.getElementById('dbPort')?.value),
-                database: document.getElementById('dbName')?.value,
-                username: document.getElementById('dbUser')?.value,
-                password: document.getElementById('dbPassword')?.value
-            };
-            formData.append('connection', JSON.stringify(connection));
-        }
-
-        const response = await fetch('/api/parse', {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            currentParsedData = result.data.parsedData;
-            currentDataSource = result.data.dataSource;
-            displayDataPreview(result.data.parsedData);
-
-            // Enable next step and automatically advance
-            const nextBtn = document.getElementById('next-to-step-2');
-            if (nextBtn) nextBtn.disabled = false;
-
-            // Auto-advance to step 2 after successful parse
-            setTimeout(() => goToWizardStep(2), 1000);
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        showError('parse-error', error.message);
-    } finally {
-        loading?.classList.add('hidden');
-        if (parseBtn) parseBtn.disabled = false;
-    }
-}
 
 // Display data preview
 function displayDataPreview(parsedData) {
@@ -920,6 +851,76 @@ async function checkServerName() {
             console.error('Error checking server name:', error);
         }
     }, 500);
+}
+
+// Handle next to step 2 - parse data first
+async function handleNextToStep2() {
+    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
+
+    if (!selectedType) {
+        showError('parse-error', 'Please select a data source type');
+        return;
+    }
+
+    // If we already have parsed data, just go to step 2
+    if (currentParsedData) {
+        goToWizardStep(2);
+        return;
+    }
+
+    const loading = document.getElementById('parse-loading');
+    const errorDiv = document.getElementById('parse-error');
+    const nextBtn = document.getElementById('next-to-step-2');
+
+    loading?.classList.remove('hidden');
+    errorDiv?.classList.add('hidden');
+    if (nextBtn) nextBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('type', selectedType);
+
+        if (selectedType === 'csv' || selectedType === 'excel') {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput?.files[0]) {
+                throw new Error('Please select a file');
+            }
+            formData.append('file', fileInput.files[0]);
+        } else if (selectedType === 'database') {
+            const connection = {
+                type: document.getElementById('dbType')?.value,
+                host: document.getElementById('dbHost')?.value,
+                port: parseInt(document.getElementById('dbPort')?.value),
+                database: document.getElementById('dbName')?.value,
+                username: document.getElementById('dbUser')?.value,
+                password: document.getElementById('dbPassword')?.value
+            };
+            formData.append('connection', JSON.stringify(connection));
+        }
+
+        const response = await fetch('/api/parse', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            currentParsedData = result.data.parsedData;
+            currentDataSource = result.data.dataSource;
+            displayDataPreview(result.data.parsedData);
+
+            // Go to step 2 after successful parse
+            goToWizardStep(2);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        showError('parse-error', error.message);
+    } finally {
+        loading?.classList.add('hidden');
+        if (nextBtn) nextBtn.disabled = false;
+    }
 }
 
 // Wizard Navigation Functions
