@@ -723,11 +723,109 @@ function displaySingleTestResult(testResult) {
 
 // Server management functions
 async function viewServer(serverId) {
-    // For now, just switch to manage tab - you can implement detailed view later
-    console.log('View server:', serverId);
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+
+        if (result.success) {
+            showServerDetailsModal(result.data);
+        } else {
+            console.error('Failed to load server details:', result.error);
+            alert('Failed to load server details: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error loading server details:', error);
+        alert('Error loading server details: ' + error.message);
+    }
+}
+
+function showServerDetailsModal(serverData) {
+    const modalHtml = `
+        <div id="server-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-900">${serverData.config.name}</h2>
+                        <button onclick="closeServerDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 mt-2">${serverData.config.description}</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Tools Section -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-tools mr-2 text-blue-500"></i>
+                                Tools (${serverData.config.tools.length})
+                            </h3>
+                            <div class="space-y-3 max-h-60 overflow-y-auto">
+                                ${serverData.config.tools.map(tool => `
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="font-medium text-gray-900">${tool.name}</div>
+                                        <div class="text-sm text-gray-600 mt-1">${tool.description}</div>
+                                        <div class="text-xs text-gray-500 mt-1">Operation: ${tool.operation}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Resources Section -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-database mr-2 text-green-500"></i>
+                                Resources (${serverData.config.resources.length})
+                            </h3>
+                            <div class="space-y-3 max-h-60 overflow-y-auto">
+                                ${serverData.config.resources.map(resource => `
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="font-medium text-gray-900">${resource.name}</div>
+                                        <div class="text-sm text-gray-600 mt-1">${resource.description}</div>
+                                        <div class="text-xs text-gray-500 mt-1 font-mono">${resource.uri_template}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="flex flex-wrap gap-4">
+                            <button onclick="testServer('${serverId}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
+                                <i class="fas fa-vial mr-2"></i>
+                                Test Server
+                            </button>
+                            <button onclick="exportServer('${serverId}')" class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
+                                <i class="fas fa-download mr-2"></i>
+                                Export Server
+                            </button>
+                            <button onclick="deleteServer('${serverId}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                                <i class="fas fa-trash mr-2"></i>
+                                Delete Server
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeServerDetailsModal() {
+    const modal = document.getElementById('server-details-modal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 function testServer(serverId) {
+    // Close modal if open
+    closeServerDetailsModal();
+    
     switchTab('test');
     setTimeout(() => {
         const select = document.getElementById('testServerSelect');
@@ -753,9 +851,67 @@ async function exportServer(serverId) {
 }
 
 async function deleteServer(serverId) {
-    if (!confirm('Are you sure you want to delete this server? This action cannot be undone.')) {
-        return;
+    // Get server name for modal display
+    const serverName = await getServerName(serverId);
+    showDeleteConfirmModal(serverId, serverName || 'Unknown Server');
+}
+
+async function getServerName(serverId) {
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+        return result.success ? result.data.config.name : null;
+    } catch (error) {
+        return null;
     }
+}
+
+function showDeleteConfirmModal(serverId, serverName) {
+    const modalHtml = `
+        <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+                        <i class="fas fa-trash text-2xl text-red-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete Server</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        Are you sure you want to delete <strong>"${serverName}"</strong>? 
+                        <br><br>
+                        This action cannot be undone and will permanently remove all server files and configurations.
+                    </p>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeDeleteConfirmModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200">
+                            Cancel
+                        </button>
+                        <button onclick="confirmDeleteServer('${serverId}')" class="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteConfirmModal() {
+    const modal = document.getElementById('delete-confirm-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function confirmDeleteServer(serverId) {
+    // Close confirmation modal
+    closeDeleteConfirmModal();
+    
+    // Show loading modal
+    showDeleteLoadingModal();
 
     try {
         const response = await fetch(`/api/servers/${serverId}`, {
@@ -764,14 +920,115 @@ async function deleteServer(serverId) {
 
         const result = await response.json();
 
+        // Close loading modal
+        closeDeleteLoadingModal();
+
         if (result.success) {
-            loadServers(); // Reload the servers list
-            loadTestServers(); // Refresh test dropdown
+            // Close server details modal if open
+            closeServerDetailsModal();
+            
+            // Show success modal
+            showDeleteSuccessModal();
+            
+            // Reload server lists
+            loadServers();
+            loadTestServers();
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
+        closeDeleteLoadingModal();
+        showDeleteErrorModal(error.message);
         console.error('Delete failed:', error);
+    }
+}
+
+function showDeleteLoadingModal() {
+    const modalHtml = `
+        <div id="delete-loading-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6 text-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Deleting Server</h3>
+                    <p class="text-gray-600">Please wait while we remove the server and all its files...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteLoadingModal() {
+    const modal = document.getElementById('delete-loading-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showDeleteSuccessModal() {
+    const modalHtml = `
+        <div id="delete-success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
+                        <i class="fas fa-check text-2xl text-green-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Server Deleted Successfully</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        The server has been permanently removed from your system.
+                    </p>
+                    
+                    <button onclick="closeDeleteSuccessModal()" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
+                        <i class="fas fa-check mr-2"></i>
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteSuccessModal() {
+    const modal = document.getElementById('delete-success-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showDeleteErrorModal(errorMessage) {
+    const modalHtml = `
+        <div id="delete-error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete Failed</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        Failed to delete the server: ${errorMessage}
+                    </p>
+                    
+                    <button onclick="closeDeleteErrorModal()" class="w-full bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                        <i class="fas fa-times mr-2"></i>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteErrorModal() {
+    const modal = document.getElementById('delete-error-modal');
+    if (modal) {
+        modal.remove();
     }
 }
 
