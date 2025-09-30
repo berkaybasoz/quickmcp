@@ -372,8 +372,56 @@ app.post('/api/servers/:id/test', async (req, res) => {
     // Get tools for this server
     const tools = sqliteManager.getToolsForServer(req.params.id);
     
-    // Check if we should run all tests or just a sample
-    const runAll = req.body.runAll === true;
+    // Check if this is a custom test or auto test
+    const { runAll, testType, toolName, parameters } = req.body;
+    
+    // For custom tool test
+    if (testType === 'tools/call' && toolName) {
+      try {
+        const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
+        const executor = new DynamicMCPExecutor();
+        
+        // Find the specific tool
+        const tool = tools.find(t => t.name === toolName);
+        if (!tool) {
+          return res.status(404).json({
+            success: false,
+            error: `Tool "${toolName}" not found`
+          });
+        }
+        
+        const result = await executor.executeTool(
+          `${req.params.id}__${toolName}`,
+          parameters || {}
+        );
+        
+        res.json({
+          success: true,
+          data: {
+            tool: toolName,
+            status: 'success',
+            description: tool.description,
+            parameters: parameters || {},
+            result: result.success ? 'Tool executed successfully' : result,
+            rowCount: result.rowCount || 0
+          }
+        });
+        return;
+        
+      } catch (error) {
+        res.json({
+          success: true,
+          data: {
+            tool: toolName,
+            status: 'error',
+            description: tools.find(t => t.name === toolName)?.description || '',
+            parameters: parameters || {},
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }
+        });
+        return;
+      }
+    }
     
     // For auto test, run a sample of available tools
     const testResults = [];

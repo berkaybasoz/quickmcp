@@ -58,6 +58,12 @@ function setupEventListeners() {
     document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
+    
+    // Test type change handler
+    document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
+    
+    // Test server select change handler for loading tools
+    document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
@@ -802,6 +808,114 @@ async function loadTestServers() {
     }
 }
 
+// Handle test type change - switch between input and dropdown for test name
+function handleTestTypeChange() {
+    const testType = document.getElementById('testType')?.value;
+    const container = document.getElementById('testNameContainer');
+    const serverId = document.getElementById('testServerSelect')?.value;
+    
+    if (!container) return;
+    
+    if (testType === 'tools/call' && serverId) {
+        // Load tools dropdown
+        loadToolsDropdown(serverId);
+    } else {
+        // Show regular input
+        container.innerHTML = '<input type="text" id="testName" placeholder="Enter test name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+    }
+}
+
+// Handle test server change - reload tools if Tool Call is selected
+async function handleTestServerChange() {
+    const testType = document.getElementById('testType')?.value;
+    const serverId = document.getElementById('testServerSelect')?.value;
+    
+    if (testType === 'tools/call' && serverId) {
+        await loadToolsDropdown(serverId);
+    }
+}
+
+// Load tools dropdown for custom test
+async function loadToolsDropdown(serverId) {
+    const container = document.getElementById('testNameContainer');
+    if (!container) return;
+    
+    try {
+        const response = await fetch(`/api/servers/${serverId}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const tools = result.data.config.tools || [];
+            
+            // Create dropdown with tools
+            let dropdownHTML = '<select id="testName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" onchange="updateParametersExample()">';
+            dropdownHTML += '<option value="">Select a tool to test</option>';
+            
+            tools.forEach(tool => {
+                // Store tool data in data attributes for parameter generation
+                dropdownHTML += `<option value="${tool.name}" data-schema='${JSON.stringify(tool.inputSchema || {})}'>${tool.name} - ${tool.description}</option>`;
+            });
+            
+            dropdownHTML += '</select>';
+            container.innerHTML = dropdownHTML;
+            
+            // Store tools data globally for parameter generation
+            window.testTools = tools;
+        }
+    } catch (error) {
+        console.error('Failed to load tools:', error);
+        container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+    }
+}
+
+// Update parameters example when tool is selected
+function updateParametersExample() {
+    const select = document.getElementById('testName');
+    const paramsTextarea = document.getElementById('testParams');
+    
+    if (!select || !paramsTextarea) return;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    if (!selectedOption || !selectedOption.value) {
+        paramsTextarea.placeholder = '{"param1": "value1"}';
+        return;
+    }
+    
+    try {
+        const schema = JSON.parse(selectedOption.getAttribute('data-schema') || '{}');
+        const exampleParams = {};
+        
+        // Generate example parameters based on schema
+        if (schema.properties) {
+            for (const [key, prop] of Object.entries(schema.properties)) {
+                if (key === 'limit') {
+                    exampleParams[key] = 10;
+                } else if (key === 'offset') {
+                    exampleParams[key] = 0;
+                } else if (prop.type === 'string') {
+                    exampleParams[key] = prop.description || "example_value";
+                } else if (prop.type === 'number' || prop.type === 'integer') {
+                    exampleParams[key] = 0;
+                } else if (prop.type === 'boolean') {
+                    exampleParams[key] = false;
+                } else {
+                    exampleParams[key] = "value";
+                }
+            }
+        }
+        
+        // Set the example in the textarea
+        if (Object.keys(exampleParams).length > 0) {
+            paramsTextarea.value = JSON.stringify(exampleParams, null, 2);
+        } else {
+            paramsTextarea.value = '{}';
+        }
+    } catch (error) {
+        console.error('Error generating parameter example:', error);
+        paramsTextarea.value = '{}';
+    }
+}
+
 // Test functions
 async function runAutoTests(runAll = false) {
     const serverId = document.getElementById('testServerSelect')?.value;
@@ -910,12 +1024,9 @@ async function runCustomTest() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                customRequest: {
-                    serverId,
-                    method: testType,
-                    name: testName,
-                    params
-                }
+                testType: testType,
+                toolName: testName,
+                parameters: params
             })
         });
 
@@ -1007,28 +1118,63 @@ function displayTestResults(testData) {
     }
 }
 
-function displaySingleTestResult(testResult) {
+function displaySingleTestResult(testData) {
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
 
     if (!resultsDiv) return;
+    
+    // Check if this is the new format from custom tool test
+    if (testData && testData.tool) {
+        let output = `=== Custom Test Result ===\n`;
+        output += `Tool: ${testData.tool}\n`;
+        output += `Status: ${testData.status === 'success' ? '✅ PASS' : '❌ FAIL'}\n`;
+        if (testData.description) {
+            output += `Description: ${testData.description}\n`;
+        }
+        if (testData.parameters && Object.keys(testData.parameters).length > 0) {
+            output += `Parameters: ${JSON.stringify(testData.parameters)}\n`;
+        }
+        output += '\n';
+        
+        if (testData.status === 'success') {
+            if (testData.result) {
+                output += `Result: ${typeof testData.result === 'object' ? JSON.stringify(testData.result, null, 2) : testData.result}\n`;
+            }
+            if (testData.rowCount !== undefined) {
+                output += `Rows: ${testData.rowCount}\n`;
+            }
+        } else if (testData.error) {
+            output += `Error: ${testData.error}\n`;
+        }
+        
+        resultsDiv.textContent = output;
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+    } else if (testData && testData.testCase) {
+        // Old format for compatibility
+        let output = `=== Custom Test Result ===\n`;
+        output += `Test: ${testData.testCase.name}\n`;
+        output += `Duration: ${testData.duration}ms\n`;
+        output += `Status: ${testData.passed ? '✅ PASS' : '❌ FAIL'}\n\n`;
 
-    let output = `=== Custom Test Result ===\n`;
-    output += `Test: ${testResult.testCase.name}\n`;
-    output += `Duration: ${testResult.duration}ms\n`;
-    output += `Status: ${testResult.passed ? '✅ PASS' : '❌ FAIL'}\n\n`;
+        if (!testData.passed) {
+            output += `Error: ${testData.error || testData.response?.error || 'Test assertion failed'}\n\n`;
+        }
 
-    if (!testResult.passed) {
-        output += `Error: ${testResult.error || testResult.response.error || 'Test assertion failed'}\n\n`;
+        if (testData.response?.data) {
+            output += `Response:\n${JSON.stringify(testData.response.data, null, 2)}\n`;
+        }
+
+        resultsDiv.textContent = output;
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+    } else {
+        // Fallback for unknown format
+        resultsDiv.textContent = JSON.stringify(testData, null, 2);
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
     }
-
-    if (testResult.response.data) {
-        output += `Response:\n${JSON.stringify(testResult.response.data, null, 2)}\n`;
-    }
-
-    resultsDiv.textContent = output;
-    resultsDiv.classList.remove('hidden');
-    noResults?.classList.add('hidden');
 }
 
 // Server management functions
