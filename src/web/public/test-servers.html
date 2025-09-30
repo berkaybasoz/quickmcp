@@ -200,15 +200,22 @@
                                     </select>
                                 </div>
 
-                                <button id="runAutoTestsBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-[1.02]">
-                                    <i class="fas fa-play mr-2"></i>
-                                    Run Auto Tests
-                                </button>
+                                <div class="flex space-x-3">
+                                    <button id="runQuickTestBtn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-[1.02]">
+                                        <i class="fas fa-bolt mr-2"></i>
+                                        <span id="quickTestText">Quick Run Auto Tests</span>
+                                    </button>
+                                    
+                                    <button id="runFullTestBtn" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 transform hover:scale-[1.02]">
+                                        <i class="fas fa-play-circle mr-2" id="fullTestIcon"></i>
+                                        <span id="fullTestText">Run Auto Tests</span>
+                                    </button>
+                                </div>
 
                                 <div id="test-loading" class="hidden text-center py-4">
                                     <div class="inline-flex items-center space-x-2 text-green-600">
                                         <div class="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                                        <span>Running tests...</span>
+                                        <span id="loadingText">Running tests...</span>
                                     </div>
                                 </div>
 

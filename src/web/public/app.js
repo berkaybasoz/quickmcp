@@ -54,6 +54,8 @@ function setupEventListeners() {
     document.getElementById('serverName')?.addEventListener('input', checkServerName);
 
     // Test buttons
+    document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
+    document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
 
@@ -801,7 +803,7 @@ async function loadTestServers() {
 }
 
 // Test functions
-async function runAutoTests() {
+async function runAutoTests(runAll = false) {
     const serverId = document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server to test');
@@ -809,9 +811,29 @@ async function runAutoTests() {
     }
 
     const loading = document.getElementById('test-loading');
+    const loadingText = document.getElementById('loadingText');
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
+    
+    // Update button states
+    const quickBtn = document.getElementById('runQuickTestBtn');
+    const fullBtn = document.getElementById('runFullTestBtn');
+    const fullBtnIcon = document.getElementById('fullTestIcon');
+    const fullBtnText = document.getElementById('fullTestText');
+    
+    if (runAll) {
+        // Show loading spinner in button
+        fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
+        fullBtnText.textContent = 'Testing All Tools...';
+        fullBtn.disabled = true;
+        quickBtn.disabled = true;
+        loadingText.textContent = 'Running all tests... This may take a while.';
+    } else {
+        quickBtn.disabled = true;
+        fullBtn.disabled = true;
+        loadingText.textContent = 'Running quick tests...';
+    }
 
     loading?.classList.remove('hidden');
     resultsDiv?.classList.add('hidden');
@@ -824,7 +846,7 @@ async function runAutoTests() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({ runAll: runAll })
         });
 
         const result = await response.json();
@@ -839,6 +861,14 @@ async function runAutoTests() {
         noResults?.classList.remove('hidden');
     } finally {
         loading?.classList.add('hidden');
+        
+        // Reset button states
+        if (quickBtn) quickBtn.disabled = false;
+        if (fullBtn) {
+            fullBtn.disabled = false;
+            fullBtnIcon.className = 'fas fa-play-circle mr-2';
+            fullBtnText.textContent = 'Run Auto Tests';
+        }
     }
 }
 
@@ -913,9 +943,14 @@ function displayTestResults(testData) {
 
     // Check if this is the new format from SQLite-based test
     if (testData.serverName && testData.results) {
+        // Count success and failed tests
+        const successCount = testData.results.filter(r => r.status === 'success').length;
+        const failedCount = testData.results.filter(r => r.status === 'error').length;
+        
         let output = `=== Test Results for ${testData.serverName} ===\n`;
         output += `Total Tools: ${testData.toolsCount}\n`;
-        output += `Tests Run: ${testData.testsRun}\n\n`;
+        output += `Tests Run: ${testData.testsRun}\n`;
+        output += `✅ Success: ${successCount} | ❌ Failed: ${failedCount}\n\n`;
         
         testData.results.forEach(result => {
             const status = result.status === 'success' ? '✅ PASS' : '❌ FAIL';

@@ -372,11 +372,14 @@ app.post('/api/servers/:id/test', async (req, res) => {
     // Get tools for this server
     const tools = sqliteManager.getToolsForServer(req.params.id);
     
+    // Check if we should run all tests or just a sample
+    const runAll = req.body.runAll === true;
+    
     // For auto test, run a sample of available tools
     const testResults = [];
     
-    // Test up to 3 tools to keep response manageable
-    const toolsToTest = tools.slice(0, 3);
+    // Test either all tools or just a quick sample
+    const toolsToTest = runAll ? tools : tools.slice(0, 3);
     
     for (const tool of toolsToTest) {
       try {
