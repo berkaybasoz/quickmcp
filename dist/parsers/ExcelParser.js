@@ -34,24 +34,36 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExcelParser = void 0;
-const XLSX = __importStar(require("xlsx"));
+const ExcelJS = __importStar(require("exceljs"));
 class ExcelParser {
     async parse(filePath, sheetName) {
-        const workbook = XLSX.readFile(filePath);
-        const worksheetName = sheetName || workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath);
+        const worksheet = sheetName
+            ? workbook.getWorksheet(sheetName)
+            : workbook.getWorksheet(1); // First worksheet
         if (!worksheet) {
-            throw new Error(`Sheet "${worksheetName}" not found`);
+            throw new Error(`Sheet "${sheetName || 'first sheet'}" not found`);
         }
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        if (jsonData.length === 0) {
+        const rows = [];
+        let headers = [];
+        worksheet.eachRow((row, rowNumber) => {
+            const values = row.values;
+            // Remove the first element (it's undefined in ExcelJS)
+            const rowData = values.slice(1);
+            if (rowNumber === 1) {
+                headers = rowData.map(cell => cell?.toString() || '');
+            }
+            else {
+                rows.push(rowData);
+            }
+        });
+        if (headers.length === 0) {
             throw new Error('No data found in the sheet');
         }
-        const headers = jsonData[0];
-        const rows = jsonData.slice(1);
         const dataTypes = this.inferDataTypes(rows, headers);
         return {
-            tableName: worksheetName,
+            tableName: worksheet.name,
             headers,
             rows,
             metadata: {
@@ -61,9 +73,10 @@ class ExcelParser {
             }
         };
     }
-    getSheetNames(filePath) {
-        const workbook = XLSX.readFile(filePath);
-        return workbook.SheetNames;
+    async getSheetNames(filePath) {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath);
+        return workbook.worksheets.map(sheet => sheet.name);
     }
     inferDataTypes(rows, headers) {
         const dataTypes = {};
@@ -86,9 +99,10 @@ class ExcelParser {
         const isDate = nonNullValues.every(v => {
             if (v instanceof Date)
                 return true;
-            if (typeof v === 'number')
-                return XLSX.SSF.is_date(v);
-            return !isNaN(Date.parse(v));
+            // ExcelJS automatically converts Excel dates to Date objects
+            if (typeof v === 'string')
+                return !isNaN(Date.parse(v));
+            return false;
         });
         if (isBoolean)
             return 'boolean';
