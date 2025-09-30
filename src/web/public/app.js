@@ -905,36 +905,71 @@ async function runCustomTest() {
 }
 
 // Display test results
-function displayTestResults(testSuiteResult) {
+function displayTestResults(testData) {
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
 
     if (!resultsDiv) return;
 
-    let output = `=== Test Suite: ${testSuiteResult.testSuite.name} ===\n`;
-    output += `Description: ${testSuiteResult.testSuite.description}\n`;
-    output += `Duration: ${testSuiteResult.duration}ms\n`;
-    output += `Results: ${testSuiteResult.passedTests}/${testSuiteResult.totalTests} tests passed\n\n`;
+    // Check if this is the new format from SQLite-based test
+    if (testData.serverName && testData.results) {
+        let output = `=== Test Results for ${testData.serverName} ===\n`;
+        output += `Total Tools: ${testData.toolsCount}\n`;
+        output += `Tests Run: ${testData.testsRun}\n\n`;
+        
+        testData.results.forEach(result => {
+            const status = result.status === 'success' ? '✅ PASS' : '❌ FAIL';
+            output += `${status} ${result.tool}\n`;
+            output += `   Description: ${result.description}\n`;
+            if (result.parameters && Object.keys(result.parameters).length > 0) {
+                output += `   Parameters: ${JSON.stringify(result.parameters)}\n`;
+            }
+            if (result.status === 'success') {
+                output += `   Result: ${result.result}\n`;
+                if (result.rowCount !== undefined) {
+                    output += `   Rows: ${result.rowCount}\n`;
+                }
+            } else if (result.error) {
+                output += `   Error: ${result.error}\n`;
+            }
+            output += '\n';
+        });
+        
+        resultsDiv.textContent = output;
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+    } else if (testData.testSuite) {
+        // Old format for compatibility
+        let output = `=== Test Suite: ${testData.testSuite.name} ===\n`;
+        output += `Description: ${testData.testSuite.description}\n`;
+        output += `Duration: ${testData.duration}ms\n`;
+        output += `Results: ${testData.passedTests}/${testData.totalTests} tests passed\n\n`;
 
-    testSuiteResult.results.forEach(testResult => {
-        const status = testResult.passed ? '✅ PASS' : '❌ FAIL';
-        output += `${status} ${testResult.testCase.name} (${testResult.duration}ms)\n`;
+        testData.results.forEach(testResult => {
+            const status = testResult.passed ? '✅ PASS' : '❌ FAIL';
+            output += `${status} ${testResult.testCase.name} (${testResult.duration}ms)\n`;
 
-        if (!testResult.passed) {
-            output += `   Error: ${testResult.error || testResult.response.error || 'Test assertion failed'}\n`;
-        }
+            if (!testResult.passed) {
+                output += `   Error: ${testResult.error || testResult.response.error || 'Test assertion failed'}\n`;
+            }
 
-        if (testResult.response.data) {
-            const dataPreview = JSON.stringify(testResult.response.data, null, 2).slice(0, 200);
-            output += `   Response: ${dataPreview}${dataPreview.length >= 200 ? '...' : ''}\n`;
-        }
+            if (testResult.response && testResult.response.data) {
+                const dataPreview = JSON.stringify(testResult.response.data, null, 2).slice(0, 200);
+                output += `   Response: ${dataPreview}${dataPreview.length >= 200 ? '...' : ''}\n`;
+            }
 
-        output += '\n';
-    });
+            output += '\n';
+        });
 
-    resultsDiv.textContent = output;
-    resultsDiv.classList.remove('hidden');
-    noResults?.classList.add('hidden');
+        resultsDiv.textContent = output;
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+    } else {
+        // Fallback for unknown format - just display the raw JSON
+        resultsDiv.textContent = JSON.stringify(testData, null, 2);
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+    }
 }
 
 function displaySingleTestResult(testResult) {

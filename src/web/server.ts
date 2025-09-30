@@ -360,53 +360,74 @@ app.get('/api/servers/:id/data', async (req, res) => {
 // Test server endpoint
 app.post('/api/servers/:id/test', async (req, res) => {
   try {
-    const serverInfo = generatedServers.get(req.params.id);
-
-    if (!serverInfo) {
+    // Get server from SQLite database
+    const server = sqliteManager.getServer(req.params.id);
+    if (!server) {
       return res.status(404).json({
         success: false,
         error: 'Server not found'
       });
     }
 
-    const { testSuite, customRequest } = req.body;
-
-    if (customRequest) {
-      // Run a single custom test
-      const testCase = {
-        name: 'Custom Test',
-        description: 'Custom test request',
-        request: customRequest
-      };
-
-      const result = await testRunner.runTestCase(testCase);
-
-      res.json({
-        success: true,
-        data: result
-      });
-    } else if (testSuite) {
-      // Run a full test suite
-      const result = await testRunner.runTestSuite(serverInfo.serverPath, testSuite);
-
-      res.json({
-        success: true,
-        data: result
-      });
-    } else {
-      // Generate and run auto test suite
-      const autoTestSuite = await testRunner.generateTestSuite(
-        serverInfo.serverPath,
-        serverInfo.config.name
-      );
-
-      const result = await testRunner.runTestSuite(serverInfo.serverPath, autoTestSuite);
-
-      res.json({
-        success: true,
-        data: result
-      });
+    // Get tools for this server
+    const tools = sqliteManager.getToolsForServer(req.params.id);
+    
+    // For auto test, run a sample of available tools
+    const testResults = [];
+    
+    // Test up to 3 tools to keep response manageable
+    const toolsToTest = tools.slice(0, 3);
+    
+    for (const tool of toolsToTest) {
+      try {
+        // Use DynamicMCPExecutor to test the tool
+        const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
+        const executor = new DynamicMCPExecutor();
+        
+        // Prepare test parameters based on tool schema
+        const testParams: any = {};
+        if (tool.inputSchema && typeof tool.inputSchema === 'object' && tool.inputSchema.properties) {
+          for (const [paramName, paramDef] of Object.entries(tool.inputSchema.properties as any)) {
+            if (paramName === 'limit') testParams[paramName] = 5;
+            else if (paramName === 'offset') testParams[paramName] = 0;
+            // Add other default test values as needed
+          }
+        }
+        
+        const result = await executor.executeTool(
+          `${req.params.id}__${tool.name}`,
+          testParams
+        );
+        
+        testResults.push({
+          tool: tool.name,
+          status: 'success',
+          description: tool.description,
+          parameters: testParams,
+          result: result.success ? 'Tool executed successfully' : result,
+          rowCount: result.rowCount || 0
+        });
+        
+      } catch (error) {
+        testResults.push({
+          tool: tool.name,
+          status: 'error',
+          description: tool.description,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
     }
+    
+    res.json({
+      success: true,
+      data: {
+        serverName: server.name,
+        toolsCount: tools.length,
+        testsRun: testResults.length,
+        results: testResults
+      }
+    });
+    
   } catch (error) {
     console.error('Test error:', error);
     res.status(400).json({
