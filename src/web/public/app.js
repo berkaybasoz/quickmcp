@@ -924,6 +924,9 @@ async function runAutoTests(runAll = false) {
         return;
     }
 
+    // Get selected transport type
+    const transportType = document.querySelector('input[name="transportType"]:checked')?.value || 'both';
+
     const loading = document.getElementById('test-loading');
     const loadingText = document.getElementById('loadingText');
     const resultsDiv = document.getElementById('test-results');
@@ -942,11 +945,11 @@ async function runAutoTests(runAll = false) {
         fullBtnText.textContent = 'Testing All Tools...';
         fullBtn.disabled = true;
         quickBtn.disabled = true;
-        loadingText.textContent = 'Running all tests... This may take a while.';
+        loadingText.textContent = `Running all tests with ${transportType} transport... This may take a while.`;
     } else {
         quickBtn.disabled = true;
         fullBtn.disabled = true;
-        loadingText.textContent = 'Running quick tests...';
+        loadingText.textContent = `Running quick tests with ${transportType} transport...`;
     }
 
     loading?.classList.remove('hidden');
@@ -955,18 +958,31 @@ async function runAutoTests(runAll = false) {
     errorDiv?.classList.add('hidden');
 
     try {
-        const response = await fetch(`/api/servers/${serverId}/test`, {
+        let response;
+        let endpoint;
+        
+        // Determine endpoint based on transport type
+        if (transportType === 'both') {
+            endpoint = `/api/servers/${serverId}/test-both-transports`;
+        } else {
+            endpoint = `/api/servers/${serverId}/test`;
+        }
+        
+        response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ runAll: runAll })
+            body: JSON.stringify({ 
+                runAll: runAll,
+                transport: transportType
+            })
         });
 
         const result = await response.json();
 
         if (result.success) {
-            displayTestResults(result.data);
+            displayTestResults(result.data, transportType);
         } else {
             throw new Error(result.error);
         }
@@ -1046,11 +1062,49 @@ async function runCustomTest() {
 }
 
 // Display test results
-function displayTestResults(testData) {
+function displayTestResults(testData, transportType) {
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
 
     if (!resultsDiv) return;
+
+    // Check if test results for both transports
+    if (testData.stdio && testData.sse) {
+        // Display results for both transports
+        let output = `=== Test Results for ${testData.serverName} ===\n\n`;
+        
+        // STDIO Results
+        output += `📡 STDIO Transport Results:\n`;
+        output += `Total Tests: ${testData.stdio.totalTests}\n`;
+        output += `✅ Passed: ${testData.stdio.passedTests} | ❌ Failed: ${testData.stdio.failedTests}\n`;
+        output += `⏱️ Duration: ${testData.stdio.duration}ms\n\n`;
+        
+        testData.stdio.results.forEach(result => {
+            const status = result.passed ? '✅' : '❌';
+            output += `  ${status} ${result.test} (${result.duration}ms)\n`;
+            if (result.error) {
+                output += `     Error: ${result.error}\n`;
+            }
+        });
+        
+        output += `\n📡 SSE Transport Results:\n`;
+        output += `Total Tests: ${testData.sse.totalTests}\n`;
+        output += `✅ Passed: ${testData.sse.passedTests} | ❌ Failed: ${testData.sse.failedTests}\n`;
+        output += `⏱️ Duration: ${testData.sse.duration}ms\n\n`;
+        
+        testData.sse.results.forEach(result => {
+            const status = result.passed ? '✅' : '❌';
+            output += `  ${status} ${result.test} (${result.duration}ms)\n`;
+            if (result.error) {
+                output += `     Error: ${result.error}\n`;
+            }
+        });
+        
+        resultsDiv.textContent = output;
+        resultsDiv.classList.remove('hidden');
+        noResults?.classList.add('hidden');
+        return;
+    }
 
     // Check if this is the new format from SQLite-based test
     if (testData.serverName && testData.results) {

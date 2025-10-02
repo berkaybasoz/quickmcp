@@ -308,7 +308,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
         });
     }
 });
-// Test server endpoint
+// Test server endpoint with transport selection
 app.post('/api/servers/:id/test', async (req, res) => {
     try {
         // Get server from SQLite database
@@ -321,10 +321,53 @@ app.post('/api/servers/:id/test', async (req, res) => {
         }
         // Get tools for this server
         const tools = sqliteManager.getToolsForServer(req.params.id);
+        // Check if this is a custom test or auto test
+        const { runAll, testType, toolName, parameters, transport = 'stdio' } = req.body;
+        // For custom tool test
+        if (testType === 'tools/call' && toolName) {
+            try {
+                const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
+                const executor = new DynamicMCPExecutor();
+                // Find the specific tool
+                const tool = tools.find(t => t.name === toolName);
+                if (!tool) {
+                    return res.status(404).json({
+                        success: false,
+                        error: `Tool "${toolName}" not found`
+                    });
+                }
+                const result = await executor.executeTool(`${req.params.id}__${toolName}`, parameters || {});
+                res.json({
+                    success: true,
+                    data: {
+                        tool: toolName,
+                        status: 'success',
+                        description: tool.description,
+                        parameters: parameters || {},
+                        result: result.success ? 'Tool executed successfully' : result,
+                        rowCount: result.rowCount || 0
+                    }
+                });
+                return;
+            }
+            catch (error) {
+                res.json({
+                    success: true,
+                    data: {
+                        tool: toolName,
+                        status: 'error',
+                        description: tools.find(t => t.name === toolName)?.description || '',
+                        parameters: parameters || {},
+                        error: error instanceof Error ? error.message : 'Unknown error'
+                    }
+                });
+                return;
+            }
+        }
         // For auto test, run a sample of available tools
         const testResults = [];
-        // Test up to 3 tools to keep response manageable
-        const toolsToTest = tools.slice(0, 3);
+        // Test either all tools or just a quick sample
+        const toolsToTest = runAll ? tools : tools.slice(0, 3);
         for (const tool of toolsToTest) {
             try {
                 // Use DynamicMCPExecutor to test the tool
@@ -372,6 +415,77 @@ app.post('/api/servers/:id/test', async (req, res) => {
     }
     catch (error) {
         console.error('Test error:', error);
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+// Test server with both transports
+app.post('/api/servers/:id/test-both-transports', async (req, res) => {
+    try {
+        const serverId = req.params.id;
+        const { runAll = false } = req.body;
+        // Get server from SQLite database
+        const server = sqliteManager.getServer(serverId);
+        if (!server) {
+            return res.status(404).json({
+                success: false,
+                error: 'Server not found'
+            });
+        }
+        // Start SSE bridge for testing
+        const { QuickMCPBridge } = require('../quickmcp-unified-bridge');
+        const sseBridge = new QuickMCPBridge('sse', 3001);
+        await sseBridge.start(3001);
+        // Create test runner
+        const { MCPTestRunnerUnified } = require('../client/MCPTestRunnerUnified');
+        const testRunner = new MCPTestRunnerUnified(3001);
+        // Generate test suite
+        const testSuite = await testRunner.generateTestSuite(path_1.default.join(__dirname, '..', 'quickmcp-unified-bridge.js'), serverId, 'stdio');
+        // Run limited tests unless runAll is specified
+        if (!runAll) {
+            testSuite.tests = testSuite.tests.slice(0, 5);
+        }
+        // Run tests with both transports
+        const results = await testRunner.runTestSuiteBothTransports(path_1.default.join(__dirname, '..', 'quickmcp-unified-bridge.js'), testSuite);
+        // Stop SSE bridge
+        await sseBridge.stop();
+        res.json({
+            success: true,
+            data: {
+                serverName: server.name,
+                stdio: {
+                    transport: 'stdio',
+                    totalTests: results.stdio.totalTests,
+                    passedTests: results.stdio.passedTests,
+                    failedTests: results.stdio.failedTests,
+                    duration: results.stdio.duration,
+                    results: results.stdio.results.map(r => ({
+                        test: r.testCase.name,
+                        passed: r.passed,
+                        duration: r.duration,
+                        error: r.error
+                    }))
+                },
+                sse: {
+                    transport: 'sse',
+                    totalTests: results.sse.totalTests,
+                    passedTests: results.sse.passedTests,
+                    failedTests: results.sse.failedTests,
+                    duration: results.sse.duration,
+                    results: results.sse.results.map(r => ({
+                        test: r.testCase.name,
+                        passed: r.passed,
+                        duration: r.duration,
+                        error: r.error
+                    }))
+                }
+            }
+        });
+    }
+    catch (error) {
+        console.error('Test both transports error:', error);
         res.status(400).json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'

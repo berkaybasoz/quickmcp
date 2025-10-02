@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "quickmcp-sse": {
+      "command": "quickmcp-sse",          
+      "transport": {
+        "type": "sse",
+        "url": "http://localhost:3001/sse",  
+        "headers": {
+          "X-Api-Key": "dev-key"             
+        }
+      }
+    },
+    "quickmcp-sse": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://localhost:3002/sse",
+        "--transport",
+        "sse-only",
+        "--allow-http"
+      ],
+      "timeout": 30000,
+      "initTimeout": 10000
+    }
+  }
+}

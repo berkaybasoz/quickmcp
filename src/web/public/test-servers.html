@@ -200,6 +200,24 @@
                                     </select>
                                 </div>
 
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Transport Type</label>
+                                    <div class="flex space-x-4">
+                                        <label class="flex items-center">
+                                            <input type="radio" name="transportType" value="both" checked class="text-green-500 focus:ring-green-500">
+                                            <span class="ml-2 text-sm text-gray-700">Test Both</span>
+                                        </label>
+                                        <label class="flex items-center">
+                                            <input type="radio" name="transportType" value="stdio" class="text-green-500 focus:ring-green-500">
+                                            <span class="ml-2 text-sm text-gray-700">STDIO Only</span>
+                                        </label>
+                                        <label class="flex items-center">
+                                            <input type="radio" name="transportType" value="sse" class="text-green-500 focus:ring-green-500">
+                                            <span class="ml-2 text-sm text-gray-700">SSE Only</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div class="flex space-x-3">
                                     <button id="runQuickTestBtn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 transform hover:scale-[1.02]">
                                         <i class="fas fa-bolt mr-2"></i>

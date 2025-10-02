@@ -18,19 +18,25 @@
         "NODE_PATH": "/usr/local/lib/node_modules"
       }
     },
-    "quickmcp-sse": {
+    "quickmcp-sse-old": {
       "command": "curl",
       "args": ["-X", "POST", "http://localhost:3001/sse/message"],
       "env": {
         "MCP_TRANSPORT": "sse"
       }
     },
-     "simple-test": {
+    "quickmcp-sse": {
+      "transport": {
+        "type": "sse",
+        "url": "http://localhost:3001/sse"
+      }
+    },
+    "simple-test": {
       "command": "node",
       "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/simple-mcp-test.js"]
     },
-    "quickmcp-stdio": {
-      "command": "/opt/homebrew/bin/node",
+    "quickmcp-working": {
+      "command": "/opt/homebrew/bin/node", 
       "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
     }
   }
