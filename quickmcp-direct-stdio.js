@@ -10,6 +10,25 @@ const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 // Create SQLite manager
 const sqliteManager = new SQLiteManager();
 
+// Diagnostics: print environment and mssql details to help debug Claude Desktop
+try {
+  const resolvedDynExec = require.resolve('./dist/dynamic-mcp-executor.js');
+  const mssql = require('mssql');
+  const mssqlVersion = require('mssql/package.json').version;
+  console.error('[QuickMCP] Node:', process.version);
+  console.error('[QuickMCP] CWD:', process.cwd());
+  console.error('[QuickMCP] Dynamic executor path:', resolvedDynExec);
+  console.error('[QuickMCP] mssql version:', mssqlVersion);
+  console.error('[QuickMCP] mssql exports:', {
+    hasDefault: !!mssql.default,
+    hasConnect: typeof mssql.connect,
+    typeofConnectionPool: typeof (mssql.ConnectionPool),
+    keys: Object.keys(mssql).slice(0, 10)
+  });
+} catch (e) {
+  console.error('[QuickMCP] Diagnostic init error:', e && e.message);
+}
+
 // Direct STDIO MCP implementation
 process.stdin.on('data', async (data) => {
   const input = data.toString().trim();

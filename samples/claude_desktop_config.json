@@ -32,6 +32,10 @@
     "quickmcp-stdio": {
       "command": "/opt/homebrew/bin/node",
       "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    },
+     "quickmcp-working": {
+      "command": "/opt/homebrew/bin/node", 
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
     }
   }
 }

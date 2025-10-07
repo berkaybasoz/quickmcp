@@ -1,5 +1,5 @@
 import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager.js';
-import * as sql from 'mssql';
+import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
 
@@ -136,7 +136,7 @@ export class DynamicMCPExecutor {
     try {
       switch (dbConfig.type) {
         case 'mssql':
-          connection = new sql.ConnectionPool({
+          connection = await sql.connect({
             server: dbConfig.host,
             port: dbConfig.port || 1433,
             database: dbConfig.database,
@@ -144,11 +144,10 @@ export class DynamicMCPExecutor {
             password: dbConfig.password,
             options: {
               encrypt: dbConfig.encrypt || false,
-              trustServerCertificate: dbConfig.trustServerCertificate || true
+              trustServerCertificate: dbConfig.trustServerCertificate ?? true
             }
           });
 
-          await connection.connect();
           console.error(`🔗 Connected to MSSQL database for server ${serverId}`);
           break;
 

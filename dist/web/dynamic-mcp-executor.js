@@ -225,20 +225,19 @@ var DynamicMCPExecutor = /** @class */ (function () {
                         }
                         return [3 /*break*/, 8];
                     case 2:
-                        connection = new sql.ConnectionPool({
-                            server: dbConfig.host,
-                            port: dbConfig.port || 1433,
-                            database: dbConfig.database,
-                            user: dbConfig.username,
-                            password: dbConfig.password,
-                            options: {
-                                encrypt: dbConfig.encrypt || false,
-                                trustServerCertificate: dbConfig.trustServerCertificate || true
-                            }
-                        });
-                        return [4 /*yield*/, connection.connect()];
+                        return [4 /*yield*/, sql.connect({
+                                server: dbConfig.host,
+                                port: dbConfig.port || 1433,
+                                database: dbConfig.database,
+                                user: dbConfig.username,
+                                password: dbConfig.password,
+                                options: {
+                                    encrypt: dbConfig.encrypt || false,
+                                    trustServerCertificate: dbConfig.trustServerCertificate || true
+                                }
+                            })];
                     case 3:
-                        _b.sent();
+                        connection = _b.sent();
                         console.error("\uD83D\uDD17 Connected to MSSQL database for server ".concat(serverId));
                         return [3 /*break*/, 9];
                     case 4:
