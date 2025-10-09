@@ -94,7 +94,7 @@ export class SQLiteManager {
       )
     `);
 
-    console.error('✅ SQLite database initialized:', this.dbPath);
+    //console.error('✅ SQLite database initialized:', this.dbPath);
   }
 
   // Server operations

@@ -125,7 +125,7 @@ class DynamicMCPExecutor {
                     break;
                 case 'mysql':
                     connection = promise_1.default.createConnection({
-                        host: dbConfig.host,
+                        host,
                         port: dbConfig.port || 3306,
                         database: dbConfig.database,
                         user: dbConfig.username,

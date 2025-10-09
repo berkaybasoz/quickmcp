@@ -53,7 +53,7 @@ export class JSONManager {
 
     this.dbPath = path.join(dbDir, 'quickmcp.json');
     this.loadData();
-    console.log('✅ JSON database initialized:', this.dbPath);
+    //console.log('✅ JSON database initialized:', this.dbPath);
   }
 
   private loadData(): void {
@@ -171,7 +171,7 @@ export class JSONManager {
   // Cleanup
   close(): void {
     // JSON manager doesn't need cleanup
-    console.log('📁 JSON manager closed');
+    //console.log('📁 JSON manager closed');
   }
 
   // Statistics

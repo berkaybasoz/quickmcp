@@ -25,34 +25,34 @@ export class MCPServerGenerator {
     selectedTables?: any[]
   ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log(`🚀 Generating virtual MCP server: ${serverId}`);
+      //console.log(`🚀 Generating virtual MCP server: ${serverId}`);
 
       // Create server config
-      console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
+      //console.log(`📝 Creating server config with serverId: "${serverId}", serverName: "${serverName}"`);
       const serverConfig: ServerConfig = {
         id: serverId,
         name: serverName,
         dbConfig: dbConfig,
         createdAt: new Date().toISOString()
       };
-      console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
+      //console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
 
       // Save server to SQLite database only
       this.sqliteManager.saveServer(serverConfig);
-      console.log(`✅ Server config saved to SQLite database: ${serverId}`);
+      //console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
       const tools = this.generateToolsForData(serverId, parsedData, dbConfig, selectedTables);
       if (tools.length > 0) {
         this.sqliteManager.saveTools(tools);
-        console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
+        //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
       // Generate and save resources
       const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
       if (resources.length > 0) {
         this.sqliteManager.saveResources(resources);
-        console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
+        //console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
       }
 
       return {
@@ -71,7 +71,7 @@ export class MCPServerGenerator {
   private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {
     const tools: ToolDefinition[] = [];
 
-    console.log('🔍 generateToolsForData called with selectedTables:', selectedTables);
+    //console.log('🔍 generateToolsForData called with selectedTables:', selectedTables);
 
     for (const [tableName, rows] of Object.entries(parsedData)) {
       if (!rows || rows.length === 0) continue;
@@ -82,11 +82,11 @@ export class MCPServerGenerator {
       
       // Skip table if not selected
       if (selectedTables && selectedTables.length > 0 && !tableConfig) {
-        console.log(`🔍 Skipping table ${tableName} - not selected`);
+        //console.log(`🔍 Skipping table ${tableName} - not selected`);
         continue;
       }
       
-      console.log(`🔍 Processing table ${tableName} with config:`, tableConfig?.tools);
+      //console.log(`🔍 Processing table ${tableName} with config:`, tableConfig?.tools);
 
       const columns = this.analyzeColumns(rows);
       const cleanTableName = this.sanitizeName(tableName);
@@ -220,7 +220,7 @@ export class MCPServerGenerator {
         if (toolsConfig.min) {
           numericColumns.forEach(col => {
             const toolName = `min_${cleanTableName}_${this.sanitizeName(col.name)}`;
-            console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
+            //console.log(`🔍 Creating MIN tool: ${toolName} for column ${col.name}`);
             
             tools.push({
               server_id: serverId,

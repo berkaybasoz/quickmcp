@@ -4,11 +4,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function testApplication() {
-  console.log('🚀 Testing MCP Server Generator Application');
+  //console.log('🚀 Testing MCP Server Generator Application');
 
   try {
     // Test 1: Parse CSV data
-    console.log('\n1. Testing CSV parsing...');
+    //console.log('\n1. Testing CSV parsing...');
     const parser = new DataSourceParser();
     const dataSource = {
       type: 'csv' as const,

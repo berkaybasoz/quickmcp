@@ -46,7 +46,7 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
     const port = getNextPort();
     const serverDir = path.dirname(serverPath);
 
-    console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
+    //console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
 
     // Fork the MCP server process
     const mcpProcess = fork(serverPath, [], {
@@ -60,7 +60,7 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
 
     mcpProcess.on('message', (message) => {
       if (message === 'ready') {
-        console.log(`MCP Server ${serverId} ready on port ${port}`);
+        //console.log(`MCP Server ${serverId} ready on port ${port}`);
         resolve(port);
       }
     });
@@ -71,7 +71,7 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
     });
 
     mcpProcess.on('exit', (code) => {
-      console.log(`MCP Server ${serverId} exited with code ${code}`);
+      //console.log(`MCP Server ${serverId} exited with code ${code}`);
       if (serverInfo.runtimeProcess === mcpProcess) {
         serverInfo.runtimeProcess = undefined;
         serverInfo.runtimePort = undefined;
@@ -831,7 +831,7 @@ app.post('/api/mcp-stdio', (req, res) => {
 
           // Handle initialized notification (no response needed)
           else if (message.method === 'notifications/initialized') {
-            console.log('MCP client initialized');
+            //console.log('MCP client initialized');
             // No response for notifications
           }
 
@@ -869,7 +869,7 @@ app.post('/api/mcp-stdio', (req, res) => {
   });
 
   req.on('end', () => {
-    console.log('MCP stdio connection ended');
+    console.error('MCP stdio connection ended');
     res.end();
   });
 
@@ -879,7 +879,7 @@ app.post('/api/mcp-stdio', (req, res) => {
   });
 
   req.on('close', () => {
-    console.log('MCP stdio connection closed');
+    console.error('MCP stdio connection closed');
   });
 });
 
@@ -895,7 +895,7 @@ const MCP_PORT = 3001;
 const integratedMCPServer = new IntegratedMCPServer();
 
 app.listen(PORT, async () => {
-  console.log(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
+  //console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
 
   // Start integrated MCP server
   try {
