@@ -1,8 +1,11 @@
 {
-  "name": "mcp-server-generator",
-  "version": "1.0.0",
+  "name": "@berkaybasoz/quickmcp",
+  "version": "1.0.2",
   "description": "An application to generate MCP servers from various data sources and test them",
   "main": "dist/index.js",
+  "bin": {
+    "quickmcp": "quickmcp-direct-stdio.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -10,6 +13,18 @@
     "mcp-server": "tsx src/mcp-server.ts",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "quickmcp-direct-stdio.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0",
