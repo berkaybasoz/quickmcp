@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { MCPServerGenerator } from './src/generators/MCPServerGenerator-new.js';
-import { IntegratedMCPServer } from './src/integrated-mcp-server-new.js';
+import { MCPServerGenerator } from './generators/MCPServerGenerator';
+import { IntegratedMCPServer } from './integrated-mcp-server-new';
 
 async function testNewArchitecture() {
   try {

@@ -8,9 +8,9 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
-import { DatabaseParser } from './parsers/DatabaseParser.js';
-import { MCPServerGenerator } from './generators/MCPServerGenerator.js';
-import { DatabaseConnection, ParsedData } from './types/index.js';
+import { DatabaseParser } from './parsers/DatabaseParser';
+import { MCPServerGenerator } from './generators/MCPServerGenerator';
+import { DatabaseConnection, ParsedData } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 

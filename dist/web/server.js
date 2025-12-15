@@ -41,7 +41,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
         }
         const port = getNextPort();
         const serverDir = path_1.default.dirname(serverPath);
-        console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
+        //console.log(`Starting runtime MCP server for ${serverId} on port ${port}`);
         // Fork the MCP server process
         const mcpProcess = (0, child_process_1.fork)(serverPath, [], {
             cwd: serverDir,
@@ -53,7 +53,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
         });
         mcpProcess.on('message', (message) => {
             if (message === 'ready') {
-                console.log(`MCP Server ${serverId} ready on port ${port}`);
+                //console.log(`MCP Server ${serverId} ready on port ${port}`);
                 resolve(port);
             }
         });
@@ -62,7 +62,7 @@ function startRuntimeMCPServer(serverId, serverPath) {
             reject(error);
         });
         mcpProcess.on('exit', (code) => {
-            console.log(`MCP Server ${serverId} exited with code ${code}`);
+            //console.log(`MCP Server ${serverId} exited with code ${code}`);
             if (serverInfo.runtimeProcess === mcpProcess) {
                 serverInfo.runtimeProcess = undefined;
                 serverInfo.runtimePort = undefined;
@@ -715,7 +715,7 @@ app.post('/api/mcp-stdio', (req, res) => {
                     }
                     // Handle initialized notification (no response needed)
                     else if (message.method === 'notifications/initialized') {
-                        console.log('MCP client initialized');
+                        //console.log('MCP client initialized');
                         // No response for notifications
                     }
                     // Handle other requests with placeholder responses
@@ -751,7 +751,7 @@ app.post('/api/mcp-stdio', (req, res) => {
         }
     });
     req.on('end', () => {
-        console.log('MCP stdio connection ended');
+        console.error('MCP stdio connection ended');
         res.end();
     });
     req.on('error', (error) => {
@@ -759,7 +759,7 @@ app.post('/api/mcp-stdio', (req, res) => {
         res.end();
     });
     req.on('close', () => {
-        console.log('MCP stdio connection closed');
+        console.error('MCP stdio connection closed');
     });
 });
 // Serve index.html for root and any other routes
@@ -771,7 +771,7 @@ const MCP_PORT = 3001;
 // Initialize integrated MCP server
 const integratedMCPServer = new integrated_mcp_server_new_1.IntegratedMCPServer();
 app.listen(PORT, async () => {
-    console.log(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
+    //console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
     // Start integrated MCP server
     try {
         await integratedMCPServer.start(MCP_PORT);

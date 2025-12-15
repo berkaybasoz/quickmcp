@@ -1,4 +1,4 @@
-import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager.js';
+import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager';
 
 interface ParsedColumn {
   name: string;

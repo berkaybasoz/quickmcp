@@ -15,7 +15,7 @@ class JSONManager {
         }
         this.dbPath = path_1.default.join(dbDir, 'quickmcp.json');
         this.loadData();
-        console.log('✅ JSON database initialized:', this.dbPath);
+        //console.log('✅ JSON database initialized:', this.dbPath);
     }
     loadData() {
         if (fs_1.default.existsSync(this.dbPath)) {
@@ -113,7 +113,7 @@ class JSONManager {
     // Cleanup
     close() {
         // JSON manager doesn't need cleanup
-        console.log('📁 JSON manager closed');
+        //console.log('📁 JSON manager closed');
     }
     // Statistics
     getStats() {

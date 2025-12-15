@@ -361,7 +361,7 @@ class IntegratedMCPServer {
         });
         // STDIO bridge endpoint for MCP - handles persistent STDIO connection
         this.app.post('/api/mcp-stdio', express_1.default.raw({ type: '*/*' }), (req, res) => {
-            console.log('MCP STDIO bridge connection established');
+            //console.log('MCP STDIO bridge connection established');
             // Set headers for persistent connection
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Cache-Control', 'no-cache');

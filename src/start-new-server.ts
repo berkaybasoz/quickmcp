@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 
-import { IntegratedMCPServer } from './src/integrated-mcp-server-new.js';
+import { IntegratedMCPServer } from './integrated-mcp-server-new';
 
 async function startServer() {
   const server = new IntegratedMCPServer();

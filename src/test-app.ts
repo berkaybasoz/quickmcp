@@ -1,5 +1,5 @@
-import { DataSourceParser } from './src/parsers';
-import { MCPServerGenerator } from './src/generators/MCPServerGenerator';
+import { DataSourceParser } from './parsers';
+import { MCPServerGenerator } from './generators/MCPServerGenerator';
 import * as fs from 'fs';
 import * as path from 'path';
 

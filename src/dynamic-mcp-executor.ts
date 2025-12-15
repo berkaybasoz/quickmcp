@@ -1,4 +1,4 @@
-import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager.js';
+import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';

@@ -12,7 +12,7 @@ import {
   GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
-import { DynamicMCPExecutor } from './dynamic-mcp-executor.js';
+import { DynamicMCPExecutor } from './dynamic-mcp-executor';
 
 export class IntegratedMCPServer {
   private server: Server;

@@ -37,7 +37,7 @@ class IntegratedMCPServer {
         this.server.setRequestHandler(types_js_1.ListResourcesRequestSchema, async () => {
             try {
                 const resources = await this.executor.getAllResources();
-                console.log(`📂 Listed ${resources.length} dynamic resources`);
+                //console.log(`📂 Listed ${resources.length} dynamic resources`);
                 return { resources };
             }
             catch (error) {
@@ -49,7 +49,7 @@ class IntegratedMCPServer {
         this.server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
             try {
                 const { name, arguments: args } = request.params;
-                console.log(`🔧 Executing dynamic tool: ${name}`);
+                //console.log(`🔧 Executing dynamic tool: ${name}`);
                 const result = await this.executor.executeTool(name, args || {});
                 return {
                     content: [
@@ -69,7 +69,7 @@ class IntegratedMCPServer {
         this.server.setRequestHandler(types_js_1.ReadResourceRequestSchema, async (request) => {
             try {
                 const { uri } = request.params;
-                console.log(`📖 Reading dynamic resource: ${uri}`);
+                //console.log(`📖 Reading dynamic resource: ${uri}`);
                 // Extract resource name from URI (e.g., "serverId__resourceName://list" -> "serverId__resourceName")
                 const resourceName = uri.split('://')[0];
                 const result = await this.executor.readResource(resourceName);
@@ -113,7 +113,7 @@ class IntegratedMCPServer {
                 else {
                     messageData = req.body;
                 }
-                console.log('🔄 Processing MCP message:', messageData.method || 'unknown');
+                //console.log('🔄 Processing MCP message:', messageData.method || 'unknown');
                 let response = null;
                 switch (messageData.method) {
                     case 'initialize':
@@ -177,7 +177,7 @@ class IntegratedMCPServer {
                         break;
                     case 'notifications/initialized':
                         // No response for notifications
-                        console.log('🔔 MCP client initialized');
+                        //console.log('🔔 MCP client initialized');
                         break;
                     default:
                         if (messageData.id) {
@@ -218,22 +218,22 @@ class IntegratedMCPServer {
     async start(port = 3001) {
         // Start HTTP server
         const httpServer = this.app.listen(port, () => {
-            console.log(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
+            //console.log(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
             const stats = this.executor.getStats();
-            console.log(`📊 Managing ${stats.servers} virtual servers with ${stats.tools} tools and ${stats.resources} resources`);
+            //console.log(`📊 Managing ${stats.servers} virtual servers with ${stats.tools} tools and ${stats.resources} resources`);
         });
         // Setup SSE transport for MCP - skip for now due to compatibility issues
         // const transport = new SSEServerTransport('/sse', httpServer);
         // await this.server.connect(transport);
-        console.log('✅ MCP server connected with dynamic SQLite-based execution (HTTP endpoints active)');
+        //console.log('✅ MCP server connected with dynamic SQLite-based execution (HTTP endpoints active)');
         // Graceful shutdown
         process.on('SIGINT', async () => {
-            console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
+            //console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
             await this.cleanup();
             process.exit(0);
         });
         process.on('SIGTERM', async () => {
-            console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
+            //console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
             await this.cleanup();
             process.exit(0);
         });
@@ -242,7 +242,7 @@ class IntegratedMCPServer {
         try {
             await this.server.close();
             await this.executor.close();
-            console.log('✅ Cleanup completed');
+            //console.log('✅ Cleanup completed');
         }
         catch (error) {
             console.error('❌ Error during cleanup:', error);
