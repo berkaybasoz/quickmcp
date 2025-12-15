@@ -4,14 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DynamicMCPExecutor = void 0;
-const sqlite_manager_js_1 = require("./database/sqlite-manager.js");
+const sqlite_manager_1 = require("./database/sqlite-manager");
 const mssql_1 = __importDefault(require("mssql"));
 const promise_1 = __importDefault(require("mysql2/promise"));
 const pg_1 = require("pg");
 class DynamicMCPExecutor {
     constructor() {
         this.dbConnections = new Map();
-        this.sqliteManager = new sqlite_manager_js_1.SQLiteManager();
+        this.sqliteManager = new sqlite_manager_1.SQLiteManager();
     }
     async getAllTools() {
         const tools = this.sqliteManager.getAllTools();

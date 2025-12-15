@@ -4,8 +4,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
-const DatabaseParser_js_1 = require("./parsers/DatabaseParser.js");
-const MCPServerGenerator_js_1 = require("./generators/MCPServerGenerator.js");
+const DatabaseParser_1 = require("./parsers/DatabaseParser");
+const MCPServerGenerator_1 = require("./generators/MCPServerGenerator");
 class QuickMCPServer {
     constructor() {
         this.currentConnection = null;
@@ -14,8 +14,8 @@ class QuickMCPServer {
             name: 'quickmcp-generator',
             version: '1.0.0'
         });
-        this.dbParser = new DatabaseParser_js_1.DatabaseParser();
-        this.generator = new MCPServerGenerator_js_1.MCPServerGenerator();
+        this.dbParser = new DatabaseParser_1.DatabaseParser();
+        this.generator = new MCPServerGenerator_1.MCPServerGenerator();
         this.setupHandlers();
     }
     setupHandlers() {

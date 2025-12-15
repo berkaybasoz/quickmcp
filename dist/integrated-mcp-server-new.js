@@ -8,10 +8,10 @@ exports.IntegratedMCPServer = void 0;
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const express_1 = __importDefault(require("express"));
-const dynamic_mcp_executor_js_1 = require("./dynamic-mcp-executor.js");
+const dynamic_mcp_executor_1 = require("./dynamic-mcp-executor");
 class IntegratedMCPServer {
     constructor() {
-        this.executor = new dynamic_mcp_executor_js_1.DynamicMCPExecutor();
+        this.executor = new dynamic_mcp_executor_1.DynamicMCPExecutor();
         this.server = new index_js_1.Server({
             name: 'quickmcp-integrated-server',
             version: '1.0.0'

@@ -1,4 +1,4 @@
-import { ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager.js';
+import { ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager';
 interface ParsedData {
     [tableName: string]: any[];
 }

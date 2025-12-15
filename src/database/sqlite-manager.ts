@@ -40,8 +40,16 @@ export class SQLiteManager {
   private dbPath: string;
 
   constructor() {
-    // Create database directory if it doesn't exist
-    const dbDir = path.join(process.cwd(), 'data');
+    // Resolve data directory relative to the project root (not process.cwd())
+    // This prevents attempts to write to "/data" when the process CWD is '/'.
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const configuredDir = process.env.QUICKMCP_DATA_DIR;
+    const dbDir = configuredDir
+      ? (path.isAbsolute(configuredDir)
+          ? configuredDir
+          : path.join(projectRoot, configuredDir))
+      : path.join(projectRoot, 'data');
+
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
     }

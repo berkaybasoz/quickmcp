@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MCPServerGenerator = void 0;
-const sqlite_manager_js_1 = require("../database/sqlite-manager.js");
+const sqlite_manager_1 = require("../database/sqlite-manager");
 class MCPServerGenerator {
     constructor() {
-        this.sqliteManager = new sqlite_manager_js_1.SQLiteManager();
+        this.sqliteManager = new sqlite_manager_1.SQLiteManager();
     }
     async generateServer(serverId, serverName, parsedData, dbConfig, selectedTables) {
         try {

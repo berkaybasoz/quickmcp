@@ -9,8 +9,15 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 class SQLiteManager {
     constructor() {
-        // Create database directory if it doesn't exist
-        const dbDir = path_1.default.join(process.cwd(), 'data');
+        // Resolve data directory relative to the project root (not process.cwd())
+        // This prevents attempts to write to "/data" when the process CWD is '/'.
+        const projectRoot = path_1.default.resolve(__dirname, '..', '..');
+        const configuredDir = process.env.QUICKMCP_DATA_DIR;
+        const dbDir = configuredDir
+            ? (path_1.default.isAbsolute(configuredDir)
+                ? configuredDir
+                : path_1.default.join(projectRoot, configuredDir))
+            : path_1.default.join(projectRoot, 'data');
         if (!fs_1.default.existsSync(dbDir)) {
             fs_1.default.mkdirSync(dbDir, { recursive: true });
         }

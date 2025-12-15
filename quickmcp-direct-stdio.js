@@ -2,8 +2,8 @@
 
 const path = require('path');
 
-// Change to the correct working directory first
-process.chdir('/Users/berkaybasoz/Documents/apps/quickmcp');
+// Use the current working directory provided by the caller.
+// Do not change directories; keep paths relative to this script.
 
 const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 
