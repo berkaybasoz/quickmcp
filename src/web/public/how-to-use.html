@@ -256,12 +256,16 @@
                                     <div class="flex space-x-4">
                                         <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">1</div>
                                         <div class="flex-1">
-                                            <h5 class="font-semibold text-gray-900">Make sure QuickMCP is running</h5>
-                                            <p class="text-gray-600 mb-2">Keep this application running with <code class="bg-gray-100 px-2 py-1 rounded">npm run dev</code></p>
-                                            <div class="flex items-center space-x-2 text-sm">
-                                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                <span class="text-green-700">Server is running</span>
+                                            <h5 class="font-semibold text-gray-900">Install and run QuickMCP (global)</h5>
+                                            <p class="text-gray-600 mb-2">Install globally and start the app:</p>
+                                            <div class="bg-gray-50 border border-gray-200 rounded-lg mb-3">
+                                                <pre class="p-3 text-sm overflow-x-auto"><code>npm i -g @softtechai/quickmcp</code></pre>
                                             </div>
+                                            <p class="text-gray-600 text-sm">Default ports:</p>
+                                            <ul class="text-sm text-gray-700 list-disc ml-6 mb-2">
+                                                <li>Web UI: <code class="bg-gray-100 px-1 rounded">http://localhost:3000</code></li>
+                                                <li>Socket/SSE transport: <code class="bg-gray-100 px-1 rounded">http://localhost:3001</code></li>
+                                            </ul>
                                         </div>
                                     </div>
 
@@ -287,9 +291,9 @@
                                                 </button>
                                                 <pre class="p-4 text-sm overflow-x-auto"><code>{
   "mcpServers": {
-    "quickmcp-stdio": {
-      "command": "/opt/homebrew/bin/node",
-      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    "quickmcp": {
+      "command": "npx", 
+      "args": ["-y", "@softtechai/quickmcp"]
     }
   }
 }</code></pre>
@@ -479,7 +483,7 @@
                                 <div class="border border-gray-200 rounded-lg p-4">
                                     <h4 class="font-semibold text-gray-900 mb-2">🔄 Server status shows offline</h4>
                                     <ul class="space-y-1 text-gray-600 text-sm">
-                                        <li>• Run <code class="bg-gray-100 px-1 rounded">npm run dev</code> in your QuickMCP directory</li>
+                                        <li>• Run <code class="bg-gray-100 px-1 rounded">npm i -g @softtechai/quickmcp</code> in your QuickMCP directory</li>
                                         <li>• Check if port 3001 is already in use</li>
                                         <li>• Look at the console for error messages</li>
                                     </ul>
