@@ -1,6 +1,6 @@
 {
   "name": "@softtechai/quickmcp",
-  "version": "1.0.9",
+  "version": "1.0.15",
   "description": "An application to generate MCP servers from various data sources and test them",
   "main": "dist/index.js",
   "bin": {

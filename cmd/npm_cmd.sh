@@ -48,15 +48,16 @@ npm list -g @softtechai/quickmcp --depth=0
 Paketin en son yayınlanan versiyonunu görmek için:
 npm info @softtechai/quickmcp version
 veya tüm bilgileri görmek için:
-npm info @softtech/quickmcp
+npm info @softtechai/quickmcp
 
 
 
-npm pkg set name=@softtech/quickmcp
+npm pkg set name=@softtechai/quickmcp
 
 en çok kullanılacaklar
 npm run build
 npm publish
-npm i -g @softtech/quickmcp
-npm list -g @softtech/quickmcp
+npm i -g @softtechai/quickmcp
+npm list -g @softtechai/quickmcp
+npm uninstall -g @softtechai/quickmcp
 
