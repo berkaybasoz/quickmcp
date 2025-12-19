@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["n8n-mcp"],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://9hret5g2.rcsrv.com",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYTI2YTQ2ZS00YjAyLTQ0OWUtYjhiYi1iNTFlNWRmYmQ1ZGQiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1Mzg1MzIyfQ.DdoBrhxlTW1XcG7uGgpKWsdHk7X394KI7V8CV8pY0HI"
+      }
+    },
+    "quickmcp-sdtio": {
+      "command": "node",
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/mcp-bridge-fixed.js"],
+      "env": {
+        "NODE_PATH": "/usr/local/lib/node_modules"
+      }
+    },
+    "quickmcp-sse": {
+      "command": "curl",
+      "args": ["-X", "POST", "http://localhost:3001/sse/message"],
+      "env": {
+        "MCP_TRANSPORT": "sse"
+      }
+    },
+     "simple-test": {
+      "command": "node",
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/simple-mcp-test.js"]
+    },
+    "quickmcp-stdio": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    },
+     "quickmcp-working": {
+      "command": "/opt/homebrew/bin/node", 
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    }
+  }
+}

@@ -7,8 +7,46 @@ const path = require('path');
 
 const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 
+// Parse CLI flags for convenience
+// Supported flags:
+//   --web | -w | web         -> explicitly enable web UI (default: enabled)
+//   --no-web                 -> disable web UI
+//   --port=NNNN              -> set PORT for web UI
+//   --data-dir=PATH          -> set QUICKMCP_DATA_DIR for sqlite
+const argv = process.argv.slice(2);
+const wantsWeb = argv.includes('--web') || argv.includes('-w') || argv.includes('web');
+const noWeb = argv.includes('--no-web');
+const portArg = argv.find(a => a.startsWith('--port='));
+const dataDirArg = argv.find(a => a.startsWith('--data-dir='));
+// Default behavior: Web UI enabled unless explicitly disabled
+if (noWeb || process.env.QUICKMCP_ENABLE_WEB === '0' || process.env.QUICKMCP_DISABLE_WEB === '1') {
+  process.env.QUICKMCP_ENABLE_WEB = '0';
+} else if (wantsWeb || process.env.QUICKMCP_ENABLE_WEB === '1' || process.env.QUICKMCP_ENABLE_WEB === undefined) {
+  process.env.QUICKMCP_ENABLE_WEB = '1';
+}
+if (portArg) {
+  const val = portArg.split('=')[1];
+  if (val) process.env.PORT = val;
+}
+if (dataDirArg) {
+  const val = dataDirArg.split('=')[1];
+  if (val) process.env.QUICKMCP_DATA_DIR = val;
+}
+
 // Create SQLite manager
 const sqliteManager = new SQLiteManager();
+
+// Optionally start the Web UI (Express) like `npm run dev`
+// Enable by setting QUICKMCP_ENABLE_WEB=1 (and optionally PORT, QUICKMCP_DATA_DIR)
+if (process.env.QUICKMCP_ENABLE_WEB === '1') {
+  try {
+    console.error('[QuickMCP] QUICKMCP_ENABLE_WEB=1 -> starting Web UI server...');
+    // This require starts the Express app and integrated MCP sidecar
+    require('./dist/web/server.js');
+  } catch (e) {
+    console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
+  }
+}
 
 // Diagnostics: print environment and mssql details to help debug Claude Desktop
 try {

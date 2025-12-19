@@ -3,6 +3,7 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
@@ -17,7 +18,13 @@ const upload = multer({ dest: 'uploads/' });
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Prefer the new UI under src/web/public if bundled, otherwise fall back to dist/web/public
+const distPublicDir = path.join(__dirname, 'public');
+const srcPublicDir = path.join(__dirname, '..', '..', 'src', 'web', 'public');
+const publicDir = fsSync.existsSync(srcPublicDir) ? srcPublicDir : distPublicDir;
+
+app.use(express.static(publicDir));
 
 const parser = new DataSourceParser();
 const generator = new MCPServerGenerator();
@@ -617,19 +624,19 @@ app.get('/api/servers/:id/export', (req, res) => {
 // Serve the main HTML page
 // Serve specific HTML files for different routes
 app.get('/manage-servers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'manage-servers.html'));
+  res.sendFile(path.join(publicDir, 'manage-servers.html'));
 });
 
 app.get('/test-servers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'test-servers.html'));
+  res.sendFile(path.join(publicDir, 'test-servers.html'));
 });
 
 app.get('/database-tables', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'database-tables.html'));
+  res.sendFile(path.join(publicDir, 'database-tables.html'));
 });
 
 app.get('/how-to-use', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'how-to-use.html'));
+  res.sendFile(path.join(publicDir, 'how-to-use.html'));
 });
 
 // Database tables API endpoints
@@ -885,7 +892,7 @@ app.post('/api/mcp-stdio', (req, res) => {
 
 // Serve index.html for root and any other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;

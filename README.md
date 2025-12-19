@@ -471,3 +471,83 @@ For issues and questions:
 ---
 
 Built with ❤️ using Node.js, TypeScript, and modern web technologies.
+
+## 📦 NPM/Npx Usage (Web UI by default)
+
+QuickMCP, NPM üzerinden çalıştırıldığında artık varsayılan olarak web arayüzünü başlatır.
+
+### Hızlı başlatma
+
+```bash
+npx -y @softtech/quickmcp
+# UI -> http://localhost:3000
+# Integrated MCP sidecar -> :3001
+```
+
+### İsteğe bağlı bayraklar
+
+- `--no-web`: Web UI’ı devre dışı bırakır (yalnızca stdio çalışır)
+- `--port=4000`: Web UI portunu değiştirir (varsayılan 3000)
+- `--data-dir=./data`: SQLite veri dizinini değiştirir
+
+Örnek:
+
+```bash
+npx -y @softtech/quickmcp --port=4000 --data-dir=./data
+```
+
+### Ortam değişkenleri
+
+- `QUICKMCP_ENABLE_WEB=1`: Web UI’ı etkinleştirir (varsayılan davranış)
+- `QUICKMCP_ENABLE_WEB=0` veya `QUICKMCP_DISABLE_WEB=1`: Web UI’ı kapatır
+- `PORT`: Web UI portu (varsayılan 3000)
+- `QUICKMCP_DATA_DIR`: SQLite veri dizini
+
+Örnek:
+
+```bash
+PORT=4000 QUICKMCP_DATA_DIR=./data npx -y @softtech/quickmcp
+```
+
+> Not: Web UI, stdio tabanlı MCP sunucusunun yanında yan servis olarak çalışır; Claude Desktop entegrasyonu ile çakışmaz.
+
+### Claude Desktop ile npx kullanımı
+
+`~/Library/Application Support/Claude/claude_desktop_config.json` içine örnek konfigürasyon:
+
+```json
+{
+  "mcpServers": {
+    "quickmcp": {
+      "command": "npx",
+      "args": ["-y", "@softtechai/quickmcp"]
+    }
+  }
+}
+```
+
+UI istemiyorsanız:
+
+```json
+{
+  "mcpServers": {
+    "quickmcp": {
+      "command": "npx",
+      "args": ["-y", "@softtechai/quickmcp", "--no-web"]
+    }
+  }
+}
+```
+
+Yerel stdio script yolunu kullanmak isterseniz (alternatif):
+
+```json
+{
+  "mcpServers": {
+    "quickmcp-local": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/path/to/quickmcp/quickmcp-direct-stdio.js"]
+    }
+  }
+}
+```

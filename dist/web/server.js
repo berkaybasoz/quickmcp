@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
+const fs_1 = __importDefault(require("fs"));
 const parsers_1 = require("../parsers");
 const MCPServerGenerator_1 = require("../generators/MCPServerGenerator");
 const MCPTestRunner_1 = require("../client/MCPTestRunner");
@@ -19,7 +20,11 @@ const app = (0, express_1.default)();
 const upload = (0, multer_1.default)({ dest: 'uploads/' });
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
-app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
+// Prefer the new UI under src/web/public if bundled, otherwise fall back to dist/web/public
+const distPublicDir = path_1.default.join(__dirname, 'public');
+const srcPublicDir = path_1.default.join(__dirname, '..', '..', 'src', 'web', 'public');
+const publicDir = fs_1.default.existsSync(srcPublicDir) ? srcPublicDir : distPublicDir;
+app.use(express_1.default.static(publicDir));
 const parser = new parsers_1.DataSourceParser();
 const generator = new MCPServerGenerator_1.MCPServerGenerator();
 const testRunner = new MCPTestRunner_1.MCPTestRunner();
@@ -534,16 +539,16 @@ app.get('/api/servers/:id/export', (req, res) => {
 // Serve the main HTML page
 // Serve specific HTML files for different routes
 app.get('/manage-servers', (req, res) => {
-    res.sendFile(path_1.default.join(__dirname, 'public', 'manage-servers.html'));
+    res.sendFile(path_1.default.join(publicDir, 'manage-servers.html'));
 });
 app.get('/test-servers', (req, res) => {
-    res.sendFile(path_1.default.join(__dirname, 'public', 'test-servers.html'));
+    res.sendFile(path_1.default.join(publicDir, 'test-servers.html'));
 });
 app.get('/database-tables', (req, res) => {
-    res.sendFile(path_1.default.join(__dirname, 'public', 'database-tables.html'));
+    res.sendFile(path_1.default.join(publicDir, 'database-tables.html'));
 });
 app.get('/how-to-use', (req, res) => {
-    res.sendFile(path_1.default.join(__dirname, 'public', 'how-to-use.html'));
+    res.sendFile(path_1.default.join(publicDir, 'how-to-use.html'));
 });
 // Database tables API endpoints
 app.get('/api/database/tables', (req, res) => {
@@ -764,7 +769,7 @@ app.post('/api/mcp-stdio', (req, res) => {
 });
 // Serve index.html for root and any other routes
 app.get('*', (req, res) => {
-    res.sendFile(path_1.default.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path_1.default.join(publicDir, 'index.html'));
 });
 const PORT = process.env.PORT || 3000;
 const MCP_PORT = 3001;
