@@ -28,5 +28,16 @@
     "quickmcp_npx": {
       "command": "npx", 
       "args": ["-y", "quickmcp"]
+    },
+    "quickmcp_port": {
+      "command": "npx", 
+      "args": ["-y", "quickmcp"],
+      "env": { "PORT": "3000" }
+    },
+    "quickmcp_port_2": {
+      "command": "npx", 
+      "args": ["-y", "quickmcp", "--port=3000"],
+      "env": { "PORT": "3000" }
     }
+}
 }

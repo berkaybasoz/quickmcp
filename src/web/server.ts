@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import fsSync from 'fs';
+import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
@@ -14,7 +15,19 @@ import { SQLiteManager } from '../database/sqlite-manager';
 import Database from 'better-sqlite3';
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+
+// Resolve a writable uploads directory that works under npx (CWD may be '/')
+// Priority: QUICKMCP_UPLOAD_DIR -> os.tmpdir()/quickmcp-uploads
+const configuredUploadDir = process.env.QUICKMCP_UPLOAD_DIR;
+const defaultUploadDir = path.join(os.tmpdir(), 'quickmcp-uploads');
+const uploadDir = configuredUploadDir
+  ? (path.isAbsolute(configuredUploadDir)
+      ? configuredUploadDir
+      : path.join(process.cwd(), configuredUploadDir))
+  : defaultUploadDir;
+
+try { fsSync.mkdirSync(uploadDir, { recursive: true }); } catch {}
+const upload = multer({ dest: uploadDir });
 
 app.use(cors());
 app.use(express.json());
