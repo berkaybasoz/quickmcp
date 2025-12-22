@@ -60,9 +60,14 @@
             <!-- Divider -->
             <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
 
-            <!-- Breadcrumb / Title -->
+            <!-- Breadcrumb / Title or Action -->
             <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
                 <span id="pageTitle">Generate Server</span>
+                <button id="headerNewServerBtn" onclick="window.location.href='/'"
+                    class="hidden items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-3 py-1.5 rounded-lg font-medium transition-colors shadow-sm">
+                    <i class="fas fa-plus"></i>
+                    <span>New Server</span>
+                </button>
             </div>
         </div>
 
@@ -133,7 +138,7 @@
                     </div>
                 </a>
 
-                <a href="/manage-servers" data-tab="manage"
+                <a href="/manage-servers"
                     class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
                     <div class="relative">
                         <div
@@ -475,22 +480,7 @@
                         </div>
                     </div>
 
-                    <!-- Manage Servers Tab -->
-                    <div id="manage-tab" class="tab-content hidden animate-fade-in">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 class="text-3xl font-bold text-slate-900">Manage Servers</h2>
-                                <p class="text-slate-600 mt-1">View and control your generated servers.</p>
-                            </div>
-                            <button onclick="window.location.href='/'"
-                                class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
-                                <i class="fas fa-plus mr-2"></i> New Server
-                            </button>
-                        </div>
-                        <div id="server-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- Server cards populated by JS -->
-                        </div>
-                    </div>
+                    
 
                     <!-- Test Servers Tab -->
                     <div id="test-tab" class="tab-content hidden animate-fade-in">
@@ -593,6 +583,8 @@
                 </div>
             </div>
         </div>
+
+        
     </div>
 
     <!-- Success Modal -->

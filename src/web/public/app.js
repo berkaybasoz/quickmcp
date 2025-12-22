@@ -144,21 +144,44 @@ function switchTabByRoute(tabName) {
     // Update page title
     const pageTitle = document.getElementById('pageTitle');
     const pageSubtitle = pageTitle?.nextElementSibling;
+    const headerNewServerBtn = document.getElementById('headerNewServerBtn');
 
     if (pageTitle) {
         switch(tabName) {
             case 'generate':
                 pageTitle.textContent = 'Generate Server';
                 if (pageSubtitle) pageSubtitle.textContent = 'Create powerful MCP servers from your data';
+                // Show title, hide New button
+                pageTitle.classList.remove('hidden');
+                headerNewServerBtn?.classList.add('hidden');
                 break;
             case 'manage':
                 pageTitle.textContent = 'Manage Servers';
                 if (pageSubtitle) pageSubtitle.textContent = 'Manage and deploy your created MCP servers';
+                // Hide title, show New button near logo
+                pageTitle.classList.add('hidden');
+                headerNewServerBtn?.classList.remove('hidden');
                 break;
             case 'test':
                 pageTitle.textContent = 'Test Servers';
                 if (pageSubtitle) pageSubtitle.textContent = 'Run automated tests or create custom test scenarios';
+                // Show title, hide New button
+                pageTitle.classList.remove('hidden');
+                headerNewServerBtn?.classList.add('hidden');
                 break;
+        }
+    }
+
+    // Ensure Server Details side panel only on Manage
+    const detailsPanel = document.getElementById('server-details-panel');
+    if (detailsPanel) {
+        // Always start hidden; override responsive display too
+        detailsPanel.classList.add('hidden', 'lg:hidden');
+        detailsPanel.classList.remove('lg:flex');
+        if (tabName !== 'manage') {
+            // Ensure it stays hidden outside Manage
+            detailsPanel.classList.add('hidden', 'lg:hidden');
+            detailsPanel.classList.remove('lg:flex');
         }
     }
 
@@ -1190,7 +1213,12 @@ async function viewServer(serverId) {
             console.log('🔍 Server data structure:', result.data);
             console.log('🔍 Config tools:', result.data?.config?.tools);
             console.log('🔍 Config resources:', result.data?.config?.resources);
-            showServerDetailsModal(result.data);
+            // Prefer right-side panel if available; otherwise fall back to modal
+            if (document.getElementById('server-details-panel')) {
+                showServerDetailsPanel(result.data);
+            } else {
+                showServerDetailsModal(result.data);
+            }
         } else {
             console.error('❌ Failed to load server details:', result.error);
             alert('Failed to load server details: ' + result.error);
@@ -1199,6 +1227,88 @@ async function viewServer(serverId) {
         console.error('❌ Error loading server details:', error);
         alert('Error loading server details: ' + error.message);
     }
+}
+
+function showServerDetailsPanel(serverData) {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+
+    const config = serverData?.config || {};
+    const tools = config.tools || [];
+    const resources = config.resources || [];
+    const serverName = config.name || 'Unknown Server';
+    const serverDescription = config.description || 'No description available';
+    const serverId = serverData.id || serverData.config?.id || 'unknown';
+
+    const inner = `
+        <div class="p-6 border-b border-slate-200/60 bg-white">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
+                    <i class="fas fa-wrench text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                    <p class="text-slate-500 text-xs leading-none font-medium">Selected Server</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
+                <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">${tools.length}</div>
+                    <div class="text-sm text-slate-500">Tools</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">${resources.length}</div>
+                    <div class="text-sm text-slate-500">Resources</div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-slate-700 font-semibold text-sm mb-2">Tools</label>
+                <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
+                    ${tools.length > 0 ? tools.map(tool => `
+                        <div class="flex flex-col">
+                            <div class="font-medium text-slate-900">${tool.name || 'Unnamed Tool'}</div>
+                            <div class="text-xs text-slate-600">${tool.description || 'No description'}</div>
+                        </div>
+                    `).join('') : '<div class="text-slate-500 text-sm">No tools available</div>'}
+                </div>
+            </div>
+            <div>
+                <label class="block text-slate-700 font-semibold text-sm mb-2">Resources</label>
+                <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
+                    ${resources.length > 0 ? resources.map(resource => `
+                        <div class="flex flex-col">
+                            <div class="font-medium text-slate-900">${resource.name || 'Unnamed Resource'}</div>
+                            <div class="text-xs text-slate-600">${resource.description || 'No description'}</div>
+                            <div class="text-[11px] text-slate-500 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
+                        </div>
+                    `).join('') : '<div class="text-slate-500 text-sm">No resources available</div>'}
+                </div>
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="testServer('${serverId}')" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all duration-200">
+                        <i class="fas fa-vial mr-1"></i>
+                        Test
+                    </button>
+                    <button onclick="deleteServer('${serverId}')" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-all duration-200">
+                        <i class="fas fa-trash mr-1"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    panel.innerHTML = inner;
+    // Show panel on large screens; clear hidden flags
+    panel.classList.remove('hidden', 'lg:hidden');
+    panel.classList.add('lg:flex');
 }
 
 function showServerDetailsModal(serverData) {
@@ -1268,10 +1378,6 @@ function showServerDetailsModal(serverData) {
                             <button onclick="testServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
                                 <i class="fas fa-vial mr-2"></i>
                                 Test Server
-                            </button>
-                            <button onclick="exportServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
-                                <i class="fas fa-download mr-2"></i>
-                                Export Server
                             </button>
                             <button onclick="deleteServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
                                 <i class="fas fa-trash mr-2"></i>
