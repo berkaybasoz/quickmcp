@@ -1,6 +1,8 @@
 let currentParsedData = null;
 let currentDataSource = null;
 let currentWizardStep = 1;
+let allServers = [];
+let serverSearchTimer = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -64,6 +66,20 @@ function setupEventListeners() {
     
     // Test server select change handler for loading tools
     document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
+
+    // Server search filter (Manage page)
+    const serverSearchInput = document.getElementById('serverSearch');
+    if (serverSearchInput) {
+        serverSearchInput.addEventListener('input', () => {
+            if (serverSearchTimer) clearTimeout(serverSearchTimer);
+            serverSearchTimer = setTimeout(() => {
+                const query = serverSearchInput.value || '';
+                const filtered = filterServers(allServers, query);
+                displayServers(filtered);
+                updateServerSearchCount(filtered.length, allServers.length);
+            }, 200);
+        });
+    }
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
@@ -709,13 +725,21 @@ async function loadServers() {
         const result = await response.json();
 
         if (result.success) {
-            displayServers(result.data);
+            allServers = Array.isArray(result.data) ? result.data : [];
+            const query = document.getElementById('serverSearch')?.value || '';
+            const filtered = filterServers(allServers, query);
+            displayServers(filtered);
+            updateServerSearchCount(filtered.length, allServers.length);
         } else {
+            allServers = [];
             displayServers([]);
+            updateServerSearchCount(0, 0);
         }
     } catch (error) {
         console.error('Failed to load servers:', error);
+        allServers = [];
         displayServers([]);
+        updateServerSearchCount(0, 0);
     }
 }
 
@@ -743,62 +767,69 @@ function displayServers(servers) {
         return;
     }
 
-    let html = '';
-    servers.forEach(server => {
-        html += `
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
-                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">${server.name}</h3>
-                            <p class="text-sm text-gray-600">${server.description}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-server text-white"></i>
-                        </div>
-                    </div>
+    // Build list view: clean, compact, zebra rows
+    const headerHtml = `
+        <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border border-slate-200 rounded-t-xl text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+            <div class="col-span-5">Name</div>
+            <div class="col-span-2">Version</div>
+            <div class="col-span-2">Tools</div>
+            <div class="col-span-2">Resources</div>
+            <div class="col-span-1 text-right">Actions</div>
+        </div>`;
+
+    const rowsHtml = servers.map(server => `
+        <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
+            <div class="md:col-span-5 min-w-0 pr-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="hidden md:inline-flex w-6 h-6 items-center justify-center rounded-md bg-blue-100 text-blue-600"><i class="fas fa-server text-xs"></i></span>
+                    <span class="font-semibold text-slate-900 truncate">${server.name}</span>
                 </div>
-
-                <div class="p-6">
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-blue-600">${server.toolsCount}</div>
-                            <div class="text-sm text-gray-500">Tools</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600">${server.resourcesCount}</div>
-                            <div class="text-sm text-gray-500">Resources</div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">v${server.version}</span>
-                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${server.promptsCount} prompts</span>
-                    </div>
-
-                    <div class="space-y-2">
-                        <button class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200" onclick="viewServer('${server.id}')">
-                            <i class="fas fa-eye mr-2"></i>
-                            View Details
-                        </button>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="testServer('${server.id}')">
-                                <i class="fas fa-vial text-xs mr-1"></i>
-                                Test
-                            </button>
-                            <button class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200" onclick="deleteServer('${server.id}')">
-                                <i class="fas fa-trash text-xs mr-1"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
-        `;
-    });
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">v${server.version || '1.0.0'}</span>
+            </div>
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.toolsCount ?? 0}</div>
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.resourcesCount ?? 0}</div>
+            <div class="md:col-span-1 mt-3 md:mt-0 flex items-center justify-between md:justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <button class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
+                    <i class="fas fa-vial"></i>
+                </button>
+                <button class="bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="deleteServer('${server.id}')" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
 
-    serverList.innerHTML = html;
+    serverList.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            ${headerHtml}
+            <div class="divide-y divide-slate-200 md:divide-y-0">${rowsHtml}</div>
+        </div>
+    `;
+}
+
+function filterServers(servers, query) {
+    if (!query) return servers || [];
+    const q = query.toLowerCase();
+    return (servers || []).filter(s =>
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.description && s.description.toLowerCase().includes(q))
+    );
+}
+
+function updateServerSearchCount(visible, total) {
+    const el = document.getElementById('serverSearchCount');
+    if (!el) return;
+    if (total === 0) {
+        el.textContent = '';
+    } else {
+        el.textContent = `${visible} / ${total}`;
+    }
 }
 
 // Load test servers
