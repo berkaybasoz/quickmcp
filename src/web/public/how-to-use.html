@@ -178,6 +178,17 @@
                         <p class="text-gray-600">Learn how to integrate your generated MCP servers with Claude Desktop and other platforms</p>
                     </div>
 
+                    
+
+                    <!-- Tabs Navigation -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mb-6">
+                        <div class="flex border-b border-gray-200/60">
+                            <button id="tabBtnInstallation" class="flex-1 px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border-r border-gray-200/60" onclick="switchTab('installation')">Installation</button>
+                            <button id="tabBtnData" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r border-gray-200/60" onclick="switchTab('data')">Data Configuration</button>
+                            <button id="tabBtnSetup" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50" onclick="switchTab('setup')">Claude Desktop Setup</button>
+                        </div>
+                    </div>
+
                     <!-- Tab: Data Configuration -->
                     <div id="tab-data" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hidden">
                         <div class="bg-gradient-to-r from-indigo-50 to-sky-50 p-6 border-b border-gray-200/50">
@@ -243,15 +254,6 @@
                                 <p class="text-sm text-gray-600 mb-3">Open a server to review all generated tools, resources, and their descriptions.</p>
                                 <img src="/images/8-generated-servers-view-details.png" alt="Server Details" class="w-full rounded border border-gray-200 shadow-sm">
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabs Navigation -->
-                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mb-6">
-                        <div class="flex border-b border-gray-200/60">
-                            <button id="tabBtnInstallation" class="flex-1 px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border-r border-gray-200/60" onclick="switchTab('installation')">Installation</button>
-                            <button id="tabBtnData" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r border-gray-200/60" onclick="switchTab('data')">Data Configuration</button>
-                            <button id="tabBtnSetup" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50" onclick="switchTab('setup')">Claude Desktop Setup</button>
                         </div>
                     </div>
 
