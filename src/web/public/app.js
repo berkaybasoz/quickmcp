@@ -925,7 +925,8 @@ async function runAutoTests(runAll = false) {
     }
 
     const loading = document.getElementById('test-loading');
-    const loadingText = document.getElementById('loadingText');
+    // Reuse the visible loading element to show status text
+    const loadingText = document.getElementById('test-loading');
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
@@ -938,15 +939,15 @@ async function runAutoTests(runAll = false) {
     
     if (runAll) {
         // Show loading spinner in button
-        fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
-        fullBtnText.textContent = 'Testing All Tools...';
-        fullBtn.disabled = true;
-        quickBtn.disabled = true;
-        loadingText.textContent = 'Running all tests... This may take a while.';
+        if (fullBtnIcon) fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
+        if (fullBtnText) fullBtnText.textContent = 'Testing All Tools...';
+        if (fullBtn) fullBtn.disabled = true;
+        if (quickBtn) quickBtn.disabled = true;
+        if (loadingText) loadingText.textContent = 'Running all tests... This may take a while.';
     } else {
-        quickBtn.disabled = true;
-        fullBtn.disabled = true;
-        loadingText.textContent = 'Running quick tests...';
+        if (quickBtn) quickBtn.disabled = true;
+        if (fullBtn) fullBtn.disabled = true;
+        if (loadingText) loadingText.textContent = 'Running quick tests...';
     }
 
     loading?.classList.remove('hidden');
@@ -980,8 +981,8 @@ async function runAutoTests(runAll = false) {
         if (quickBtn) quickBtn.disabled = false;
         if (fullBtn) {
             fullBtn.disabled = false;
-            fullBtnIcon.className = 'fas fa-play-circle mr-2';
-            fullBtnText.textContent = 'Run Auto Tests';
+            if (fullBtnIcon) fullBtnIcon.className = 'fas fa-play-circle mr-2';
+            if (fullBtnText) fullBtnText.textContent = 'Run Auto Tests';
         }
     }
 }
