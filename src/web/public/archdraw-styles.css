@@ -1,0 +1,192 @@
+/* Archdraw Custom Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Modern Color Palette */
+  --color-primary: 59 130 246; /* blue-500 */
+  --color-primary-dark: 37 99 235; /* blue-600 */
+  --color-secondary: 99 102 241; /* indigo-500 */
+  --color-accent: 16 185 129; /* emerald-500 */
+  --color-warning: 245 158 11; /* amber-500 */
+  --color-danger: 239 68 68; /* red-500 */
+  
+  /* Neutral Colors */
+  --color-gray-50: 248 250 252;
+  --color-gray-100: 241 245 249;
+  --color-gray-200: 226 232 240;
+  --color-gray-300: 203 213 225;
+  --color-gray-400: 148 163 184;
+  --color-gray-500: 100 116 139;
+  --color-gray-600: 71 85 105;
+  --color-gray-700: 51 65 85;
+  --color-gray-800: 30 41 59;
+  --color-gray-900: 15 23 42;
+  
+  /* Background Colors */
+  --bg-primary: rgb(255 255 255);
+  --bg-secondary: rgb(248 250 252);
+  --bg-tertiary: rgb(241 245 249);
+  
+  /* Text Colors */
+  --text-primary: rgb(15 23 42);
+  --text-secondary: rgb(51 65 85);
+  --text-tertiary: rgb(100 116 139);
+  
+  /* Border & Shadow */
+  --border-color: rgb(226 232 240);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+html {
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variation-settings: normal;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  overflow-x: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Modern Scrollbar */
+.scrollbar-modern {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 3px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
+}
+
+.dark .scrollbar-modern {
+  scrollbar-color: rgb(75 85 99) transparent;
+}
+
+.dark .scrollbar-modern::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99);
+}
+
+.dark .scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128);
+}
+
+/* Glass effect */
+.glass {
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.dark .glass {
+  background: rgba(31, 41, 55, 0.8);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Card Styles */
+.card {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem; /* rounded-xl */
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .card {
+  background-color: var(--color-gray-800);
+  border-color: var(--color-gray-700);
+}
+
+.card-hover {
+  transition: all 0.3s;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-0.25rem); /* -translate-y-1 */
+}
+
+/* Input Styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem; /* px-4 py-3 */
+  font-size: 0.875rem; /* text-sm */
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0.75rem; /* rounded-xl */
+  background-color: transparent;
+  color: var(--color-gray-900);
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgb(59 130 246); /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.dark .input {
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-100);
+}
+
+.dark .input:focus {
+  border-color: rgb(96 165 250); /* blue-400 */
+}
