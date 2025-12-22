@@ -178,6 +178,135 @@
                         <p class="text-gray-600">Learn how to integrate your generated MCP servers with Claude Desktop and other platforms</p>
                     </div>
 
+                    <!-- Tab: Data Configuration -->
+                    <div id="tab-data" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hidden">
+                        <div class="bg-gradient-to-r from-indigo-50 to-sky-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-sky-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-database text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Configure Your Data</h3>
+                                    <p class="text-sm text-gray-600">Connect sources, preview tables, and generate your MCP server</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-6">
+                            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                <h4 class="font-semibold text-gray-900 mb-2">1) Start from Generate Server</h4>
+                                <p class="text-sm text-gray-600 mb-3">Open the Generate Server page to begin creating an MCP server from your data.</p>
+                                <img src="/images/1-generate-servers.png" alt="Generate Server" class="w-full rounded border border-gray-200 shadow-sm">
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">2) Connect a Database</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Provide connection details for MSSQL, MySQL, PostgreSQL, or SQLite and test the connection.</p>
+                                    <img src="/images/2-database-connection.png" alt="Database Connection" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">Or Upload Files</h4>
+                                    <p class="text-sm text-gray-600 mb-3">You can also upload CSV/Excel files to generate tools from spreadsheet data.</p>
+                                    <img src="/images/2-file-upload.png" alt="Data Preview" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">3) Preview Tables & Columns</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Review table schemas and sample rows to verify data types and structure.</p>
+                                    <img src="/images/4-data-preview2.png" alt="Detailed Data Preview" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">4) Configure Server Tools</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Pick which tables and operations (GET/CREATE/UPDATE/DELETE and aggregations) to expose.</p>
+                                    <img src="/images/5-server-configuration.png" alt="Server Configuration" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">5) Generate</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Confirm and generate. A summary modal shows how many tools/resources were created.</p>
+                                    <img src="/images/6-server-generated-modal.png" alt="Server Generated" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-gray-900 mb-2">6) Manage Servers</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Use Manage Servers to list, test, or delete generated servers.</p>
+                                    <img src="/images/7-generated-servers.png" alt="Manage Servers" class="w-full rounded border border-gray-200 shadow-sm">
+                                </div>
+                            </div>
+
+                            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                <h4 class="font-semibold text-gray-900 mb-2">7) Inspect Details</h4>
+                                <p class="text-sm text-gray-600 mb-3">Open a server to review all generated tools, resources, and their descriptions.</p>
+                                <img src="/images/8-generated-servers-view-details.png" alt="Server Details" class="w-full rounded border border-gray-200 shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Navigation -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mb-6">
+                        <div class="flex border-b border-gray-200/60">
+                            <button id="tabBtnInstallation" class="flex-1 px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50 border-r border-gray-200/60" onclick="switchTab('installation')">Installation</button>
+                            <button id="tabBtnData" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 border-r border-gray-200/60" onclick="switchTab('data')">Data Configuration</button>
+                            <button id="tabBtnSetup" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50" onclick="switchTab('setup')">Claude Desktop Setup</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Installation -->
+                    <div id="tab-installation" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-download text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">Install and Run</h3>
+                                    <p class="text-sm text-gray-600">Global install or npx usage</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2">Global installation</h4>
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg">
+                                    <pre class="p-3 text-sm overflow-x-auto"><code>npm i -g @softtechai/quickmcp</code></pre>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2">Run</h4>
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg">
+                                    <pre class="p-3 text-sm overflow-x-auto"><code>quickmcp</code></pre>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-600">
+                                    <strong>Note:</strong> Tools like Claude Desktop may automatically start QuickMCP on launch.
+                                    The “Run” step here is mainly to open the web UI so you can configure which data sources
+                                    you want to expose via the MCP server. After you save your MCP Server settings once, you
+                                    do not need to manually run <code class="bg-gray-100 px-1 rounded">quickmcp</code> every time
+                                    you start Claude Desktop.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2">Run with npx (no install)</h4>
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg">
+                                    <pre class="p-3 text-sm overflow-x-auto"><code>npx -y @softtechai/quickmcp</code></pre>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2">Default ports</h4>
+                                <ul class="text-gray-700 text-sm list-disc ml-6">
+                                    <li>Web UI: <code class="bg-gray-100 px-1 rounded">http://localhost:3000</code></li>
+                                    <li>MCP SSE/Socket: <code class="bg-gray-100 px-1 rounded">http://localhost:3001</code> (Claude integration)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Setup (wraps all other content) -->
+                    <div id="tab-setup" class="hidden">
+
                     <!-- Method Selection -->
                     <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
                         <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
@@ -365,78 +494,70 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Individual Method -->
-                    <div id="individualMethod" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden" style="display: none;">
-                        <div class="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 border-b border-gray-200/50">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-box text-white"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">Individual Export Method</h3>
-                                    <p class="text-sm text-gray-600">Export and configure each server separately</p>
+                        <!-- Individual Method (moved inside Setup tab) -->
+                        <div id="individualMethod" class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mt-6" style="display: none;">
+                            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 border-b border-gray-200/50">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-box text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">Individual Export Method</h3>
+                                        <p class="text-sm text-gray-600">Export and configure each server separately</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="p-6 space-y-6">
-                            <!-- Advantages -->
-                            <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                                <h4 class="font-semibold text-orange-900 mb-3">✅ Advantages</h4>
-                                <ul class="space-y-2 text-orange-800">
-                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Independent server management</li>
-                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Clean tool naming without prefixes</li>
-                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Better performance for individual servers</li>
-                                    <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Portable server packages</li>
-                                </ul>
-                            </div>
+                            <div class="p-6 space-y-6">
+                                <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                                    <h4 class="font-semibold text-orange-900 mb-3">✅ Advantages</h4>
+                                    <ul class="space-y-2 text-orange-800">
+                                        <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Independent server management</li>
+                                        <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Clean tool naming without prefixes</li>
+                                        <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Better performance for individual servers</li>
+                                        <li class="flex items-center"><i class="fas fa-check-circle mr-2"></i>Portable server packages</li>
+                                    </ul>
+                                </div>
 
-                            <!-- Export Process -->
-                            <div class="space-y-6">
-                                <h4 class="text-lg font-semibold text-gray-900">🚀 Export Process for Claude Desktop</h4>
-                                
-                                <div class="space-y-4">
-                                    <!-- Step 1 -->
-                                    <div class="flex space-x-4">
-                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">1</div>
-                                        <div class="flex-1">
-                                            <h5 class="font-semibold text-gray-900">Go to Manage Servers</h5>
-                                            <p class="text-gray-600">Navigate to the <a href="/manage-servers" class="text-blue-600 hover:text-blue-700">Manage Servers</a> page.</p>
+                                <div class="space-y-6">
+                                    <h4 class="text-lg font-semibold text-gray-900">🚀 Export Process for Claude Desktop</h4>
+
+                                    <div class="space-y-4">
+                                        <div class="flex space-x-4">
+                                            <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">1</div>
+                                            <div class="flex-1">
+                                                <h5 class="font-semibold text-gray-900">Go to Manage Servers</h5>
+                                                <p class="text-gray-600">Navigate to the <a href="/manage-servers" class="text-blue-600 hover:text-blue-700">Manage Servers</a> page.</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Step 2 -->
-                                    <div class="flex space-x-4">
-                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">2</div>
-                                        <div class="flex-1">
-                                            <h5 class="font-semibold text-gray-900">Export Your Server</h5>
-                                            <p class="text-gray-600">Click the "Export" button for the server you want to use.</p>
+                                        <div class="flex space-x-4">
+                                            <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">2</div>
+                                            <div class="flex-1">
+                                                <h5 class="font-semibold text-gray-900">Export Your Server</h5>
+                                                <p class="text-gray-600">Click the "Export" button for the server you want to use.</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Step 3 -->
-                                    <div class="flex space-x-4">
-                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">3</div>
-                                        <div class="flex-1">
-                                            <h5 class="font-semibold text-gray-900">Extract and Install</h5>
-                                            <p class="text-gray-600">Extract the downloaded package and run <code class="bg-gray-100 px-2 py-1 rounded">npm install</code> in the extracted folder.</p>
+                                        <div class="flex space-x-4">
+                                            <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">3</div>
+                                            <div class="flex-1">
+                                                <h5 class="font-semibold text-gray-900">Extract and Install</h5>
+                                                <p class="text-gray-600">Extract the downloaded package and run <code class="bg-gray-100 px-2 py-1 rounded">npm install</code> in the extracted folder.</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Step 4 -->
-                                    <div class="flex space-x-4">
-                                        <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">4</div>
-                                        <div class="flex-1">
-                                            <h5 class="font-semibold text-gray-900">Configure Claude Desktop</h5>
-                                            <p class="text-gray-600 mb-3">Add the server to your Claude Desktop config:</p>
-                                            
-                                            <div class="relative bg-gray-50 border border-gray-200 rounded-lg">
-                                                <button class="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors" onclick="copyConfig('claude-individual')">
-                                                    <i class="fas fa-copy mr-1"></i>Copy
-                                                </button>
-                                                <pre class="p-4 text-sm overflow-x-auto"><code>{
+                                        <div class="flex space-x-4">
+                                            <div class="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">4</div>
+                                            <div class="flex-1">
+                                                <h5 class="font-semibold text-gray-900">Configure Claude Desktop</h5>
+                                                <p class="text-gray-600 mb-3">Add the server to your Claude Desktop config:</p>
+
+                                                <div class="relative bg-gray-50 border border-gray-200 rounded-lg">
+                                                    <button class="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors" onclick="copyConfig('claude-individual')">
+                                                        <i class="fas fa-copy mr-1"></i>Copy
+                                                    </button>
+                                                    <pre class="p-4 text-sm overflow-x-auto"><code>{
   "mcpServers": {
     "your-server-name": {
       "command": "node",
@@ -444,63 +565,58 @@
     }
   }
 }</code></pre>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Troubleshooting -->
-                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-                        <div class="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-200/50">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-wrench text-white"></i>
+                        <!-- Troubleshooting (moved inside Setup tab) -->
+                        <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden mt-6">
+                            <div class="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-200/50">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-wrench text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">Troubleshooting</h3>
+                                        <p class="text-sm text-gray-600">Common issues and solutions</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">Troubleshooting</h3>
-                                    <p class="text-sm text-gray-600">Common issues and solutions</p>
+                            </div>
+
+                            <div class="p-6 space-y-6">
+                                <div class="space-y-4">
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-900 mb-2">❌ Tools not showing up in Claude Desktop</h4>
+                                        <ul class="space-y-1 text-gray-600 text-sm">
+                                            <li>• Ensure QuickMCP is running (http://localhost:3000 reachable)</li>
+                                            <li>• Verify Claude config; restart Claude Desktop</li>
+                                            <li>• Ensure port 3001 is not blocked (firewall)</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-900 mb-2">🔄 Server status shows offline</h4>
+                                        <ul class="space-y-1 text-gray-600 text-sm">
+                                            <li>• Check if port 3001 is already in use</li>
+                                            <li>• Look at console logs for errors</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="p-6 space-y-6">
-                            <div class="space-y-4">
-                                <!-- Issue 1 -->
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <h4 class="font-semibold text-gray-900 mb-2">❌ Tools not showing up in Claude Desktop</h4>
-                                    <ul class="space-y-1 text-gray-600 text-sm">
-                                        <li>• Make sure QuickMCP is running (check server status above)</li>
-                                        <li>• Verify the configuration is correct in Claude Desktop</li>
-                                        <li>• Restart Claude Desktop completely</li>
-                                        <li>• Check that port 3001 is not blocked by firewall</li>
-                                    </ul>
-                                </div>
-
-                                <!-- Issue 2 -->
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <h4 class="font-semibold text-gray-900 mb-2">🔄 Server status shows offline</h4>
-                                    <ul class="space-y-1 text-gray-600 text-sm">
-                                        <li>• Run <code class="bg-gray-100 px-1 rounded">npm i -g @softtechai/quickmcp</code> in your QuickMCP directory</li>
-                                        <li>• Check if port 3001 is already in use</li>
-                                        <li>• Look at the console for error messages</li>
-                                    </ul>
-                                </div>
-
-                                <!-- Issue 3 -->
-                                <div class="border border-gray-200 rounded-lg p-4">
-                                    <h4 class="font-semibold text-gray-900 mb-2">⚠️ Individual exported servers not working</h4>
-                                    <ul class="space-y-1 text-gray-600 text-sm">
-                                        <li>• Make sure you ran <code class="bg-gray-100 px-1 rounded">npm install</code> in the exported folder</li>
-                                        <li>• Check that the path in Claude Desktop config is correct</li>
-                                        <li>• Ensure Node.js is installed and accessible</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+
+                        
+                    </div>
+
+                    
+                </div>
+                <!-- Close Setup Tab Wrapper -->
                 </div>
             </main>
         </div>
@@ -510,6 +626,33 @@
     <script src="shared.js"></script>
     <script src="app.js"></script>
     <script>
+        function switchTab(which) {
+            const panels = {
+                installation: document.getElementById('tab-installation'),
+                data: document.getElementById('tab-data'),
+                setup: document.getElementById('tab-setup')
+            };
+            const buttons = {
+                installation: document.getElementById('tabBtnInstallation'),
+                data: document.getElementById('tabBtnData'),
+                setup: document.getElementById('tabBtnSetup')
+            };
+            Object.keys(panels).forEach(key => {
+                const active = (key === which);
+                if (panels[key]) panels[key].classList.toggle('hidden', !active);
+                if (buttons[key]) {
+                    if (active) {
+                        buttons[key].classList.add('text-blue-700','bg-blue-50');
+                        buttons[key].classList.remove('text-gray-700');
+                    } else {
+                        buttons[key].classList.remove('text-blue-700','bg-blue-50');
+                        buttons[key].classList.add('text-gray-700');
+                    }
+                }
+            });
+        }
+        // Default tab
+        switchTab('installation');
         // Method switching functionality
         function showMethod(method) {
             const integratedMethod = document.getElementById('integratedMethod');
