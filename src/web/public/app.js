@@ -67,19 +67,33 @@ function setupEventListeners() {
     // Test server select change handler for loading tools
     document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
 
-    // Server search filter (Manage page)
+    // Server search & filters (Manage page)
     const serverSearchInput = document.getElementById('serverSearch');
+    const versionInput = document.getElementById('serverVersionFilter');
+    const minToolsInput = document.getElementById('minToolsFilter');
+    const minResourcesInput = document.getElementById('minResourcesFilter');
+    const sortSelect = document.getElementById('serverSortSelect');
+    const clearBtn = document.getElementById('clearServerFilters');
     if (serverSearchInput) {
         serverSearchInput.addEventListener('input', () => {
             if (serverSearchTimer) clearTimeout(serverSearchTimer);
             serverSearchTimer = setTimeout(() => {
-                const query = serverSearchInput.value || '';
-                const filtered = filterServers(allServers, query);
-                displayServers(filtered);
-                updateServerSearchCount(filtered.length, allServers.length);
+                applyServerFilters();
             }, 200);
         });
     }
+    if (versionInput) versionInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (minToolsInput) minToolsInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (minResourcesInput) minResourcesInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (sortSelect) sortSelect.addEventListener('change', applyServerFilters);
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        if (serverSearchInput) serverSearchInput.value = '';
+        if (versionInput) versionInput.value = '';
+        if (minToolsInput) minToolsInput.value = '';
+        if (minResourcesInput) minResourcesInput.value = '';
+        if (sortSelect) sortSelect.value = 'name-asc';
+        applyServerFilters();
+    });
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
@@ -726,10 +740,7 @@ async function loadServers() {
 
         if (result.success) {
             allServers = Array.isArray(result.data) ? result.data : [];
-            const query = document.getElementById('serverSearch')?.value || '';
-            const filtered = filterServers(allServers, query);
-            displayServers(filtered);
-            updateServerSearchCount(filtered.length, allServers.length);
+            applyServerFilters();
         } else {
             allServers = [];
             displayServers([]);
@@ -813,13 +824,36 @@ function displayServers(servers) {
     `;
 }
 
-function filterServers(servers, query) {
-    if (!query) return servers || [];
-    const q = query.toLowerCase();
-    return (servers || []).filter(s =>
-        (s.name && s.name.toLowerCase().includes(q)) ||
-        (s.description && s.description.toLowerCase().includes(q))
-    );
+function filterServers(servers, query, opts = {}) {
+    const q = (query || '').toLowerCase();
+    const version = (opts.version || '').toLowerCase();
+    const minTools = Number.isFinite(Number(opts.minTools)) ? Number(opts.minTools) : null;
+    const minResources = Number.isFinite(Number(opts.minResources)) ? Number(opts.minResources) : null;
+
+    return (servers || []).filter(s => {
+        // text search
+        if (q) {
+            const nameMatch = s.name && s.name.toLowerCase().includes(q);
+            const descMatch = s.description && s.description.toLowerCase().includes(q);
+            if (!nameMatch && !descMatch) return false;
+        }
+        // version contains
+        if (version) {
+            const ver = (s.version || '').toLowerCase();
+            if (!ver.includes(version)) return false;
+        }
+        // min tools
+        if (minTools !== null) {
+            const t = Number(s.toolsCount || 0);
+            if (t < minTools) return false;
+        }
+        // min resources
+        if (minResources !== null) {
+            const r = Number(s.resourcesCount || 0);
+            if (r < minResources) return false;
+        }
+        return true;
+    });
 }
 
 function updateServerSearchCount(visible, total) {
@@ -830,6 +864,46 @@ function updateServerSearchCount(visible, total) {
     } else {
         el.textContent = `${visible} / ${total}`;
     }
+}
+
+function sortServers(servers, sortKey) {
+    const arr = [...(servers || [])];
+    switch (sortKey) {
+        case 'name-desc':
+            return arr.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+        case 'tools-desc':
+            return arr.sort((a, b) => (b.toolsCount || 0) - (a.toolsCount || 0));
+        case 'tools-asc':
+            return arr.sort((a, b) => (a.toolsCount || 0) - (b.toolsCount || 0));
+        case 'resources-desc':
+            return arr.sort((a, b) => (b.resourcesCount || 0) - (a.resourcesCount || 0));
+        case 'resources-asc':
+            return arr.sort((a, b) => (a.resourcesCount || 0) - (b.resourcesCount || 0));
+        case 'name-asc':
+        default:
+            return arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+}
+
+function applyServerFilters() {
+    const query = document.getElementById('serverSearch')?.value || '';
+    const version = document.getElementById('serverVersionFilter')?.value || '';
+    const minTools = document.getElementById('minToolsFilter')?.value;
+    const minResources = document.getElementById('minResourcesFilter')?.value;
+    const sortKey = document.getElementById('serverSortSelect')?.value || 'name-asc';
+
+    const filtered = filterServers(allServers, query, { version, minTools, minResources });
+    const sorted = sortServers(filtered, sortKey);
+    displayServers(sorted);
+    updateServerSearchCount(sorted.length, allServers.length);
+}
+
+function debounce(fn, delay = 200) {
+    let t;
+    return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delay);
+    };
 }
 
 // Load test servers

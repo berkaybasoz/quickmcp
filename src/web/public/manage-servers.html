@@ -485,13 +485,45 @@
                         </div>
                         <!-- Search / Filters -->
                         <div class="mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="relative flex-1">
-                                    <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-search"></i></span>
-                                    <input id="serverSearch" type="text" placeholder="Search servers by name or description" 
-                                           class="input pl-9" />
+                            <div class="flex flex-col gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-1">
+                                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-search"></i></span>
+                                        <input id="serverSearch" type="text" placeholder="Search servers by name or description" 
+                                               class="input pl-9" />
+                                    </div>
+                                    <span id="serverSearchCount" class="text-xs text-slate-500 whitespace-nowrap"></span>
                                 </div>
-                                <span id="serverSearchCount" class="text-xs text-slate-500 whitespace-nowrap"></span>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Version</label>
+                                        <input id="serverVersionFilter" type="text" placeholder="e.g. 1.0" class="input" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Tools</label>
+                                        <input id="minToolsFilter" type="number" min="0" placeholder="0" class="input" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Resources</label>
+                                        <input id="minResourcesFilter" type="number" min="0" placeholder="0" class="input" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sort By</label>
+                                        <select id="serverSortSelect" class="input">
+                                            <option value="name-asc">Name (A→Z)</option>
+                                            <option value="name-desc">Name (Z→A)</option>
+                                            <option value="tools-desc">Tools (High→Low)</option>
+                                            <option value="tools-asc">Tools (Low→High)</option>
+                                            <option value="resources-desc">Resources (High→Low)</option>
+                                            <option value="resources-asc">Resources (Low→High)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button id="clearServerFilters" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition-colors">
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
