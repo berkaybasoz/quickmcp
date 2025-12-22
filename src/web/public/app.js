@@ -759,14 +759,10 @@ function displayServers(servers) {
                             View Details
                         </button>
 
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 gap-2">
                             <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="testServer('${server.id}')">
                                 <i class="fas fa-vial text-xs mr-1"></i>
                                 Test
-                            </button>
-                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="exportServer('${server.id}')">
-                                <i class="fas fa-download text-xs mr-1"></i>
-                                Export
                             </button>
                             <button class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200" onclick="deleteServer('${server.id}')">
                                 <i class="fas fa-trash text-xs mr-1"></i>
