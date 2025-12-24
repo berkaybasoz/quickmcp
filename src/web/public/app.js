@@ -1419,6 +1419,8 @@ async function viewServer(serverId) {
 function showServerDetailsPanel(serverData) {
     const panel = document.getElementById('server-details-panel');
     if (!panel) return;
+    try { localStorage.setItem('rightPanelCollapsed','false'); } catch {}
+    panel.classList.remove('collapsed');
 
     const config = serverData?.config || {};
     const tools = config.tools || [];
@@ -1500,6 +1502,17 @@ function showServerDetailsPanel(serverData) {
     `;
 
     panel.innerHTML = inner;
+    // Inject mini icon row below header (shown only when collapsed)
+    try {
+        const headerRowEl = panel.querySelector('#serverDetailsHeaderRow');
+        if (headerRowEl && !panel.querySelector('#rightPanelMiniRow')) {
+            const miniRow = document.createElement('div');
+            miniRow.id = 'rightPanelMiniRow';
+            miniRow.className = 'hidden flex items-center justify-center py-2';
+            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 relative"><i class="fas fa-wrench"></i></i>';
+            headerRowEl.insertAdjacentElement('afterend', miniRow);
+        }
+    } catch {}
     // Horizontal icon bar rendered above Tools; no right vertical rail
     // Bind collapse button and apply stored state
     try {
@@ -1541,20 +1554,16 @@ function applyRightPanelCollapsedState() {
         if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
         if (headerRow) headerRow.classList.add('justify-center');
         if (scrollArea) scrollArea.classList.add('hidden');
-        const mini = panel.querySelector('#serverDetailsMiniIcon');
-        if (mini) mini.classList.remove('hidden');
-        const miniDiv = panel.querySelector('#rightPanelMiniDivider');
-        if (miniDiv) miniDiv.classList.remove('hidden');
+        const miniRow = panel.querySelector('#rightPanelMiniRow');
+        if (miniRow) miniRow.classList.remove('hidden');
     } else {
         panel.classList.remove('collapsed');
         panel.style.width = '';
         if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
         if (headerRow) headerRow.classList.remove('justify-center');
         if (scrollArea) scrollArea.classList.remove('hidden');
-        const mini = panel.querySelector('#serverDetailsMiniIcon');
-        if (mini) mini.classList.add('hidden');
-        const miniDiv = panel.querySelector('#rightPanelMiniDivider');
-        if (miniDiv) miniDiv.classList.add('hidden');
+        const miniRow = panel.querySelector('#rightPanelMiniRow');
+        if (miniRow) miniRow.classList.add('hidden');
     }
 }
 
