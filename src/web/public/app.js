@@ -1428,7 +1428,7 @@ function showServerDetailsPanel(serverData) {
     const serverId = serverData.id || serverData.config?.id || 'unknown';
 
     const inner = `
-        <div class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">\n                    <i class=\"fas fa-wrench text-white\"></i>\n                </div>\n                <div>\n                    <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>\n                    <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>\n                </div>\n            </div>\n            <button onclick=\"closeServerDetailsPanel()\" class=\"text-slate-400 hover:text-slate-600\">\n                <i class=\"fas fa-times text-lg\"></i>\n            </button>\n        </div>
+        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">\n                    <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">\n                        <i class=\"fas fa-wrench text-white\"></i>\n                    </div>\n                    <div>\n                        <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>\n                        <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>\n                    </div>\n                </div>\n            </div>\n        </div>
         <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
@@ -1501,6 +1501,18 @@ function showServerDetailsPanel(serverData) {
 
     panel.innerHTML = inner;
     // Horizontal icon bar rendered above Tools; no right vertical rail
+    // Bind collapse button and apply stored state
+    try {
+        const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', () => {
+                const current = localStorage.getItem('rightPanelCollapsed') === 'true';
+                localStorage.setItem('rightPanelCollapsed', String(!current));
+                applyRightPanelCollapsedState();
+            });
+        }
+        applyRightPanelCollapsedState();
+    } catch {}
     // Slide in overlay drawer (no blur, on top of list)
     console.log('🔍 Showing details overlay');
     panel.classList.remove('hidden');
@@ -1514,6 +1526,28 @@ function closeServerDetailsPanel() {
     if (!panel) return;
     panel.classList.add('translate-x-full');
     setTimeout(() => panel.classList.add('hidden'), 300);
+}
+
+function applyRightPanelCollapsedState() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+    const collapsed = localStorage.getItem('rightPanelCollapsed') === 'true';
+    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn i');
+    const headerRow = panel.querySelector('#serverDetailsHeaderRow');
+    const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
+    if (collapsed) {
+        panel.classList.add('collapsed');
+        panel.style.width = '3rem';
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
+        if (headerRow) headerRow.classList.add('justify-center');
+        if (scrollArea) scrollArea.classList.add('hidden');
+    } else {
+        panel.classList.remove('collapsed');
+        panel.style.width = '';
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
+        if (headerRow) headerRow.classList.remove('justify-center');
+        if (scrollArea) scrollArea.classList.remove('hidden');
+    }
 }
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)

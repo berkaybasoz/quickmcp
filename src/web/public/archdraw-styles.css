@@ -332,6 +332,15 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
   display: none !important;
 }
 
+/* Right details panel collapsed state */
+#server-details-panel.collapsed { width: 3rem !important; overflow: hidden; }
+#server-details-panel.collapsed #serverDetailsHeaderRow { justify-content: center !important; padding: 0.25rem !important; }
+#server-details-panel.collapsed #rightPanelCollapseBtn { display: inline-flex !important; color: #94a3b8 !important; }
+#server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
+#server-details-panel.collapsed .flex-1 { display: none !important; }
+#server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; }
+#server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; }
+
 /* Right details rail (exact, consistent) */
 .details-rail {
   position: absolute;
