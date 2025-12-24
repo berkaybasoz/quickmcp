@@ -1444,6 +1444,23 @@ function showServerDetailsPanel(serverData) {
                     <div class="text-sm text-slate-500">Resources</div>
                 </div>
             </div>
+            <!-- Horizontal action bar above Tools -->
+            <div class="pt-1 pb-2">
+                <div class="flex items-center gap-2">
+                    <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-wrench"></i>
+                    </button>
+                    <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-cubes"></i>
+                    </button>
+                    <button title="Test" onclick="testServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-vial"></i>
+                    </button>
+                    <button title="Delete" onclick="deleteServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
             <div>
                 <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools</label>
                 <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
@@ -1483,31 +1500,7 @@ function showServerDetailsPanel(serverData) {
     `;
 
     panel.innerHTML = inner;
-    try {
-        const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
-        if (scrollArea) {
-            scrollArea.classList.add('relative');
-            // Right-aligned, vertically centered rail anchored to panel; solid white to match expected
-            const rail = document.createElement('div');
-            rail.className = 'details-rail';
-            rail.innerHTML = `
-              <div class="rail-group">
-                <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="rail-btn">
-                  <i class="fas fa-wrench"></i>
-                </button>
-                <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="rail-btn">
-                  <i class="fas fa-cubes"></i>
-                </button>
-                <button title="Test" onclick="testServer('${serverId}')" class="rail-btn">
-                  <i class="fas fa-vial"></i>
-                </button>
-                <button title="Delete" onclick="deleteServer('${serverId}')" class="rail-btn danger">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>`;
-            panel.appendChild(rail);
-        }
-    } catch (e) { console.warn('right icon rail init failed', e); }
+    // Horizontal icon bar rendered above Tools; no right vertical rail
     // Slide in overlay drawer (no blur, on top of list)
     console.log('🔍 Showing details overlay');
     panel.classList.remove('hidden');
