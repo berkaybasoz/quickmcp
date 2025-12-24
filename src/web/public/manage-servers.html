@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 
-<head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickMCP - Modern MCP Server Generator</title>
@@ -15,6 +15,41 @@
     <!-- Custom Archdraw Styles -->
     <link rel="stylesheet" href="archdraw-styles.css">
 
+    <style>
+      /* Collapsed sidebar icon layout (archdraw-like) */
+      #sidebar.collapsed .nav-item {
+        padding: 0.5rem !important; /* p-2 */
+        gap: 0 !important;
+        justify-content: center !important;
+      }
+      #sidebar.collapsed .nav-item > .relative {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem; /* 40px */
+        height: 2.5rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      #sidebar.collapsed .nav-item > .relative > div {
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 1px solid #e2e8f0; /* slate-200 */
+        border-radius: 0.5rem; /* rounded-lg */
+      }
+      #sidebar.collapsed .nav-item .flex-1 { display: none !important; }
+      #sidebar.collapsed #sidebarHeaderMain { display: none !important; }
+      #sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
+      #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
+      #sidebar.collapsed #closeSidebar { display: none !important; }
+      /* Make collapse button a reliable, centered target */
+      #sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
+      #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
+    </style>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -99,8 +134,8 @@
             class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0">
             <!-- Sidebar Header -->
             <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-3">
+                <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
+                    <div id="sidebarHeaderMain" class="flex items-center gap-3">
                         <div
                             class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
                             <i class="fas fa-compass text-white"></i>
@@ -110,14 +145,19 @@
                             <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
                         </div>
                     </div>
-                    <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
+                            <i class="fas fa-angles-left"></i>
+                        </button>
+                        <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Navigation Links -->
-            <div class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
+            <div id="sidebarNavList" class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
 
                 <a href="/"
                     class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all active">
@@ -184,6 +224,7 @@
                 </a>
 
             </div>
+            <div id="sidebarResizer" class="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent"></div>
         </div>
 
         <!-- Sidebar Overlay -->
@@ -635,7 +676,7 @@
         </div>
 
         <!-- Right Overlay Drawer (Server Details) - sits on top of list, no blur -->
-        <div id="server-details-panel" class="hidden fixed inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-out"></div>
+        <div id="server-details-panel" class="hidden fixed inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-out relative"></div>
     </div>
 
     <!-- Success Modal -->
@@ -668,6 +709,7 @@
 
     <!-- Scripts -->
     <script src="shared.js"></script>
+    <script src="sidebar.js"></script>
     <script src="app.js"></script>
 </body>
 

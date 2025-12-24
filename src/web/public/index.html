@@ -15,6 +15,7 @@
     <!-- Custom Archdraw Styles -->
     <link rel="stylesheet" href="archdraw-styles.css">
 
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -102,8 +103,8 @@
             class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0">
             <!-- Sidebar Header -->
             <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-3">
+                <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
+                    <div id="sidebarHeaderMain" class="flex items-center gap-3">
                         <div
                             class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
                             <i class="fas fa-compass text-white"></i>
@@ -113,14 +114,19 @@
                             <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
                         </div>
                     </div>
-                    <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
+                            <i class="fas fa-angles-left"></i>
+                        </button>
+                        <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Navigation Links -->
-            <div class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
+            <div id="sidebarNavList" class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
 
                 <a href="/"
                     class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all active">
@@ -617,6 +623,7 @@
 
     <!-- Scripts -->
     <script src="shared.js"></script>
+    <script src="sidebar.js"></script>
     <script src="app.js"></script>
 </body>
 

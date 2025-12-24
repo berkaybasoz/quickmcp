@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', function() {
     handleInitialRoute();
 });
 
+// Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
+window.addEventListener('load', () => {
+    try { initSidebarResizer(); } catch {}
+    try { applySidebarCollapsedState(); } catch {}
+});
+
 // Setup event listeners
 function setupEventListeners() {
     // Sidebar controls
@@ -94,6 +100,28 @@ function setupEventListeners() {
         if (sortSelect) sortSelect.value = 'name-asc';
         applyServerFilters();
     });
+
+    // Collapsible left sidebar toggle
+    const leftToggle = document.getElementById('sidebarCollapseBtn');
+    if (leftToggle) {
+        leftToggle.addEventListener('click', () => {
+            const current = localStorage.getItem('sidebarCollapsed') === 'true';
+            localStorage.setItem('sidebarCollapsed', (!current).toString());
+            applySidebarCollapsedState();
+        });
+        // Also make the entire header row clickable to expand when collapsed
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        headerRow?.addEventListener('click', (e) => {
+            if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
+                // Prevent double handling when clicking the button itself
+                if ((e.target.closest && e.target.closest('#sidebarCollapseBtn'))) return;
+                localStorage.setItem('sidebarCollapsed', 'false');
+                applySidebarCollapsedState();
+            }
+        });
+    }
+
+    
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
@@ -1439,7 +1467,7 @@ function showServerDetailsPanel(serverData) {
                 </div>
             </div>
             <div>
-                <label class="block text-slate-700 font-semibold text-sm mb-2">Tools</label>
+                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools</label>
                 <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
                     ${tools.length > 0 ? tools.map(tool => `
                         <div class="flex flex-col">
@@ -1450,7 +1478,7 @@ function showServerDetailsPanel(serverData) {
                 </div>
             </div>
             <div>
-                <label class="block text-slate-700 font-semibold text-sm mb-2">Resources</label>
+                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources</label>
                 <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
                     ${resources.length > 0 ? resources.map(resource => `
                         <div class="flex flex-col">
@@ -1477,6 +1505,34 @@ function showServerDetailsPanel(serverData) {
     `;
 
     panel.innerHTML = inner;
+    try {
+        const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
+        if (scrollArea) {
+            scrollArea.classList.add('relative');
+            // Right-aligned, vertically centered rail anchored to panel with tinted background
+            const rail = document.createElement('div');
+            rail.className = 'absolute inset-y-0 right-0 w-[92px] bg-slate-50 border-l border-slate-200 flex items-center justify-center pointer-events-none';
+            rail.innerHTML = `
+              <div class="flex flex-col items-center gap-3 pointer-events-auto">
+                <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                  <i class="fas fa-wrench"></i>
+                </button>
+                <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                  <i class="fas fa-cubes"></i>
+                </button>
+                <button title="Test" onclick="testServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                  <i class="fas fa-vial"></i>
+                </button>
+                <button title="Delete" onclick="deleteServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>`;
+            // Add padding to the scroll area to avoid covered content
+            scrollArea.style.paddingRight = '92px';
+            // Append rail to the panel so it's aligned relative to the whole panel (not just content)
+            panel.appendChild(rail);
+        }
+    } catch (e) { console.warn('right icon rail init failed', e); }
     // Slide in overlay drawer (no blur, on top of list)
     console.log('🔍 Showing details overlay');
     panel.classList.remove('hidden');
@@ -1490,6 +1546,66 @@ function closeServerDetailsPanel() {
     if (!panel) return;
     panel.classList.add('translate-x-full');
     setTimeout(() => panel.classList.add('hidden'), 300);
+}
+
+// Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
+window.addEventListener('load', () => {
+    try { initSidebarResizer(); } catch {}
+    try { applySidebarCollapsedState(); } catch {}
+});
+
+// Left sidebar resizer (drag to change width)
+function initSidebarResizer() {
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+    let startX = 0;
+    let startWidth = 0;
+    const min = 200; // px
+    const max = 480; // px
+    const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        let newW = Math.min(max, Math.max(min, startWidth + dx));
+        sidebar.style.width = newW + 'px';
+        localStorage.setItem('sidebarWidth', String(newW));
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    };
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+    resizer.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    if (saved && saved >= min && saved <= max) {
+        sidebar.style.width = saved + 'px';
+    }
+}
+
+function applySidebarCollapsedState() {
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        sidebar.style.width = '3rem';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) { icon.className = 'fas fa-angles-right'; }
+    } else {
+        sidebar.classList.remove('collapsed');
+        const saved = Number(localStorage.getItem('sidebarWidth'));
+        sidebar.style.width = saved ? saved + 'px' : '';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) { icon.className = 'fas fa-angles-left'; }
+    }
 }
 
 function showServerDetailsModal(serverData) {
@@ -2075,5 +2191,100 @@ function showSuccess(elementId, message) {
     if (successDiv) {
         successDiv.textContent = message;
         successDiv.classList.remove('hidden');
+    }
+}
+
+
+// Left sidebar resizer (drag to change width)
+function initSidebarResizer() {
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+    let startX = 0;
+    let startWidth = 0;
+    const min = 200; // px
+    const max = 480; // px
+    const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        let newW = Math.min(max, Math.max(min, startWidth + dx));
+        sidebar.style.width = newW + 'px';
+        localStorage.setItem('sidebarWidth', String(newW));
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    };
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+    resizer.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    if (saved && saved >= min && saved <= max) {
+        sidebar.style.width = saved + 'px';
+    }
+}
+
+function applySidebarCollapsedState() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        // Collapsed: show only menu icons (centered, colored) and the » button; hide Navigation texts
+        sidebar.style.width = '4rem';
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        const headerMain = document.getElementById('sidebarHeaderMain');
+        const collapseBtn = document.getElementById('sidebarCollapseBtn');
+        headerMain?.classList.add('hidden');
+        headerRow?.classList.remove('justify-between');
+        headerRow?.classList.add('justify-center');
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-right';
+
+        // For each nav item: center icon, hide labels, color icon; make icon container square
+        sidebar.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.add('justify-center');
+            item.classList.add('gap-0');
+            item.classList.add('p-2');
+            const label = item.querySelector('.flex-1');
+            if (label) label.classList.add('hidden');
+            const iconEl = item.querySelector('i');
+            if (iconEl) iconEl.classList.add('text-blue-600');
+            // container kare ve ortalı CSS üzerinden ayarlanıyor (style bloğu)
+        });
+        // Hide Navigation subtitles anywhere
+        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.add('hidden'));
+    } else {
+        sidebar.classList.remove('collapsed');
+        // Expanded: one notch wider by default if none saved
+        const saved = Number(localStorage.getItem('sidebarWidth'));
+        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '20rem';
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        const headerMain = document.getElementById('sidebarHeaderMain');
+        const collapseBtn = document.getElementById('sidebarCollapseBtn');
+        headerMain?.classList.remove('hidden');
+        headerRow?.classList.remove('justify-center');
+        headerRow?.classList.add('justify-between');
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-left';
+
+        // Restore menu item labels and icon default color; remove square styling
+        sidebar.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('justify-center');
+            item.classList.remove('gap-0');
+            item.classList.remove('p-2');
+            const label = item.querySelector('.flex-1');
+            if (label) label.classList.remove('hidden');
+            const iconEl = item.querySelector('i');
+            if (iconEl) iconEl.classList.remove('text-blue-600');
+            // kare container sınıfları style bloğunda kontrol ediliyor
+        });
+        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
     }
 }

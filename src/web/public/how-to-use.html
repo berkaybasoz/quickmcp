@@ -84,111 +84,21 @@
                 class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md">
                 U
             </div>
+            <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </header>
 
     <!-- Main Body -->
     <div class="flex flex-1 overflow-hidden">
 
-        <!-- Left Sidebar (Navigation) -->
-        <div class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40">
-            <!-- Sidebar Header -->
-            <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
-                            <i class="fas fa-compass text-white"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-slate-900 font-bold tracking-tight text-lg">Navigation</h2>
-                            <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Left Sidebar (shared) -->
+        <div id="sidebar"
+             class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
 
-            <!-- Navigation Links -->
-            <div class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
-
-                <a href="/"
-                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-magic"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Generate
-                            Server</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Create new MCP servers</span>
-                    </div>
-                </a>
-
-                <a href="/manage-servers"
-                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-server"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Manage
-                            Servers</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Edit & Control</span>
-                    </div>
-                </a>
-
-                <a href="/test-servers"
-                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-vial"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Test
-                            Servers</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Verify functionality</span>
-                    </div>
-                </a>
-
-                <!-- Active Link -->
-                <a href="/how-to-use"
-                    class="card relative flex items-center gap-3 p-4 border-blue-400 shadow-md shadow-blue-500/10 bg-blue-50/30">
-                    <div class="relative">
-                        <div class="p-2.5 rounded-lg shadow-sm bg-blue-500 text-white">
-                            <i class="fas fa-book"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span class="text-blue-900 font-bold text-sm block">How to Use</span>
-                        <span class="text-blue-600 text-xs mt-0.5 block font-medium">Documentation & Guide</span>
-                    </div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm"></div>
-                </a>
-
-            </div>
-
-            <!-- Bottom Section -->
-            <div class="mt-auto border-t border-slate-200/60 p-4 bg-slate-50/50">
-                <div class="card p-3 glass flex items-center gap-3">
-                    <div class="p-2 bg-violet-100 rounded-lg">
-                        <i class="fas fa-lightbulb text-violet-600"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-semibold text-violet-900">Pro Tip</p>
-                        <p class="text-[10px] text-slate-600">Use 'Integrated Server' for seamless updates.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
         <!-- Main Content Area -->
         <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
@@ -541,6 +451,7 @@
 
     <!-- Scripts -->
     <script src="shared.js"></script>
+    <script src="sidebar.js"></script>
     <script src="app.js"></script>
     <script>
         function switchTab(which) {
