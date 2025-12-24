@@ -253,7 +253,9 @@ body {
 #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
 
 /* Center collapsed nav within the narrow sidebar */
-#sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; }
+#sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+#sidebar.collapsed > div:first-child { padding: 0.25rem !important; } /* shrink header padding so ">>" fits */
+#sidebar.collapsed #sidebarCollapseBtn { width: 2rem !important; height: 2rem !important; } /* smaller button in collapsed */
 #sidebar.collapsed #sidebarNavList { 
   padding-left: 0 !important; 
   padding-right: 0 !important; 
