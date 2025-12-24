@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
+    try { applySidebarCollapsedState(); } catch {}
 });
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)

@@ -35,6 +35,13 @@
       root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0';
     }
 
+    // Respect saved collapsed state before painting
+    const preferCollapsed = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+    if (preferCollapsed) {
+      root.classList.add('collapsed');
+      root.style.width = '3rem';
+    }
+
     const html = `
       <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
         <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
@@ -69,6 +76,11 @@
     `;
 
     root.innerHTML = html;
+    // Update collapse icon direction immediately
+    if (preferCollapsed) {
+      const icon = root.querySelector('#sidebarCollapseBtn i');
+      if (icon) icon.className = 'fas fa-angles-right';
+    }
   }
 
   // auto-render on DOMContentLoaded
@@ -77,4 +89,3 @@
   // expose for manual calls if needed
   window.renderSidebar = renderSidebar;
 })();
-
