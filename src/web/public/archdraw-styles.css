@@ -299,6 +299,27 @@ body {
 #sidebar.collapsed a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
 #sidebar.collapsed a[href="/how-to-use"]:hover .relative > div::before { background: rgba(245, 158, 11, 0.28) !important; }
 
+/* Expanded sidebar: match collapsed colors for icons + tints */
+#sidebar:not(.collapsed) #sidebarNavList a .relative > div {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease, color 120ms ease;
+}
+#sidebar:not(.collapsed) a[href="/"] i { color: #2563eb !important; }
+#sidebar:not(.collapsed) a[href="/manage-servers"] i { color: #10b981 !important; }
+#sidebar:not(.collapsed) a[href="/test-servers"] i { color: #7c3aed !important; }
+#sidebar:not(.collapsed) a[href="/how-to-use"] i { color: #f59e0b !important; }
+#sidebar:not(.collapsed) a[href="/"] .relative > div { background: rgba(37, 99, 235, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/manage-servers"] .relative > div { background: rgba(16, 185, 129, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/test-servers"] .relative > div { background: rgba(124, 58, 237, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/how-to-use"] .relative > div { background: rgba(245, 158, 11, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/"]:hover .relative > div { border-color: #93c5fd !important; background: rgba(37, 99, 235, 0.24) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/manage-servers"]:hover .relative > div { border-color: #6ee7b7 !important; background: rgba(16, 185, 129, 0.22) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; background: rgba(124, 58, 237, 0.22) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(245, 158, 11, 0.24) !important; transform: translateY(-1px); }
+
 /* Right details rail (exact, consistent) */
 .details-rail {
   position: absolute;
