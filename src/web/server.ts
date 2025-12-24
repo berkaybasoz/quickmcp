@@ -40,9 +40,24 @@ const publicDir = fsSync.existsSync(srcPublicDir) ? srcPublicDir : distPublicDir
 app.use(express.static(publicDir));
 
 const parser = new DataSourceParser();
-const generator = new MCPServerGenerator();
+// Lazily initialize heavy/native-backed services to avoid startup failure
+let generator: MCPServerGenerator | null = null;
+let sqliteManager: SQLiteManager | null = null;
 const testRunner = new MCPTestRunner();
-const sqliteManager = new SQLiteManager();
+
+function ensureGenerator(): MCPServerGenerator {
+  if (!generator) {
+    generator = new MCPServerGenerator();
+  }
+  return generator;
+}
+
+function ensureSQLite(): SQLiteManager {
+  if (!sqliteManager) {
+    sqliteManager = new SQLiteManager();
+  }
+  return sqliteManager;
+}
 
 let nextAvailablePort = 3001;
 
@@ -181,7 +196,7 @@ app.post('/api/generate', async (req, res) => {
     console.log('- Parsed data tables:', parsedData?.length || 0);
 
     // Check if server with this name already exists
-    const existingServer = generator.getServer(name);
+    const existingServer = ensureGenerator().getServer(name);
     if (existingServer) {
       return res.status(400).json({
         success: false,
@@ -207,7 +222,7 @@ app.post('/api/generate', async (req, res) => {
 
     // Generate virtual server (saves to SQLite database)
     console.log(`🎯 API calling generateServer with name: "${name}"`);
-    const result = await generator.generateServer(
+    const result = await ensureGenerator().generateServer(
       name,                                    // serverId
       name,                                    // serverName (use the name from form as server name)
       parsedDataObject,
@@ -217,8 +232,8 @@ app.post('/api/generate', async (req, res) => {
 
     if (result.success) {
       // Get counts for display
-      const tools = generator.getToolsForServer(name);
-      const resources = generator.getResourcesForServer(name);
+      const tools = ensureGenerator().getToolsForServer(name);
+      const resources = ensureGenerator().getResourcesForServer(name);
 
       res.json({
         success: true,
@@ -247,10 +262,11 @@ app.post('/api/generate', async (req, res) => {
 
 // List generated servers endpoint
 app.get('/api/servers', (req, res) => {
-  const allServers = generator.getAllServers();
+  const gen = ensureGenerator();
+  const allServers = gen.getAllServers();
   const servers = allServers.map(server => {
-    const tools = generator.getToolsForServer(server.id);
-    const resources = generator.getResourcesForServer(server.id);
+    const tools = gen.getToolsForServer(server.id);
+    const resources = gen.getResourcesForServer(server.id);
     return {
       id: server.id,
       name: server.name,
@@ -268,7 +284,7 @@ app.get('/api/servers', (req, res) => {
 // Check if server name is available endpoint
 app.get('/api/servers/check-name/:name', (req, res) => {
   const serverName = req.params.name;
-  const existingServer = generator.getServer(serverName);
+  const existingServer = ensureGenerator().getServer(serverName);
   const isAvailable = !existingServer;
 
   res.json({
@@ -282,7 +298,7 @@ app.get('/api/servers/check-name/:name', (req, res) => {
 
 // Get server details endpoint
 app.get('/api/servers/:id', (req, res) => {
-  const server = generator.getServer(req.params.id);
+  const server = ensureGenerator().getServer(req.params.id);
 
   if (!server) {
     return res.status(404).json({
@@ -325,7 +341,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
     const serverId = req.params.id;
     const limit = parseInt(req.query.limit as string) || 10;
 
-    const server = generator.getServer(serverId);
+    const server = ensureGenerator().getServer(serverId);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -337,7 +353,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
     const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
     const executor = new DynamicMCPExecutor();
 
-    const tools = generator.getToolsForServer(serverId);
+    const tools = ensureGenerator().getToolsForServer(serverId);
     const selectTool = tools.find(tool => tool.operation === 'SELECT');
 
     if (!selectTool) {
@@ -381,7 +397,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
 app.post('/api/servers/:id/test', async (req, res) => {
   try {
     // Get server from SQLite database
-    const server = sqliteManager.getServer(req.params.id);
+    const server = ensureSQLite().getServer(req.params.id);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -390,7 +406,7 @@ app.post('/api/servers/:id/test', async (req, res) => {
     }
 
     // Get tools for this server
-    const tools = sqliteManager.getToolsForServer(req.params.id);
+    const tools = ensureSQLite().getToolsForServer(req.params.id);
     
     // Check if this is a custom test or auto test
     const { runAll, testType, toolName, parameters } = req.body;
@@ -515,7 +531,7 @@ app.delete('/api/servers/:id', async (req, res) => {
     console.log(`Attempting to delete server with ID: ${serverId}`);
 
     // Check if server exists in JSON database
-    const existingServer = generator.getServer(serverId);
+    const existingServer = ensureGenerator().getServer(serverId);
     if (!existingServer) {
       console.log(`Server with ID "${serverId}" not found in database`);
       return res.status(404).json({
@@ -525,7 +541,7 @@ app.delete('/api/servers/:id', async (req, res) => {
     }
 
     // Delete from JSON database (primary storage)
-    generator.deleteServer(serverId);
+    ensureGenerator().deleteServer(serverId);
     console.log(`Deleted server "${serverId}" from JSON database`);
 
     // Also check and remove from in-memory store if exists

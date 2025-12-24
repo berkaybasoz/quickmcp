@@ -4,6 +4,61 @@ let currentWizardStep = 1;
 let allServers = [];
 let serverSearchTimer = null;
 
+function initializeManageServersPage() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+
+    // Make panel visible (also undo responsive hidden states)
+    panel.classList.remove('hidden', 'translate-x-full', 'lg:hidden');
+    panel.classList.add('lg:flex');
+    panel.style.display = 'flex';
+
+    // Always start collapsed on page load
+    try {
+        localStorage.setItem('rightPanelCollapsed', 'true');
+    } catch {}
+
+    // Populate with placeholder. This will be overwritten when a server is viewed.
+    panel.innerHTML = `
+        <div id="serverDetailsHeaderRow" class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="rightPanelCollapseBtn" class="text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center" title="Collapse panel">
+                    <i class="fas fa-angles-left"></i>
+                </button>
+                <div id="serverDetailsHeaderMain" class="flex items-center gap-3">
+                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg shadow-lg">
+                        <i class="fas fa-info-circle text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                        <p class="text-slate-500 text-xs leading-none font-medium">No server selected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
+            <div class="text-center text-slate-500 pt-10">
+                <i class="fas fa-mouse-pointer text-3xl text-slate-300 mb-4"></i>
+                <p>Select a server and click <i class="fas fa-eye"></i> to see details.</p>
+            </div>
+        </div>
+    `;
+
+    // Add listener for the new button
+    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
+    if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
+        collapseBtn.addEventListener('click', () => {
+            const current = localStorage.getItem('rightPanelCollapsed') === 'true';
+            localStorage.setItem('rightPanelCollapsed', String(!current));
+            applyRightPanelCollapsedState();
+        });
+        collapseBtn.dataset.listenerAttached = 'true';
+    }
+    
+    // Apply the visual state
+    applyRightPanelCollapsedState();
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
@@ -11,6 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setupRouting();
     handleInitialRoute();
     try { applySidebarCollapsedState(); } catch {}
+
+    // This will run on the manage-servers page
+    if (document.getElementById('server-list')) {
+        initializeManageServersPage();
+    }
 });
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
@@ -1525,12 +1585,13 @@ function showServerDetailsPanel(serverData) {
     // Bind collapse button and apply stored state
     try {
         const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
-        if (collapseBtn) {
+        if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
             collapseBtn.addEventListener('click', () => {
                 const current = localStorage.getItem('rightPanelCollapsed') === 'true';
                 localStorage.setItem('rightPanelCollapsed', String(!current));
                 applyRightPanelCollapsedState();
             });
+            collapseBtn.dataset.listenerAttached = 'true';
         }
         applyRightPanelCollapsedState();
     } catch {}
