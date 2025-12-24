@@ -254,8 +254,20 @@ body {
 
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; }
-#sidebar.collapsed #sidebarNavList { padding-left: 0 !important; padding-right: 0 !important; display: flex; flex-direction: column; align-items: center; }
-#sidebar.collapsed #sidebarNavList > a { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+#sidebar.collapsed #sidebarNavList { 
+  padding-left: 0 !important; 
+  padding-right: 0 !important; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+}
+/* Reduce vertical spacing between collapsed icons (0px) */
+#sidebar.collapsed #sidebarNavList > a { margin-top: 0 !important; margin-bottom: 0 !important; }
+/* Override Tailwind's space-y-* margins */
+#sidebar.collapsed #sidebarNavList > :not([hidden]) ~ :not([hidden]) { 
+  margin-top: 0 !important; 
+  margin-bottom: 0 !important; 
+}
 
 /* Collapsed icon colors per item (distinct colors, no bg) */
 #sidebar.collapsed a[href="/"] i { color: #2563eb !important; }            /* blue-600 */
