@@ -1509,27 +1509,24 @@ function showServerDetailsPanel(serverData) {
         const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
         if (scrollArea) {
             scrollArea.classList.add('relative');
-            // Right-aligned, vertically centered rail anchored to panel with tinted background
+            // Right-aligned, vertically centered rail anchored to panel; solid white to match expected
             const rail = document.createElement('div');
-            rail.className = 'absolute inset-y-0 right-0 w-[92px] bg-slate-50 border-l border-slate-200 flex items-center justify-center pointer-events-none';
+            rail.className = 'details-rail';
             rail.innerHTML = `
-              <div class="flex flex-col items-center gap-3 pointer-events-auto">
-                <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+              <div class="rail-group">
+                <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="rail-btn">
                   <i class="fas fa-wrench"></i>
                 </button>
-                <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="rail-btn">
                   <i class="fas fa-cubes"></i>
                 </button>
-                <button title="Test" onclick="testServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                <button title="Test" onclick="testServer('${serverId}')" class="rail-btn">
                   <i class="fas fa-vial"></i>
                 </button>
-                <button title="Delete" onclick="deleteServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
+                <button title="Delete" onclick="deleteServer('${serverId}')" class="rail-btn danger">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>`;
-            // Add padding to the scroll area to avoid covered content
-            scrollArea.style.paddingRight = '92px';
-            // Append rail to the panel so it's aligned relative to the whole panel (not just content)
             panel.appendChild(rail);
         }
     } catch (e) { console.warn('right icon rail init failed', e); }
