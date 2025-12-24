@@ -334,8 +334,16 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 
 /* Right details panel collapsed state */
 #server-details-panel.collapsed { width: 3rem !important; overflow: hidden; }
-#server-details-panel.collapsed #serverDetailsHeaderRow { justify-content: center !important; padding: 0.25rem !important; }
+#server-details-panel.collapsed #serverDetailsHeaderRow { justify-content: center !important; padding: 0.25rem !important; gap: 0.25rem; }
+#server-details-panel.collapsed #serverDetailsHeaderRow > div:first-child { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 0.25rem !important; }
 #server-details-panel.collapsed #rightPanelCollapseBtn { display: inline-flex !important; color: #94a3b8 !important; }
+#server-details-panel.collapsed #serverDetailsMiniIcon { display: inline-flex !important; width: 2.5rem !important; height: 2.5rem !important; position: relative; background: transparent !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; }
+#server-details-panel.collapsed #serverDetailsMiniIcon::before { content: ''; position: absolute; inset: 3px; border-radius: 0.375rem; background: rgba(124, 58, 237, 0.14); }
+#server-details-panel.collapsed #serverDetailsMiniIcon:hover { border-color: #c4b5fd !important; }
+#server-details-panel.collapsed #serverDetailsMiniIcon:hover::before { background: rgba(124, 58, 237, 0.22); }
+#server-details-panel.collapsed #serverDetailsMiniIcon i { color: #7c3aed !important; font-size: 1.05rem; line-height: 1; }
+#server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
+#server-details-panel.collapsed #rightPanelMiniDivider { display: block !important; width: 1.5rem; height: 1px; background-color: #e2e8f0; }
 #server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
 #server-details-panel.collapsed .flex-1 { display: none !important; }
 #server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; }

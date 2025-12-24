@@ -1428,7 +1428,7 @@ function showServerDetailsPanel(serverData) {
     const serverId = serverData.id || serverData.config?.id || 'unknown';
 
     const inner = `
-        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">\n                    <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">\n                        <i class=\"fas fa-wrench text-white\"></i>\n                    </div>\n                    <div>\n                        <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>\n                        <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>\n                    </div>\n                </div>\n            </div>\n        </div>
+        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"rightPanelMiniDivider\" class=\"hidden h-px w-6 bg-slate-200\"></div>\n                <div id=\"serverDetailsMiniIcon\" class=\"hidden w-10 h-10 items-center justify-center rounded-lg border border-slate-200 relative\">\n                    <i class=\"fas fa-wrench\"></i>\n                </div>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">\n                    <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">\n                        <i class=\"fas fa-wrench text-white\"></i>\n                    </div>\n                    <div>\n                        <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>\n                        <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>\n                    </div>\n                </div>\n            </div>\n        </div>
         <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
@@ -1541,12 +1541,20 @@ function applyRightPanelCollapsedState() {
         if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
         if (headerRow) headerRow.classList.add('justify-center');
         if (scrollArea) scrollArea.classList.add('hidden');
+        const mini = panel.querySelector('#serverDetailsMiniIcon');
+        if (mini) mini.classList.remove('hidden');
+        const miniDiv = panel.querySelector('#rightPanelMiniDivider');
+        if (miniDiv) miniDiv.classList.remove('hidden');
     } else {
         panel.classList.remove('collapsed');
         panel.style.width = '';
         if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
         if (headerRow) headerRow.classList.remove('justify-center');
         if (scrollArea) scrollArea.classList.remove('hidden');
+        const mini = panel.querySelector('#serverDetailsMiniIcon');
+        if (mini) mini.classList.add('hidden');
+        const miniDiv = panel.querySelector('#rightPanelMiniDivider');
+        if (miniDiv) miniDiv.classList.add('hidden');
     }
 }
 
