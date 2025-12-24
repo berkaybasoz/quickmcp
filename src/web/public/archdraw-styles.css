@@ -226,12 +226,11 @@ body {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: #ffffff !important; /* unify with sidebar */
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 0.5rem !important;
+  background: transparent !important; /* no background effect behind icon */
+  border: none !important;            /* no border box in collapsed */
   box-shadow: none !important;
 }
-#sidebar.collapsed .nav-item i { font-size: 1rem !important; line-height: 1 !important; }
+#sidebar.collapsed .nav-item i { font-size: 1.1rem !important; line-height: 1 !important; }
 
 #sidebar.collapsed #sidebarHeaderMain { display: none !important; }
 #sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
@@ -245,6 +244,12 @@ body {
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; }
 #sidebar.collapsed #sidebarNavList { padding-left: 0 !important; padding-right: 0 !important; display: flex; flex-direction: column; align-items: center; }
 #sidebar.collapsed #sidebarNavList > a { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+
+/* Collapsed icon colors per item (distinct colors, no bg) */
+#sidebar.collapsed a[href="/"] i { color: #2563eb !important; }            /* blue-600 */
+#sidebar.collapsed a[href="/manage-servers"] i { color: #10b981 !important; } /* emerald-500 */
+#sidebar.collapsed a[href="/test-servers"] i { color: #7c3aed !important; }   /* violet-600 */
+#sidebar.collapsed a[href="/how-to-use"] i { color: #f59e0b !important; }     /* amber-500 */
 
 /* Right details rail (exact, consistent) */
 .details-rail {
