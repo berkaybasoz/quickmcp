@@ -215,6 +215,13 @@ function switchTabByRoute(tabName) {
         }
     }
 
+    // Hide server details overlay when switching tabs
+    const overlayPanel = document.getElementById('server-details-panel');
+    if (overlayPanel) {
+        overlayPanel.classList.add('translate-x-full');
+        overlayPanel.classList.add('hidden');
+    }
+
     // Load data for specific tabs
     if (tabName === 'manage') {
         loadServers();
@@ -1306,6 +1313,35 @@ function displaySingleTestResult(testData) {
 async function viewServer(serverId) {
     console.log('🔍 viewServer called with serverId:', serverId);
     
+    // If overlay drawer exists (Manage page), open it immediately with loading state
+    const overlayPanel = document.getElementById('server-details-panel');
+    if (overlayPanel) {
+        overlayPanel.innerHTML = `
+            <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
+                        <i class="fas fa-wrench text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                        <p class="text-slate-500 text-xs leading-none font-medium">Loading…</p>
+                    </div>
+                </div>
+                <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 text-slate-600 text-sm">
+                <div class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> Fetching server details…</div>
+            </div>
+        `;
+        console.log('🔍 Opening details overlay (loading state)');
+        overlayPanel.classList.remove('hidden');
+        overlayPanel.classList.remove('translate-x-full');
+        overlayPanel.style.transform = 'translateX(0)';
+        overlayPanel.style.display = 'flex';
+    }
+
     try {
         console.log('🔍 Fetching server details from:', `/api/servers/${serverId}`);
         const response = await fetch(`/api/servers/${serverId}`);
@@ -1326,11 +1362,51 @@ async function viewServer(serverId) {
             }
         } else {
             console.error('❌ Failed to load server details:', result.error);
-            alert('Failed to load server details: ' + result.error);
+            if (overlayPanel) {
+                overlayPanel.innerHTML = `
+                    <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 flex items-center justify-center bg-red-500 rounded-lg shadow-lg shadow-red-500/25">
+                                <i class="fas fa-exclamation-triangle text-white"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                                <p class="text-slate-500 text-xs leading-none font-medium">Failed to load</p>
+                            </div>
+                        </div>
+                        <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 text-sm text-red-600">${result.error || 'Unknown error'}</div>
+                `;
+            } else {
+                alert('Failed to load server details: ' + result.error);
+            }
         }
     } catch (error) {
         console.error('❌ Error loading server details:', error);
-        alert('Error loading server details: ' + error.message);
+        if (overlayPanel) {
+            overlayPanel.innerHTML = `
+                <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 flex items-center justify-center bg-red-500 rounded-lg shadow-lg shadow-red-500/25">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                            <p class="text-slate-500 text-xs leading-none font-medium">Error</p>
+                        </div>
+                    </div>
+                    <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <div class="p-6 text-sm text-red-600">${error.message}</div>
+            `;
+        } else {
+            alert('Error loading server details: ' + error.message);
+        }
     }
 }
 
@@ -1346,18 +1422,8 @@ function showServerDetailsPanel(serverData) {
     const serverId = serverData.id || serverData.config?.id || 'unknown';
 
     const inner = `
-        <div class="p-6 border-b border-slate-200/60 bg-white">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
-                    <i class="fas fa-wrench text-white"></i>
-                </div>
-                <div>
-                    <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
-                    <p class="text-slate-500 text-xs leading-none font-medium">Selected Server</p>
-                </div>
-            </div>
-        </div>
-        <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
+        <div class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">\n                    <i class=\"fas fa-wrench text-white\"></i>\n                </div>\n                <div>\n                    <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>\n                    <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>\n                </div>\n            </div>\n            <button onclick=\"closeServerDetailsPanel()\" class=\"text-slate-400 hover:text-slate-600\">\n                <i class=\"fas fa-times text-lg\"></i>\n            </button>\n        </div>
+        <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
                 <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
@@ -1411,9 +1477,19 @@ function showServerDetailsPanel(serverData) {
     `;
 
     panel.innerHTML = inner;
-    // Show panel on large screens; clear hidden flags
-    panel.classList.remove('hidden', 'lg:hidden');
-    panel.classList.add('lg:flex');
+    // Slide in overlay drawer (no blur, on top of list)
+    console.log('🔍 Showing details overlay');
+    panel.classList.remove('hidden');
+    panel.classList.remove('translate-x-full');
+    panel.style.transform = 'translateX(0)';
+    panel.style.display = 'flex';
+}
+
+function closeServerDetailsPanel() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+    panel.classList.add('translate-x-full');
+    setTimeout(() => panel.classList.add('hidden'), 300);
 }
 
 function showServerDetailsModal(serverData) {

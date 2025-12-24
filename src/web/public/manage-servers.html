@@ -634,26 +634,8 @@
             </div>
         </div>
 
-        <!-- Right Sidebar (Server Details) -->
-        <div id="server-details-panel" class="w-80 bg-white border-l border-slate-200/60 flex flex-col flex-shrink-0 z-30 hidden lg:flex">
-            <!-- Header -->
-            <div class="p-6 border-b border-slate-200/60 bg-white">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
-                        <i class="fas fa-wrench text-white"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
-                        <p class="text-slate-500 text-xs leading-none font-medium">Selected Server</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
-                <div class="text-slate-500 text-sm">Select a server to view details.</div>
-            </div>
-        </div>
+        <!-- Right Overlay Drawer (Server Details) - sits on top of list, no blur -->
+        <div id="server-details-panel" class="hidden fixed inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-out"></div>
     </div>
 
     <!-- Success Modal -->
