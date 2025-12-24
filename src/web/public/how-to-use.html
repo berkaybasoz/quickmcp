@@ -60,11 +60,13 @@
             <!-- Divider -->
             <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent"></div>
 
-            <!-- Breadcrumb / Title -->
+            <!-- Header Action: New Server (left, common) -->
             <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
-                <span>Documentation</span>
-                <i class="fas fa-chevron-right text-xs text-slate-400"></i>
-                <span class="text-slate-900">How to Use</span>
+                <button id="headerNewServerBtn" onclick="window.location.href='/'"
+                    class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+                    <i class="fas fa-plus"></i>
+                    <span>New Server</span>
+                </button>
             </div>
         </div>
 

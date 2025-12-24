@@ -202,34 +202,11 @@ function switchTabByRoute(tabName) {
 
     // Update page title
     const pageTitle = document.getElementById('pageTitle');
-    const pageSubtitle = pageTitle?.nextElementSibling;
     const headerNewServerBtn = document.getElementById('headerNewServerBtn');
-
-    if (pageTitle) {
-        switch(tabName) {
-            case 'generate':
-                pageTitle.textContent = 'Generate Server';
-                if (pageSubtitle) pageSubtitle.textContent = 'Create powerful MCP servers from your data';
-                // Show title, hide New button
-                pageTitle.classList.remove('hidden');
-                headerNewServerBtn?.classList.add('hidden');
-                break;
-            case 'manage':
-                pageTitle.textContent = 'Manage Servers';
-                if (pageSubtitle) pageSubtitle.textContent = 'Manage and deploy your created MCP servers';
-                // Hide title, show New button near logo
-                pageTitle.classList.add('hidden');
-                headerNewServerBtn?.classList.remove('hidden');
-                break;
-            case 'test':
-                pageTitle.textContent = 'Test Servers';
-                if (pageSubtitle) pageSubtitle.textContent = 'Run automated tests or create custom test scenarios';
-                // Show title, hide New button
-                pageTitle.classList.remove('hidden');
-                headerNewServerBtn?.classList.add('hidden');
-                break;
-        }
-    }
+    // Titles removed from AppBar by design
+    if (pageTitle) pageTitle.classList.add('hidden');
+    // Always show New Server if present
+    headerNewServerBtn?.classList.remove('hidden');
 
     // Ensure Server Details side panel only on Manage
     const detailsPanel = document.getElementById('server-details-panel');
