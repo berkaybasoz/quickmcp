@@ -205,6 +205,7 @@ body {
   border: 0 !important;
   box-shadow: none !important;
   gap: 0 !important;
+  cursor: pointer;
 }
 #sidebar.collapsed .nav-item.card-hover:hover { transform: none !important; box-shadow: none !important; }
 #sidebar.collapsed .nav-item .flex-1 { display: none !important; }
@@ -232,6 +233,7 @@ body {
   border-radius: 0.5rem !important;        /* rounded */
   box-shadow: none !important;             /* no glow/shadow */
   overflow: hidden !important;
+  transition: border-color 120ms ease, transform 120ms ease;
 }
 
 /* Inner background with padding between border and fill */
@@ -241,6 +243,7 @@ body {
   inset: 3px;                               /* padding between border and background */
   border-radius: 0.375rem;                   /* slightly smaller than outer radius */
   background: #f1f5f9;                       /* default light fill */
+  transition: background-color 120ms ease;
 }
 #sidebar.collapsed .nav-item i { font-size: 1.05rem !important; line-height: 1 !important; }
 
@@ -282,6 +285,19 @@ body {
 #sidebar.collapsed a[href="/manage-servers"] .relative > div::before { background: rgba(16, 185, 129, 0.14) !important; } /* emerald tint */
 #sidebar.collapsed a[href="/test-servers"] .relative > div::before { background: rgba(124, 58, 237, 0.14) !important; }   /* violet tint */
 #sidebar.collapsed a[href="/how-to-use"] .relative > div::before { background: rgba(245, 158, 11, 0.18) !important; }     /* amber tint */
+
+/* Hover states: stronger tint + border highlight + slight scale */
+#sidebar.collapsed a[href="/"]:hover .relative > div { border-color: #93c5fd !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/"]:hover .relative > div::before { background: rgba(37, 99, 235, 0.24) !important; }
+
+#sidebar.collapsed a[href="/manage-servers"]:hover .relative > div { border-color: #6ee7b7 !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/manage-servers"]:hover .relative > div::before { background: rgba(16, 185, 129, 0.22) !important; }
+
+#sidebar.collapsed a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/test-servers"]:hover .relative > div::before { background: rgba(124, 58, 237, 0.22) !important; }
+
+#sidebar.collapsed a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/how-to-use"]:hover .relative > div::before { background: rgba(245, 158, 11, 0.28) !important; }
 
 /* Right details rail (exact, consistent) */
 .details-rail {
