@@ -320,6 +320,18 @@ body {
 #sidebar:not(.collapsed) a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; background: rgba(124, 58, 237, 0.22) !important; transform: translateY(-1px); }
 #sidebar:not(.collapsed) a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(245, 158, 11, 0.24) !important; transform: translateY(-1px); }
 
+/* AppBar New Server button: enforce single, consistent style across pages */
+#headerNewServerBtn {
+  padding: 0.5rem 1rem !important; /* py-2 px-4 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+  font-size: 0.875rem !important; /* text-sm */
+  line-height: 1.25rem !important;
+}
+/* Hide any legacy per-page New Server buttons that lack the shared id */
+header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerBtn) {
+  display: none !important;
+}
+
 /* Right details rail (exact, consistent) */
 .details-rail {
   position: absolute;

@@ -1,716 +1,120 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickMCP - Modern MCP Server Generator</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP - Manage Servers</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Custom Archdraw Styles -->
-    <link rel="stylesheet" href="archdraw-styles.css">
-
-    <style>
-      /* Collapsed sidebar icon layout (archdraw-like) */
-      #sidebar.collapsed .nav-item {
-        padding: 0.5rem !important; /* p-2 */
-        gap: 0 !important;
-        justify-content: center !important;
-      }
-      #sidebar.collapsed .nav-item > .relative {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.5rem; /* 40px */
-        height: 2.5rem;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      #sidebar.collapsed .nav-item > .relative > div {
-        width: 2.5rem;
-        height: 2.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #fff;
-        border: 1px solid #e2e8f0; /* slate-200 */
-        border-radius: 0.5rem; /* rounded-lg */
-      }
-      #sidebar.collapsed .nav-item .flex-1 { display: none !important; }
-      #sidebar.collapsed #sidebarHeaderMain { display: none !important; }
-      #sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
-      #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
-      #sidebar.collapsed #closeSidebar { display: none !important; }
-      /* Make collapse button a reliable, centered target */
-      #sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
-      #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
-    </style>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+  <!-- Tailwind (dev only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Shared CSS -->
+  <link rel="stylesheet" href="archdraw-styles.css">
+  <script>tailwind.config = { darkMode: 'class' };</script>
 </head>
 
 <body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
-
-    <!-- Header -->
-    <header
-        class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
-        <!-- Brand -->
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3">
-                <div
-                    class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
-                    <i class="fas fa-rocket text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
-                    <p class="text-xs text-slate-500 font-medium">Server Generator</p>
-                </div>
-            </div>
-            <!-- Divider -->
-            <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
-
-            <!-- Header Action (Manage page): New Server Button -->
-            <button onclick="window.location.href='/'"
-                class="hidden md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
-                <i class="fas fa-plus"></i>
-                <span>New Server</span>
-            </button>
+  <!-- App Bar -->
+  <header class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+          <i class="fas fa-rocket text-lg"></i>
         </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-3">
-            <div
-                class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>System Online</span>
-            </div>
-            <button
-                class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
-                <i class="fas fa-bell"></i>
-                <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div
-                class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md">
-                U
-            </div>
-            <button id="openSidebar"
-                class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
-                <i class="fas fa-bars"></i>
-            </button>
+        <div>
+          <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+          <p class="text-xs text-slate-500 font-medium">Server Generator</p>
         </div>
-    </header>
+      </div>
+      <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
+      <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
+        <button id="headerNewServerBtn" onclick="window.location.href='/'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+          <i class="fas fa-plus"></i>
+          <span>New Server</span>
+        </button>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span>System Online</span>
+      </div>
+      <button class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
+        <i class="fas fa-bell"></i>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md">U</div>
+      <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
 
-    <!-- Main Body -->
-    <div class="flex flex-1 overflow-hidden" id="app">
+  <!-- Layout -->
+  <div class="flex flex-1 overflow-hidden" id="app">
+    <!-- Shared Sidebar mount -->
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
-        <!-- Left Sidebar (Navigation) -->
-        <div id="sidebar"
-            class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0">
-            <!-- Sidebar Header -->
-            <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
-                <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
-                    <div id="sidebarHeaderMain" class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
-                            <i class="fas fa-compass text-white"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-slate-900 font-bold tracking-tight text-lg">Navigation</h2>
-                            <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
-                            <i class="fas fa-angles-left"></i>
-                        </button>
-                        <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
+    <!-- Content -->
+    <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
+      <div class="absolute inset-0 shadow-inner shadow-slate-200/30 pointer-events-none z-10"></div>
+      <div class="flex-1 overflow-y-auto scrollbar-modern px-8 pt-6 pb-8 relative z-0">
+        <div class="max-w-6xl mx-auto space-y-6 pb-20">
+          <!-- Filters -->
+          <div class="card p-4">
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Search</label>
+                <input id="serverSearch" type="text" placeholder="Search servers by name or description" class="input" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Version</label>
+                <input id="serverVersionFilter" type="text" placeholder="e.g. 1.0" class="input w-36" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Tools</label>
+                <input id="minToolsFilter" type="number" min="0" class="input w-28" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Resources</label>
+                <input id="minResourcesFilter" type="number" min="0" class="input w-28" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sort</label>
+                <select id="serverSortSelect" class="input w-40">
+                  <option value="name-asc">Name A→Z</option>
+                  <option value="name-desc">Name Z→A</option>
+                  <option value="tools-desc">Tools High→Low</option>
+                  <option value="tools-asc">Tools Low→High</option>
+                  <option value="resources-desc">Resources High→Low</option>
+                  <option value="resources-asc">Resources Low→High</option>
+                </select>
+              </div>
+              <div class="ml-auto flex items-center gap-2">
+                <span id="serverSearchCount" class="text-xs text-slate-500"></span>
+                <button id="clearServerFilters" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 transition-colors text-sm">Clear</button>
+              </div>
             </div>
+          </div>
 
-            <!-- Navigation Links -->
-            <div id="sidebarNavList" class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
-
-                <a href="/"
-                    class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all active">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-magic"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Generate
-                            Server</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Create new MCP servers</span>
-                    </div>
-                </a>
-
-                <a href="/manage-servers"
-                    class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-server"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Manage
-                            Servers</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Edit & Control</span>
-                    </div>
-                </a>
-
-                <a href="/test-servers"
-                    class="nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-vial"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Test
-                            Servers</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Verify functionality</span>
-                    </div>
-                </a>
-
-                <a href="/how-to-use"
-                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
-                    <div class="relative">
-                        <div
-                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                            <i class="fas fa-book"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <span
-                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">How
-                            to Use</span>
-                        <span class="text-slate-500 text-xs mt-0.5 block font-medium">Documentation & Guide</span>
-                    </div>
-                </a>
-
-            </div>
-            <div id="sidebarResizer" class="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent"></div>
+          <!-- Server list -->
+          <div id="server-list" class="space-y-0"></div>
         </div>
-
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay"
-            class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300">
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
-            <!-- Inner Shadow -->
-            <div class="absolute inset-0 shadow-inner shadow-slate-200/30 pointer-events-none z-10"></div>
-
-            <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto scrollbar-modern px-8 pt-0 pb-8 relative z-0">
-                <div class="max-w-6xl mx-auto space-y-8 pb-20">
-
-                    <!-- Generate Server Tab -->
-                    <div id="generate-tab" class="tab-content animate-fade-in">
-
-                        <!-- Hero Section -->
-                        <div class="text-center mb-10">
-                            <div
-                                class="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border border-blue-100">
-                                <i class="fas fa-sparkles"></i>
-                                <span>AI-Powered</span>
-                            </div>
-                            <h2 class="text-3xl font-bold text-slate-900 mb-3">Generate Your MCP Server</h2>
-                            <p class="text-slate-600 max-w-2xl mx-auto">Transform your data into powerful MCP servers in
-                                minutes. Follow our step-by-step wizard.</p>
-                        </div>
-
-                        <!-- Wizard Progress -->
-                        <div class="card p-6 mb-8">
-                            <div class="flex items-center justify-between">
-                                <div class="flex-1">
-                                    <div class="flex items-center">
-                                        <div id="step-1-indicator"
-                                            class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg shadow-lg shadow-blue-500/30 font-bold transition-all">
-                                            1</div>
-                                        <div class="flex-1 h-1 bg-slate-100 mx-4 rounded-full overflow-hidden">
-                                            <div id="progress-1-2"
-                                                class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <p class="text-sm font-bold text-slate-900">Data Source</p>
-                                        <p class="text-xs text-slate-500">Connect data</p>
-                                    </div>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center">
-                                        <div id="step-2-indicator"
-                                            class="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 rounded-lg font-bold transition-all">
-                                            2</div>
-                                        <div class="flex-1 h-1 bg-slate-100 mx-4 rounded-full overflow-hidden">
-                                            <div id="progress-2-3"
-                                                class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <p class="text-sm font-bold text-slate-400">Preview</p>
-                                        <p class="text-xs text-slate-400">Validate data</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex items-center">
-                                        <div id="step-3-indicator"
-                                            class="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 rounded-lg font-bold transition-all">
-                                            3</div>
-                                    </div>
-                                    <div class="mt-3">
-                                        <p class="text-sm font-bold text-slate-400">Configure</p>
-                                        <p class="text-xs text-slate-400">Finalize</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Wizard Content -->
-                        <div class="card overflow-hidden">
-
-                            <!-- Step 1 -->
-                            <div id="wizard-step-1" class="wizard-step">
-                                <div class="bg-slate-50/50 p-6 border-b border-slate-200/60">
-                                    <h3 class="text-lg font-bold text-slate-900">Choose Data Source</h3>
-                                    <p class="text-sm text-slate-500">Select how you want to import your data.</p>
-                                </div>
-                                <div class="p-8 space-y-8">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <label class="cursor-pointer group">
-                                            <input type="radio" name="dataSourceType" value="csv" class="peer sr-only">
-                                            <div
-                                                class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
-                                                <div
-                                                    class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                    <i class="fas fa-file-csv text-2xl"></i>
-                                                </div>
-                                                <h4 class="font-bold text-slate-900 mb-1">CSV File</h4>
-                                                <p class="text-xs text-slate-500">Upload a comma-separated values file.
-                                                </p>
-                                            </div>
-                                        </label>
-                                        <label class="cursor-pointer group">
-                                            <input type="radio" name="dataSourceType" value="excel"
-                                                class="peer sr-only">
-                                            <div
-                                                class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
-                                                <div
-                                                    class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                    <i class="fas fa-file-excel text-2xl"></i>
-                                                </div>
-                                                <h4 class="font-bold text-slate-900 mb-1">Excel File</h4>
-                                                <p class="text-xs text-slate-500">Upload an Excel spreadsheet (.xlsx).
-                                                </p>
-                                            </div>
-                                        </label>
-                                        <label class="cursor-pointer group">
-                                            <input type="radio" name="dataSourceType" value="database"
-                                                class="peer sr-only">
-                                            <div
-                                                class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
-                                                <div
-                                                    class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                    <i class="fas fa-database text-2xl"></i>
-                                                </div>
-                                                <h4 class="font-bold text-slate-900 mb-1">Database</h4>
-                                                <p class="text-xs text-slate-500">Connect to SQL, MySQL, or Postgres.
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-
-                                    <!-- File Upload -->
-                                    <div id="file-upload-section" class="hidden animate-fade-in">
-                                        <div id="fileUpload"
-                                            class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer">
-                                            <div
-                                                class="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                                <i class="fas fa-cloud-upload-alt text-3xl"></i>
-                                            </div>
-                                            <h4 class="text-lg font-bold text-slate-900">Click or Drag file here</h4>
-                                            <p class="text-sm text-slate-500 mt-1">Supports .csv and .xlsx files up to
-                                                10MB</p>
-                                            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
-                                        </div>
-                                    </div>
-
-                                    <!-- Database Config -->
-                                    <div id="database-section" class="hidden animate-fade-in space-y-6">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Database
-                                                    Type</label>
-                                                <select id="dbType" class="input">
-                                                    <option value="mssql">SQL Server</option>
-                                                    <option value="mysql">MySQL</option>
-                                                    <option value="postgresql">PostgreSQL</option>
-                                                    <option value="sqlite">SQLite</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Host</label>
-                                                <input type="text" id="dbHost" placeholder="localhost" class="input">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Port</label>
-                                                <input type="number" id="dbPort" placeholder="3306" class="input">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Database
-                                                    Name</label>
-                                                <input type="text" id="dbName" placeholder="my_database" class="input">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
-                                                <input type="text" id="dbUser" placeholder="root" class="input">
-                                            </div>
-                                            <div>
-                                                <label
-                                                    class="block text-xs font-bold text-slate-700 uppercase mb-2">Password</label>
-                                                <input type="password" id="dbPassword" placeholder="••••••••"
-                                                    class="input">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Loading/Error -->
-                                    <div id="parse-loading" class="hidden text-center py-8">
-                                        <div
-                                            class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3">
-                                        </div>
-                                        <p class="text-sm font-medium text-blue-600">Analyzing data structure...</p>
-                                    </div>
-                                    <div id="parse-error"
-                                        class="hidden p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
-                                    </div>
-
-                                    <!-- Navigation -->
-                                    <div class="flex justify-end pt-4 border-t border-slate-100">
-                                        <button id="next-to-step-2"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
-                                            disabled>
-                                            Next Step <i class="fas fa-arrow-right ml-2"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 2 -->
-                            <div id="wizard-step-2" class="wizard-step hidden">
-                                <div
-                                    class="bg-slate-50/50 p-6 border-b border-slate-200/60 flex justify-between items-center">
-                                    <div>
-                                        <h3 class="text-lg font-bold text-slate-900">Data Preview</h3>
-                                        <p class="text-sm text-slate-500">Review the detected schema and data.</p>
-                                    </div>
-                                </div>
-                                <div class="p-8 space-y-6">
-                                    <div id="data-preview" class="space-y-4"></div>
-
-                                    <div class="flex justify-between pt-4 border-t border-slate-100">
-                                        <button id="back-to-step-1"
-                                            class="text-slate-600 hover:text-slate-900 font-medium px-4 py-2">
-                                            <i class="fas fa-arrow-left mr-2"></i> Back
-                                        </button>
-                                        <button id="next-to-step-3"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30">
-                                            Configure Server <i class="fas fa-arrow-right ml-2"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 3 -->
-                            <div id="wizard-step-3" class="wizard-step hidden">
-                                <div class="bg-slate-50/50 p-6 border-b border-slate-200/60">
-                                    <h3 class="text-lg font-bold text-slate-900">Final Configuration</h3>
-                                    <p class="text-sm text-slate-500">Set your server details and generate.</p>
-                                </div>
-                                <div class="p-8 space-y-6">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Server
-                                            Name</label>
-                                        <input type="text" id="serverName" placeholder="my-mcp-server" class="input">
-                                        <div id="name-validation" class="mt-1 text-xs"></div>
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-slate-700 uppercase mb-2">Description</label>
-                                        <textarea id="serverDescription" rows="3"
-                                            placeholder="What does this server do?"
-                                            class="input resize-none"></textarea>
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-xs font-bold text-slate-700 uppercase mb-2">Version</label>
-                                        <input type="text" id="serverVersion" value="1.0.0" class="input">
-                                    </div>
-
-                                    <div id="generate-loading" class="hidden text-center py-8">
-                                        <div
-                                            class="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3">
-                                        </div>
-                                        <p class="text-sm font-medium text-purple-600">Generating server code...</p>
-                                    </div>
-                                    <div id="generate-success"
-                                        class="hidden p-4 bg-green-50 text-green-700 rounded-lg text-sm border border-green-200">
-                                    </div>
-                                    <div id="generate-error"
-                                        class="hidden p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
-                                    </div>
-
-                                    <div class="flex justify-between pt-4 border-t border-slate-100">
-                                        <button id="back-to-step-2"
-                                            class="text-slate-600 hover:text-slate-900 font-medium px-4 py-2">
-                                            <i class="fas fa-arrow-left mr-2"></i> Back
-                                        </button>
-                                        <button id="generateBtn"
-                                            class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg shadow-purple-500/30 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            <i class="fas fa-rocket mr-2"></i> Generate Server
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- Manage Servers Tab -->
-                    <div id="manage-tab" class="tab-content hidden animate-fade-in">
-                        <div class="text-center mb-10">
-                            <h2 class="text-3xl font-bold text-slate-900">Manage Servers</h2>
-                            <p class="text-slate-600 mt-1">View and control your generated servers.</p>
-                        </div>
-                        <!-- Search / Filters -->
-                        <div class="mb-4">
-                            <div class="flex flex-col gap-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative flex-1">
-                                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-search"></i></span>
-                                        <input id="serverSearch" type="text" placeholder="Search servers by name or description" 
-                                               class="input pl-9" />
-                                    </div>
-                                    <span id="serverSearchCount" class="text-xs text-slate-500 whitespace-nowrap"></span>
-                                </div>
-                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Version</label>
-                                        <input id="serverVersionFilter" type="text" placeholder="e.g. 1.0" class="input" />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Tools</label>
-                                        <input id="minToolsFilter" type="number" min="0" placeholder="0" class="input" />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Resources</label>
-                                        <input id="minResourcesFilter" type="number" min="0" placeholder="0" class="input" />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sort By</label>
-                                        <select id="serverSortSelect" class="input">
-                                            <option value="name-asc">Name (A→Z)</option>
-                                            <option value="name-desc">Name (Z→A)</option>
-                                            <option value="tools-desc">Tools (High→Low)</option>
-                                            <option value="tools-asc">Tools (Low→High)</option>
-                                            <option value="resources-desc">Resources (High→Low)</option>
-                                            <option value="resources-asc">Resources (Low→High)</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button id="clearServerFilters" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition-colors">
-                                            Clear
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="server-list" class="space-y-0">
-                            <!-- Server list populated by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Test Servers Tab -->
-                    <div id="test-tab" class="tab-content hidden animate-fade-in">
-                        <div class="text-center mb-10">
-                            <h2 class="text-3xl font-bold text-slate-900">Test Suite</h2>
-                            <p class="text-slate-600">Verify your server functionality.</p>
-                        </div>
-
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <!-- Auto Test -->
-                            <div class="card">
-                                <div class="p-6 border-b border-slate-200/60 bg-slate-50/50">
-                                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
-                                        <i class="fas fa-robot text-blue-500"></i> Automated Testing
-                                    </h3>
-                                </div>
-                                <div class="p-6 space-y-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select
-                                            Server</label>
-                                        <select id="testServerSelect" class="input"></select>
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <button id="runQuickTestBtn"
-                                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
-                                            <i class="fas fa-bolt mr-2"></i> Quick Test
-                                        </button>
-                                        <button id="runFullTestBtn"
-                                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
-                                            <i class="fas fa-play mr-2"></i> Full Test
-                                        </button>
-                                        <!-- Hidden button for app.js compatibility if needed, or just rely on these two -->
-                                        <button id="runAutoTestsBtn" class="hidden"></button>
-                                    </div>
-                                    <div id="test-loading" class="hidden text-center text-sm text-blue-600 py-2">
-                                        Running...</div>
-                                    <div id="test-error" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Custom Test -->
-                            <div class="card">
-                                <div class="p-6 border-b border-slate-200/60 bg-slate-50/50">
-                                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
-                                        <i class="fas fa-code text-purple-500"></i> Custom Request
-                                    </h3>
-                                </div>
-                                <div class="p-6 space-y-4">
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label
-                                                class="block text-xs font-bold text-slate-700 uppercase mb-2">Type</label>
-                                            <select id="testType" class="input">
-                                                <option value="tools/call">Tool Call</option>
-                                                <option value="resources/list">Resource List</option>
-                                                <option value="prompts/list">Prompt List</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label
-                                                class="block text-xs font-bold text-slate-700 uppercase mb-2">Name</label>
-                                            <div id="testNameContainer">
-                                                <input type="text" id="testName" placeholder="tool_name" class="input">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Params
-                                            (JSON)</label>
-                                        <textarea id="testParams" rows="3" class="input font-mono text-xs"
-                                            placeholder="{}"></textarea>
-                                    </div>
-                                    <button id="runCustomTestBtn"
-                                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
-                                        Send Request
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Results -->
-                        <div class="card mt-8">
-                            <div
-                                class="p-4 border-b border-slate-200/60 bg-slate-50/50 flex justify-between items-center">
-                                <h3 class="font-bold text-slate-900">Results</h3>
-                                <span class="text-xs text-slate-500 font-mono">JSON Output</span>
-                            </div>
-                            <div class="p-0">
-                                <pre id="test-results"
-                                    class="hidden bg-white dark:bg-slate-900 text-slate-800 dark:text-blue-300 p-6 text-xs font-mono overflow-auto max-h-96 border border-slate-200 dark:border-slate-700 rounded-lg whitespace-pre-wrap"></pre>
-                                <div id="no-results" class="p-12 text-center text-slate-400">
-                                    <i class="fas fa-terminal text-3xl mb-3 opacity-50"></i>
-                                    <p>No results to display</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Overlay Drawer (Server Details) - sits on top of list, no blur -->
-        <div id="server-details-panel" class="hidden fixed inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-out relative"></div>
+      </div>
     </div>
 
-    <!-- Success Modal -->
-    <div id="success-modal"
-        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 opacity-0 invisible transition-all duration-300 flex items-center justify-center p-4">
-        <div
-            class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform scale-95 transition-transform duration-300 overflow-hidden">
-            <div class="p-8 text-center">
-                <div
-                    class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-slow">
-                    <i class="fas fa-check text-green-500 text-4xl"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-slate-900 mb-2">Server Generated!</h3>
-                <p id="success-message" class="text-slate-600 mb-8">Your MCP server is ready to use.</p>
-                <div class="flex flex-col gap-3">
-                    <button
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/30"
-                        onclick="goToManageServers()">
-                        <i class="fas fa-server mr-2"></i> Manage Servers
-                    </button>
-                    <button
-                        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold transition-colors"
-                        onclick="closeSuccessModal()">
-                        <i class="fas fa-plus mr-2"></i> Create Another
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Right overlay details panel -->
+    <div id="server-details-panel" class="hidden fixed inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transform translate-x-full transition-transform duration-300 ease-out"></div>
+  </div>
 
-    <!-- Scripts -->
-    <script src="shared.js"></script>
-    <script src="sidebar.js"></script>
-    <script src="app.js"></script>
+  <!-- Scripts -->
+  <script src="shared.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="app.js"></script>
 </body>
 
 </html>
+
