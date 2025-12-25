@@ -1527,13 +1527,13 @@ function showServerDetailsPanel(serverData) {
                 <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600">${tools.length}</div>
-                    <div class="text-sm text-slate-500">Tools</div>
+                <div class="text-center rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50 p-3">
+                    <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-300">${tools.length}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-blue-700/80 dark:text-blue-300/90 mt-1">Tools</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600">${resources.length}</div>
-                    <div class="text-sm text-slate-500">Resources</div>
+                <div class="text-center rounded-lg border bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50 p-3">
+                    <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">${resources.length}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/90 mt-1">Resources</div>
                 </div>
             </div>
             <!-- Horizontal action bar above Tools -->
