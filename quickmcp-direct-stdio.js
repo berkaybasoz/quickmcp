@@ -80,30 +80,30 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
     }
 
     if (!hasLock) {
-      return; // do not try to start UI
-    }
-
-    // Only start Web UI if preferred port is actually free.
-    const probe = net.createServer();
-    probe.once('error', (err) => {
-      if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) {
-        // Port is busy or not permitted; skip starting Web UI to avoid crashing Claude session
-        try { fs.unlinkSync(lockPath); } catch {}
-        return;
-      }
-      // For other errors, still try starting server; better to attempt than silently skip for unknown cases
-      safeStartWebServer();
-    });
-    probe.once('listening', () => {
-      probe.close(() => {
+      console.error('[QuickMCP] UI lock held by another process; skipping Web UI in this process');
+    } else {
+      // Only start Web UI if preferred port is actually free.
+      const probe = net.createServer();
+      probe.once('error', (err) => {
+        if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) {
+          // Port is busy or not permitted; skip starting Web UI to avoid crashing Claude session
+          try { fs.unlinkSync(lockPath); } catch {}
+          return;
+        }
+        // For other errors, still try starting server; better to attempt than silently skip for unknown cases
         safeStartWebServer();
       });
-    });
-    try {
-      // Probe on IPv6 unspecified to mirror Express default, falling back to IPv4 if needed
-      probe.listen(preferredPort, '::');
-    } catch (_e) {
-      // If probing throws synchronously (rare), just skip UI
+      probe.once('listening', () => {
+        probe.close(() => {
+          safeStartWebServer();
+        });
+      });
+      try {
+        // Probe on IPv6 unspecified to mirror Express default, falling back to IPv4 if needed
+        probe.listen(preferredPort, '::');
+      } catch (_e) {
+        // If probing throws synchronously (rare), just skip UI
+      }
     }
   } catch (e) {
     console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
