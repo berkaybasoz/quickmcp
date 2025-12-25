@@ -1064,8 +1064,8 @@ function handleTestTypeChange() {
         // Load tools dropdown
         loadToolsDropdown(serverId);
     } else {
-        // Show regular input
-        container.innerHTML = '<input type="text" id="testName" placeholder="Enter test name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+        // Show regular input with unified input styling
+        container.innerHTML = '<input type="text" id="testName" placeholder="Enter test name" class="input">';
     }
 }
 
@@ -1092,7 +1092,7 @@ async function loadToolsDropdown(serverId) {
             const tools = result.data.config.tools || [];
             
             // Create dropdown with tools
-            let dropdownHTML = '<select id="testName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" onchange="updateParametersExample()">';
+            let dropdownHTML = '<select id="testName" class="input" onchange="updateParametersExample()">';
             dropdownHTML += '<option value="">Select a tool to test</option>';
             
             tools.forEach(tool => {
@@ -1108,7 +1108,7 @@ async function loadToolsDropdown(serverId) {
         }
     } catch (error) {
         console.error('Failed to load tools:', error);
-        container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+        container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="input">';
     }
 }
 
