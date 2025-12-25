@@ -1,14 +1,145 @@
 #!/usr/bin/env node
 
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const net = require('net');
 
 // Use the current working directory provided by the caller.
 // Do not change directories; keep paths relative to this script.
 
 const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
 
+// Parse CLI flags for convenience
+// Supported flags:
+//   --web | -w | web         -> explicitly enable web UI (default: enabled)
+//   --no-web                 -> disable web UI
+//   --port=NNNN              -> set PORT for web UI
+//   --data-dir=PATH          -> set QUICKMCP_DATA_DIR for sqlite
+const argv = process.argv.slice(2);
+const wantsWeb = argv.includes('--web') || argv.includes('-w') || argv.includes('web');
+const noWeb = argv.includes('--no-web');
+const portArg = argv.find(a => a.startsWith('--port='));
+const dataDirArg = argv.find(a => a.startsWith('--data-dir='));
+// Default behavior: Web UI enabled unless explicitly disabled
+if (noWeb || process.env.QUICKMCP_ENABLE_WEB === '0' || process.env.QUICKMCP_DISABLE_WEB === '1') {
+  process.env.QUICKMCP_ENABLE_WEB = '0';
+} else if (wantsWeb || process.env.QUICKMCP_ENABLE_WEB === '1' || process.env.QUICKMCP_ENABLE_WEB === undefined) {
+  process.env.QUICKMCP_ENABLE_WEB = '1';
+}
+if (portArg) {
+  const val = portArg.split('=')[1];
+  if (val) process.env.PORT = val;
+}
+if (dataDirArg) {
+  const val = dataDirArg.split('=')[1];
+  if (val) process.env.QUICKMCP_DATA_DIR = val;
+}
+
 // Create SQLite manager
 const sqliteManager = new SQLiteManager();
+
+// Optionally start the Web UI (Express) like `npm run dev`
+// Enable by setting QUICKMCP_ENABLE_WEB=1 (and optionally PORT, QUICKMCP_DATA_DIR)
+if (process.env.QUICKMCP_ENABLE_WEB === '1') {
+  try {
+    console.error('[QuickMCP] QUICKMCP_ENABLE_WEB=1 -> starting Web UI server...');
+    // Ensure we run from a writable directory when invoked via npx (CWD may be '/')
+    const canWrite = (dir) => {
+      try { fs.accessSync(dir, fs.constants.W_OK); return true; } catch { return false; }
+    };
+    let runDir = process.cwd();
+    if (runDir === '/' || !canWrite(runDir)) {
+      const home = os.homedir() || os.tmpdir();
+      runDir = path.join(home, '.quickmcp');
+      try { fs.mkdirSync(runDir, { recursive: true }); } catch {}
+      try { process.chdir(runDir); } catch {}
+    }
+    // Prepare uploads directory and expose as env for newer builds
+    const uploadsDir = path.join(runDir, 'uploads');
+    try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch {}
+    if (!process.env.QUICKMCP_UPLOAD_DIR) process.env.QUICKMCP_UPLOAD_DIR = uploadsDir;
+    
+    // Determine preferred port and acquire a simple lock so only one process owns the UI for that port
+    const preferredPort = parseInt(process.env.PORT || '3000', 10);
+    const lockPath = path.join(runDir, `ui-${preferredPort}.lock`);
+    let hasLock = false;
+    try {
+      const fd = fs.openSync(lockPath, 'wx');
+      fs.closeSync(fd);
+      hasLock = true;
+      const cleanup = () => { try { fs.unlinkSync(lockPath); } catch {} };
+      process.once('exit', cleanup);
+      process.once('SIGINT', () => { cleanup(); process.exit(0); });
+      process.once('SIGTERM', () => { cleanup(); process.exit(0); });
+    } catch (e) {
+      if (e && e.code !== 'EEXIST') {
+        console.error('[QuickMCP] UI lock error (continuing without UI):', e.message || e);
+      }
+      // Another process holds the UI lock; skip starting UI in this process
+    }
+
+    if (!hasLock) {
+      console.error('[QuickMCP] UI lock held by another process; skipping Web UI in this process');
+    } else {
+      // Only start Web UI if preferred port is actually free.
+      const probe = net.createServer();
+      probe.once('error', (err) => {
+        if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) {
+          // Port is busy or not permitted; skip starting Web UI to avoid crashing Claude session
+          try { fs.unlinkSync(lockPath); } catch {}
+          return;
+        }
+        // For other errors, still try starting server; better to attempt than silently skip for unknown cases
+        safeStartWebServer();
+      });
+      probe.once('listening', () => {
+        probe.close(() => {
+          safeStartWebServer();
+        });
+      });
+      try {
+        // Probe on IPv6 unspecified to mirror Express default, falling back to IPv4 if needed
+        probe.listen(preferredPort, '::');
+      } catch (_e) {
+        // If probing throws synchronously (rare), just skip UI
+      }
+    }
+  } catch (e) {
+    console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
+  }
+}
+
+// Start the web server but swallow a race-condition EADDRINUSE from Express listen
+function safeStartWebServer() {
+  let handled = false;
+  const handler = (err) => {
+    if (!handled && err && err.code === 'EADDRINUSE' && err.syscall === 'listen') {
+      handled = true;
+      // Swallow this once so the STDIO server keeps running; another instance already owns :3000
+      process.removeListener('uncaughtException', handler);
+      return;
+    }
+    // Not our case; restore default behavior
+    process.removeListener('uncaughtException', handler);
+    throw err;
+  };
+  // Install one-time handler to catch immediate async throw from Express
+  process.prependOnceListener('uncaughtException', handler);
+  try {
+    require('./dist/web/server.js');
+  } catch (e) {
+    // Synchronous load error
+    process.removeListener('uncaughtException', handler);
+    console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
+  }
+  // Remove handler on next tick if nothing happened, to avoid swallowing unrelated errors later
+  setImmediate(() => {
+    if (!handled) {
+      process.removeListener('uncaughtException', handler);
+    }
+  });
+}
 
 // Diagnostics: print environment and mssql details to help debug Claude Desktop
 try {

@@ -3,6 +3,8 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'fs';
+import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
@@ -13,16 +15,49 @@ import { SQLiteManager } from '../database/sqlite-manager';
 import Database from 'better-sqlite3';
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+
+// Resolve a writable uploads directory that works under npx (CWD may be '/')
+// Priority: QUICKMCP_UPLOAD_DIR -> os.tmpdir()/quickmcp-uploads
+const configuredUploadDir = process.env.QUICKMCP_UPLOAD_DIR;
+const defaultUploadDir = path.join(os.tmpdir(), 'quickmcp-uploads');
+const uploadDir = configuredUploadDir
+  ? (path.isAbsolute(configuredUploadDir)
+      ? configuredUploadDir
+      : path.join(process.cwd(), configuredUploadDir))
+  : defaultUploadDir;
+
+try { fsSync.mkdirSync(uploadDir, { recursive: true }); } catch {}
+const upload = multer({ dest: uploadDir });
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Prefer the new UI under src/web/public if bundled, otherwise fall back to dist/web/public
+const distPublicDir = path.join(__dirname, 'public');
+const srcPublicDir = path.join(__dirname, '..', '..', 'src', 'web', 'public');
+const publicDir = fsSync.existsSync(srcPublicDir) ? srcPublicDir : distPublicDir;
+
+app.use(express.static(publicDir));
 
 const parser = new DataSourceParser();
-const generator = new MCPServerGenerator();
+// Lazily initialize heavy/native-backed services to avoid startup failure
+let generator: MCPServerGenerator | null = null;
+let sqliteManager: SQLiteManager | null = null;
 const testRunner = new MCPTestRunner();
-const sqliteManager = new SQLiteManager();
+
+function ensureGenerator(): MCPServerGenerator {
+  if (!generator) {
+    generator = new MCPServerGenerator();
+  }
+  return generator;
+}
+
+function ensureSQLite(): SQLiteManager {
+  if (!sqliteManager) {
+    sqliteManager = new SQLiteManager();
+  }
+  return sqliteManager;
+}
 
 let nextAvailablePort = 3001;
 
@@ -161,7 +196,7 @@ app.post('/api/generate', async (req, res) => {
     console.log('- Parsed data tables:', parsedData?.length || 0);
 
     // Check if server with this name already exists
-    const existingServer = generator.getServer(name);
+    const existingServer = ensureGenerator().getServer(name);
     if (existingServer) {
       return res.status(400).json({
         success: false,
@@ -187,7 +222,7 @@ app.post('/api/generate', async (req, res) => {
 
     // Generate virtual server (saves to SQLite database)
     console.log(`🎯 API calling generateServer with name: "${name}"`);
-    const result = await generator.generateServer(
+    const result = await ensureGenerator().generateServer(
       name,                                    // serverId
       name,                                    // serverName (use the name from form as server name)
       parsedDataObject,
@@ -197,8 +232,8 @@ app.post('/api/generate', async (req, res) => {
 
     if (result.success) {
       // Get counts for display
-      const tools = generator.getToolsForServer(name);
-      const resources = generator.getResourcesForServer(name);
+      const tools = ensureGenerator().getToolsForServer(name);
+      const resources = ensureGenerator().getResourcesForServer(name);
 
       res.json({
         success: true,
@@ -227,14 +262,20 @@ app.post('/api/generate', async (req, res) => {
 
 // List generated servers endpoint
 app.get('/api/servers', (req, res) => {
-  const allServers = generator.getAllServers();
+  const gen = ensureGenerator();
+  const allServers = gen.getAllServers();
   const servers = allServers.map(server => {
-    const tools = generator.getToolsForServer(server.id);
-    const resources = generator.getResourcesForServer(server.id);
+    // Prefer persisted db_config from SQLite to avoid stale/partial objects
+    const persisted = ensureSQLite().getServer(server.id);
+    const rawType = (persisted?.dbConfig as any)?.type || (server as any)?.dbConfig?.type || 'unknown';
+    const type = typeof rawType === 'string' ? rawType : 'unknown';
+    const tools = gen.getToolsForServer(server.id);
+    const resources = gen.getResourcesForServer(server.id);
     return {
       id: server.id,
       name: server.name,
-      description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
+      type,
+      description: `${server.name} - Virtual MCP Server (${type})`,
       version: "1.0.0",
       toolsCount: tools.length,
       resourcesCount: resources.length,
@@ -248,7 +289,7 @@ app.get('/api/servers', (req, res) => {
 // Check if server name is available endpoint
 app.get('/api/servers/check-name/:name', (req, res) => {
   const serverName = req.params.name;
-  const existingServer = generator.getServer(serverName);
+  const existingServer = ensureGenerator().getServer(serverName);
   const isAvailable = !existingServer;
 
   res.json({
@@ -262,7 +303,7 @@ app.get('/api/servers/check-name/:name', (req, res) => {
 
 // Get server details endpoint
 app.get('/api/servers/:id', (req, res) => {
-  const server = generator.getServer(req.params.id);
+  const server = ensureGenerator().getServer(req.params.id);
 
   if (!server) {
     return res.status(404).json({
@@ -305,7 +346,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
     const serverId = req.params.id;
     const limit = parseInt(req.query.limit as string) || 10;
 
-    const server = generator.getServer(serverId);
+    const server = ensureGenerator().getServer(serverId);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -317,7 +358,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
     const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
     const executor = new DynamicMCPExecutor();
 
-    const tools = generator.getToolsForServer(serverId);
+    const tools = ensureGenerator().getToolsForServer(serverId);
     const selectTool = tools.find(tool => tool.operation === 'SELECT');
 
     if (!selectTool) {
@@ -361,7 +402,7 @@ app.get('/api/servers/:id/data', async (req, res) => {
 app.post('/api/servers/:id/test', async (req, res) => {
   try {
     // Get server from SQLite database
-    const server = sqliteManager.getServer(req.params.id);
+    const server = ensureSQLite().getServer(req.params.id);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -370,7 +411,7 @@ app.post('/api/servers/:id/test', async (req, res) => {
     }
 
     // Get tools for this server
-    const tools = sqliteManager.getToolsForServer(req.params.id);
+    const tools = ensureSQLite().getToolsForServer(req.params.id);
     
     // Check if this is a custom test or auto test
     const { runAll, testType, toolName, parameters } = req.body;
@@ -495,7 +536,7 @@ app.delete('/api/servers/:id', async (req, res) => {
     console.log(`Attempting to delete server with ID: ${serverId}`);
 
     // Check if server exists in JSON database
-    const existingServer = generator.getServer(serverId);
+    const existingServer = ensureGenerator().getServer(serverId);
     if (!existingServer) {
       console.log(`Server with ID "${serverId}" not found in database`);
       return res.status(404).json({
@@ -505,7 +546,7 @@ app.delete('/api/servers/:id', async (req, res) => {
     }
 
     // Delete from JSON database (primary storage)
-    generator.deleteServer(serverId);
+    ensureGenerator().deleteServer(serverId);
     console.log(`Deleted server "${serverId}" from JSON database`);
 
     // Also check and remove from in-memory store if exists
@@ -617,19 +658,19 @@ app.get('/api/servers/:id/export', (req, res) => {
 // Serve the main HTML page
 // Serve specific HTML files for different routes
 app.get('/manage-servers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'manage-servers.html'));
+  res.sendFile(path.join(publicDir, 'manage-servers.html'));
 });
 
 app.get('/test-servers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'test-servers.html'));
+  res.sendFile(path.join(publicDir, 'test-servers.html'));
 });
 
 app.get('/database-tables', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'database-tables.html'));
+  res.sendFile(path.join(publicDir, 'database-tables.html'));
 });
 
 app.get('/how-to-use', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'how-to-use.html'));
+  res.sendFile(path.join(publicDir, 'how-to-use.html'));
 });
 
 // Database tables API endpoints
@@ -885,24 +926,31 @@ app.post('/api/mcp-stdio', (req, res) => {
 
 // Serve index.html for root and any other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 const MCP_PORT = 3001;
 
-// Initialize integrated MCP server
-const integratedMCPServer = new IntegratedMCPServer();
+// Initialize integrated MCP server (optional in environments without native deps)
+let integratedMCPServer: IntegratedMCPServer | null = null;
+try {
+  integratedMCPServer = new IntegratedMCPServer();
+} catch (error) {
+  console.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
+}
 
 app.listen(PORT, async () => {
   //console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
 
   // Start integrated MCP server
-  try {
-    await integratedMCPServer.start(MCP_PORT);
-    // Configuration info is now available in the How to Use page
-  } catch (error) {
-    console.error('❌ Failed to start integrated MCP server:', error);
+  if (integratedMCPServer) {
+    try {
+      await integratedMCPServer.start(MCP_PORT);
+      // Configuration info is now available in the How to Use page
+    } catch (error) {
+      console.error('❌ Failed to start integrated MCP server:', error);
+    }
   }
 });
 

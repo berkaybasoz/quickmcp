@@ -1,6 +1,6 @@
 {
-  "name": "@berkaybasoz/quickmcp",
-  "version": "1.0.2",
+  "name": "@softtechai/quickmcp",
+  "version": "1.0.16",
   "description": "An application to generate MCP servers from various data sources and test them",
   "main": "dist/index.js",
   "bin": {
@@ -17,6 +17,7 @@
   "files": [
     "dist",
     "quickmcp-direct-stdio.js",
+    "src/web/public",
     "README.md",
     "LICENSE"
   ],

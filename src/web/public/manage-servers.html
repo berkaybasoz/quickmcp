@@ -1,198 +1,128 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="en" class="h-full">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Servers - MCP Server Generator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP - Manage Servers</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-
-        /* Custom animations */
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .slide-in { animation: slideIn 0.3s ease-out; }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Glassmorphism effect */
-        .glass {
-            backdrop-filter: blur(20px);
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .glass-dark {
-            backdrop-filter: blur(20px);
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-    </style>
-
-    <!-- Tailwind Config -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            900: '#0c4a6e'
-                        }
-                    },
-                    animation: {
-                        'bounce-slow': 'bounce 2s infinite',
-                        'pulse-slow': 'pulse 3s infinite'
-                    }
-                }
-            }
-        }
-    </script>
+  <!-- Tailwind (dev only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Shared CSS -->
+  <link rel="stylesheet" href="archdraw-styles.css">
+  <script>tailwind.config = { darkMode: 'class' };</script>
 </head>
-<body class="h-full bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-    <!-- Main App Container -->
-    <div id="app" class="flex h-full">
 
-        <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white/90 backdrop-blur-xl border-r border-gray-200/50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
-            <div class="flex flex-col h-full">
-                <!-- Sidebar Header -->
-                <div class="flex items-center justify-between p-6 border-b border-gray-200/50">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-rocket text-white text-lg"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-xl font-bold text-gray-900">QuickMCP</h1>
-                            <p class="text-xs text-gray-500">Server Generator</p>
-                        </div>
-                    </div>
-                    <button id="closeSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                        <i class="fas fa-times text-gray-500"></i>
-                    </button>
-                </div>
-
-                <!-- Navigation -->
-                <nav class="flex-1 px-4 py-6 space-y-2">
-                    <a href="/" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
-                        <i class="fas fa-magic mr-3 text-gray-400"></i>
-                        Generate Server
-                    </a>
-                    <a href="/manage-servers" class="nav-item active flex items-center px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200">
-                        <i class="fas fa-server mr-3 text-blue-500"></i>
-                        Manage Servers
-                    </a>
-                    <a href="/test-servers" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
-                        <i class="fas fa-vial mr-3 text-gray-400"></i>
-                        Test Servers
-                    </a>
-                    <a href="/how-to-use" class="nav-item flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
-                        <i class="fas fa-book mr-3 text-gray-400"></i>
-                        How to Use
-                    </a>
-                </nav>
-
-                <!-- Sidebar Footer -->
-                <div class="p-4 border-t border-gray-200/50">
-                    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-white text-xs"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">All systems online</p>
-                                <p class="text-xs text-gray-500">Ready to manage servers</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+  <!-- App Bar -->
+  <header class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+          <i class="fas fa-rocket text-lg"></i>
         </div>
-
-        <!-- Sidebar Overlay for mobile -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden opacity-0 invisible transition-all duration-300"></div>
-
-        <!-- Main Content -->
-        <div class="flex-1 lg:pl-64">
-            <!-- Top Navigation -->
-            <header class="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30">
-                <div class="px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between items-center h-16">
-                        <div class="flex items-center space-x-4">
-                            <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                                <i class="fas fa-bars text-gray-600"></i>
-                            </button>
-                            <div>
-                                <h2 class="text-2xl font-bold text-gray-900">Manage Servers</h2>
-                                <p class="text-sm text-gray-500">Manage and deploy your created MCP servers</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <div class="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span>Online</span>
-                            </div>
-                            <button class="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                                <i class="fas fa-bell text-gray-600"></i>
-                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Main Content -->
-            <main class="p-4 sm:p-6 lg:p-8">
-                <div class="max-w-7xl mx-auto">
-                    <div class="flex justify-between items-center mb-8">
-                        <div class="flex-1 text-center">
-                            <h1 class="text-3xl font-bold text-gray-900">Generated Servers</h1>
-                            <p class="text-gray-600 mt-2">Manage and deploy your created MCP servers</p>
-                        </div>
-                        <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="window.location.href='/'">
-                            <i class="fas fa-plus mr-2"></i>
-                            Generate New Server
-                        </button>
-                    </div>
-
-                    <div id="server-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        <!-- Server cards will be populated here -->
-                    </div>
-                </div>
-            </main>
+        <div>
+          <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+          <p class="text-xs text-slate-500 font-medium">Server Generator</p>
         </div>
+      </div>
+      <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
+      <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
+        <button id="headerNewServerBtn" onclick="window.location.href='/'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+          <i class="fas fa-plus"></i>
+          <span>New Server</span>
+        </button>
+      </div>
     </div>
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span>System Online</span>
+      </div>
+      <button class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
+        <i class="fas fa-bell"></i>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md">U</div>
+      <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
 
-    <!-- Scripts -->
-    <script src="shared.js"></script>
-    <script src="app.js"></script>
+  <!-- Layout -->
+    <div class="flex flex-1 overflow-hidden" id="app">
+    <!-- Shared Sidebar mount -->
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
+
+    <!-- Content -->
+    <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
+      <div class="absolute inset-0 shadow-inner shadow-slate-200/30 pointer-events-none z-10"></div>
+      <div class="flex-1 overflow-y-auto scrollbar-modern p-8 pr-20 relative z-0">
+        <div class="max-w-6xl mx-auto space-y-8 pb-20">
+          <!-- Filters -->
+          <div class="card p-4">
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Search</label>
+                <input id="serverSearch" type="text" placeholder="Search servers by name or description" class="input" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Type</label>
+                <select id="serverTypeFilter" class="input w-40">
+                  <option value="">All</option>
+                  <option value="mssql">SQL Server</option>
+                  <option value="mysql">MySQL</option>
+                  <option value="postgresql">PostgreSQL</option>
+                  <option value="sqlite">SQLite</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Version</label>
+                <input id="serverVersionFilter" type="text" placeholder="e.g. 1.0" class="input w-36" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Tools</label>
+                <input id="minToolsFilter" type="number" min="0" class="input w-28" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Min Resources</label>
+                <input id="minResourcesFilter" type="number" min="0" class="input w-28" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sort</label>
+                <select id="serverSortSelect" class="input w-40">
+                  <option value="name-asc">Name A→Z</option>
+                  <option value="name-desc">Name Z→A</option>
+                  <option value="tools-desc">Tools High→Low</option>
+                  <option value="tools-asc">Tools Low→High</option>
+                  <option value="resources-desc">Resources High→Low</option>
+                  <option value="resources-asc">Resources Low→High</option>
+                </select>
+              </div>
+              <div class="ml-auto flex items-center gap-2">
+                <span id="serverSearchCount" class="text-xs text-slate-500"></span>
+                <button id="clearServerFilters" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 transition-colors text-sm">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Server list -->
+          <div id="server-list" class="space-y-0"></div>
+        </div>
+      </div>
+      <!-- Right overlay details panel inside content area (does not cover App Bar) -->
+      <div id="server-details-panel" class="absolute inset-y-0 right-0 w-[28rem] max-w-full bg-white shadow-2xl border-l border-slate-200 z-[60] flex flex-col transition-transform duration-300 ease-out"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="shared.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>

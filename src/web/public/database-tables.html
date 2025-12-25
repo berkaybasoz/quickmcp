@@ -1,457 +1,317 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Tables - MCP Server Generator</title>
-    <link rel="stylesheet" href="shared-styles.css">
+    <title>Database Tables - QuickMCP</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom Archdraw Styles -->
+    <link rel="stylesheet" href="archdraw-styles.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .table-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .table-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .table-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .table-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .table-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .table-icon {
-            font-size: 1.5rem;
-        }
-
-        .table-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-preview {
-            margin-top: 1rem;
-        }
-
-        .data-header {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .data-grid {
-            overflow-x: auto;
-            margin-top: 0.5rem;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
+        /* Custom styles for data tables */
         .data-table th {
-            background: var(--primary-color);
-            color: white;
-            padding: 0.75rem;
-            text-align: left;
+            background-color: #f1f5f9;
+            color: #475569;
             font-weight: 600;
-            font-size: 0.85rem;
-            border: none;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .data-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--border-light);
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            max-width: 200px;
-            word-wrap: break-word;
-        }
-
-        .data-table tr:nth-child(even) {
-            background: var(--secondary-color);
-        }
-
-        .data-table tr:hover {
-            background: #e3f2fd;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+            color: #334155;
         }
 
         .data-table tr:last-child td {
             border-bottom: none;
         }
 
-        .no-data {
-            text-align: center;
-            color: var(--text-secondary);
-            font-style: italic;
-            padding: 2rem;
-            background: var(--secondary-color);
-            border-radius: 6px;
-        }
-
-        .more-data {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-style: italic;
-            margin-top: 0.5rem;
-        }
-
-        .table-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .btn-small {
-            font-size: 0.85rem;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .btn-view {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-view:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-
-        .btn-query {
-            background: var(--secondary-color);
-            color: var(--text-primary);
-        }
-
-        .btn-query:hover {
-            background: var(--secondary-dark);
-            transform: translateY(-1px);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-secondary);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .refresh-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 56px;
-            height: 56px;
-            border: none;
-            border-radius: 50%;
-            background: var(--primary-color);
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s ease;
-            z-index: 100;
-        }
-
-        .refresh-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.1);
-        }
-
-        .db-info {
-            background: var(--info-background);
-            border: 1px solid var(--info-border);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .db-path {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            word-break: break-all;
-        }
-
-        .tab-navigation {
-            display: flex;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 2rem;
-            gap: 0.5rem;
-        }
-
-        .tab-button {
-            background: none;
-            border: none;
-            padding: 1rem 1.5rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            transition: all 0.2s ease;
-            border-radius: 8px 8px 0 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .tab-button:hover {
-            background: var(--secondary-color);
-            color: var(--text-primary);
-        }
-
-        .tab-button.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-            background: var(--secondary-color);
-            font-weight: 600;
-        }
-
-        .tab-content {
-            min-height: 400px;
-        }
-
-        .tab-panel {
-            display: none !important;
-        }
-
-        .tab-panel.active {
-            display: block !important;
-        }
-
-        .table-wrapper {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .table-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .tab-navigation {
-                flex-direction: column;
-                gap: 0;
-            }
-
-            .tab-button {
-                border-radius: 0;
-                border-bottom: 1px solid var(--border-color);
-                border-right: 3px solid transparent;
-                padding: 0.75rem 1rem;
-            }
-
-            .tab-button.active {
-                border-bottom-color: var(--border-color);
-                border-right-color: var(--primary-color);
-            }
-
-            .refresh-btn {
-                bottom: 1rem;
-                right: 1rem;
-            }
+        .data-table tr:hover td {
+            background-color: #f8fafc;
         }
     </style>
 </head>
-<body>
-    <div class="main-layout">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">QM</div>
-                <div class="sidebar-title">QuickMCP</div>
+
+<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+
+    <!-- Header -->
+    <header
+        class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+        <!-- Brand -->
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+                    <i class="fas fa-rocket text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+                    <p class="text-xs text-slate-500 font-medium">Server Generator</p>
+                </div>
             </div>
-            <nav class="sidebar-nav">
-                <a href="/" class="sidebar-nav-item">
-                    <div class="icon">🚀</div>
-                    <span>Generate Server</span>
-                </a>
-                <a href="/manage-servers" class="sidebar-nav-item">
-                    <div class="icon">📋</div>
-                    <span>Manage Servers</span>
-                </a>
-                <a href="/test-servers" class="sidebar-nav-item">
-                    <div class="icon">🧪</div>
-                    <span>Test Servers</span>
-                </a>
-                <a href="/database-tables" class="sidebar-nav-item active">
-                    <div class="icon">🗃️</div>
-                    <span>Database Tables</span>
-                </a>
-                <a href="/how-to-use" class="sidebar-nav-item">
-                    <div class="icon">📖</div>
-                    <span>How to Use</span>
-                </a>
-            </nav>
+            <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
+            <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
+                <span>Database Tables</span>
+            </div>
         </div>
 
-        <!-- Overlay for mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+        <!-- Actions -->
+        <div class="flex items-center gap-3">
+            <div
+                class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>System Online</span>
+            </div>
+            <button
+                class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
+                <i class="fas fa-bell"></i>
+                <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div
+                class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md">
+                U
+            </div>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="topbar">
-                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="topbar-title">
-                    MCP Server Generator - Database Tables
+    <!-- Main Body -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- Left Sidebar (Navigation) -->
+        <div class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40">
+            <!-- Sidebar Header -->
+            <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
+                            <i class="fas fa-compass text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-slate-900 font-bold tracking-tight text-lg">Navigation</h2>
+                            <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="container">
-                <div class="card">
-                    <div class="card-header">
-                        <h1 class="section-title">SQLite Database Tables</h1>
-                        <p class="section-subtitle">Explore the internal database structure</p>
+            <!-- Navigation Links -->
+            <div class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
+
+                <a href="/"
+                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
+                    <div class="relative">
+                        <div
+                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                            <i class="fas fa-magic"></i>
+                        </div>
                     </div>
-                    <div class="card-content">
-                        <div class="db-info">
-                            <h3 style="margin-top: 0;">Database Information</h3>
-                            <div class="db-path" id="dbPath">Loading database path...</div>
-                            <div style="margin-top: 0.5rem;">
-                                <strong>Total Tables:</strong> <span id="tableCount">-</span>
+                    <div class="flex-1 min-w-0">
+                        <span
+                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Generate
+                            Server</span>
+                    </div>
+                </a>
+
+                <a href="/manage-servers"
+                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
+                    <div class="relative">
+                        <div
+                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                            <i class="fas fa-server"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span
+                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Manage
+                            Servers</span>
+                    </div>
+                </a>
+
+                <a href="/test-servers"
+                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
+                    <div class="relative">
+                        <div
+                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span
+                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">Test
+                            Servers</span>
+                    </div>
+                </a>
+
+                <!-- Active Link -->
+                <a href="/database-tables"
+                    class="card relative flex items-center gap-3 p-4 border-blue-400 shadow-md shadow-blue-500/10 bg-blue-50/30">
+                    <div class="relative">
+                        <div class="p-2.5 rounded-lg shadow-sm bg-blue-500 text-white">
+                            <i class="fas fa-table"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-blue-900 font-bold text-sm block">Database Tables</span>
+                        <span class="text-blue-600 text-xs mt-0.5 block font-medium">Inspect Data</span>
+                    </div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm"></div>
+                </a>
+
+                <a href="/how-to-use"
+                    class="card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all">
+                    <div class="relative">
+                        <div
+                            class="p-2.5 rounded-lg shadow-sm bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                            <i class="fas fa-book"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span
+                            class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">How
+                            to Use</span>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
+            <div class="absolute inset-0 shadow-inner shadow-slate-200/30 pointer-events-none z-10"></div>
+
+            <div class="flex-1 overflow-y-auto scrollbar-modern p-8 relative z-0">
+                <div class="max-w-7xl mx-auto space-y-8 pb-20">
+
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900">SQLite Database Tables</h2>
+                            <p class="text-slate-600 mt-1">Explore the internal database structure</p>
+                        </div>
+                        <button onclick="loadTables()"
+                            class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="card p-6">
+                        <div class="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="p-3 bg-blue-100 text-blue-600 rounded-lg">
+                                <i class="fas fa-database text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Database Path</h3>
+                                <p class="text-xs font-mono text-slate-600 mt-1 break-all" id="dbPath">Loading...</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Total Tables</h3>
+                                <p class="text-2xl font-bold text-blue-600 leading-none mt-1" id="tableCount">-</p>
                             </div>
                         </div>
 
                         <div id="tables-container">
-                            <div class="loading" id="tablesLoading">Loading database tables...</div>
+                            <div id="tablesLoading" class="text-center py-12">
+                                <div
+                                    class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3">
+                                </div>
+                                <p class="text-sm font-medium text-blue-600">Loading database tables...</p>
+                            </div>
 
                             <div id="tables-tabs" style="display: none;">
-                                <!-- Tab Navigation -->
-                                <div class="tab-navigation">
-                                    <button class="tab-button active" data-table="servers" onclick="switchTab('servers')">
-                                        🖥️ Servers (<span id="servers-count">0</span>)
+                                <!-- Tabs -->
+                                <div class="flex border-b border-slate-200 mb-6">
+                                    <button
+                                        class="px-6 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50/50 rounded-t-lg transition-colors tab-button active"
+                                        data-table="servers" onclick="switchTab('servers')">
+                                        <i class="fas fa-server mr-2"></i> Servers (<span id="servers-count">0</span>)
                                     </button>
-                                    <button class="tab-button" data-table="tools" onclick="switchTab('tools')">
-                                        🔧 Tools (<span id="tools-count">0</span>)
+                                    <button
+                                        class="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 rounded-t-lg transition-colors tab-button"
+                                        data-table="tools" onclick="switchTab('tools')">
+                                        <i class="fas fa-wrench mr-2"></i> Tools (<span id="tools-count">0</span>)
                                     </button>
-                                    <button class="tab-button" data-table="resources" onclick="switchTab('resources')">
-                                        📦 Resources (<span id="resources-count">0</span>)
+                                    <button
+                                        class="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 rounded-t-lg transition-colors tab-button"
+                                        data-table="resources" onclick="switchTab('resources')">
+                                        <i class="fas fa-box mr-2"></i> Resources (<span id="resources-count">0</span>)
                                     </button>
                                 </div>
 
-                                <!-- Tab Content -->
+                                <!-- Content -->
                                 <div class="tab-content">
-                                    <div id="tab-servers" class="tab-panel active">
-                                        <!-- Servers table will be loaded here -->
-                                    </div>
-                                    <div id="tab-tools" class="tab-panel">
-                                        <!-- Tools table will be loaded here -->
-                                    </div>
-                                    <div id="tab-resources" class="tab-panel">
-                                        <!-- Resources table will be loaded here -->
-                                    </div>
+                                    <div id="tab-servers" class="tab-panel active"></div>
+                                    <div id="tab-tools" class="tab-panel hidden"></div>
+                                    <div id="tab-resources" class="tab-panel hidden"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Table Details Modal -->
-    <div id="tableDetailsModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="tableModalTitle">Table Details</h2>
-                <button class="modal-close" onclick="closeTableDetailsModal()">&times;</button>
+    <div id="tableDetailsModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-900" id="tableModalTitle">Table Details</h2>
+                <button onclick="closeTableDetailsModal()"
+                    class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
-            <div class="modal-body" id="tableModalBody">
-                <!-- Table details will be loaded here -->
+            <div class="p-6 overflow-y-auto" id="tableModalBody">
+                <div class="text-center py-8">Loading...</div>
             </div>
         </div>
-        <div class="modal-overlay" onclick="closeTableDetailsModal()"></div>
     </div>
-
-    <!-- Refresh Button -->
-    <button class="refresh-btn" onclick="loadTables()" title="Refresh Tables">
-        🔄
-    </button>
 
     <script src="shared.js"></script>
     <script>
         // Load tables when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadTables();
         });
 
-        // Load database tables
         async function loadTables() {
             const loading = document.getElementById('tablesLoading');
             const tabsContainer = document.getElementById('tables-tabs');
@@ -472,11 +332,11 @@
             } catch (error) {
                 console.error('Error loading tables:', error);
                 tabsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <h3>Failed to Load Tables</h3>
-                        <p>Error: ${error.message}</p>
-                        <button class="btn btn-primary" onclick="loadTables()">Retry</button>
+                    <div class="text-center py-12">
+                        <div class="text-red-500 text-4xl mb-4"><i class="fas fa-exclamation-circle"></i></div>
+                        <h3 class="text-lg font-bold text-slate-900">Failed to Load Tables</h3>
+                        <p class="text-slate-600 mb-4">Error: ${error.message}</p>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg" onclick="loadTables()">Retry</button>
                     </div>
                 `;
                 tabsContainer.style.display = 'block';
@@ -485,71 +345,56 @@
             }
         }
 
-        // Update database info
         function updateDatabaseInfo(data) {
             document.getElementById('dbPath').textContent = data.dbPath || 'Unknown';
             document.getElementById('tableCount').textContent = data.tables.length;
         }
 
-        // Display tables in tab format
         function displayTables(tables) {
             const tabsContainer = document.getElementById('tables-tabs');
 
             if (tables.length === 0) {
                 tabsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🗃️</div>
-                        <h3>No Tables Found</h3>
-                        <p>The database appears to be empty or not initialized.</p>
+                    <div class="text-center py-12">
+                        <div class="text-slate-300 text-4xl mb-4"><i class="fas fa-table"></i></div>
+                        <h3 class="text-lg font-bold text-slate-900">No Tables Found</h3>
+                        <p class="text-slate-600">The database appears to be empty.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Update counts in tab buttons
             tables.forEach(table => {
                 const countSpan = document.getElementById(`${table.name}-count`);
-                if (countSpan) {
-                    countSpan.textContent = table.rowCount || 0;
-                }
+                if (countSpan) countSpan.textContent = table.rowCount || 0;
             });
 
-            // Display each table in its tab panel
             tables.forEach(table => {
                 const tabPanel = document.getElementById(`tab-${table.name}`);
-                if (tabPanel) {
-                    tabPanel.innerHTML = generateTableHTML(table);
-                }
+                if (tabPanel) tabPanel.innerHTML = generateTableHTML(table);
             });
 
             tabsContainer.style.display = 'block';
         }
 
-        // Generate HTML for a single table
         function generateTableHTML(table) {
             if (!table.sampleData || table.sampleData.length === 0) {
                 return `
-                    <div class="table-wrapper">
-                        <div class="table-header">
-                            <span class="table-icon">${getTableIcon(table.name)}</span>
-                            ${table.name} - No data available
-                        </div>
-                        <div class="no-data" style="padding: 3rem;">
-                            <div>This table is empty</div>
-                        </div>
+                    <div class="text-center py-12 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                        <p class="text-slate-500 italic">No data available in ${table.name}</p>
                     </div>
                 `;
             }
 
             return `
-                <div class="table-wrapper">
-                    <div class="table-header">
-                        <span class="table-icon">${getTableIcon(table.name)}</span>
-                        ${table.name} (${table.rowCount} rows, ${table.columns.length} columns)
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                        <span class="font-bold text-slate-700 text-sm uppercase">${table.name}</span>
+                        <span class="text-xs text-slate-500">${table.rowCount} rows</span>
                     </div>
-                    <div class="data-grid" style="max-height: 500px; overflow-y: auto;">
-                        <table class="data-table" style="margin: 0;">
-                            <thead style="position: sticky; top: 0; z-index: 10;">
+                    <div class="overflow-x-auto">
+                        <table class="w-full data-table">
+                            <thead>
                                 <tr>
                                     ${table.columns.map(col => `<th>${col.name}</th>`).join('')}
                                 </tr>
@@ -559,9 +404,9 @@
                                     <tr>
                                         ${table.columns.map(col => `
                                             <td>${row[col.name] !== null && row[col.name] !== undefined ?
-                                                (typeof row[col.name] === 'string' && row[col.name].length > 100 ?
-                                                    row[col.name].substring(0, 100) + '...' :
-                                                    row[col.name]) : '<em>NULL</em>'}</td>
+                    (typeof row[col.name] === 'string' && row[col.name].length > 100 ?
+                        row[col.name].substring(0, 100) + '...' :
+                        row[col.name]) : '<em class="text-slate-400">NULL</em>'}</td>
                                         `).join('')}
                                     </tr>
                                 `).join('')}
@@ -569,143 +414,31 @@
                         </table>
                     </div>
                     ${table.sampleData.length >= 5 ? `
-                        <div style="padding: 1rem; background: var(--secondary-color); text-align: center; color: var(--text-secondary);">
-                            Showing first ${table.sampleData.length} rows of ${table.rowCount} total
+                        <div class="bg-slate-50 px-4 py-2 border-t border-slate-200 text-center text-xs text-slate-500">
+                            Showing first ${table.sampleData.length} rows
                         </div>
                     ` : ''}
                 </div>
             `;
         }
 
-        // Switch between tabs
         function switchTab(tableName) {
-            // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
+                btn.classList.remove('active', 'text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50/50');
+                btn.classList.add('text-slate-600', 'border-transparent');
             });
-            document.querySelector(`[data-table="${tableName}"]`).classList.add('active');
+            const activeBtn = document.querySelector(`[data-table="${tableName}"]`);
+            activeBtn.classList.add('active', 'text-blue-600', 'border-b-2', 'border-blue-600', 'bg-blue-50/50');
+            activeBtn.classList.remove('text-slate-600', 'border-transparent');
 
-            // Update tab panels
-            document.querySelectorAll('.tab-panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            document.getElementById(`tab-${tableName}`).classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+            document.getElementById(`tab-${tableName}`).classList.remove('hidden');
         }
 
-        // Get table icon based on table name
-        function getTableIcon(tableName) {
-            switch(tableName.toLowerCase()) {
-                case 'servers': return '🖥️';
-                case 'tools': return '🔧';
-                case 'resources': return '📦';
-                default: return '📋';
-            }
-        }
-
-        // View table details
-        async function viewTableDetails(tableName) {
-            const modal = document.getElementById('tableDetailsModal');
-            const title = document.getElementById('tableModalTitle');
-            const body = document.getElementById('tableModalBody');
-
-            title.textContent = `Table: ${tableName}`;
-            body.innerHTML = '<div class="loading">Loading table details...</div>';
-            modal.style.display = 'block';
-
-            try {
-                const response = await fetch(`/api/database/tables/${tableName}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    displayTableDetails(result.data);
-                } else {
-                    throw new Error(result.error || 'Failed to load table details');
-                }
-            } catch (error) {
-                console.error('Error loading table details:', error);
-                body.innerHTML = `<div class="error">Failed to load table details: ${error.message}</div>`;
-            }
-        }
-
-        // Display table details
-        function displayTableDetails(data) {
-            const body = document.getElementById('tableModalBody');
-
-            let detailsHtml = `
-                <div class="table-details">
-                    <div class="info-section">
-                        <h3>Table Information</h3>
-                        <div class="info-grid">
-                            <div><strong>Name:</strong> ${data.name}</div>
-                            <div><strong>Columns:</strong> ${data.columns.length}</div>
-                            <div><strong>Row Count:</strong> ${data.rowCount}</div>
-                        </div>
-                    </div>
-
-                    <div class="info-section">
-                        <h3>Column Schema</h3>
-                        <div class="schema-table">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: var(--secondary-color);">
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Column</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Type</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Not Null</th>
-                                        <th style="padding: 0.75rem; border: 1px solid var(--border-color); text-align: left;">Primary Key</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.columns.map(column => `
-                                        <tr>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color); font-family: monospace;">${column.name}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.type}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.notnull ? '✅' : '❌'}</td>
-                                            <td style="padding: 0.75rem; border: 1px solid var(--border-color);">${column.pk ? '🔑' : '❌'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-            `;
-
-            if (data.sampleData && data.sampleData.length > 0) {
-                detailsHtml += `
-                    <div class="info-section">
-                        <h3>Sample Data (First 10 rows)</h3>
-                        <div style="overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse; min-width: 500px;">
-                                <thead>
-                                    <tr style="background: var(--secondary-color);">
-                                        ${data.columns.map(col => `<th style="padding: 0.5rem; border: 1px solid var(--border-color); text-align: left; font-size: 0.9rem;">${col.name}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.sampleData.map(row => `
-                                        <tr>
-                                            ${data.columns.map(col => `
-                                                <td style="padding: 0.5rem; border: 1px solid var(--border-color); font-size: 0.85rem; max-width: 200px; word-wrap: break-word;">
-                                                    ${row[col.name] !== null && row[col.name] !== undefined ? row[col.name] : '<em>NULL</em>'}
-                                                </td>
-                                            `).join('')}
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
-
-            detailsHtml += '</div>';
-            body.innerHTML = detailsHtml;
-        }
-
-        // Close table details modal
         function closeTableDetailsModal() {
-            document.getElementById('tableDetailsModal').style.display = 'none';
+            document.getElementById('tableDetailsModal').classList.add('hidden');
         }
-
     </script>
 </body>
+
 </html>

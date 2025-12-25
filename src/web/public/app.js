@@ -1,6 +1,85 @@
 let currentParsedData = null;
 let currentDataSource = null;
 let currentWizardStep = 1;
+let allServers = [];
+let serverSearchTimer = null;
+
+function initializeManageServersPage() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+
+    // Make panel visible (also undo responsive hidden states)
+    panel.classList.remove('hidden', 'translate-x-full', 'lg:hidden');
+    panel.classList.add('lg:flex');
+    panel.style.display = 'flex';
+
+    // Always start collapsed on page load
+    try {
+        localStorage.setItem('rightPanelCollapsed', 'true');
+    } catch {}
+
+    // Populate with placeholder. This will be overwritten when a server is viewed.
+    panel.innerHTML = `
+        <div id="serverDetailsHeaderRow" class="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="rightPanelCollapseBtn" class="text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center" title="Collapse panel">
+                    <i class="fas fa-angles-left"></i>
+                </button>
+                <div id="serverDetailsHeaderMain" class="flex items-center gap-3">
+                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
+                        <i class="fas fa-wrench text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                        <p class="text-slate-500 text-xs leading-none font-medium">No server selected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
+            <div class="card p-4 bg-blue-50 border-blue-100">
+                <div class="flex items-start gap-3 text-sm text-slate-700">
+                    <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                    <div>
+                        <div class="font-semibold text-blue-900 mb-1">Select a server to view details</div>
+                        <p>Select a server from the list and click the <i class="fas fa-eye"></i> icon. Tools, resources, and quick actions will appear here.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="card p-3 bg-white border border-slate-200 rounded-xl">
+                    <div class="text-xs text-slate-500">No server selected</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add mini icon row for collapsed mode
+    try {
+        const headerRowEl = panel.querySelector('#serverDetailsHeaderRow');
+        if (headerRowEl && !panel.querySelector('#rightPanelMiniRow')) {
+            const miniRow = document.createElement('div');
+            miniRow.id = 'rightPanelMiniRow';
+            miniRow.className = 'hidden flex items-center justify-center py-2';
+            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"><i class="fas fa-wrench"></i></div>';
+            headerRowEl.insertAdjacentElement('afterend', miniRow);
+        }
+    } catch {}
+
+    // Add listener for the new button
+    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
+    if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
+        collapseBtn.addEventListener('click', () => {
+            const current = localStorage.getItem('rightPanelCollapsed') === 'true';
+            localStorage.setItem('rightPanelCollapsed', String(!current));
+            applyRightPanelCollapsedState();
+        });
+        collapseBtn.dataset.listenerAttached = 'true';
+    }
+    
+    // Apply the visual state
+    applyRightPanelCollapsedState();
+}
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -8,6 +87,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
+    try { applySidebarCollapsedState(); } catch {}
+
+    // This will run on the manage-servers page
+    if (document.getElementById('server-list')) {
+        initializeManageServersPage();
+    }
+});
+
+// Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
+window.addEventListener('load', () => {
+    try { initSidebarResizer(); } catch {}
+    try { applySidebarCollapsedState(); } catch {}
 });
 
 // Setup event listeners
@@ -64,6 +155,59 @@ function setupEventListeners() {
     
     // Test server select change handler for loading tools
     document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
+
+    // Server search & filters (Manage page)
+    const serverSearchInput = document.getElementById('serverSearch');
+    const versionInput = document.getElementById('serverVersionFilter');
+    const minToolsInput = document.getElementById('minToolsFilter');
+    const minResourcesInput = document.getElementById('minResourcesFilter');
+    const sortSelect = document.getElementById('serverSortSelect');
+    const typeSelect = document.getElementById('serverTypeFilter');
+    const clearBtn = document.getElementById('clearServerFilters');
+    if (serverSearchInput) {
+        serverSearchInput.addEventListener('input', () => {
+            if (serverSearchTimer) clearTimeout(serverSearchTimer);
+            serverSearchTimer = setTimeout(() => {
+                applyServerFilters();
+            }, 200);
+        });
+    }
+    if (versionInput) versionInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (minToolsInput) minToolsInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (minResourcesInput) minResourcesInput.addEventListener('input', debounce(applyServerFilters, 200));
+    if (sortSelect) sortSelect.addEventListener('change', applyServerFilters);
+    if (typeSelect) typeSelect.addEventListener('change', applyServerFilters);
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        if (serverSearchInput) serverSearchInput.value = '';
+        if (versionInput) versionInput.value = '';
+        if (minToolsInput) minToolsInput.value = '';
+        if (minResourcesInput) minResourcesInput.value = '';
+        if (sortSelect) sortSelect.value = 'name-asc';
+        if (typeSelect) typeSelect.value = '';
+        applyServerFilters();
+    });
+
+    // Collapsible left sidebar toggle
+    const leftToggle = document.getElementById('sidebarCollapseBtn');
+    if (leftToggle) {
+        leftToggle.addEventListener('click', () => {
+            const current = localStorage.getItem('sidebarCollapsed') === 'true';
+            localStorage.setItem('sidebarCollapsed', (!current).toString());
+            applySidebarCollapsedState();
+        });
+        // Also make the entire header row clickable to expand when collapsed
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        headerRow?.addEventListener('click', (e) => {
+            if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
+                // Prevent double handling when clicking the button itself
+                if ((e.target.closest && e.target.closest('#sidebarCollapseBtn'))) return;
+                localStorage.setItem('sidebarCollapsed', 'false');
+                applySidebarCollapsedState();
+            }
+        });
+    }
+
+    
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
@@ -143,23 +287,30 @@ function switchTabByRoute(tabName) {
 
     // Update page title
     const pageTitle = document.getElementById('pageTitle');
-    const pageSubtitle = pageTitle?.nextElementSibling;
+    const headerNewServerBtn = document.getElementById('headerNewServerBtn');
+    // Titles removed from AppBar by design
+    if (pageTitle) pageTitle.classList.add('hidden');
+    // Always show New Server if present
+    headerNewServerBtn?.classList.remove('hidden');
 
-    if (pageTitle) {
-        switch(tabName) {
-            case 'generate':
-                pageTitle.textContent = 'Generate Server';
-                if (pageSubtitle) pageSubtitle.textContent = 'Create powerful MCP servers from your data';
-                break;
-            case 'manage':
-                pageTitle.textContent = 'Manage Servers';
-                if (pageSubtitle) pageSubtitle.textContent = 'Manage and deploy your created MCP servers';
-                break;
-            case 'test':
-                pageTitle.textContent = 'Test Servers';
-                if (pageSubtitle) pageSubtitle.textContent = 'Run automated tests or create custom test scenarios';
-                break;
+    // Ensure Server Details side panel only on Manage
+    const detailsPanel = document.getElementById('server-details-panel');
+    if (detailsPanel) {
+        // Always start hidden; override responsive display too
+        detailsPanel.classList.add('hidden', 'lg:hidden');
+        detailsPanel.classList.remove('lg:flex');
+        if (tabName !== 'manage') {
+            // Ensure it stays hidden outside Manage
+            detailsPanel.classList.add('hidden', 'lg:hidden');
+            detailsPanel.classList.remove('lg:flex');
         }
+    }
+
+    // Hide server details overlay when switching tabs
+    const overlayPanel = document.getElementById('server-details-panel');
+    if (overlayPanel) {
+        overlayPanel.classList.add('translate-x-full');
+        overlayPanel.classList.add('hidden');
     }
 
     // Load data for specific tabs
@@ -180,10 +331,19 @@ function switchTab(tabName) {
         newPath = '/test-servers';
     }
 
-    // Update URL without triggering popstate
-    window.history.pushState(null, '', newPath);
+    // If the target view's DOM isn't present on this page, do a full navigation
+    const needsFullNav = (
+        (tabName === 'manage' && !document.getElementById('server-list')) ||
+        (tabName === 'test' && !document.getElementById('testServerSelect')) ||
+        (tabName === 'generate' && !document.getElementById('generate-tab'))
+    );
+    if (needsFullNav) {
+        window.location.href = newPath;
+        return;
+    }
 
-    // Switch the tab
+    // Update URL without triggering popstate and switch locally
+    window.history.pushState(null, '', newPath);
     switchTabByRoute(tabName);
 
     // Close sidebar on mobile
@@ -686,13 +846,18 @@ async function loadServers() {
         const result = await response.json();
 
         if (result.success) {
-            displayServers(result.data);
+            allServers = Array.isArray(result.data) ? result.data : [];
+            applyServerFilters();
         } else {
+            allServers = [];
             displayServers([]);
+            updateServerSearchCount(0, 0);
         }
     } catch (error) {
         console.error('Failed to load servers:', error);
+        allServers = [];
         displayServers([]);
+        updateServerSearchCount(0, 0);
     }
 }
 
@@ -720,66 +885,146 @@ function displayServers(servers) {
         return;
     }
 
-    let html = '';
-    servers.forEach(server => {
-        html += `
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
-                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-gray-200/50">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">${server.name}</h3>
-                            <p class="text-sm text-gray-600">${server.description}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                            <i class="fas fa-server text-white"></i>
-                        </div>
-                    </div>
+    // Build list view: clean, compact, zebra rows
+    const headerHtml = `
+        <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border border-slate-200 rounded-t-xl text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+            <div class="col-span-4">Name</div>
+            <div class="col-span-2">Type</div>
+            <div class="col-span-1">Version</div>
+            <div class="col-span-2">Tools</div>
+            <div class="col-span-2">Resources</div>
+            <div class="col-span-1 text-right">Actions</div>
+        </div>`;
+
+    const rowsHtml = servers.map(server => {
+        const derivedType = server.type || (typeof server.description === 'string' && (server.description.match(/\(([^)]+)\)/)?.[1] || '')) || '';
+        const safeType = derivedType || 'unknown';
+        return `
+        <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
+            <div class="md:col-span-4 min-w-0 pr-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="hidden md:inline-flex w-6 h-6 items-center justify-center rounded-md bg-blue-100 text-blue-600"><i class="fas fa-server text-xs"></i></span>
+                    <span class="font-semibold text-slate-900 truncate" title="${server.name}">${server.name}</span>
                 </div>
-
-                <div class="p-6">
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-blue-600">${server.toolsCount}</div>
-                            <div class="text-sm text-gray-500">Tools</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-green-600">${server.resourcesCount}</div>
-                            <div class="text-sm text-gray-500">Resources</div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">v${server.version}</span>
-                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${server.promptsCount} prompts</span>
-                    </div>
-
-                    <div class="space-y-2">
-                        <button class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200" onclick="viewServer('${server.id}')">
-                            <i class="fas fa-eye mr-2"></i>
-                            View Details
-                        </button>
-
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="testServer('${server.id}')">
-                                <i class="fas fa-vial text-xs mr-1"></i>
-                                Test
-                            </button>
-                            <button class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200" onclick="exportServer('${server.id}')">
-                                <i class="fas fa-download text-xs mr-1"></i>
-                                Export
-                            </button>
-                            <button class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-all duration-200" onclick="deleteServer('${server.id}')">
-                                <i class="fas fa-trash text-xs mr-1"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
-        `;
-    });
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">${safeType}</span>
+            </div>
+            <div class="md:col-span-1 text-slate-700 text-sm mt-2 md:mt-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">v${server.version || '1.0.0'}</span>
+            </div>
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.toolsCount ?? 0}</div>
+            <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.resourcesCount ?? 0}</div>
+            <div class="md:col-span-1 mt-3 md:mt-0 flex items-center justify-between md:justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <button class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
+                    <i class="fas fa-vial"></i>
+                </button>
+                <button class="bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="deleteServer('${server.id}')" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `}).join('');
 
-    serverList.innerHTML = html;
+    serverList.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            ${headerHtml}
+            <div class="divide-y divide-slate-200 md:divide-y-0">${rowsHtml}</div>
+        </div>
+    `;
+}
+
+function filterServers(servers, query, opts = {}) {
+    const q = (query || '').toLowerCase();
+    const version = (opts.version || '').toLowerCase();
+    const typeFilter = (opts.type || '').toLowerCase();
+    const minTools = Number.isFinite(Number(opts.minTools)) ? Number(opts.minTools) : null;
+    const minResources = Number.isFinite(Number(opts.minResources)) ? Number(opts.minResources) : null;
+
+    return (servers || []).filter(s => {
+        // text search
+        if (q) {
+            const nameMatch = s.name && s.name.toLowerCase().includes(q);
+            const descMatch = s.description && s.description.toLowerCase().includes(q);
+            if (!nameMatch && !descMatch) return false;
+        }
+        // version contains
+        if (version) {
+            const ver = (s.version || '').toLowerCase();
+            if (!ver.includes(version)) return false;
+        }
+        // type equals (normalized)
+        if (typeFilter) {
+            const derivedType = (s.type || (typeof s.description === 'string' && (s.description.match(/\(([^)]+)\)/)?.[1] || '')) || '').toLowerCase();
+            if (derivedType !== typeFilter) return false;
+        }
+        // min tools
+        if (minTools !== null) {
+            const t = Number(s.toolsCount || 0);
+            if (t < minTools) return false;
+        }
+        // min resources
+        if (minResources !== null) {
+            const r = Number(s.resourcesCount || 0);
+            if (r < minResources) return false;
+        }
+        return true;
+    });
+}
+
+function updateServerSearchCount(visible, total) {
+    const el = document.getElementById('serverSearchCount');
+    if (!el) return;
+    if (total === 0) {
+        el.textContent = '';
+    } else {
+        el.textContent = `${visible} / ${total}`;
+    }
+}
+
+function sortServers(servers, sortKey) {
+    const arr = [...(servers || [])];
+    switch (sortKey) {
+        case 'name-desc':
+            return arr.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+        case 'tools-desc':
+            return arr.sort((a, b) => (b.toolsCount || 0) - (a.toolsCount || 0));
+        case 'tools-asc':
+            return arr.sort((a, b) => (a.toolsCount || 0) - (b.toolsCount || 0));
+        case 'resources-desc':
+            return arr.sort((a, b) => (b.resourcesCount || 0) - (a.resourcesCount || 0));
+        case 'resources-asc':
+            return arr.sort((a, b) => (a.resourcesCount || 0) - (b.resourcesCount || 0));
+        case 'name-asc':
+        default:
+            return arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+}
+
+function applyServerFilters() {
+    const query = document.getElementById('serverSearch')?.value || '';
+    const version = document.getElementById('serverVersionFilter')?.value || '';
+    const type = document.getElementById('serverTypeFilter')?.value || '';
+    const minTools = document.getElementById('minToolsFilter')?.value;
+    const minResources = document.getElementById('minResourcesFilter')?.value;
+    const sortKey = document.getElementById('serverSortSelect')?.value || 'name-asc';
+
+    const filtered = filterServers(allServers, query, { version, type, minTools, minResources });
+    const sorted = sortServers(filtered, sortKey);
+    displayServers(sorted);
+    updateServerSearchCount(sorted.length, allServers.length);
+}
+
+function debounce(fn, delay = 200) {
+    let t;
+    return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delay);
+    };
 }
 
 // Load test servers
@@ -796,6 +1041,31 @@ async function loadTestServers() {
             result.data.forEach(server => {
                 select.innerHTML += `<option value="${server.id}">${server.name}</option>`;
             });
+            // Preselect if requested via query or storage
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const q = params.get('select');
+                const stored = localStorage.getItem('prefTestServerId');
+                const toSelect = q || stored;
+                const toolParam = params.get('tool') || localStorage.getItem('prefTestToolName');
+                if (toSelect) {
+                    select.value = toSelect;
+                    // Ensure type is tool call so dropdown loads
+                    const type = document.getElementById('testType');
+                    if (type) type.value = 'tools/call';
+                    // Trigger dependent UI and wait for tools dropdown
+                    await handleTestServerChange();
+                    if (toolParam) {
+                        const toolSelect = document.getElementById('testName');
+                        if (toolSelect) {
+                            toolSelect.value = toolParam;
+                            updateParametersExample();
+                        }
+                    }
+                    localStorage.removeItem('prefTestServerId');
+                    localStorage.removeItem('prefTestToolName');
+                }
+            } catch {}
         } else {
             select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
         }
@@ -820,8 +1090,8 @@ function handleTestTypeChange() {
         // Load tools dropdown
         loadToolsDropdown(serverId);
     } else {
-        // Show regular input
-        container.innerHTML = '<input type="text" id="testName" placeholder="Enter test name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+        // Show regular input with unified input styling
+        container.innerHTML = '<input type="text" id="testName" placeholder="Enter test name" class="input">';
     }
 }
 
@@ -848,7 +1118,7 @@ async function loadToolsDropdown(serverId) {
             const tools = result.data.config.tools || [];
             
             // Create dropdown with tools
-            let dropdownHTML = '<select id="testName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" onchange="updateParametersExample()">';
+            let dropdownHTML = '<select id="testName" class="input" onchange="updateParametersExample()">';
             dropdownHTML += '<option value="">Select a tool to test</option>';
             
             tools.forEach(tool => {
@@ -864,7 +1134,7 @@ async function loadToolsDropdown(serverId) {
         }
     } catch (error) {
         console.error('Failed to load tools:', error);
-        container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">';
+        container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="input">';
     }
 }
 
@@ -925,7 +1195,8 @@ async function runAutoTests(runAll = false) {
     }
 
     const loading = document.getElementById('test-loading');
-    const loadingText = document.getElementById('loadingText');
+    // Reuse the visible loading element to show status text
+    const loadingText = document.getElementById('test-loading');
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
@@ -938,15 +1209,15 @@ async function runAutoTests(runAll = false) {
     
     if (runAll) {
         // Show loading spinner in button
-        fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
-        fullBtnText.textContent = 'Testing All Tools...';
-        fullBtn.disabled = true;
-        quickBtn.disabled = true;
-        loadingText.textContent = 'Running all tests... This may take a while.';
+        if (fullBtnIcon) fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
+        if (fullBtnText) fullBtnText.textContent = 'Testing All Tools...';
+        if (fullBtn) fullBtn.disabled = true;
+        if (quickBtn) quickBtn.disabled = true;
+        if (loadingText) loadingText.textContent = 'Running all tests... This may take a while.';
     } else {
-        quickBtn.disabled = true;
-        fullBtn.disabled = true;
-        loadingText.textContent = 'Running quick tests...';
+        if (quickBtn) quickBtn.disabled = true;
+        if (fullBtn) fullBtn.disabled = true;
+        if (loadingText) loadingText.textContent = 'Running quick tests...';
     }
 
     loading?.classList.remove('hidden');
@@ -980,8 +1251,8 @@ async function runAutoTests(runAll = false) {
         if (quickBtn) quickBtn.disabled = false;
         if (fullBtn) {
             fullBtn.disabled = false;
-            fullBtnIcon.className = 'fas fa-play-circle mr-2';
-            fullBtnText.textContent = 'Run Auto Tests';
+            if (fullBtnIcon) fullBtnIcon.className = 'fas fa-play-circle mr-2';
+            if (fullBtnText) fullBtnText.textContent = 'Run Auto Tests';
         }
     }
 }
@@ -1181,6 +1452,35 @@ function displaySingleTestResult(testData) {
 async function viewServer(serverId) {
     console.log('🔍 viewServer called with serverId:', serverId);
     
+    // If overlay drawer exists (Manage page), open it immediately with loading state
+    const overlayPanel = document.getElementById('server-details-panel');
+    if (overlayPanel) {
+        overlayPanel.innerHTML = `
+            <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
+                        <i class="fas fa-wrench text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                        <p class="text-slate-500 text-xs leading-none font-medium">Loading…</p>
+                    </div>
+                </div>
+                <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 text-slate-600 text-sm">
+                <div class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> Fetching server details…</div>
+            </div>
+        `;
+        console.log('🔍 Opening details overlay (loading state)');
+        overlayPanel.classList.remove('hidden');
+        overlayPanel.classList.remove('translate-x-full');
+        overlayPanel.style.transform = 'translateX(0)';
+        overlayPanel.style.display = 'flex';
+    }
+
     try {
         console.log('🔍 Fetching server details from:', `/api/servers/${serverId}`);
         const response = await fetch(`/api/servers/${serverId}`);
@@ -1193,14 +1493,299 @@ async function viewServer(serverId) {
             console.log('🔍 Server data structure:', result.data);
             console.log('🔍 Config tools:', result.data?.config?.tools);
             console.log('🔍 Config resources:', result.data?.config?.resources);
-            showServerDetailsModal(result.data);
+            // Prefer right-side panel if available; otherwise fall back to modal
+            if (document.getElementById('server-details-panel')) {
+                showServerDetailsPanel(result.data, serverId);
+            } else {
+                showServerDetailsModal(result.data);
+            }
         } else {
             console.error('❌ Failed to load server details:', result.error);
-            alert('Failed to load server details: ' + result.error);
+            if (overlayPanel) {
+                overlayPanel.innerHTML = `
+                    <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 flex items-center justify-center bg-red-500 rounded-lg shadow-lg shadow-red-500/25">
+                                <i class="fas fa-exclamation-triangle text-white"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                                <p class="text-slate-500 text-xs leading-none font-medium">Failed to load</p>
+                            </div>
+                        </div>
+                        <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 text-sm text-red-600">${result.error || 'Unknown error'}</div>
+                `;
+            } else {
+                alert('Failed to load server details: ' + result.error);
+            }
         }
     } catch (error) {
         console.error('❌ Error loading server details:', error);
-        alert('Error loading server details: ' + error.message);
+        if (overlayPanel) {
+            overlayPanel.innerHTML = `
+                <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 flex items-center justify-center bg-red-500 rounded-lg shadow-lg shadow-red-500/25">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
+                            <p class="text-slate-500 text-xs leading-none font-medium">Error</p>
+                        </div>
+                    </div>
+                    <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <div class="p-6 text-sm text-red-600">${error.message}</div>
+            `;
+        } else {
+            alert('Error loading server details: ' + error.message);
+        }
+    }
+}
+
+function showServerDetailsPanel(serverData, serverIdArg) {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+    try { localStorage.setItem('rightPanelCollapsed','false'); } catch {}
+    panel.classList.remove('collapsed');
+
+    const config = serverData?.config || {};
+    const tools = config.tools || [];
+    const resources = config.resources || [];
+    const serverName = config.name || 'Unknown Server';
+    const serverDescription = config.description || 'No description available';
+    // Prefer explicit id from caller; fall back to config.name (server id == name)
+    const serverId = serverIdArg || serverData.id || serverData.config?.name || 'unknown';
+
+    const inner = `
+        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
+                    <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">
+                        <i class=\"fas fa-wrench text-white\"></i>
+                    </div>
+                    <div>
+                        <h2 class=\"text-slate-900 font-bold tracking-tight text-lg\">Server Details</h2>
+                        <p class=\"text-slate-500 text-xs leading-none font-medium\">Selected Server</p>
+                    </div>
+                </div>\n            </div>\n        </div>
+        <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
+                <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="text-center rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50 p-3">
+                    <div class="text-2xl font-extrabold text-blue-600 dark:text-blue-300">${tools.length}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-blue-700/80 dark:text-blue-300/90 mt-1">Tools</div>
+                </div>
+                <div class="text-center rounded-lg border bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50 p-3">
+                    <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">${resources.length}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/90 mt-1">Resources</div>
+                </div>
+            </div>
+            <!-- Horizontal action bar above Tools -->
+            <div class="pt-1 pb-2">
+                <div class="flex items-center gap-2">
+                    <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-wrench"></i>
+                    </button>
+                    <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-cubes"></i>
+                    </button>
+                    <button title="Test" onclick="testServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                        <i class="fas fa-vial"></i>
+                    </button>
+                    <button title="Delete" onclick="deleteServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50">${tools.length}</span></label>
+                <div class="space-y-2 max-h-48 overflow-auto pr-1">
+                    ${tools.length > 0 ? tools.map(tool => `
+                        <div class="flex items-start justify-between gap-3 p-3 rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 dark:bg-blue-900/50 dark:text-blue-300">
+                                    <i class="fas fa-wrench text-xs"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-medium text-slate-900 dark:text-slate-100">${tool.name || 'Unnamed Tool'}</div>
+                                    <div class="text-xs text-slate-600 dark:text-slate-400">${tool.description || 'No description'}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button title="Test this tool" onclick="testTool('${serverId}', '${tool.name?.replace(/['"`]/g, '') || ''}')" class="w-8 h-8 inline-flex items-center justify-center rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-900 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-gray-800">
+                                    <i class="fas fa-vial"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('') : '<div class="card p-3 bg-orange-50 border-orange-100 text-xs text-slate-700 dark:bg-orange-900/20 dark:border-orange-800/50 dark:text-orange-300"><i class=\"fas fa-exclamation-triangle text-orange-500 dark:text-orange-400 mr-2\"></i>No tools available</div>'}
+                </div>
+            </div>
+            <div>
+                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/50">${resources.length}</span></label>
+                <div class="space-y-2 max-h-48 overflow-auto pr-1">
+                    ${resources.length > 0 ? resources.map(resource => `
+                        <div class="flex items-start gap-3 p-3 rounded-lg border bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                <i class="fas fa-database text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-slate-900 dark:text-slate-100">${resource.name || 'Unnamed Resource'}</div>
+                                <div class="text-xs text-slate-600 dark:text-slate-400">${resource.description || 'No description'}</div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
+                            </div>
+                        </div>
+                    `).join('') : '<div class="card p-3 bg-red-50 border-red-100 text-xs text-slate-700 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-300"><i class=\"fas fa-times-circle text-red-500 dark:text-red-400 mr-2\"></i>No resources available</div>'}
+                </div>
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="testServer('${serverId}')" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all duration-200">
+                        <i class="fas fa-vial mr-1"></i>
+                        Test
+                    </button>
+                    <button onclick="deleteServer('${serverId}')" class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition-all duration-200">
+                        <i class="fas fa-trash mr-1"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    panel.innerHTML = inner;
+    // Inject mini icon row below header (shown only when collapsed)
+    try {
+        const headerRowEl = panel.querySelector('#serverDetailsHeaderRow');
+        if (headerRowEl && !panel.querySelector('#rightPanelMiniRow')) {
+            const miniRow = document.createElement('div');
+            miniRow.id = 'rightPanelMiniRow';
+            miniRow.className = 'hidden flex items-center justify-center py-2';
+            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 relative"><i class="fas fa-wrench"></i>';
+            headerRowEl.insertAdjacentElement('afterend', miniRow);
+        }
+    } catch {}
+    // Horizontal icon bar rendered above Tools; no right vertical rail
+    // Bind collapse button and apply stored state
+    try {
+        const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
+        if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
+            collapseBtn.addEventListener('click', () => {
+                const current = localStorage.getItem('rightPanelCollapsed') === 'true';
+                localStorage.setItem('rightPanelCollapsed', String(!current));
+                applyRightPanelCollapsedState();
+            });
+            collapseBtn.dataset.listenerAttached = 'true';
+        }
+        applyRightPanelCollapsedState();
+    } catch {}
+    // Slide in overlay drawer (no blur, on top of list)
+    console.log('🔍 Showing details overlay');
+    panel.classList.remove('hidden');
+    panel.classList.remove('translate-x-full');
+    panel.style.transform = 'translateX(0)';
+    panel.style.display = 'flex';
+}
+
+function closeServerDetailsPanel() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+    panel.classList.add('translate-x-full');
+    setTimeout(() => panel.classList.add('hidden'), 300);
+}
+
+function applyRightPanelCollapsedState() {
+    const panel = document.getElementById('server-details-panel');
+    if (!panel) return;
+    const collapsed = localStorage.getItem('rightPanelCollapsed') === 'true';
+    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn i');
+    const headerRow = panel.querySelector('#serverDetailsHeaderRow');
+    const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
+    if (collapsed) {
+        panel.classList.add('collapsed');
+        panel.style.width = '3rem';
+        // Swapped: show « when collapsed (angles-left)
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
+        if (headerRow) headerRow.classList.add('justify-center');
+        if (scrollArea) scrollArea.classList.add('hidden');
+        const miniRow = panel.querySelector('#rightPanelMiniRow');
+        if (miniRow) miniRow.classList.remove('hidden');
+    } else {
+        panel.classList.remove('collapsed');
+        panel.style.width = '';
+        // Swapped: show » when expanded (angles-right)
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
+        if (headerRow) headerRow.classList.remove('justify-center');
+        if (scrollArea) scrollArea.classList.remove('hidden');
+        const miniRow = panel.querySelector('#rightPanelMiniRow');
+        if (miniRow) miniRow.classList.add('hidden');
+    }
+}
+
+// Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
+window.addEventListener('load', () => {
+    try { initSidebarResizer(); } catch {}
+    try { applySidebarCollapsedState(); } catch {}
+});
+
+// Left sidebar resizer (drag to change width)
+function initSidebarResizer() {
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+    let startX = 0;
+    let startWidth = 0;
+    const min = 200; // px
+    const max = 480; // px
+    const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        let newW = Math.min(max, Math.max(min, startWidth + dx));
+        sidebar.style.width = newW + 'px';
+        localStorage.setItem('sidebarWidth', String(newW));
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    };
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+    resizer.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    if (saved && saved >= min && saved <= max) {
+        sidebar.style.width = saved + 'px';
+    }
+}
+
+function applySidebarCollapsedState() {
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        sidebar.style.width = '3rem';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) { icon.className = 'fas fa-angles-right'; }
+    } else {
+        sidebar.classList.remove('collapsed');
+        const saved = Number(localStorage.getItem('sidebarWidth'));
+        sidebar.style.width = saved ? saved + 'px' : '';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) { icon.className = 'fas fa-angles-left'; }
     }
 }
 
@@ -1268,15 +1853,11 @@ function showServerDetailsModal(serverData) {
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex flex-wrap gap-4">
-                            <button onclick="testServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
+                            <button onclick="testServer('${serverData.config?.name || serverData.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
                                 <i class="fas fa-vial mr-2"></i>
                                 Test Server
                             </button>
-                            <button onclick="exportServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
-                                <i class="fas fa-download mr-2"></i>
-                                Export Server
-                            </button>
-                            <button onclick="deleteServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                            <button onclick="deleteServer('${serverData.config?.name || serverData.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
                                 <i class="fas fa-trash mr-2"></i>
                                 Delete Server
                             </button>
@@ -1302,12 +1883,47 @@ function closeServerDetailsModal() {
 function testServer(serverId) {
     // Close modal if open
     closeServerDetailsModal();
-    
-    switchTab('test');
-    setTimeout(() => {
-        const select = document.getElementById('testServerSelect');
-        if (select) select.value = serverId;
-    }, 100);
+    // Persist requested selection and navigate to Test Servers page
+    try { localStorage.setItem('prefTestServerId', serverId); } catch {}
+    if (window.location.pathname !== '/test-servers') {
+        window.location.href = `/test-servers?select=${encodeURIComponent(serverId)}`;
+        return;
+    }
+    // Already on test page: set immediately
+    const select = document.getElementById('testServerSelect');
+    if (select) {
+        select.value = serverId;
+        handleTestServerChange();
+    }
+}
+
+function testTool(serverId, toolName) {
+    // Close any open modal
+    closeServerDetailsModal();
+    try {
+        localStorage.setItem('prefTestServerId', serverId);
+        localStorage.setItem('prefTestToolName', toolName);
+    } catch {}
+    if (window.location.pathname !== '/test-servers') {
+        const qs = new URLSearchParams({ select: serverId, tool: toolName }).toString();
+        window.location.href = `/test-servers?${qs}`;
+        return;
+    }
+    // Already on test page
+    const serverSelect = document.getElementById('testServerSelect');
+    if (serverSelect) {
+        serverSelect.value = serverId;
+    }
+    const type = document.getElementById('testType');
+    if (type) type.value = 'tools/call';
+    // Ensure tools dropdown loads, then select tool
+    Promise.resolve(handleTestServerChange()).then(() => {
+        const toolSelect = document.getElementById('testName');
+        if (toolSelect) {
+            toolSelect.value = toolName;
+            updateParametersExample();
+        }
+    });
 }
 
 async function exportServer(serverId) {
@@ -1791,5 +2407,100 @@ function showSuccess(elementId, message) {
     if (successDiv) {
         successDiv.textContent = message;
         successDiv.classList.remove('hidden');
+    }
+}
+
+
+// Left sidebar resizer (drag to change width)
+function initSidebarResizer() {
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+    let startX = 0;
+    let startWidth = 0;
+    const min = 200; // px
+    const max = 480; // px
+    const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        let newW = Math.min(max, Math.max(min, startWidth + dx));
+        sidebar.style.width = newW + 'px';
+        localStorage.setItem('sidebarWidth', String(newW));
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    };
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+    resizer.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    if (saved && saved >= min && saved <= max) {
+        sidebar.style.width = saved + 'px';
+    }
+}
+
+function applySidebarCollapsedState() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        // Collapsed: show only menu icons (centered, colored) and the » button; hide Navigation texts
+        sidebar.style.width = '4rem';
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        const headerMain = document.getElementById('sidebarHeaderMain');
+        const collapseBtn = document.getElementById('sidebarCollapseBtn');
+        headerMain?.classList.add('hidden');
+        headerRow?.classList.remove('justify-between');
+        headerRow?.classList.add('justify-center');
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-right';
+
+        // For each nav item: center icon, hide labels, color icon; make icon container square
+        sidebar.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.add('justify-center');
+            item.classList.add('gap-0');
+            item.classList.add('p-2');
+            const label = item.querySelector('.flex-1');
+            if (label) label.classList.add('hidden');
+            const iconEl = item.querySelector('i');
+            if (iconEl) iconEl.classList.add('text-blue-600');
+            // container kare ve ortalı CSS üzerinden ayarlanıyor (style bloğu)
+        });
+        // Hide Navigation subtitles anywhere
+        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.add('hidden'));
+    } else {
+        sidebar.classList.remove('collapsed');
+        // Expanded: one notch wider by default if none saved
+        const saved = Number(localStorage.getItem('sidebarWidth'));
+        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '20rem';
+        const headerRow = document.getElementById('sidebarHeaderRow');
+        const headerMain = document.getElementById('sidebarHeaderMain');
+        const collapseBtn = document.getElementById('sidebarCollapseBtn');
+        headerMain?.classList.remove('hidden');
+        headerRow?.classList.remove('justify-center');
+        headerRow?.classList.add('justify-between');
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-left';
+
+        // Restore menu item labels and icon default color; remove square styling
+        sidebar.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('justify-center');
+            item.classList.remove('gap-0');
+            item.classList.remove('p-2');
+            const label = item.querySelector('.flex-1');
+            if (label) label.classList.remove('hidden');
+            const iconEl = item.querySelector('i');
+            if (iconEl) iconEl.classList.remove('text-blue-600');
+            // kare container sınıfları style bloğunda kontrol ediliyor
+        });
+        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
     }
 }
