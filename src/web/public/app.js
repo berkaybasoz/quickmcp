@@ -84,6 +84,7 @@ function initializeManageServersPage() {
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
+    try { setupTemplateFilters(); } catch {}
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
@@ -430,6 +431,69 @@ function resetFileUpload() {
     }
 }
 
+
+// Setup filter buttons for data source templates (All, Files, Database, API)
+function setupTemplateFilters() {
+    const bar = document.getElementById('dataSourceFilterBar');
+    if (!bar) return;
+
+    const buttons = bar.querySelectorAll('.template-filter');
+    const cards = document.querySelectorAll('[data-role="data-source-card"]');
+    const searchInput = document.getElementById('dataSourceSearch');
+    let currentFilter = 'all';
+    let currentQuery = '';
+
+    const setActive = (activeBtn) => {
+        buttons.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+        });
+        activeBtn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+    };
+
+    const matchesQuery = (card, query) => {
+        if (!query) return true;
+        const text = (card.innerText || '').toLowerCase();
+        return text.includes(query);
+    };
+
+    const applyFilter = (filter, query = currentQuery) => {
+        currentFilter = filter;
+        currentQuery = query;
+        cards.forEach(card => {
+            const cat = card.getAttribute('data-category');
+            const visible = (filter === 'all' || cat === filter) && matchesQuery(card, currentQuery);
+            card.classList.toggle('hidden', !visible);
+        });
+    };
+
+    buttons.forEach(btn => {
+        if (btn.dataset.listenerAttached) return;
+        btn.addEventListener('click', () => {
+            setActive(btn);
+            applyFilter(btn.getAttribute('data-filter'), currentQuery);
+        });
+        btn.dataset.listenerAttached = 'true';
+    });
+
+    if (searchInput && !searchInput.dataset.listenerAttached) {
+        const handle = debounce(() => {
+            const q = (searchInput.value || '').trim().toLowerCase();
+            applyFilter(currentFilter, q);
+        }, 150);
+        searchInput.addEventListener('input', handle);
+        searchInput.dataset.listenerAttached = 'true';
+    }
+
+    // Initialize default state
+    const selected = document.querySelector('input[name="dataSourceType"]:checked');
+    const selectedCard = selected ? selected.closest('[data-role="data-source-card"]') : null;
+    const defaultFilter = selectedCard?.getAttribute('data-category') || 'all';
+    const defaultBtn = bar.querySelector(`[data-filter="${defaultFilter}"]`) || bar.querySelector('[data-filter="all"]');
+    if (defaultBtn) setActive(defaultBtn);
+    applyFilter(defaultFilter, '');
+}
 
 // Update default port based on database type
 function updateDefaultPort() {

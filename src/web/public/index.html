@@ -280,11 +280,22 @@
                                     <p class="text-sm text-slate-500">Select how you want to import your data.</p>
                                 </div>
                                     <div class="p-8 space-y-8">
+                                    <!-- Template Filter Bar -->
+                                    <div id="dataSourceFilterBar" class="flex flex-wrap items-center gap-2 -mt-2">
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-blue-600 text-white border-blue-600" data-filter="all">All</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="file">Files</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="database">Database</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
+                                        <div class="ml-auto w-full md:w-64 relative">
+                                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input type="text" id="dataSourceSearch" placeholder="Search templates..." class="input pl-9 py-2" />
+                                        </div>
+                                    </div>
                                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="file">
                                             <input type="radio" name="dataSourceType" value="csv" class="peer sr-only">
                                             <div
-                                                class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
+                                                class="p-6 rounded-xl border-2 border-slate-200 bg-green-50/60 dark:bg-green-900/30 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
                                                 <div
                                                     class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <i class="fas fa-file-csv text-2xl"></i>
@@ -294,11 +305,11 @@
                                                 </p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="file">
                                             <input type="radio" name="dataSourceType" value="excel"
                                                 class="peer sr-only">
                                             <div
-                                                class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
+                                                class="p-6 rounded-xl border-2 border-slate-200 bg-emerald-50/60 dark:bg-emerald-900/30 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
                                                 <div
                                                     class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <i class="fas fa-file-excel text-2xl"></i>
@@ -309,9 +320,9 @@
                                             </div>
                                         </label>
                                         <!-- DB types as first-class sources -->
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
                                             <input type="radio" name="dataSourceType" value="mssql" class="peer sr-only">
-                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-purple-400 peer-checked:border-purple-500 peer-checked:bg-purple-50/30 transition-all h-full">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 bg-purple-50/60 dark:bg-purple-900/30 hover:border-purple-400 peer-checked:border-purple-500 peer-checked:bg-purple-50/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <img src="images/app/mssql.png" alt="SQL Server" class="w-12 h-12 object-contain rounded-lg" />
                                                 </div>
@@ -319,9 +330,9 @@
                                                 <p class="text-xs text-slate-500">Connect to SQL Server</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
                                             <input type="radio" name="dataSourceType" value="postgresql" class="peer sr-only">
-                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-500 peer-checked:bg-blue-50/30 transition-all h-full">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 bg-blue-50/60 dark:bg-blue-900/30 hover:border-blue-400 peer-checked:border-blue-500 peer-checked:bg-blue-50/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <img src="images/app/postgresql.png" alt="PostgreSQL" class="w-12 h-12 object-contain rounded-lg" />
                                                 </div>
@@ -329,9 +340,9 @@
                                                 <p class="text-xs text-slate-500">Connect to PostgreSQL</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
                                             <input type="radio" name="dataSourceType" value="mysql" class="peer sr-only">
-                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-orange-400 peer-checked:border-orange-500 peer-checked:bg-orange-50/30 transition-all h-full">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 bg-orange-50/60 dark:bg-orange-900/30 hover:border-orange-400 peer-checked:border-orange-500 peer-checked:bg-orange-50/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <img src="images/app/mysql.png" alt="MySQL" class="w-12 h-12 object-contain rounded-lg" />
                                                 </div>
@@ -339,9 +350,9 @@
                                                 <p class="text-xs text-slate-500">Connect to MySQL</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
                                             <input type="radio" name="dataSourceType" value="sqlite" class="peer sr-only">
-                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-slate-400 peer-checked:border-slate-500 peer-checked:bg-slate-50/30 transition-all h-full">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 bg-slate-50/80 dark:bg-slate-900/30 hover:border-slate-400 peer-checked:border-slate-500 peer-checked:bg-slate-50/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <img src="images/app/sqlite.png" alt="SQLite" class="w-12 h-12 object-contain rounded-lg" />
                                                 </div>
@@ -349,9 +360,9 @@
                                                 <p class="text-xs text-slate-500">Connect to SQLite</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="rest" class="peer sr-only">
-                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 bg-cyan-50/60 dark:bg-cyan-900/30 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                                     <i class="fas fa-network-wired text-2xl"></i>
                                                 </div>
