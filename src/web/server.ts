@@ -927,18 +927,25 @@ app.get('*', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const MCP_PORT = 3001;
 
-// Initialize integrated MCP server
-const integratedMCPServer = new IntegratedMCPServer();
+// Initialize integrated MCP server (optional in environments without native deps)
+let integratedMCPServer: IntegratedMCPServer | null = null;
+try {
+  integratedMCPServer = new IntegratedMCPServer();
+} catch (error) {
+  console.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
+}
 
 app.listen(PORT, async () => {
   //console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
 
   // Start integrated MCP server
-  try {
-    await integratedMCPServer.start(MCP_PORT);
-    // Configuration info is now available in the How to Use page
-  } catch (error) {
-    console.error('❌ Failed to start integrated MCP server:', error);
+  if (integratedMCPServer) {
+    try {
+      await integratedMCPServer.start(MCP_PORT);
+      // Configuration info is now available in the How to Use page
+    } catch (error) {
+      console.error('❌ Failed to start integrated MCP server:', error);
+    }
   }
 });
 

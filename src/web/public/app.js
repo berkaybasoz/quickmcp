@@ -20,14 +20,14 @@ function initializeManageServersPage() {
 
     // Populate with placeholder. This will be overwritten when a server is viewed.
     panel.innerHTML = `
-        <div id="serverDetailsHeaderRow" class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
+        <div id="serverDetailsHeaderRow" class="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <button id="rightPanelCollapseBtn" class="text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center" title="Collapse panel">
                     <i class="fas fa-angles-left"></i>
                 </button>
                 <div id="serverDetailsHeaderMain" class="flex items-center gap-3">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg shadow-lg">
-                        <i class="fas fa-info-circle text-white"></i>
+                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
+                        <i class="fas fa-wrench text-white"></i>
                     </div>
                     <div>
                         <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
@@ -37,12 +37,34 @@ function initializeManageServersPage() {
             </div>
         </div>
         <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
-            <div class="text-center text-slate-500 pt-10">
-                <i class="fas fa-mouse-pointer text-3xl text-slate-300 mb-4"></i>
-                <p>Select a server and click <i class="fas fa-eye"></i> to see details.</p>
+            <div class="card p-4 bg-blue-50 border-blue-100">
+                <div class="flex items-start gap-3 text-sm text-slate-700">
+                    <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                    <div>
+                        <div class="font-semibold text-blue-900 mb-1">Select a server to view details</div>
+                        <p>Listeden bir sunucu seçip <i class="fas fa-eye"></i> ikonuna tıklayın. Araçlar, kaynaklar ve hızlı işlemler burada görünecek.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="card p-3 bg-white border border-slate-200 rounded-xl">
+                    <div class="text-xs text-slate-500">No server selected</div>
+                </div>
             </div>
         </div>
     `;
+
+    // Add mini icon row for collapsed mode
+    try {
+        const headerRowEl = panel.querySelector('#serverDetailsHeaderRow');
+        if (headerRowEl && !panel.querySelector('#rightPanelMiniRow')) {
+            const miniRow = document.createElement('div');
+            miniRow.id = 'rightPanelMiniRow';
+            miniRow.className = 'hidden flex items-center justify-center py-2';
+            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"><i class="fas fa-wrench"></i></div>';
+            headerRowEl.insertAdjacentElement('afterend', miniRow);
+        }
+    } catch {}
 
     // Add listener for the new button
     const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
@@ -1532,10 +1554,10 @@ function showServerDetailsPanel(serverData) {
                 </div>
             </div>
             <div>
-                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools</label>
-                <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
+                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-slate-100 text-slate-600 border border-slate-200">${tools.length}</span></label>
+                <div class="space-y-2 max-h-48 overflow-auto pr-1">
                     ${tools.length > 0 ? tools.map(tool => `
-                        <div class="flex flex-col">
+                        <div class="card p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                             <div class="font-medium text-slate-900">${tool.name || 'Unnamed Tool'}</div>
                             <div class="text-xs text-slate-600">${tool.description || 'No description'}</div>
                         </div>
@@ -1543,10 +1565,10 @@ function showServerDetailsPanel(serverData) {
                 </div>
             </div>
             <div>
-                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources</label>
-                <div class="card p-3 bg-slate-50 border-slate-100 space-y-2 max-h-48 overflow-auto">
+                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-slate-100 text-slate-600 border border-slate-200">${resources.length}</span></label>
+                <div class="space-y-2 max-h-48 overflow-auto pr-1">
                     ${resources.length > 0 ? resources.map(resource => `
-                        <div class="flex flex-col">
+                        <div class="card p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                             <div class="font-medium text-slate-900">${resource.name || 'Unnamed Resource'}</div>
                             <div class="text-xs text-slate-600">${resource.description || 'No description'}</div>
                             <div class="text-[11px] text-slate-500 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
