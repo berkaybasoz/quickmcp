@@ -42,7 +42,7 @@ function initializeManageServersPage() {
                     <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
                     <div>
                         <div class="font-semibold text-blue-900 mb-1">Select a server to view details</div>
-                        <p>Listeden bir sunucu seçip <i class="fas fa-eye"></i> ikonuna tıklayın. Araçlar, kaynaklar ve hızlı işlemler burada görünecek.</p>
+                        <p>Select a server from the list and click the <i class="fas fa-eye"></i> icon. Tools, resources, and quick actions will appear here.</p>
                     </div>
                 </div>
             </div>
