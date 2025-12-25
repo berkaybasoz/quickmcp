@@ -1554,26 +1554,36 @@ function showServerDetailsPanel(serverData) {
                 </div>
             </div>
             <div>
-                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-slate-100 text-slate-600 border border-slate-200">${tools.length}</span></label>
+                <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50">${tools.length}</span></label>
                 <div class="space-y-2 max-h-48 overflow-auto pr-1">
                     ${tools.length > 0 ? tools.map(tool => `
-                        <div class="card p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                            <div class="font-medium text-slate-900">${tool.name || 'Unnamed Tool'}</div>
-                            <div class="text-xs text-slate-600">${tool.description || 'No description'}</div>
+                        <div class="flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50">
+                            <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 dark:bg-blue-900/50 dark:text-blue-300">
+                                <i class="fas fa-wrench text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-slate-900 dark:text-slate-100">${tool.name || 'Unnamed Tool'}</div>
+                                <div class="text-xs text-slate-600 dark:text-slate-400">${tool.description || 'No description'}</div>
+                            </div>
                         </div>
-                    `).join('') : '<div class="text-slate-500 text-sm">No tools available</div>'}
+                    `).join('') : '<div class="card p-3 bg-orange-50 border-orange-100 text-xs text-slate-700 dark:bg-orange-900/20 dark:border-orange-800/50 dark:text-orange-300"><i class=\"fas fa-exclamation-triangle text-orange-500 dark:text-orange-400 mr-2\"></i>No tools available</div>'}
                 </div>
             </div>
             <div>
-                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-slate-100 text-slate-600 border border-slate-200">${resources.length}</span></label>
+                <label id="details-resources" class="block text-slate-700 font-semibold text-sm mb-2">Resources <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/50">${resources.length}</span></label>
                 <div class="space-y-2 max-h-48 overflow-auto pr-1">
                     ${resources.length > 0 ? resources.map(resource => `
-                        <div class="card p-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                            <div class="font-medium text-slate-900">${resource.name || 'Unnamed Resource'}</div>
-                            <div class="text-xs text-slate-600">${resource.description || 'No description'}</div>
-                            <div class="text-[11px] text-slate-500 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
+                        <div class="flex items-start gap-3 p-3 rounded-lg border bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                <i class="fas fa-database text-xs"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-slate-900 dark:text-slate-100">${resource.name || 'Unnamed Resource'}</div>
+                                <div class="text-xs text-slate-600 dark:text-slate-400">${resource.description || 'No description'}</div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${resource.uri_template || resource.uri || 'No URI'}</div>
+                            </div>
                         </div>
-                    `).join('') : '<div class="text-slate-500 text-sm">No resources available</div>'}
+                    `).join('') : '<div class="card p-3 bg-red-50 border-red-100 text-xs text-slate-700 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-300"><i class=\"fas fa-times-circle text-red-500 dark:text-red-400 mr-2\"></i>No resources available</div>'}
                 </div>
             </div>
             <div class="pt-2 border-t border-slate-200">
