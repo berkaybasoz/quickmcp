@@ -143,17 +143,25 @@ app.get('/api/health', (req, res) => {
 // Parse data source endpoint
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   try {
-    const { type, connection, swaggerUrl } = req.body;
+    const { type, connection, swaggerUrl } = req.body as any;
     const file = req.file;
 
     let dataSource: DataSource;
 
-    if (type === 'database') {
+    // Accept database parse either when type==='database' OR when a connection payload is present
+    if (type === 'database' || connection) {
+      let connObj: any = connection;
+      if (typeof connObj === 'string') {
+        try { connObj = JSON.parse(connObj); } catch { connObj = null; }
+      }
+      if (!connObj || !connObj.type) {
+        throw new Error('Missing or invalid database connection');
+      }
       dataSource = {
         type: 'database',
-        name: `Database (${connection.type})`,
-        connection: JSON.parse(connection)
-      };
+        name: `Database (${connObj.type})`,
+        connection: connObj
+      } as any;
     } else if (type === 'rest') {
       if (!swaggerUrl) throw new Error('Missing swaggerUrl');
       // Fetch OpenAPI spec

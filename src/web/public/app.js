@@ -433,7 +433,8 @@ function resetFileUpload() {
 
 // Update default port based on database type
 function updateDefaultPort() {
-    const dbType = document.getElementById('dbType')?.value;
+    // Determine selected DB type from source cards
+    const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
     const dbPort = document.getElementById('dbPort');
 
     const defaultPorts = {
@@ -444,10 +445,10 @@ function updateDefaultPort() {
     };
 
     if (dbPort) {
-        dbPort.placeholder = defaultPorts[dbType] || '';
-        if (!dbPort.value && defaultPorts[dbType]) {
-            dbPort.value = defaultPorts[dbType];
-        }
+        const def = Object.prototype.hasOwnProperty.call(defaultPorts, selectedType) ? defaultPorts[selectedType] : '';
+        dbPort.placeholder = def === '' ? '' : String(def);
+        // Veritabanı tipi değiştiğinde portu her zaman güncelle
+        dbPort.value = def === '' ? '' : String(def);
     }
 }
 
@@ -2265,15 +2266,16 @@ async function handleNextToStep2() {
         const formData = new FormData();
         formData.append('type', selectedType);
 
+        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
         if (selectedType === 'csv' || selectedType === 'excel') {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput?.files[0]) {
                 throw new Error('Please select a file');
             }
             formData.append('file', fileInput.files[0]);
-        } else if (selectedType === 'database') {
+        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
             const connection = {
-                type: document.getElementById('dbType')?.value,
+                type: dbTypes.has(selectedType) ? selectedType : 'database',
                 host: document.getElementById('dbHost')?.value,
                 port: parseInt(document.getElementById('dbPort')?.value),
                 database: document.getElementById('dbName')?.value,
@@ -2281,6 +2283,14 @@ async function handleNextToStep2() {
                 password: document.getElementById('dbPassword')?.value
             };
             formData.append('connection', JSON.stringify(connection));
+            formData.set('type', 'database');
+            // Güvenli olması için metin alanlarını da ekle (multer text fields)
+            formData.append('dbType', connection.type || '');
+            formData.append('dbHost', connection.host || '');
+            formData.append('dbPort', String(connection.port || ''));
+            formData.append('dbName', connection.database || '');
+            formData.append('dbUser', connection.username || '');
+            formData.append('dbPassword', connection.password || '');
         } else if (selectedType === 'rest') {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             if (!swaggerUrl) throw new Error('Please enter Swagger/OpenAPI URL');
@@ -2305,7 +2315,8 @@ async function handleNextToStep2() {
             throw new Error(result.error);
         }
     } catch (error) {
-        if (document.getElementById('rest-parse-error')) {
+        const selectedTypeOnError = document.querySelector('input[name="dataSourceType"]:checked')?.value;
+        if (selectedTypeOnError === 'rest') {
             showError('rest-parse-error', error.message);
         } else {
             showError('parse-error', error.message);
@@ -2397,12 +2408,13 @@ function updateWizardNavigation() {
         
         let canProceed = false;
         
+        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
         if (selectedType === 'csv' || selectedType === 'excel') {
             // For file uploads, need parsed data
             canProceed = hasParsedData;
-        } else if (selectedType === 'database') {
+        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
             // For database, check if all required fields are filled
-            const dbType = document.getElementById('dbType')?.value;
+            const dbType = dbTypes.has(selectedType) ? selectedType : 'database';
             const dbHost = document.getElementById('dbHost')?.value;
             const dbName = document.getElementById('dbName')?.value;
             const dbUser = document.getElementById('dbUser')?.value;
@@ -2430,10 +2442,11 @@ function toggleDataSourceFields() {
     dbSection?.classList.add('hidden');
     restSection?.classList.add('hidden');
 
+    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
     if (selectedType === 'csv' || selectedType === 'excel') {
         fileSection?.classList.remove('hidden');
-    } else if (selectedType === 'database') {
-        dbSection?.classList.remove('hidden');
+        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
+            dbSection?.classList.remove('hidden');
         updateDefaultPort();
     } else if (selectedType === 'rest') {
         restSection?.classList.remove('hidden');
