@@ -1015,6 +1015,31 @@ async function loadTestServers() {
             result.data.forEach(server => {
                 select.innerHTML += `<option value="${server.id}">${server.name}</option>`;
             });
+            // Preselect if requested via query or storage
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const q = params.get('select');
+                const stored = localStorage.getItem('prefTestServerId');
+                const toSelect = q || stored;
+                const toolParam = params.get('tool') || localStorage.getItem('prefTestToolName');
+                if (toSelect) {
+                    select.value = toSelect;
+                    // Ensure type is tool call so dropdown loads
+                    const type = document.getElementById('testType');
+                    if (type) type.value = 'tools/call';
+                    // Trigger dependent UI and wait for tools dropdown
+                    await handleTestServerChange();
+                    if (toolParam) {
+                        const toolSelect = document.getElementById('testName');
+                        if (toolSelect) {
+                            toolSelect.value = toolParam;
+                            updateParametersExample();
+                        }
+                    }
+                    localStorage.removeItem('prefTestServerId');
+                    localStorage.removeItem('prefTestToolName');
+                }
+            } catch {}
         } else {
             select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
         }
@@ -1444,7 +1469,7 @@ async function viewServer(serverId) {
             console.log('🔍 Config resources:', result.data?.config?.resources);
             // Prefer right-side panel if available; otherwise fall back to modal
             if (document.getElementById('server-details-panel')) {
-                showServerDetailsPanel(result.data);
+                showServerDetailsPanel(result.data, serverId);
             } else {
                 showServerDetailsModal(result.data);
             }
@@ -1498,7 +1523,7 @@ async function viewServer(serverId) {
     }
 }
 
-function showServerDetailsPanel(serverData) {
+function showServerDetailsPanel(serverData, serverIdArg) {
     const panel = document.getElementById('server-details-panel');
     if (!panel) return;
     try { localStorage.setItem('rightPanelCollapsed','false'); } catch {}
@@ -1509,7 +1534,8 @@ function showServerDetailsPanel(serverData) {
     const resources = config.resources || [];
     const serverName = config.name || 'Unknown Server';
     const serverDescription = config.description || 'No description available';
-    const serverId = serverData.id || serverData.config?.id || 'unknown';
+    // Prefer explicit id from caller; fall back to config.name (server id == name)
+    const serverId = serverIdArg || serverData.id || serverData.config?.name || 'unknown';
 
     const inner = `
         <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
@@ -1557,13 +1583,20 @@ function showServerDetailsPanel(serverData) {
                 <label id="details-tools" class="block text-slate-700 font-semibold text-sm mb-2">Tools <span class="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50">${tools.length}</span></label>
                 <div class="space-y-2 max-h-48 overflow-auto pr-1">
                     ${tools.length > 0 ? tools.map(tool => `
-                        <div class="flex items-start gap-3 p-3 rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50">
-                            <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 dark:bg-blue-900/50 dark:text-blue-300">
-                                <i class="fas fa-wrench text-xs"></i>
+                        <div class="flex items-start justify-between gap-3 p-3 rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 dark:bg-blue-900/50 dark:text-blue-300">
+                                    <i class="fas fa-wrench text-xs"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-medium text-slate-900 dark:text-slate-100">${tool.name || 'Unnamed Tool'}</div>
+                                    <div class="text-xs text-slate-600 dark:text-slate-400">${tool.description || 'No description'}</div>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <div class="font-medium text-slate-900 dark:text-slate-100">${tool.name || 'Unnamed Tool'}</div>
-                                <div class="text-xs text-slate-600 dark:text-slate-400">${tool.description || 'No description'}</div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button title="Test this tool" onclick="testTool('${serverId}', '${tool.name?.replace(/['"`]/g, '') || ''}')" class="w-8 h-8 inline-flex items-center justify-center rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-900 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-gray-800">
+                                    <i class="fas fa-vial"></i>
+                                </button>
                             </div>
                         </div>
                     `).join('') : '<div class="card p-3 bg-orange-50 border-orange-100 text-xs text-slate-700 dark:bg-orange-900/20 dark:border-orange-800/50 dark:text-orange-300"><i class=\"fas fa-exclamation-triangle text-orange-500 dark:text-orange-400 mr-2\"></i>No tools available</div>'}
@@ -1794,11 +1827,11 @@ function showServerDetailsModal(serverData) {
 
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <div class="flex flex-wrap gap-4">
-                            <button onclick="testServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
+                            <button onclick="testServer('${serverData.config?.name || serverData.id || 'unknown'}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all duration-200">
                                 <i class="fas fa-vial mr-2"></i>
                                 Test Server
                             </button>
-                            <button onclick="deleteServer('${serverData.id || serverData.config?.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                            <button onclick="deleteServer('${serverData.config?.name || serverData.id || 'unknown'}')" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
                                 <i class="fas fa-trash mr-2"></i>
                                 Delete Server
                             </button>
@@ -1824,12 +1857,47 @@ function closeServerDetailsModal() {
 function testServer(serverId) {
     // Close modal if open
     closeServerDetailsModal();
-    
-    switchTab('test');
-    setTimeout(() => {
-        const select = document.getElementById('testServerSelect');
-        if (select) select.value = serverId;
-    }, 100);
+    // Persist requested selection and navigate to Test Servers page
+    try { localStorage.setItem('prefTestServerId', serverId); } catch {}
+    if (window.location.pathname !== '/test-servers') {
+        window.location.href = `/test-servers?select=${encodeURIComponent(serverId)}`;
+        return;
+    }
+    // Already on test page: set immediately
+    const select = document.getElementById('testServerSelect');
+    if (select) {
+        select.value = serverId;
+        handleTestServerChange();
+    }
+}
+
+function testTool(serverId, toolName) {
+    // Close any open modal
+    closeServerDetailsModal();
+    try {
+        localStorage.setItem('prefTestServerId', serverId);
+        localStorage.setItem('prefTestToolName', toolName);
+    } catch {}
+    if (window.location.pathname !== '/test-servers') {
+        const qs = new URLSearchParams({ select: serverId, tool: toolName }).toString();
+        window.location.href = `/test-servers?${qs}`;
+        return;
+    }
+    // Already on test page
+    const serverSelect = document.getElementById('testServerSelect');
+    if (serverSelect) {
+        serverSelect.value = serverId;
+    }
+    const type = document.getElementById('testType');
+    if (type) type.value = 'tools/call';
+    // Ensure tools dropdown loads, then select tool
+    Promise.resolve(handleTestServerChange()).then(() => {
+        const toolSelect = document.getElementById('testName');
+        if (toolSelect) {
+            toolSelect.value = toolName;
+            updateParametersExample();
+        }
+    });
 }
 
 async function exportServer(serverId) {
