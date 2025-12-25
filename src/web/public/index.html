@@ -280,7 +280,7 @@
                                     <p class="text-sm text-slate-500">Select how you want to import your data.</p>
                                 </div>
                                 <div class="p-8 space-y-8">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <label class="cursor-pointer group">
                                             <input type="radio" name="dataSourceType" value="csv" class="peer sr-only">
                                             <div
@@ -320,6 +320,16 @@
                                                 <h4 class="font-bold text-slate-900 mb-1">Database</h4>
                                                 <p class="text-xs text-slate-500">Connect to SQL, MySQL, or Postgres.
                                                 </p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="dataSourceType" value="rest" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-network-wired text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">REST API</h4>
+                                                <p class="text-xs text-slate-500">OpenAPI/Swagger endpoint (e.g. petstore).</p>
                                             </div>
                                         </label>
                                     </div>
@@ -381,6 +391,16 @@
                                                     class="input">
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- REST API Config -->
+                                    <div id="rest-section" class="hidden animate-fade-in space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Swagger/OpenAPI URL</label>
+                                            <input type="text" id="swaggerUrl" placeholder="https://petstore.swagger.io/v2/swagger.json" class="input" />
+                                            <p class="text-xs text-slate-500 mt-2">Publicly reachable OpenAPI/Swagger JSON URL.</p>
+                                        </div>
+                                        <div id="rest-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Loading/Error -->

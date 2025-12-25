@@ -8,7 +8,13 @@ const net = require('net');
 // Use the current working directory provided by the caller.
 // Do not change directories; keep paths relative to this script.
 
-const { SQLiteManager } = require('./dist/database/sqlite-manager.js');
+let SQLiteManager;
+try {
+  ({ SQLiteManager } = require('./dist/database/sqlite-manager.js'));
+} catch (e) {
+  // Fallback to local shim to avoid hard dependency on built dist
+  ({ SQLiteManager } = require('./sqlite-manager.shim.js'));
+}
 
 // Parse CLI flags for convenience
 // Supported flags:
@@ -265,31 +271,76 @@ async function handleMessage(message) {
       try {
         console.error(`[QuickMCP] Executing tool: ${message.params.name}`);
         console.error(`[QuickMCP] Arguments:`, JSON.stringify(message.params.arguments));
+        // REST-aware execution path: if tool.sqlQuery encodes a REST spec, call via fetch
+        try {
+          const fullName = message.params.name || '';
+          const parts = fullName.split('__');
+          const serverId = parts[0];
+          const toolName = parts.slice(1).join('__');
+          const tools = sqliteManager.getAllTools();
+          const tool = tools.find(t => t.server_id === serverId && t.name === toolName);
+          let restSpec = null;
+          if (tool && tool.sqlQuery) {
+            try { restSpec = JSON.parse(tool.sqlQuery); } catch (_) { restSpec = null; }
+          }
+          if (restSpec && restSpec.type === 'rest') {
+            // Fill from server config or heuristics
+            let baseUrl = restSpec.baseUrl;
+            try {
+              if (!baseUrl && sqliteManager.getServer) {
+                const srv = sqliteManager.getServer(serverId);
+                baseUrl = srv && srv.dbConfig && srv.dbConfig.baseUrl;
+              }
+            } catch (_) {}
+            let method = (restSpec.method || '').toUpperCase();
+            let path = restSpec.path;
+            if ((!method || !path) && tool && tool.description) {
+              const m = (tool.description.split(' ')[0] || '').toUpperCase();
+              if (!method && ['GET','POST','PUT','PATCH','DELETE'].includes(m)) method = m;
+              const p = tool.description.slice(m.length + 1);
+              if (!path && p && p.startsWith('/')) path = p;
+            }
+            if (!path) {
+              const tn = (toolName || '').replace(/^\w+_/, '');
+              if (tn) path = '/' + tn.replace(/_/g, '/');
+            }
+            if (!method) method = 'GET';
+            if (baseUrl && path) {
+              const args = message.params.arguments || {};
+              path = path.replace(/\{([^}]+)\}/g, (_, p) => {
+                const v = args[p];
+                if (v !== undefined) { delete args[p]; return encodeURIComponent(String(v)); }
+                return '';
+              });
+              let url = String(baseUrl).replace(/\/$/, '') + path;
+              const fetchOpts = { method, headers: {} };
+              if (method === 'GET' || method === 'DELETE') {
+                const qs = new URLSearchParams();
+                Object.entries(args).forEach(([k,v]) => { if (v !== undefined && v !== null) qs.append(k, String(v)); });
+                const q = qs.toString();
+                if (q) url += (url.includes('?') ? '&' : '?') + q;
+              } else {
+                fetchOpts.headers['Content-Type'] = 'application/json';
+                fetchOpts.body = JSON.stringify(args || {});
+              }
+              const resp = await fetch(url, fetchOpts);
+              const json = await resp.json().catch(() => null);
+              const out = { success: true, data: Array.isArray(json) ? json : (json ? [json] : []), rowCount: Array.isArray(json) ? json.length : (json && typeof json === 'object' ? 1 : 0) };
+              response = { jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: JSON.stringify(out, null, 2) }] } };
+              break;
+            }
+          }
+        } catch (e) {
+          console.error('[QuickMCP] REST execution precheck failed:', e && e.message);
+        }
 
+        // Fallback to DB-backed executor
         const { DynamicMCPExecutor } = require('./dist/dynamic-mcp-executor.js');
         const executor = new DynamicMCPExecutor();
-
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Tool execution timeout')), 10000);
-        });
-
-        const toolResult = await Promise.race([
-          executor.executeTool(message.params.name, message.params.arguments || {}),
-          timeoutPromise
-        ]);
-
+        const timeoutPromise = new Promise((_, reject) => { setTimeout(() => reject(new Error('Tool execution timeout')), 10000); });
+        const toolResult = await Promise.race([ executor.executeTool(message.params.name, message.params.arguments || {}), timeoutPromise ]);
         console.error(`[QuickMCP] Tool result:`, JSON.stringify(toolResult, null, 2));
-
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(toolResult, null, 2)
-            }]
-          }
-        };
+        response = { jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: JSON.stringify(toolResult, null, 2) }] } };
       } catch (error) {
         console.error(`[QuickMCP] Tool execution error:`, error);
         response = {

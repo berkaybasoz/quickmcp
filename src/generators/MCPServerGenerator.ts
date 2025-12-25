@@ -20,7 +20,7 @@ export class MCPServerGenerator {
   async generateServer(
     serverId: string,
     serverName: string,
-    parsedData: ParsedData,
+    parsedData: any,
     dbConfig: any,
     selectedTables?: any[]
   ): Promise<{ success: boolean; message: string }> {
@@ -42,17 +42,27 @@ export class MCPServerGenerator {
       //console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
-      const tools = this.generateToolsForData(serverId, parsedData, dbConfig, selectedTables);
+      let tools: ToolDefinition[] = [];
+      // Treat array parsedData as REST endpoints even if dbConfig.type is missing
+      if (Array.isArray(parsedData) || dbConfig?.type === 'rest') {
+        const endpoints = Array.isArray(parsedData) ? parsedData : [];
+        tools = this.generateToolsForRest(serverId, parsedData, dbConfig, selectedTables);
+      } else {
+        tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
+      }
       if (tools.length > 0) {
         this.sqliteManager.saveTools(tools);
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources
-      const resources = this.generateResourcesForData(serverId, parsedData, dbConfig);
-      if (resources.length > 0) {
-        this.sqliteManager.saveResources(resources);
-        //console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
+      // Generate and save resources (skip for REST)
+      let resources: ResourceDefinition[] = [];
+      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest')) {
+        resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
+        if (resources.length > 0) {
+          this.sqliteManager.saveResources(resources);
+          //console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
+        }
       }
 
       return {
@@ -66,6 +76,39 @@ export class MCPServerGenerator {
         message: `Failed to generate server: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
+  }
+
+  private generateToolsForRest(serverId: string, endpoints: any[], dbConfig: any, selected?: any[]): ToolDefinition[] {
+    const selectedIdx = new Set<number>((selected || []).map((s: any) => s.index));
+    const items = endpoints.map((e, i) => ({ ...e, __index: i })).filter(e => selectedIdx.size ? selectedIdx.has(e.__index) : true);
+    const mapOp = (method: string): 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' => {
+      const m = (method || '').toUpperCase();
+      if (m === 'GET') return 'SELECT';
+      if (m === 'POST') return 'INSERT';
+      if (m === 'PUT' || m === 'PATCH') return 'UPDATE';
+      if (m === 'DELETE') return 'DELETE';
+      return 'SELECT';
+    };
+    const sanitize = (s: string) => this.sanitizeName(s);
+    return items.map(ep => {
+      const name = `${(ep.method || 'GET').toLowerCase()}_${sanitize(ep.path || 'endpoint')}`.slice(0, 128);
+      // Build a simple input schema from parameters
+      const props: any = {};
+      (ep.parameters || []).forEach((p: any) => {
+        const t = (p.schema?.type || 'string');
+        props[p.name] = { type: t, description: p.description || '' };
+      });
+      const inputSchema = { type: 'object', properties: props, required: [] as string[] };
+      const sqlQuery = JSON.stringify({ type: 'rest', baseUrl: dbConfig?.baseUrl, method: ep.method, path: ep.path });
+      return {
+        server_id: serverId,
+        name,
+        description: ep.summary || `${ep.method} ${ep.path}`,
+        inputSchema,
+        sqlQuery,
+        operation: mapOp(ep.method)
+      };
+    });
   }
 
   private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {

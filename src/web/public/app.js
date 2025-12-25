@@ -136,6 +136,8 @@ function setupEventListeners() {
     document.getElementById('dbName')?.addEventListener('input', updateWizardNavigation);
     document.getElementById('dbUser')?.addEventListener('input', updateWizardNavigation);
     document.getElementById('dbPassword')?.addEventListener('input', updateWizardNavigation);
+    // REST swagger url change
+    document.getElementById('swaggerUrl')?.addEventListener('input', updateWizardNavigation);
 
 
     // Generate button
@@ -470,6 +472,30 @@ function displayDataPreview(parsedData) {
         </div>
     `;
 
+    // REST endpoints preview
+    if (Array.isArray(parsedData) && parsedData.length && parsedData[0]?.path && parsedData[0]?.method) {
+        html += `
+        <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+                <h4 class="font-semibold text-gray-900 text-lg">Discovered Endpoints</h4>
+                <p class="text-sm text-gray-600">Select endpoints to generate as tools.</p>
+            </div>
+            <div class="p-4 space-y-2">
+                ${parsedData.map((ep, i) => `
+                    <label class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" id="rest-endpoint-${i}" class="w-4 h-4 text-blue-600 border-gray-300 rounded" checked>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">${(ep.method || '').toUpperCase()}</span>
+                        <span class="font-mono text-sm text-slate-800 truncate">${ep.path}</span>
+                        <span class="text-xs text-slate-500 truncate">${ep.summary || ''}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>`;
+        html += '</div>';
+        preview.innerHTML = html;
+        return;
+    }
+
     parsedData.forEach((data, index) => {
         const tableName = data.tableName || `Table ${index + 1}`;
         const panelId = `table-panel-${index}`;
@@ -716,7 +742,16 @@ function selectOnlyBasicTools(tableIndex) {
 // Get selected tables and their tools configuration
 function getSelectedTablesAndTools() {
     const selectedTables = [];
-    
+    // REST mode: collect selected endpoints
+    if (currentDataSource?.type === 'rest' && Array.isArray(currentParsedData)) {
+        currentParsedData.forEach((_, idx) => {
+            const cb = document.getElementById(`rest-endpoint-${idx}`);
+            if (cb && cb.checked) {
+                selectedTables.push({ index: idx });
+            }
+        });
+        return selectedTables;
+    }
     // Find all table selection checkboxes
     document.querySelectorAll('[id^="table-select-"]').forEach((checkbox, index) => {
         if (checkbox.checked) {
@@ -2246,6 +2281,10 @@ async function handleNextToStep2() {
                 password: document.getElementById('dbPassword')?.value
             };
             formData.append('connection', JSON.stringify(connection));
+        } else if (selectedType === 'rest') {
+            const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
+            if (!swaggerUrl) throw new Error('Please enter Swagger/OpenAPI URL');
+            formData.append('swaggerUrl', swaggerUrl);
         }
 
         const response = await fetch('/api/parse', {
@@ -2266,7 +2305,11 @@ async function handleNextToStep2() {
             throw new Error(result.error);
         }
     } catch (error) {
-        showError('parse-error', error.message);
+        if (document.getElementById('rest-parse-error')) {
+            showError('rest-parse-error', error.message);
+        } else {
+            showError('parse-error', error.message);
+        }
     } finally {
         loading?.classList.add('hidden');
         if (nextBtn) nextBtn.disabled = false;
@@ -2366,6 +2409,9 @@ function updateWizardNavigation() {
             const dbPassword = document.getElementById('dbPassword')?.value;
             
             canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
+        } else if (selectedType === 'rest') {
+            const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
+            canProceed = !!swaggerUrl;
         }
         
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -2377,16 +2423,20 @@ function toggleDataSourceFields() {
     const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
     const fileSection = document.getElementById('file-upload-section');
     const dbSection = document.getElementById('database-section');
+    const restSection = document.getElementById('rest-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
     dbSection?.classList.add('hidden');
+    restSection?.classList.add('hidden');
 
     if (selectedType === 'csv' || selectedType === 'excel') {
         fileSection?.classList.remove('hidden');
     } else if (selectedType === 'database') {
         dbSection?.classList.remove('hidden');
         updateDefaultPort();
+    } else if (selectedType === 'rest') {
+        restSection?.classList.remove('hidden');
     }
 
     // Update wizard navigation state

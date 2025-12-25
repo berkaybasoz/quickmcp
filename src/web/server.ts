@@ -143,7 +143,7 @@ app.get('/api/health', (req, res) => {
 // Parse data source endpoint
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   try {
-    const { type, connection } = req.body;
+    const { type, connection, swaggerUrl } = req.body;
     const file = req.file;
 
     let dataSource: DataSource;
@@ -154,6 +154,54 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
         name: `Database (${connection.type})`,
         connection: JSON.parse(connection)
       };
+    } else if (type === 'rest') {
+      if (!swaggerUrl) throw new Error('Missing swaggerUrl');
+      // Fetch OpenAPI spec
+      const resp = await fetch(swaggerUrl);
+      if (!resp.ok) throw new Error(`Failed to fetch OpenAPI: ${resp.status}`);
+      const spec: any = await resp.json();
+      // Derive baseUrl
+      let baseUrl = '';
+      if (spec && Array.isArray(spec.servers) && spec.servers.length && spec.servers[0]?.url) {
+        baseUrl = spec.servers[0].url;
+      } else if (spec && spec.schemes && spec.host) {
+        const scheme = Array.isArray(spec.schemes) && spec.schemes.length ? spec.schemes[0] : 'https';
+        const basePath = spec.basePath || '';
+        baseUrl = `${scheme}://${spec.host}${basePath}`;
+      } else {
+        // Fallback: strip filename from swaggerUrl
+        try {
+          const u = new URL(swaggerUrl);
+          baseUrl = swaggerUrl.replace(/\/[^/]*$/, '');
+          if (!baseUrl.startsWith(u.origin)) baseUrl = u.origin;
+        } catch { baseUrl = swaggerUrl.replace(/\/[^/]*$/, ''); }
+      }
+      // Parse paths -> endpoints
+      const endpoints: any[] = [];
+      const paths = (spec && (spec as any).paths) || {};
+      const methods = ['get','post','put','patch','delete'];
+      for (const p of Object.keys(paths)) {
+        const ops = paths[p] || {};
+        for (const m of methods) {
+          if (ops[m]) {
+            const op = ops[m];
+            endpoints.push({
+              method: m.toUpperCase(),
+              path: p,
+              summary: op.summary || op.operationId || '',
+              parameters: op.parameters || [],
+              requestBody: op.requestBody || null
+            });
+          }
+        }
+      }
+      return res.json({
+        success: true,
+        data: {
+          dataSource: { type: 'rest', swaggerUrl, baseUrl },
+          parsedData: endpoints
+        }
+      });
     } else if (file) {
       dataSource = {
         type: type as 'csv' | 'excel',
@@ -204,30 +252,39 @@ app.post('/api/generate', async (req, res) => {
       });
     }
 
-    // Use provided parsed data or re-parse if not available
-    const fullParsedData = parsedData || await parser.parse(dataSource);
+    let parsedForGen: any = null;
+    let dbConfForGen: any = null;
+    if (dataSource?.type === 'rest') {
+      parsedForGen = parsedData; // endpoints array from client
+      dbConfForGen = { type: 'rest', baseUrl: dataSource.baseUrl || dataSource.swaggerUrl };
+    } else {
+      // Use provided parsed data or re-parse if not available
+      const fullParsedData = parsedData || await parser.parse(dataSource);
 
-    // Convert to the format expected by new generator
-    const parsedDataObject: { [tableName: string]: any[] } = {};
-    fullParsedData.forEach((data, index) => {
-      const tableName = data.tableName || `table_${index}`;
-      parsedDataObject[tableName] = data.rows.map(row => {
-        const obj: any = {};
-        data.headers.forEach((header, i) => {
-          obj[header] = row[i];
+      // Convert to the format expected by new generator
+      const parsedDataObject: { [tableName: string]: any[] } = {};
+      fullParsedData.forEach((data, index) => {
+        const tableName = data.tableName || `table_${index}`;
+        parsedDataObject[tableName] = data.rows.map(row => {
+          const obj: any = {};
+          data.headers.forEach((header, i) => {
+            obj[header] = row[i];
+          });
+          return obj;
         });
-        return obj;
       });
-    });
+      parsedForGen = parsedDataObject;
+      dbConfForGen = dataSource.connection || { type: 'csv', server: 'local', database: name };
+    }
 
     // Generate virtual server (saves to SQLite database)
     console.log(`🎯 API calling generateServer with name: "${name}"`);
     const result = await ensureGenerator().generateServer(
-      name,                                    // serverId
-      name,                                    // serverName (use the name from form as server name)
-      parsedDataObject,
-      dataSource.connection || { type: 'csv', server: 'local', database: name },
-      selectedTables                           // selectedTables configuration
+      name,
+      name,
+      parsedForGen,
+      dbConfForGen,
+      selectedTables
     );
 
     if (result.success) {
