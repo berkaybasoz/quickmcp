@@ -328,10 +328,19 @@ function switchTab(tabName) {
         newPath = '/test-servers';
     }
 
-    // Update URL without triggering popstate
-    window.history.pushState(null, '', newPath);
+    // If the target view's DOM isn't present on this page, do a full navigation
+    const needsFullNav = (
+        (tabName === 'manage' && !document.getElementById('server-list')) ||
+        (tabName === 'test' && !document.getElementById('testServerSelect')) ||
+        (tabName === 'generate' && !document.getElementById('generate-tab'))
+    );
+    if (needsFullNav) {
+        window.location.href = newPath;
+        return;
+    }
 
-    // Switch the tab
+    // Update URL without triggering popstate and switch locally
+    window.history.pushState(null, '', newPath);
     switchTabByRoute(tabName);
 
     // Close sidebar on mobile
@@ -884,7 +893,10 @@ function displayServers(servers) {
             <div class="col-span-1 text-right">Actions</div>
         </div>`;
 
-    const rowsHtml = servers.map(server => `
+    const rowsHtml = servers.map(server => {
+        const derivedType = server.type || (typeof server.description === 'string' && (server.description.match(/\(([^)]+)\)/)?.[1] || '')) || '';
+        const safeType = derivedType || 'unknown';
+        return `
         <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
             <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
@@ -894,7 +906,7 @@ function displayServers(servers) {
                 <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">${server.type || 'unknown'}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">${safeType}</span>
             </div>
             <div class="md:col-span-1 text-slate-700 text-sm mt-2 md:mt-0">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">v${server.version || '1.0.0'}</span>
@@ -913,7 +925,7 @@ function displayServers(servers) {
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     serverList.innerHTML = `
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">

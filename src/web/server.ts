@@ -265,13 +265,17 @@ app.get('/api/servers', (req, res) => {
   const gen = ensureGenerator();
   const allServers = gen.getAllServers();
   const servers = allServers.map(server => {
+    // Prefer persisted db_config from SQLite to avoid stale/partial objects
+    const persisted = ensureSQLite().getServer(server.id);
+    const rawType = (persisted?.dbConfig as any)?.type || (server as any)?.dbConfig?.type || 'unknown';
+    const type = typeof rawType === 'string' ? rawType : 'unknown';
     const tools = gen.getToolsForServer(server.id);
     const resources = gen.getResourcesForServer(server.id);
     return {
       id: server.id,
       name: server.name,
-      type: server.dbConfig?.type || 'unknown',
-      description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
+      type,
+      description: `${server.name} - Virtual MCP Server (${type})`,
       version: "1.0.0",
       toolsCount: tools.length,
       resourcesCount: resources.length,
