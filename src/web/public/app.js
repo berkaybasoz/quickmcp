@@ -1642,7 +1642,8 @@ function applyRightPanelCollapsedState() {
     if (collapsed) {
         panel.classList.add('collapsed');
         panel.style.width = '3rem';
-        if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
+        // Swapped: show « when collapsed (angles-left)
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
         if (headerRow) headerRow.classList.add('justify-center');
         if (scrollArea) scrollArea.classList.add('hidden');
         const miniRow = panel.querySelector('#rightPanelMiniRow');
@@ -1650,7 +1651,8 @@ function applyRightPanelCollapsedState() {
     } else {
         panel.classList.remove('collapsed');
         panel.style.width = '';
-        if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
+        // Swapped: show » when expanded (angles-right)
+        if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
         if (headerRow) headerRow.classList.remove('justify-center');
         if (scrollArea) scrollArea.classList.remove('hidden');
         const miniRow = panel.querySelector('#rightPanelMiniRow');

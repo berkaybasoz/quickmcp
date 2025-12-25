@@ -142,6 +142,9 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Hide settings cog icon globally if present */
+#openSettingsModal { display: none !important; }
+
 /* Card Styles */
 .card {
   background-color: white;
