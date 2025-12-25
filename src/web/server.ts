@@ -270,6 +270,7 @@ app.get('/api/servers', (req, res) => {
     return {
       id: server.id,
       name: server.name,
+      type: server.dbConfig?.type || 'unknown',
       description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
       version: "1.0.0",
       toolsCount: tools.length,

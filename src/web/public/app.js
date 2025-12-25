@@ -876,8 +876,9 @@ function displayServers(servers) {
     // Build list view: clean, compact, zebra rows
     const headerHtml = `
         <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border border-slate-200 rounded-t-xl text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
-            <div class="col-span-5">Name</div>
-            <div class="col-span-2">Version</div>
+            <div class="col-span-4">Name</div>
+            <div class="col-span-2">Type</div>
+            <div class="col-span-1">Version</div>
             <div class="col-span-2">Tools</div>
             <div class="col-span-2">Resources</div>
             <div class="col-span-1 text-right">Actions</div>
@@ -885,14 +886,17 @@ function displayServers(servers) {
 
     const rowsHtml = servers.map(server => `
         <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
-            <div class="md:col-span-5 min-w-0 pr-3">
+            <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="hidden md:inline-flex w-6 h-6 items-center justify-center rounded-md bg-blue-100 text-blue-600"><i class="fas fa-server text-xs"></i></span>
-                    <span class="font-semibold text-slate-900 truncate">${server.name}</span>
+                    <span class="font-semibold text-slate-900 truncate" title="${server.name}">${server.name}</span>
                 </div>
                 <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">${server.type || 'unknown'}</span>
+            </div>
+            <div class="md:col-span-1 text-slate-700 text-sm mt-2 md:mt-0">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">v${server.version || '1.0.0'}</span>
             </div>
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.toolsCount ?? 0}</div>
