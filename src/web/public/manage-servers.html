@@ -71,6 +71,16 @@
                 <input id="serverSearch" type="text" placeholder="Search servers by name or description" class="input" />
               </div>
               <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Type</label>
+                <select id="serverTypeFilter" class="input w-40">
+                  <option value="">All</option>
+                  <option value="mssql">SQL Server</option>
+                  <option value="mysql">MySQL</option>
+                  <option value="postgresql">PostgreSQL</option>
+                  <option value="sqlite">SQLite</option>
+                </select>
+              </div>
+              <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Version</label>
                 <input id="serverVersionFilter" type="text" placeholder="e.g. 1.0" class="input w-36" />
               </div>

@@ -162,6 +162,7 @@ function setupEventListeners() {
     const minToolsInput = document.getElementById('minToolsFilter');
     const minResourcesInput = document.getElementById('minResourcesFilter');
     const sortSelect = document.getElementById('serverSortSelect');
+    const typeSelect = document.getElementById('serverTypeFilter');
     const clearBtn = document.getElementById('clearServerFilters');
     if (serverSearchInput) {
         serverSearchInput.addEventListener('input', () => {
@@ -175,12 +176,14 @@ function setupEventListeners() {
     if (minToolsInput) minToolsInput.addEventListener('input', debounce(applyServerFilters, 200));
     if (minResourcesInput) minResourcesInput.addEventListener('input', debounce(applyServerFilters, 200));
     if (sortSelect) sortSelect.addEventListener('change', applyServerFilters);
+    if (typeSelect) typeSelect.addEventListener('change', applyServerFilters);
     if (clearBtn) clearBtn.addEventListener('click', () => {
         if (serverSearchInput) serverSearchInput.value = '';
         if (versionInput) versionInput.value = '';
         if (minToolsInput) minToolsInput.value = '';
         if (minResourcesInput) minResourcesInput.value = '';
         if (sortSelect) sortSelect.value = 'name-asc';
+        if (typeSelect) typeSelect.value = '';
         applyServerFilters();
     });
 
@@ -938,6 +941,7 @@ function displayServers(servers) {
 function filterServers(servers, query, opts = {}) {
     const q = (query || '').toLowerCase();
     const version = (opts.version || '').toLowerCase();
+    const typeFilter = (opts.type || '').toLowerCase();
     const minTools = Number.isFinite(Number(opts.minTools)) ? Number(opts.minTools) : null;
     const minResources = Number.isFinite(Number(opts.minResources)) ? Number(opts.minResources) : null;
 
@@ -952,6 +956,11 @@ function filterServers(servers, query, opts = {}) {
         if (version) {
             const ver = (s.version || '').toLowerCase();
             if (!ver.includes(version)) return false;
+        }
+        // type equals (normalized)
+        if (typeFilter) {
+            const derivedType = (s.type || (typeof s.description === 'string' && (s.description.match(/\(([^)]+)\)/)?.[1] || '')) || '').toLowerCase();
+            if (derivedType !== typeFilter) return false;
         }
         // min tools
         if (minTools !== null) {
@@ -999,11 +1008,12 @@ function sortServers(servers, sortKey) {
 function applyServerFilters() {
     const query = document.getElementById('serverSearch')?.value || '';
     const version = document.getElementById('serverVersionFilter')?.value || '';
+    const type = document.getElementById('serverTypeFilter')?.value || '';
     const minTools = document.getElementById('minToolsFilter')?.value;
     const minResources = document.getElementById('minResourcesFilter')?.value;
     const sortKey = document.getElementById('serverSortSelect')?.value || 'name-asc';
 
-    const filtered = filterServers(allServers, query, { version, minTools, minResources });
+    const filtered = filterServers(allServers, query, { version, type, minTools, minResources });
     const sorted = sortServers(filtered, sortKey);
     displayServers(sorted);
     updateServerSearchCount(sorted.length, allServers.length);
