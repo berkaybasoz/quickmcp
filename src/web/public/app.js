@@ -505,7 +505,12 @@ function updateDefaultPort() {
         'mysql': 3306,
         'postgresql': 5432,
         'sqlite': '',
-        'mssql': 1433
+        'mssql': 1433,
+        'oracle': 1521,
+        'redis': 6379,
+        'hazelcast': 5701,
+        'kafka': 9092,
+        'db2': 446
     };
 
     if (dbPort) {
@@ -2330,7 +2335,7 @@ async function handleNextToStep2() {
         const formData = new FormData();
         formData.append('type', selectedType);
 
-        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
+        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
         if (selectedType === 'csv' || selectedType === 'excel') {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput?.files[0]) {
@@ -2506,7 +2511,7 @@ function toggleDataSourceFields() {
     dbSection?.classList.add('hidden');
     restSection?.classList.add('hidden');
 
-    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
+    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === 'csv' || selectedType === 'excel') {
         fileSection?.classList.remove('hidden');
         } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
