@@ -288,7 +288,7 @@
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
                                         <div class="ml-auto w-full md:w-64 relative">
                                             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                            <input type="text" id="dataSourceSearch" placeholder="Search templates..." class="input pl-9 py-2" />
+                                            <input type="search" id="dataSourceSearch" placeholder="Search templates..." class="input pl-9 py-2" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="search" role="searchbox" aria-label="Search templates" data-lpignore="true" data-1p-ignore="true" />
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -393,29 +393,28 @@
                                             <div>
                                                 <label
                                                     class="block text-xs font-bold text-slate-700 uppercase mb-2">Host</label>
-                                                <input type="text" id="dbHost" placeholder="localhost" class="input">
+                                                <input type="text" id="dbHost" placeholder="localhost" class="input" autocomplete="off">
                                             </div>
                                             <div>
                                                 <label
                                                     class="block text-xs font-bold text-slate-700 uppercase mb-2">Port</label>
-                                                <input type="number" id="dbPort" placeholder="3306" class="input">
+                                                <input type="number" id="dbPort" placeholder="3306" class="input" autocomplete="off">
                                             </div>
                                             <div>
                                                 <label
                                                     class="block text-xs font-bold text-slate-700 uppercase mb-2">Database
                                                     Name</label>
-                                                <input type="text" id="dbName" placeholder="my_database" class="input">
+                                                <input type="text" id="dbName" placeholder="my_database" class="input" autocomplete="off">
                                             </div>
                                             <div>
                                                 <label
                                                     class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
-                                                <input type="text" id="dbUser" placeholder="root" class="input">
+                                                <input type="text" id="dbUser" placeholder="root" class="input" autocomplete="username">
                                             </div>
                                             <div>
                                                 <label
                                                     class="block text-xs font-bold text-slate-700 uppercase mb-2">Password</label>
-                                                <input type="password" id="dbPassword" placeholder="••••••••"
-                                                    class="input">
+                                                <input type="password" id="dbPassword" placeholder="••••••••" class="input" autocomplete="current-password">
                                             </div>
                                         </div>
                                     </div>
