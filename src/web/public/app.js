@@ -2233,6 +2233,39 @@ function closeDeleteErrorModal() {
     }
 }
 
+function showRenameErrorModal(errorMessage) {
+    const modalHtml = `
+        <div id="rename-error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Rename Failed</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        ${errorMessage}
+                    </p>
+                    
+                    <button onclick="closeRenameErrorModal()" class="w-full bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                        <i class="fas fa-times mr-2"></i>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeRenameErrorModal() {
+    const modal = document.getElementById('rename-error-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 // Success Modal Functions
 function showSuccessModal(serverName, serverData) {
     const modal = document.getElementById("success-modal");
@@ -2763,7 +2796,21 @@ async function renameServer(serverId, newName, nameSpan, originalHtml) {
         // Restore original content on error
         nameSpan.innerHTML = originalHtml;
 
-        // Show error message
-        alert(`Failed to rename server: ${error.message}`);
+        let displayError = error.message;
+        try {
+            // Try to find and parse JSON in the error message
+            const jsonStringMatch = error.message.match(/\{.*\}/);
+            if (jsonStringMatch) {
+                const parsed = JSON.parse(jsonStringMatch[0]);
+                if (parsed.error) {
+                    displayError = parsed.error;
+                }
+            }
+        } catch (e) {
+            // Ignore if parsing fails, just use the original message
+        }
+
+        // Show error message in a modal
+        showRenameErrorModal(displayError);
     }
 }
