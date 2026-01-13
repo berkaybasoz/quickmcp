@@ -594,6 +594,67 @@ app.post('/api/servers/:id/test', async (req, res) => {
   }
 });
 
+// Rename server endpoint
+app.patch('/api/servers/:id/rename', async (req, res) => {
+  try {
+    const serverId = req.params.id;
+    const { newName } = req.body;
+
+    console.log(`🔄 Rename request for server ID: ${serverId}, new name: ${newName}`);
+
+    if (!newName || typeof newName !== 'string' || !newName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'New name is required and must be a non-empty string'
+      });
+    }
+
+    const trimmedName = newName.trim();
+
+    // Check if server exists
+    const sqlite = ensureSQLite();
+    const existingServer = sqlite.getServer(serverId);
+    if (!existingServer) {
+      console.log(`❌ Server with ID "${serverId}" not found`);
+      return res.status(404).json({
+        success: false,
+        error: `Server with ID "${serverId}" not found`
+      });
+    }
+
+    // Check if new name is already taken by another server
+    const allServers = sqlite.getAllServers();
+    const serverWithSameName = allServers.find(s => s.name === trimmedName && s.id !== serverId);
+    if (serverWithSameName) {
+      console.log(`❌ Server name "${trimmedName}" is already taken by ID: ${serverWithSameName.id}`);
+      return res.status(400).json({
+        success: false,
+        error: `Server name "${trimmedName}" is already taken`
+      });
+    }
+
+    // Update server name in SQLite database
+    existingServer.name = trimmedName;
+    sqlite.saveServer(existingServer);
+
+    console.log(`✅ Successfully renamed server ${serverId} to "${trimmedName}"`);
+
+    res.json({
+      success: true,
+      data: {
+        id: serverId,
+        name: trimmedName
+      }
+    });
+  } catch (error) {
+    console.error('Rename error:', error);
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Delete server endpoint
 app.delete('/api/servers/:id', async (req, res) => {
   try {

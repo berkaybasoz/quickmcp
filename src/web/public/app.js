@@ -1025,6 +1025,9 @@ function displayServers(servers) {
                 <button class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
                     <i class="fas fa-eye"></i>
                 </button>
+                <button class="bg-white border border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "\\'")}', this)" title="Rename">
+                    <i class="fas fa-edit"></i>
+                </button>
                 <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
                     <i class="fas fa-vial"></i>
                 </button>
@@ -2634,5 +2637,131 @@ function applySidebarCollapsedState() {
             // kare container sınıfları style bloğunda kontrol ediliyor
         });
         sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
+    }
+}
+
+// Rename server functionality
+function startRenameServer(serverId, currentName, buttonElement) {
+    console.log('Starting rename for server:', serverId, 'current name:', currentName);
+
+    // Find the server name span element
+    const row = buttonElement.closest('.group');
+    const nameSpan = row.querySelector('.font-semibold.text-slate-900');
+
+    if (!nameSpan) return;
+
+    // Store original content
+    const originalHtml = nameSpan.innerHTML;
+
+    // Create input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'px-2 py-1 border-2 border-blue-400 rounded-md text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600 w-full';
+    input.style.minWidth = '200px';
+
+    // Flag to prevent double execution
+    let isProcessing = false;
+
+    // Replace span with input
+    nameSpan.innerHTML = '';
+    nameSpan.appendChild(input);
+    input.focus();
+    input.select();
+
+    // Handle save on Enter
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const newName = input.value.trim();
+            if (newName && newName !== currentName) {
+                await renameServer(serverId, newName, nameSpan, originalHtml);
+            } else {
+                // Restore original if no change
+                nameSpan.innerHTML = originalHtml;
+            }
+        } else if (e.key === 'Escape') {
+            // Cancel on Escape
+            isProcessing = true;
+            nameSpan.innerHTML = originalHtml;
+        }
+    });
+
+    // Handle save on blur
+    input.addEventListener('blur', async () => {
+        // Small delay to allow Enter event to process first
+        setTimeout(async () => {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const newName = input.value.trim();
+            if (newName && newName !== currentName) {
+                await renameServer(serverId, newName, nameSpan, originalHtml);
+            } else {
+                // Restore original if no change
+                nameSpan.innerHTML = originalHtml;
+            }
+        }, 100);
+    });
+}
+
+async function renameServer(serverId, newName, nameSpan, originalHtml) {
+    try {
+        console.log('Renaming server:', serverId, 'to:', newName);
+
+        // Show loading state
+        nameSpan.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500"></i>';
+
+        const response = await fetch(`/api/servers/${serverId}/rename`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ newName })
+        });
+
+        console.log('Rename response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Rename response error:', errorText);
+            try {
+                const result = JSON.parse(errorText);
+                throw new Error(result.error || `Server error: ${response.status}`);
+            } catch (parseError) {
+                throw new Error(`Server error: ${response.status} - ${errorText.substring(0, 100)}`);
+            }
+        }
+
+        const result = await response.json();
+        console.log('Rename result:', result);
+
+        if (result.success) {
+            // Update the display with new name
+            nameSpan.innerHTML = `<span class="font-semibold text-slate-900 truncate" title="${result.data.name}">${result.data.name}</span>`;
+
+            // Reload the server list to refresh all data
+            loadServers();
+
+            // Show success message briefly
+            const successIcon = document.createElement('i');
+            successIcon.className = 'fas fa-check-circle text-green-500 ml-2';
+            nameSpan.appendChild(successIcon);
+            setTimeout(() => {
+                successIcon.remove();
+            }, 2000);
+        } else {
+            throw new Error(result.error || 'Failed to rename server');
+        }
+    } catch (error) {
+        console.error('Rename error:', error);
+        // Restore original content on error
+        nameSpan.innerHTML = originalHtml;
+
+        // Show error message
+        alert(`Failed to rename server: ${error.message}`);
     }
 }
