@@ -39,45 +39,125 @@ export class DynamicMCPExecutor {
 
   async executeTool(toolName: string, args: any): Promise<any> {
     try {
-      // Parse tool name: "serverId__toolName"
-      const parts = toolName.split('__');
-      if (parts.length !== 2) {
-        throw new Error(`Invalid tool name format: ${toolName}`);
+      const [serverId, actualToolName] = this.parseToolName(toolName);
+      const tool = this.getTool(serverId, actualToolName);
+      const serverConfig = this.getServerConfig(serverId);
+      const queryConfig = this.parseQueryConfig(tool.sqlQuery);
+
+      if (queryConfig?.type === 'rest') {
+        return await this.executeRestCall(queryConfig, args);
       }
 
-      const [serverId, actualToolName] = parts;
-
-      // Get tool definition from JSON database
-      const tools = this.sqliteManager.getToolsForServer(serverId);
-      const tool = tools.find(t => t.name === actualToolName);
-
-      if (!tool) {
-        throw new Error(`Tool not found: ${toolName}`);
+      if (queryConfig?.type === 'webpage') {
+        return await this.executeWebpageFetch(queryConfig);
       }
 
-      // Get server config from JSON database
-      const serverConfig = this.sqliteManager.getServer(serverId);
-      if (!serverConfig) {
-        throw new Error(`Server not found: ${serverId}`);
-      }
-
-      // Get or create database connection
-      const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
-
-      // Execute the SQL query
-      const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
-
-      console.error(`✅ Executed tool ${toolName} successfully`);
-      return {
-        success: true,
-        data: result,
-        rowCount: Array.isArray(result) ? result.length : (result.rowsAffected || 0)
-      };
+      return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
       console.error(`❌ Error executing tool ${toolName}:`, error);
       throw error;
     }
+  }
+
+  private parseToolName(toolName: string): [string, string] {
+    const parts = toolName.split('__');
+    if (parts.length !== 2) {
+      throw new Error(`Invalid tool name format: ${toolName}`);
+    }
+    return [parts[0], parts[1]];
+  }
+
+  private getTool(serverId: string, toolName: string): ToolDefinition {
+    const tools = this.sqliteManager.getToolsForServer(serverId);
+    const tool = tools.find(t => t.name === toolName);
+    if (!tool) {
+      throw new Error(`Tool not found: ${serverId}__${toolName}`);
+    }
+    return tool;
+  }
+
+  private getServerConfig(serverId: string): any {
+    const serverConfig = this.sqliteManager.getServer(serverId);
+    if (!serverConfig) {
+      throw new Error(`Server not found: ${serverId}`);
+    }
+    return serverConfig;
+  }
+
+  private parseQueryConfig(sqlQuery: string): any {
+    try {
+      return JSON.parse(sqlQuery);
+    } catch {
+      return null;
+    }
+  }
+
+  private async executeRestCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, method, path } = queryConfig;
+    const url = `${baseUrl}${path}`;
+    console.error(`🌐 REST API call: ${method} ${url}`);
+
+    const fetchOptions: any = {
+      method: method || 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    };
+
+    if (method !== 'GET' && Object.keys(args).length > 0) {
+      fetchOptions.body = JSON.stringify(args);
+    }
+
+    const response = await fetch(url, fetchOptions);
+    const data = await response.json();
+
+    console.error(`✅ REST API response: ${response.status}`);
+    return {
+      success: true,
+      data: Array.isArray(data) ? data : [data],
+      rowCount: Array.isArray(data) ? data.length : 1
+    };
+  }
+
+  private async executeWebpageFetch(queryConfig: any): Promise<any> {
+    const url = queryConfig.url;
+    console.error(`🌐 Fetching webpage: ${url}`);
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; QuickMCP/1.0; +https://github.com/berkaybasoz/quickmcp)'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+
+    console.error(`✅ Fetched ${html.length} characters from ${url}`);
+    return {
+      success: true,
+      data: [{
+        url: url,
+        html_content: html,
+        content_length: html.length,
+        status: response.status,
+        content_type: response.headers.get('content-type') || 'unknown'
+      }],
+      rowCount: 1
+    };
+  }
+
+  private async executeDatabaseQuery(serverId: string, serverConfig: any, tool: ToolDefinition, args: any): Promise<any> {
+    const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
+    const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
+
+    console.error(`✅ Executed tool ${serverId}__${tool.name} successfully`);
+    return {
+      success: true,
+      data: result,
+      rowCount: Array.isArray(result) ? result.length : (result.rowsAffected || 0)
+    };
   }
 
   async readResource(resourceName: string): Promise<any> {

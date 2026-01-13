@@ -262,9 +262,18 @@ app.post('/api/generate', async (req, res) => {
 
     let parsedForGen: any = null;
     let dbConfForGen: any = null;
+
+    //console.log('🔍 dataSource.type:', dataSource?.type);
+    //console.log('🔍 dataSource:', JSON.stringify(dataSource, null, 2));
+
     if (dataSource?.type === 'rest') {
       parsedForGen = parsedData; // endpoints array from client
       dbConfForGen = { type: 'rest', baseUrl: dataSource.baseUrl || dataSource.swaggerUrl };
+      //console.log('✅ REST config created');
+    } else if (dataSource?.type === 'webpage') {
+      parsedForGen = {}; // No tables for webpage
+      dbConfForGen = { type: 'webpage', url: dataSource.url || dataSource.name };
+      //console.log('✅ Webpage config created:', dbConfForGen);
     } else {
       // Use provided parsed data or re-parse if not available
       const fullParsedData = parsedData || await parser.parse(dataSource);

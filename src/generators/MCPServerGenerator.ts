@@ -43,21 +43,29 @@ export class MCPServerGenerator {
 
       // Generate and save tools
       let tools: ToolDefinition[] = [];
+      //console.log('🔍 MCPServerGenerator - dbConfig.type:', dbConfig?.type);
+      //console.log('🔍 MCPServerGenerator - dbConfig:', JSON.stringify(dbConfig, null, 2));
+
       // Treat array parsedData as REST endpoints even if dbConfig.type is missing
       if (Array.isArray(parsedData) || dbConfig?.type === 'rest') {
         const endpoints = Array.isArray(parsedData) ? parsedData : [];
         tools = this.generateToolsForRest(serverId, parsedData, dbConfig, selectedTables);
+        //console.log('✅ Generated REST tools:', tools.length);
+      } else if (dbConfig?.type === 'webpage') {
+        tools = this.generateToolsForWebpage(serverId, dbConfig);
+        //console.log('✅ Generated webpage tools:', tools.length);
       } else {
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
+        //console.log('✅ Generated data tools:', tools.length);
       }
       if (tools.length > 0) {
         this.sqliteManager.saveTools(tools);
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST)
+      // Generate and save resources (skip for REST and webpage)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest')) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest' || dbConfig?.type === 'webpage')) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -109,6 +117,34 @@ export class MCPServerGenerator {
         operation: mapOp(ep.method)
       };
     });
+  }
+
+  private generateToolsForWebpage(serverId: string, dbConfig: any): ToolDefinition[] {
+    const url = dbConfig?.url || '';
+    if (!url) {
+      console.error('❌ No URL provided for webpage server');
+      return [];
+    }
+
+    // Create a tool to fetch the webpage HTML
+    const tool: ToolDefinition = {
+      server_id: serverId,
+      name: 'fetch_webpage',
+      description: `Fetches the HTML content from ${url}`,
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: []
+      },
+      sqlQuery: JSON.stringify({
+        type: 'webpage',
+        url: url
+      }),
+      operation: 'SELECT'
+    };
+
+    //console.log(`✅ Generated webpage fetch tool for: ${url}`);
+    return [tool];
   }
 
   private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {

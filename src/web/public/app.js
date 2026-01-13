@@ -139,7 +139,8 @@ function setupEventListeners() {
     document.getElementById('dbPassword')?.addEventListener('input', updateWizardNavigation);
     // REST swagger url change
     document.getElementById('swaggerUrl')?.addEventListener('input', updateWizardNavigation);
-
+    // Web URL change
+    document.getElementById('webUrl')?.addEventListener('input', updateWizardNavigation);
 
     // Generate button
     document.getElementById('generateBtn')?.addEventListener('click', generateServer);
@@ -864,9 +865,13 @@ async function generateServer() {
     }
 
     // Get selected tables and their tool configurations
-    const selectedTablesConfig = getSelectedTablesAndTools();
-    
-    if (selectedTablesConfig.length === 0) {
+    let selectedTablesConfig = getSelectedTablesAndTools();
+
+    // For webpage, we don't need table selection - runtime parsing will happen
+    if (currentDataSource?.type === 'webpage') {
+        selectedTablesConfig = []; // Empty is OK for webpage
+        //console.log('🌐 Webpage server - parsing will happen at runtime');
+    } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
         return;
     }
@@ -2353,6 +2358,32 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For web page, show info in preview and go to step 2
+    if (selectedType === 'web') {
+        const webUrl = document.getElementById('webUrl')?.value?.trim();
+        if (!webUrl) {
+            showError('web-parse-error', 'Please enter a Web Page URL');
+            return;
+        }
+
+        // Store the URL without parsing - parsing will happen at runtime
+        currentDataSource = {
+            type: 'webpage',
+            name: webUrl,
+            url: webUrl
+        };
+        currentParsedData = []; // Empty, will be parsed when tool is called
+
+        console.log('📋 Web page URL saved, showing preview info:', webUrl);
+
+        // Display info message in preview
+        displayWebpagePreview(webUrl);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2445,6 +2476,18 @@ function goToWizardStep(stepNumber) {
         targetStep.classList.remove('hidden');
     }
 
+    // Show/hide webpage info box in step 3
+    if (stepNumber === 3) {
+        const webpageInfoBox = document.getElementById('webpage-info-box');
+        if (webpageInfoBox) {
+            if (currentDataSource?.type === 'webpage') {
+                webpageInfoBox.classList.remove('hidden');
+            } else {
+                webpageInfoBox.classList.add('hidden');
+            }
+        }
+    }
+
     // Update progress indicators
     updateWizardProgress(stepNumber);
 
@@ -2529,8 +2572,11 @@ function updateWizardNavigation() {
         } else if (selectedType === 'rest') {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             canProceed = !!swaggerUrl;
+        } else if (selectedType === 'web') {
+            const webUrl = document.getElementById('webUrl')?.value?.trim();
+            canProceed = !!webUrl;
         }
-        
+
         nextToStep2.disabled = !hasDataSource || !canProceed;
     }
 }
@@ -2541,20 +2587,24 @@ function toggleDataSourceFields() {
     const fileSection = document.getElementById('file-upload-section');
     const dbSection = document.getElementById('database-section');
     const restSection = document.getElementById('rest-section');
+    const webSection = document.getElementById('web-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
     dbSection?.classList.add('hidden');
     restSection?.classList.add('hidden');
+    webSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === 'csv' || selectedType === 'excel') {
         fileSection?.classList.remove('hidden');
-        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
-            dbSection?.classList.remove('hidden');
+    } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
+        dbSection?.classList.remove('hidden');
         updateDefaultPort();
     } else if (selectedType === 'rest') {
         restSection?.classList.remove('hidden');
+    } else if (selectedType === 'web') {
+        webSection?.classList.remove('hidden');
     }
 
     // Update wizard navigation state
@@ -2813,4 +2863,51 @@ async function renameServer(serverId, newName, nameSpan, originalHtml) {
         // Show error message in a modal
         showRenameErrorModal(displayError);
     }
+}
+
+// Display webpage preview info
+function displayWebpagePreview(url) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-globe text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-indigo-900 text-lg mb-2">Web Page Server Configuration</h3>
+                        <p class="text-indigo-800 mb-3">This server will fetch HTML content from the specified URL at runtime.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-indigo-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fas fa-link text-indigo-500"></i>
+                                <span class="font-semibold text-slate-700">Target URL:</span>
+                            </div>
+                            <code class="text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded block break-all">${url}</code>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-indigo-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>
+                                <span>No preview needed - content will be fetched when the tool is called</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>
+                                <span>A <code class="text-xs bg-indigo-100 px-1 py-0.5 rounded">fetch_webpage</code> tool will be generated</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>
+                                <span>MCP clients (like Claude Desktop) can call this tool to get the HTML content</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
 }
