@@ -1009,7 +1009,7 @@ function displayServers(servers) {
             <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="hidden md:inline-flex w-6 h-6 items-center justify-center rounded-md bg-blue-100 text-blue-600"><i class="fas fa-server text-xs"></i></span>
-                    <span class="font-semibold text-slate-900 truncate" title="${server.name}">${server.name}</span>
+                    <span id="server-name-${server.id}" ondblclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" class="font-semibold text-slate-900 truncate cursor-pointer" title="${server.name}">${server.name}</span>
                 </div>
                 <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
@@ -1025,7 +1025,7 @@ function displayServers(servers) {
                 <button class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
                     <i class="fas fa-eye"></i>
                 </button>
-                <button class="bg-white border border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "\\'")}', this)" title="Rename">
+                <button class="bg-white border border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" title="Rename">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
@@ -2641,14 +2641,16 @@ function applySidebarCollapsedState() {
 }
 
 // Rename server functionality
-function startRenameServer(serverId, currentName, buttonElement) {
+function startRenameServer(serverId, currentName) {
     console.log('Starting rename for server:', serverId, 'current name:', currentName);
 
-    // Find the server name span element
-    const row = buttonElement.closest('.group');
-    const nameSpan = row.querySelector('.font-semibold.text-slate-900');
+    // Find the server name span element by its unique ID
+    const nameSpan = document.getElementById(`server-name-${serverId}`);
 
-    if (!nameSpan) return;
+    if (!nameSpan) {
+        console.error('Could not find name span for server:', serverId);
+        return;
+    }
 
     // Store original content
     const originalHtml = nameSpan.innerHTML;
