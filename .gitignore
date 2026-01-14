@@ -73,3 +73,5 @@ dist/web/server.js.map
 dist/web/server.d.ts.map
 dist/web/server.js
 dist/web/server.js.map
+
+node_modules/
