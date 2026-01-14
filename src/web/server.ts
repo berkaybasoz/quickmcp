@@ -320,7 +320,7 @@ app.post('/api/generate', async (req, res) => {
       //console.log('✅ REST config created');
     } else if (dataSource?.type === 'webpage') {
       parsedForGen = {}; // No tables for webpage
-      dbConfForGen = { type: 'webpage', url: dataSource.url || dataSource.name };
+      dbConfForGen = { type: 'webpage', alias: dataSource.alias, url: dataSource.url || dataSource.name };
       //console.log('✅ Webpage config created:', dbConfForGen);
     } else if (dataSource?.type === 'curl') {
         parsedForGen = {}; // No tables for curl

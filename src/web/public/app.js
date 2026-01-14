@@ -148,8 +148,9 @@ function setupEventListeners() {
     // Server name validation
     document.getElementById('serverName')?.addEventListener('input', checkServerName);
 
-    // cURL Alias validation
-    document.getElementById('curlToolAlias')?.addEventListener('input', checkCurlAlias);
+    // Alias validation
+    document.getElementById('curlToolAlias')?.addEventListener('input', () => checkAlias('curl'));
+    document.getElementById('webToolAlias')?.addEventListener('input', () => checkAlias('web'));
 
     // Test buttons
     document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
@@ -2455,22 +2456,23 @@ async function checkServerName() {
     }, 500);
 }
 
-// cURL Alias Validation
+// Generic Alias Validation
 let aliasCheckTimeout;
+async function checkAlias(aliasType) {
+    const inputId = `${aliasType}ToolAlias`;
+    const validationId = `${aliasType}-alias-validation`;
+    const suffix = `_${aliasType}`;
 
-async function checkCurlAlias() {
-    const aliasInput = document.getElementById('curlToolAlias');
-    const validationDiv = document.getElementById('alias-validation');
+    const aliasInput = document.getElementById(inputId);
+    const validationDiv = document.getElementById(validationId);
     if (!aliasInput || !validationDiv) return;
 
     const alias = aliasInput.value.trim();
 
-    // Clear previous timeout
     if (aliasCheckTimeout) {
         clearTimeout(aliasCheckTimeout);
     }
 
-    // Hide validation if empty
     if (!alias) {
         validationDiv.textContent = '';
         aliasInput.classList.remove('border-green-300', 'border-red-300');
@@ -2478,7 +2480,6 @@ async function checkCurlAlias() {
         return;
     }
 
-    // Client-side format validation
     const validFormat = /^[a-z0-9_]+$/.test(alias);
     if (!validFormat) {
         validationDiv.textContent = '✗ Invalid format. Use only lowercase letters, numbers, and underscores.';
@@ -2489,10 +2490,9 @@ async function checkCurlAlias() {
         return;
     }
 
-    // Debounce API calls for uniqueness check
     aliasCheckTimeout = setTimeout(async () => {
         try {
-            const toolName = `${alias}_curl`;
+            const toolName = `${alias}${suffix}`;
             const response = await fetch(`/api/check-tool-name/${encodeURIComponent(toolName)}`);
             const result = await response.json();
 
@@ -2531,15 +2531,17 @@ async function handleNextToStep2() {
 
     // For web page, show info in preview and go to step 2
     if (selectedType === 'web') {
+        const alias = document.getElementById('webToolAlias')?.value?.trim();
         const webUrl = document.getElementById('webUrl')?.value?.trim();
-        if (!webUrl) {
-            showError('web-parse-error', 'Please enter a Web Page URL');
+        if (!webUrl || !alias) {
+            showError('web-parse-error', 'Please enter a Web Page URL and a valid Alias');
             return;
         }
 
         // Store the URL without parsing - parsing will happen at runtime
         currentDataSource = {
             type: 'webpage',
+            alias: alias,
             name: webUrl,
             url: webUrl
         };
@@ -2548,7 +2550,7 @@ async function handleNextToStep2() {
         console.log('📋 Web page URL saved, showing preview info:', webUrl);
 
         // Display info message in preview
-        displayWebpagePreview(webUrl);
+        displayWebpagePreview(currentDataSource);
 
         // Go to step 2 (preview)
         goToWizardStep(2);
@@ -2868,8 +2870,13 @@ function updateWizardNavigation() {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             canProceed = !!swaggerUrl;
         } else if (selectedType === 'web') {
+            const aliasInput = document.getElementById('webToolAlias');
+            const alias = aliasInput?.value.trim();
+            const validationDiv = document.getElementById('web-alias-validation');
+            const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
+            
             const webUrl = document.getElementById('webUrl')?.value?.trim();
-            canProceed = !!webUrl;
+            canProceed = isAliasValid && !!webUrl;
         } else if (selectedType === 'curl') {
             const aliasInput = document.getElementById('curlToolAlias');
             const alias = aliasInput?.value.trim();
@@ -3195,9 +3202,12 @@ async function renameServer(serverId, newName, nameSpan, originalHtml) {
 }
 
 // Display webpage preview info
-function displayWebpagePreview(url) {
+function displayWebpagePreview(dataSource) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
+
+    const { url, alias } = dataSource;
+    const toolName = alias ? `${alias}_web` : 'fetch_webpage';
 
     const html = `
         <div class="space-y-4">
@@ -3225,7 +3235,7 @@ function displayWebpagePreview(url) {
                             </div>
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>
-                                <span>A <code class="text-xs bg-indigo-100 px-1 py-0.5 rounded">fetch_webpage</code> tool will be generated</span>
+                                <span>A <code class="text-xs bg-indigo-100 px-1 py-0.5 rounded">${toolName}</code> tool will be generated</span>
                             </div>
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>

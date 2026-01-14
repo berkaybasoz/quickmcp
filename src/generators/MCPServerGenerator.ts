@@ -122,16 +122,18 @@ export class MCPServerGenerator {
   }
 
   private generateToolsForWebpage(serverId: string, dbConfig: any): ToolDefinition[] {
-    const url = dbConfig?.url || '';
+    const { url, alias } = dbConfig || {};
     if (!url) {
       console.error('❌ No URL provided for webpage server');
       return [];
     }
 
+    const toolName = alias ? `${alias}_web` : 'fetch_webpage';
+
     // Create a tool to fetch the webpage HTML
     const tool: ToolDefinition = {
       server_id: serverId,
-      name: 'fetch_webpage',
+      name: toolName,
       description: `Fetches the HTML content from ${url}`,
       inputSchema: {
         type: 'object',
