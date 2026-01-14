@@ -143,7 +143,7 @@ app.get('/api/health', (req, res) => {
 // Parse data source endpoint
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   try {
-    const { type, connection, swaggerUrl } = req.body as any;
+    const { type, connection, swaggerUrl, curlOptions } = req.body as any;
     const file = req.file;
 
     let dataSource: DataSource;
@@ -210,6 +210,54 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
           parsedData: endpoints
         }
       });
+    } else if (type === 'curl') {
+        let opts;
+        if (typeof curlOptions === 'string') {
+            try {
+                opts = JSON.parse(curlOptions);
+            } catch (e) {
+                throw new Error('Invalid curlOptions JSON');
+            }
+        } else {
+            opts = curlOptions;
+        }
+
+        if (!opts || !opts.url) {
+            throw new Error('Missing curlOptions or url');
+        }
+
+        dataSource = {
+            type: 'curl',
+            name: `cURL to ${opts.url}`,
+            curlOptions: opts
+        };
+        
+        // For cURL, there's no data to parse beforehand.
+        // The "data" is what the cURL command will fetch at runtime.
+        // We'll create a single tool to represent this action.
+        const parsedData = [{
+            tableName: 'curl_request',
+            headers: ['url', 'method', 'status', 'response'],
+            rows: [],
+            metadata: {
+                rowCount: 0,
+                columnCount: 4,
+                dataTypes: {
+                    url: 'string',
+                    method: 'string',
+                    status: 'number',
+                    response: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       dataSource = {
         type: type as 'csv' | 'excel',
@@ -274,6 +322,17 @@ app.post('/api/generate', async (req, res) => {
       parsedForGen = {}; // No tables for webpage
       dbConfForGen = { type: 'webpage', url: dataSource.url || dataSource.name };
       //console.log('✅ Webpage config created:', dbConfForGen);
+    } else if (dataSource?.type === 'curl') {
+        parsedForGen = {}; // No tables for curl
+        console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
+        dbConfForGen = {
+          type: 'curl',
+          url: dataSource.url,
+          method: dataSource.method || 'GET',
+          headers: dataSource.headers || {},
+          body: dataSource.body || {}
+        };
+        console.log('✅ cURL config created:', JSON.stringify(dbConfForGen, null, 2));
     } else {
       // Use provided parsed data or re-parse if not available
       const fullParsedData = parsedData || await parser.parse(dataSource);

@@ -1,9 +1,17 @@
+export interface CurlOptions {
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: { [key: string]: string };
+  body?: string;
+}
+
 export interface DataSource {
-  type: 'database' | 'csv' | 'excel' | 'json';
+  type: 'database' | 'csv' | 'excel' | 'json' | 'curl';
   name: string;
   connection?: DatabaseConnection;
   filePath?: string;
   data?: any[];
+  curlOptions?: CurlOptions;
 }
 
 export interface DatabaseConnection {

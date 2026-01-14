@@ -864,13 +864,17 @@ async function generateServer() {
         return;
     }
 
+    // Debug log
+    //console.log('🔍 DEBUG - currentDataSource:', currentDataSource);
+    //console.log('🔍 DEBUG - currentDataSource.type:', currentDataSource?.type);
+
     // Get selected tables and their tool configurations
     let selectedTablesConfig = getSelectedTablesAndTools();
 
-    // For webpage, we don't need table selection - runtime parsing will happen
-    if (currentDataSource?.type === 'webpage') {
-        selectedTablesConfig = []; // Empty is OK for webpage
-        //console.log('🌐 Webpage server - parsing will happen at runtime');
+    // For webpage and curl, we don't need table selection - runtime execution will happen
+    if (currentDataSource?.type === 'webpage' || currentDataSource?.type === 'curl') {
+        selectedTablesConfig = []; // Empty is OK for webpage and curl
+        //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
         return;
@@ -2384,6 +2388,61 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For curl, show info in preview and go to step 2
+    if (selectedType === 'curl') {
+        const curlUrl = document.getElementById('curlUrl')?.value?.trim();
+        const curlMethod = document.getElementById('curlMethod')?.value || 'GET';
+        const curlHeaders = document.getElementById('curlHeaders')?.value?.trim();
+        const curlBody = document.getElementById('curlBody')?.value?.trim();
+
+        if (!curlUrl) {
+            showError('parse-error', 'Please enter a request URL');
+            return;
+        }
+
+        // Parse headers JSON if provided
+        let headers = {};
+        if (curlHeaders) {
+            try {
+                headers = JSON.parse(curlHeaders);
+            } catch (e) {
+                showError('parse-error', 'Invalid JSON in Headers field');
+                return;
+            }
+        }
+
+        // Parse body JSON if provided
+        let body = {};
+        if (curlBody) {
+            try {
+                body = JSON.parse(curlBody);
+            } catch (e) {
+                showError('parse-error', 'Invalid JSON in Body field');
+                return;
+            }
+        }
+
+        // Store curl config without executing - execution will happen at runtime
+        currentDataSource = {
+            type: 'curl',
+            name: curlUrl,
+            url: curlUrl,
+            method: curlMethod,
+            headers: headers,
+            body: body
+        };
+        currentParsedData = []; // Empty, will be executed when tool is called
+
+        //console.log('📋 cURL request saved, showing preview info:', currentDataSource);
+
+        // Display info message in preview
+        displayCurlPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2431,6 +2490,31 @@ async function handleNextToStep2() {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             if (!swaggerUrl) throw new Error('Please enter Swagger/OpenAPI URL');
             formData.append('swaggerUrl', swaggerUrl);
+        } else if (selectedType === 'curl') {
+            const curlUrl = document.getElementById('curlUrl')?.value?.trim();
+            if (!curlUrl) throw new Error('Please enter a request URL');
+
+            let headers, body;
+            try {
+                const headersRaw = document.getElementById('curlHeaders')?.value;
+                if (headersRaw) headers = JSON.parse(headersRaw);
+            } catch (e) {
+                throw new Error('Headers field contains invalid JSON.');
+            }
+            try {
+                const bodyRaw = document.getElementById('curlBody')?.value;
+                if (bodyRaw) body = JSON.parse(bodyRaw);
+            } catch (e) {
+                throw new Error('Body field contains invalid JSON.');
+            }
+
+            const curlOptions = {
+                url: curlUrl,
+                method: document.getElementById('curlMethod')?.value,
+                headers: headers,
+                body: body,
+            };
+            formData.append('curlOptions', JSON.stringify(curlOptions));
         }
 
         const response = await fetch('/api/parse', {
@@ -2443,7 +2527,11 @@ async function handleNextToStep2() {
         if (result.success) {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
-            displayDataPreview(result.data.parsedData);
+            if (currentDataSource.type === 'curl') {
+                displayCurlPreview(currentDataSource.curlOptions);
+            } else {
+                displayDataPreview(result.data.parsedData);
+            }
 
             // Go to step 2 after successful parse
             goToWizardStep(2);
@@ -2575,6 +2663,9 @@ function updateWizardNavigation() {
         } else if (selectedType === 'web') {
             const webUrl = document.getElementById('webUrl')?.value?.trim();
             canProceed = !!webUrl;
+        } else if (selectedType === 'curl') {
+            const curlUrl = document.getElementById('curlUrl')?.value?.trim();
+            canProceed = !!curlUrl;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -2588,12 +2679,14 @@ function toggleDataSourceFields() {
     const dbSection = document.getElementById('database-section');
     const restSection = document.getElementById('rest-section');
     const webSection = document.getElementById('web-section');
+    const curlSection = document.getElementById('curl-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
     dbSection?.classList.add('hidden');
     restSection?.classList.add('hidden');
     webSection?.classList.add('hidden');
+    curlSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === 'csv' || selectedType === 'excel') {
@@ -2605,6 +2698,14 @@ function toggleDataSourceFields() {
         restSection?.classList.remove('hidden');
     } else if (selectedType === 'web') {
         webSection?.classList.remove('hidden');
+    } else if (selectedType === 'curl') {
+        curlSection?.classList.remove('hidden');
+        // Add listener here to be robust
+        const curlUrlInput = document.getElementById('curlUrl');
+        if (curlUrlInput && !curlUrlInput.dataset.listenerAttached) {
+            curlUrlInput.addEventListener('input', updateWizardNavigation);
+            curlUrlInput.dataset.listenerAttached = 'true';
+        }
     }
 
     // Update wizard navigation state
@@ -2901,6 +3002,64 @@ function displayWebpagePreview(url) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-indigo-500"></i>
                                 <span>MCP clients (like Claude Desktop) can call this tool to get the HTML content</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayCurlPreview(curlOptions) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { url, method, headers, body } = curlOptions || {};
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-sky-50 border-2 border-sky-200 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-terminal text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-sky-900 text-lg mb-2">cURL Request Configuration</h3>
+                        <p class="text-sky-800 mb-3">This server will generate a single tool to execute the configured cURL request.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-sky-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">${method || 'GET'}</span>
+                                <span class="font-semibold text-slate-700">Target URL:</span>
+                            </div>
+                            <code class="text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded block break-all">${url}</code>
+                        </div>
+                        
+                        ${headers && Object.keys(headers).length > 0 ? `
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-sky-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers</label>
+                            <pre class="text-xs text-slate-800 bg-slate-50 p-2 rounded font-mono">${JSON.stringify(headers, null, 2)}</pre>
+                        </div>
+                        ` : ''}
+
+                        ${body && Object.keys(body).length > 0 ? `
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-sky-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Body</label>
+                            <pre class="text-xs text-slate-800 bg-slate-50 p-2 rounded font-mono">${JSON.stringify(body, null, 2)}</pre>
+                        </div>
+                        ` : ''}
+
+                        <div class="space-y-2 text-sm text-sky-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-sky-500"></i>
+                                <span>A tool named <code class="text-xs bg-sky-100 px-1 py-0.5 rounded">execute_curl_request</code> will be generated.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-sky-500"></i>
+                                <span>You can override request parameters like headers or body at runtime when calling the tool.</span>
                             </div>
                         </div>
                     </div>

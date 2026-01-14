@@ -54,6 +54,8 @@ export class MCPServerGenerator {
       } else if (dbConfig?.type === 'webpage') {
         tools = this.generateToolsForWebpage(serverId, dbConfig);
         //console.log('✅ Generated webpage tools:', tools.length);
+      } else if (dbConfig?.type === 'curl') {
+        tools = this.generateToolsForCurl(serverId, dbConfig);
       } else {
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
         //console.log('✅ Generated data tools:', tools.length);
@@ -63,9 +65,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST and webpage)
+      // Generate and save resources (skip for REST, webpage, and curl)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest' || dbConfig?.type === 'webpage')) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest' || dbConfig?.type === 'webpage' || dbConfig?.type === 'curl')) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -144,6 +146,44 @@ export class MCPServerGenerator {
     };
 
     //console.log(`✅ Generated webpage fetch tool for: ${url}`);
+    return [tool];
+  }
+
+  private generateToolsForCurl(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { url, method = 'GET' } = dbConfig || {};
+    if (!url) {
+      console.error('❌ No URL provided for cURL server');
+      return [];
+    }
+
+    const mapOp = (method: string): 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' => {
+      const m = (method || '').toUpperCase();
+      if (m === 'GET') return 'SELECT';
+      if (m === 'POST') return 'INSERT';
+      if (m === 'PUT' || m === 'PATCH') return 'UPDATE';
+      if (m === 'DELETE') return 'DELETE';
+      return 'SELECT';
+    };
+
+    const tool: ToolDefinition = {
+      server_id: serverId,
+      name: `execute_curl_request`,
+      description: `Executes a ${method} request to ${url}`,
+      inputSchema: {
+        type: 'object',
+        properties: {
+            // Allow overriding parts of the request at runtime
+            url: { type: 'string', description: 'Optional URL override' },
+            method: { type: 'string', description: 'Optional method override' },
+            headers: { type: 'object', description: 'Optional headers override (JSON object)' },
+            body: { type: 'object', description: 'Optional body override (JSON object)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify(dbConfig),
+      operation: mapOp(method)
+    };
+
     return [tool];
   }
 

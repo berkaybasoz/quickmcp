@@ -52,6 +52,10 @@ export class DynamicMCPExecutor {
         return await this.executeWebpageFetch(queryConfig);
       }
 
+      if (queryConfig?.type === 'curl') {
+        return await this.executeCurlRequest(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -145,6 +149,64 @@ export class DynamicMCPExecutor {
         content_type: response.headers.get('content-type') || 'unknown'
       }],
       rowCount: 1
+    };
+  }
+
+  private async executeCurlRequest(queryConfig: any, args: any): Promise<any> {
+    // Start with base config and override with runtime args
+    const finalConfig = { ...queryConfig, ...args };
+    
+    const { url, method, headers, body } = finalConfig;
+
+    if (!url) {
+        throw new Error('URL is missing in cURL request configuration');
+    }
+
+    //console.error(`🚀 cURL Request: ${method || 'GET'} ${url}`);
+
+    const fetchOptions: RequestInit = {
+        method: method || 'GET',
+        headers: headers || {},
+    };
+
+    if (body && Object.keys(body).length > 0 && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        fetchOptions.body = JSON.stringify(body);
+        // Ensure content-type is set for JSON body
+        (fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, fetchOptions);
+    const contentType = response.headers.get('content-type');
+    
+    let responseData: any;
+    if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+    } else {
+        responseData = await response.text();
+    }
+
+    console.error(`✅ cURL Response: ${response.status}`);
+    
+    if (!response.ok) {
+        console.error(`❌ cURL request failed with status ${response.status}:`, responseData);
+        // Still return a structured response for the tool output
+        return {
+            success: false,
+            error: `Request failed with status ${response.status}`,
+            data: [{
+                status: response.status,
+                response: responseData
+            }],
+            rowCount: 1
+        };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : [responseData];
+
+    return {
+        success: true,
+        data: dataArray,
+        rowCount: dataArray.length
     };
   }
 
