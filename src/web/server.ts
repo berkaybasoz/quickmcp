@@ -324,7 +324,7 @@ app.post('/api/generate', async (req, res) => {
       //console.log('✅ Webpage config created:', dbConfForGen);
     } else if (dataSource?.type === 'curl') {
         parsedForGen = {}; // No tables for curl
-        console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
+        //console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
         dbConfForGen = {
           type: 'curl',
           url: dataSource.url,
@@ -332,7 +332,7 @@ app.post('/api/generate', async (req, res) => {
           headers: dataSource.headers || {},
           body: dataSource.body || {}
         };
-        console.log('✅ cURL config created:', JSON.stringify(dbConfForGen, null, 2));
+        //console.log('✅ cURL config created:', JSON.stringify(dbConfForGen, null, 2));
     } else {
       // Use provided parsed data or re-parse if not available
       const fullParsedData = parsedData || await parser.parse(dataSource);
