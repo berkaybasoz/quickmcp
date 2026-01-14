@@ -211,13 +211,112 @@ function setupEventListeners() {
         });
     }
 
-    
+
+    // cURL mode toggle
+    const curlPasteTab = document.getElementById('curlPasteTab');
+    const curlManualTab = document.getElementById('curlManualTab');
+    const curlPasteMode = document.getElementById('curlPasteMode');
+    const curlManualMode = document.getElementById('curlManualMode');
+
+    curlPasteTab?.addEventListener('click', () => {
+        curlPasteTab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        curlPasteTab.classList.remove('text-slate-600');
+        curlManualTab.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+        curlManualTab.classList.add('text-slate-600');
+        curlPasteMode?.classList.remove('hidden');
+        curlManualMode?.classList.add('hidden');
+    });
+
+    curlManualTab?.addEventListener('click', () => {
+        curlManualTab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        curlManualTab.classList.remove('text-slate-600');
+        curlPasteTab.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+        curlPasteTab.classList.add('text-slate-600');
+        curlManualMode?.classList.remove('hidden');
+        curlPasteMode?.classList.add('hidden');
+    });
 
     // Wizard navigation
     document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
     document.getElementById('back-to-step-1')?.addEventListener('click', () => goToWizardStep(1));
     document.getElementById('next-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
     document.getElementById('back-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
+}
+
+// Parse cURL command
+function parseCurlCommand(curlCommand) {
+    const result = {
+        url: '',
+        method: 'GET',
+        headers: {},
+        body: {}
+    };
+
+    try {
+        // Remove line breaks and extra spaces
+        let cmd = curlCommand.replace(/\\\s*\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+        console.log('🔍 parseCurlCommand - original:', curlCommand);
+        console.log('🔍 parseCurlCommand - cleaned:', cmd);
+
+        // Remove 'curl' from beginning
+        cmd = cmd.replace(/^curl\s+/, '');
+
+        // Extract method (-X or --request) FIRST
+        const methodMatch = cmd.match(/(?:-X|--request)\s+([A-Z]+)/i);
+        if (methodMatch) {
+            result.method = methodMatch[1].toUpperCase();
+            // Remove method from command
+            cmd = cmd.replace(methodMatch[0], '').trim();
+            console.log('🔍 parseCurlCommand - method found:', result.method);
+            console.log('🔍 parseCurlCommand - after method removal:', cmd);
+        }
+
+        // Extract URL (look for quoted string first, then any URL pattern)
+        const quotedUrlMatch = cmd.match(/["']([^"']+)["']/);
+        if (quotedUrlMatch) {
+            result.url = quotedUrlMatch[1];
+            cmd = cmd.replace(quotedUrlMatch[0], '').trim();
+            console.log('🔍 parseCurlCommand - quoted URL found:', result.url);
+        } else {
+            // Try to find URL pattern (starts with http:// or https://)
+            const urlPatternMatch = cmd.match(/(https?:\/\/[^\s]+)/);
+            if (urlPatternMatch) {
+                result.url = urlPatternMatch[1];
+                cmd = cmd.replace(urlPatternMatch[0], '').trim();
+                console.log('🔍 parseCurlCommand - URL pattern found:', result.url);
+            }
+        }
+
+        // Extract headers (-H or --header)
+        const headerRegex = /(?:-H|--header)\s+["']([^"']+)["']/g;
+        let headerMatch;
+        while ((headerMatch = headerRegex.exec(cmd)) !== null) {
+            const headerStr = headerMatch[1];
+            const colonIndex = headerStr.indexOf(':');
+            if (colonIndex > 0) {
+                const key = headerStr.substring(0, colonIndex).trim();
+                const value = headerStr.substring(colonIndex + 1).trim();
+                result.headers[key] = value;
+            }
+        }
+
+        // Extract body (-d or --data)
+        const bodyMatch = cmd.match(/(?:-d|--data|--data-raw)\s+["']([^"']+)["']/);
+        if (bodyMatch) {
+            try {
+                result.body = JSON.parse(bodyMatch[1]);
+            } catch (e) {
+                // If not JSON, treat as form data
+                console.warn('Body is not JSON, treating as raw string');
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Failed to parse curl command:', error);
+        throw new Error('Failed to parse curl command. Please check the format.');
+    }
 }
 
 // Sidebar functions
@@ -2390,35 +2489,73 @@ async function handleNextToStep2() {
 
     // For curl, show info in preview and go to step 2
     if (selectedType === 'curl') {
-        const curlUrl = document.getElementById('curlUrl')?.value?.trim();
-        const curlMethod = document.getElementById('curlMethod')?.value || 'GET';
-        const curlHeaders = document.getElementById('curlHeaders')?.value?.trim();
-        const curlBody = document.getElementById('curlBody')?.value?.trim();
+        const curlPasteMode = document.getElementById('curlPasteMode');
+        const isPasteMode = !curlPasteMode?.classList.contains('hidden');
 
-        if (!curlUrl) {
-            showError('parse-error', 'Please enter a request URL');
-            return;
-        }
+        console.log('🔍 cURL mode - isPasteMode:', isPasteMode);
 
-        // Parse headers JSON if provided
-        let headers = {};
-        if (curlHeaders) {
-            try {
-                headers = JSON.parse(curlHeaders);
-            } catch (e) {
-                showError('parse-error', 'Invalid JSON in Headers field');
+        let curlUrl, curlMethod, headers, body;
+
+        if (isPasteMode) {
+            // Parse from pasted curl command
+            const curlCommand = document.getElementById('curlCommand')?.value?.trim();
+            if (!curlCommand) {
+                showError('parse-error', 'Please paste a cURL command');
                 return;
             }
-        }
 
-        // Parse body JSON if provided
-        let body = {};
-        if (curlBody) {
             try {
-                body = JSON.parse(curlBody);
+                const parsed = parseCurlCommand(curlCommand);
+                curlUrl = parsed.url;
+                curlMethod = parsed.method;
+                headers = parsed.headers;
+                body = parsed.body;
+
+                if (!curlUrl) {
+                    showError('parse-error', 'Could not extract URL from cURL command');
+                    return;
+                }
             } catch (e) {
-                showError('parse-error', 'Invalid JSON in Body field');
+                showError('parse-error', e.message || 'Failed to parse cURL command');
                 return;
+            }
+        } else {
+            // Manual mode
+            const curlUrlInput = document.getElementById('curlUrl');
+            curlUrl = curlUrlInput?.value?.trim();
+            curlMethod = document.getElementById('curlMethod')?.value || 'GET';
+            const curlHeaders = document.getElementById('curlHeaders')?.value?.trim();
+            const curlBody = document.getElementById('curlBody')?.value?.trim();
+
+            console.log('🔍 Manual mode - curlUrl input element:', curlUrlInput);
+            console.log('🔍 Manual mode - curlUrl value:', curlUrl);
+            console.log('🔍 Manual mode - curlMethod:', curlMethod);
+
+            if (!curlUrl) {
+                showError('parse-error', 'Please enter a request URL');
+                return;
+            }
+
+            // Parse headers JSON if provided
+            headers = {};
+            if (curlHeaders) {
+                try {
+                    headers = JSON.parse(curlHeaders);
+                } catch (e) {
+                    showError('parse-error', 'Invalid JSON in Headers field');
+                    return;
+                }
+            }
+
+            // Parse body JSON if provided
+            body = {};
+            if (curlBody) {
+                try {
+                    body = JSON.parse(curlBody);
+                } catch (e) {
+                    showError('parse-error', 'Invalid JSON in Body field');
+                    return;
+                }
             }
         }
 
@@ -2433,7 +2570,7 @@ async function handleNextToStep2() {
         };
         currentParsedData = []; // Empty, will be executed when tool is called
 
-        //console.log('📋 cURL request saved, showing preview info:', currentDataSource);
+        console.log('📋 cURL request saved, showing preview info:', currentDataSource);
 
         // Display info message in preview
         displayCurlPreview(currentDataSource);
@@ -2664,8 +2801,16 @@ function updateWizardNavigation() {
             const webUrl = document.getElementById('webUrl')?.value?.trim();
             canProceed = !!webUrl;
         } else if (selectedType === 'curl') {
-            const curlUrl = document.getElementById('curlUrl')?.value?.trim();
-            canProceed = !!curlUrl;
+            const curlPasteMode = document.getElementById('curlPasteMode');
+            const isPasteMode = !curlPasteMode?.classList.contains('hidden');
+
+            if (isPasteMode) {
+                const curlCommand = document.getElementById('curlCommand')?.value?.trim();
+                canProceed = !!curlCommand;
+            } else {
+                const curlUrl = document.getElementById('curlUrl')?.value?.trim();
+                canProceed = !!curlUrl;
+            }
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -2705,6 +2850,12 @@ function toggleDataSourceFields() {
         if (curlUrlInput && !curlUrlInput.dataset.listenerAttached) {
             curlUrlInput.addEventListener('input', updateWizardNavigation);
             curlUrlInput.dataset.listenerAttached = 'true';
+        }
+
+        const curlCommandInput = document.getElementById('curlCommand');
+        if (curlCommandInput && !curlCommandInput.dataset.listenerAttached) {
+            curlCommandInput.addEventListener('input', updateWizardNavigation);
+            curlCommandInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -3019,6 +3170,9 @@ function displayCurlPreview(curlOptions) {
 
     const { url, method, headers, body } = curlOptions || {};
 
+    console.log('🔍 displayCurlPreview called with:', curlOptions);
+    console.log('🔍 URL value:', url);
+
     const html = `
         <div class="space-y-4">
             <div class="bg-sky-50 border-2 border-sky-200 rounded-xl p-6">
@@ -3035,9 +3189,16 @@ function displayCurlPreview(curlOptions) {
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">${method || 'GET'}</span>
                                 <span class="font-semibold text-slate-700">Target URL:</span>
                             </div>
-                            <code class="text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded block break-all">${url}</code>
+                            <code class="text-sm text-slate-900 bg-slate-50 px-3 py-2 rounded block break-all">${url || 'No URL specified'}</code>
                         </div>
-                        
+
+                        ${!url ? `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
+                            <p class="text-xs text-red-700 font-semibold mb-2">DEBUG: URL is empty!</p>
+                            <pre class="text-xs text-red-900 overflow-auto">${JSON.stringify(curlOptions, null, 2)}</pre>
+                        </div>
+                        ` : ''}
+
                         ${headers && Object.keys(headers).length > 0 ? `
                         <div class="bg-white rounded-lg p-4 mb-3 border border-sky-200">
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers</label>

@@ -513,29 +513,52 @@
 
                                     <!-- cURL Config -->
                                     <div id="curl-section" class="hidden animate-fade-in space-y-6">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- Toggle between Paste and Manual modes -->
+                                        <div class="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+                                            <button id="curlPasteTab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-slate-900 shadow-sm">
+                                                Paste cURL Command
+                                            </button>
+                                            <button id="curlManualTab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-600 hover:text-slate-900">
+                                                Manual Configuration
+                                            </button>
+                                        </div>
+
+                                        <!-- Paste Mode -->
+                                        <div id="curlPasteMode" class="space-y-4">
                                             <div>
-                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Request URL</label>
-                                                <input type="text" id="curlUrl" placeholder="https://api.example.com/data" class="input" autocomplete="off">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Method</label>
-                                                <select id="curlMethod" class="input">
-                                                    <option>GET</option>
-                                                    <option>POST</option>
-                                                    <option>PUT</option>
-                                                    <option>DELETE</option>
-                                                    <option>PATCH</option>
-                                                </select>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">cURL Command</label>
+                                                <textarea id="curlCommand" rows="6" class="input font-mono text-xs" placeholder='curl -X GET "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT" \
+  -H "Accept: application/json"'></textarea>
+                                                <p class="text-xs text-slate-500 mt-2">Paste your curl command here. We'll parse it automatically.</p>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers (JSON)</label>
-                                            <textarea id="curlHeaders" rows="3" class="input font-mono text-xs" placeholder='{ "Authorization": "Bearer ..." }'></textarea>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Body (JSON)</label>
-                                            <textarea id="curlBody" rows="4" class="input font-mono text-xs" placeholder='{ "key": "value" }'></textarea>
+
+                                        <!-- Manual Mode -->
+                                        <div id="curlManualMode" class="hidden space-y-6">
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Request URL</label>
+                                                    <input type="text" id="curlUrl" placeholder="https://api.example.com/data" class="input" autocomplete="off">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Method</label>
+                                                    <select id="curlMethod" class="input">
+                                                        <option>GET</option>
+                                                        <option>POST</option>
+                                                        <option>PUT</option>
+                                                        <option>DELETE</option>
+                                                        <option>PATCH</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers (JSON)</label>
+                                                <textarea id="curlHeaders" rows="3" class="input font-mono text-xs" placeholder='{ "Authorization": "Bearer ..." }'></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Body (JSON)</label>
+                                                <textarea id="curlBody" rows="4" class="input font-mono text-xs" placeholder='{ "key": "value" }'></textarea>
+                                            </div>
                                         </div>
                                     </div>
 
