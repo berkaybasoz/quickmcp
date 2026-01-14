@@ -28,7 +28,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/mssql": "^9.1.8",
     "@types/node": "^20.0.0",
