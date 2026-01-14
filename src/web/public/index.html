@@ -513,6 +513,14 @@
 
                                     <!-- cURL Config -->
                                     <div id="curl-section" class="hidden animate-fade-in space-y-6">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Name (Alias)</label>
+                                            <input type="text" id="curlToolAlias" placeholder="e.g., get_weather_data" class="input">
+                                            <div id="alias-validation" class="mt-2 text-xs"></div>
+                                            <p class="text-xs text-slate-500 mt-2">
+                                                Required. Use lowercase letters, numbers, and underscores only. This must be unique.
+                                            </p>
+                                        </div>
                                         <!-- Toggle between Paste and Manual modes -->
                                         <div class="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
                                             <button id="curlPasteTab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-slate-900 shadow-sm">

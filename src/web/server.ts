@@ -327,6 +327,7 @@ app.post('/api/generate', async (req, res) => {
         //console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
         dbConfForGen = {
           type: 'curl',
+          alias: dataSource.alias,
           url: dataSource.url,
           method: dataSource.method || 'GET',
           headers: dataSource.headers || {},
@@ -432,6 +433,22 @@ app.get('/api/servers/check-name/:name', (req, res) => {
       `Server name "${serverName}" is available` :
       `Server name "${serverName}" already exists`
   });
+});
+
+// Check if a tool name is available across all servers
+app.get('/api/check-tool-name/:toolName', async (req, res) => {
+    const { toolName } = req.params;
+    try {
+        const allServers = ensureSQLite().getAllServers();
+        const isTaken = allServers.some(server => {
+            const tools = ensureSQLite().getToolsForServer(server.id);
+            return tools.some(tool => tool.name === toolName);
+        });
+        res.json({ success: true, available: !isTaken });
+    } catch (error) {
+        console.error(`Error checking tool name '${toolName}':`, error);
+        res.status(500).json({ success: false, error: 'Failed to check tool name availability' });
+    }
 });
 
 // Get server details endpoint

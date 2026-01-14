@@ -150,7 +150,7 @@ export class MCPServerGenerator {
   }
 
   private generateToolsForCurl(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { url, method = 'GET' } = dbConfig || {};
+    const { url, method = 'GET', alias } = dbConfig || {};
     if (!url) {
       console.error('❌ No URL provided for cURL server');
       return [];
@@ -165,9 +165,11 @@ export class MCPServerGenerator {
       return 'SELECT';
     };
 
+    const toolName = alias ? `${alias}_curl` : 'execute_curl_request';
+
     const tool: ToolDefinition = {
       server_id: serverId,
-      name: `execute_curl_request`,
+      name: toolName,
       description: `Executes a ${method} request to ${url}`,
       inputSchema: {
         type: 'object',

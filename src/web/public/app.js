@@ -148,6 +148,9 @@ function setupEventListeners() {
     // Server name validation
     document.getElementById('serverName')?.addEventListener('input', checkServerName);
 
+    // cURL Alias validation
+    document.getElementById('curlToolAlias')?.addEventListener('input', checkCurlAlias);
+
     // Test buttons
     document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
     document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
@@ -2452,6 +2455,71 @@ async function checkServerName() {
     }, 500);
 }
 
+// cURL Alias Validation
+let aliasCheckTimeout;
+
+async function checkCurlAlias() {
+    const aliasInput = document.getElementById('curlToolAlias');
+    const validationDiv = document.getElementById('alias-validation');
+    if (!aliasInput || !validationDiv) return;
+
+    const alias = aliasInput.value.trim();
+
+    // Clear previous timeout
+    if (aliasCheckTimeout) {
+        clearTimeout(aliasCheckTimeout);
+    }
+
+    // Hide validation if empty
+    if (!alias) {
+        validationDiv.textContent = '';
+        aliasInput.classList.remove('border-green-300', 'border-red-300');
+        updateWizardNavigation();
+        return;
+    }
+
+    // Client-side format validation
+    const validFormat = /^[a-z0-9_]+$/.test(alias);
+    if (!validFormat) {
+        validationDiv.textContent = '✗ Invalid format. Use only lowercase letters, numbers, and underscores.';
+        validationDiv.className = 'mt-2 text-xs text-red-600';
+        aliasInput.classList.remove('border-green-300');
+        aliasInput.classList.add('border-red-300');
+        updateWizardNavigation();
+        return;
+    }
+
+    // Debounce API calls for uniqueness check
+    aliasCheckTimeout = setTimeout(async () => {
+        try {
+            const toolName = `${alias}_curl`;
+            const response = await fetch(`/api/check-tool-name/${encodeURIComponent(toolName)}`);
+            const result = await response.json();
+
+            if (result.success) {
+                if (result.available) {
+                    validationDiv.textContent = `✓ Tool name (${toolName}) is available`;
+                    validationDiv.className = 'mt-2 text-xs text-green-600';
+                    aliasInput.classList.remove('border-red-300');
+                    aliasInput.classList.add('border-green-300');
+                } else {
+                    validationDiv.textContent = `✗ Tool name (${toolName}) already exists`;
+                    validationDiv.className = 'mt-2 text-xs text-red-600';
+                    aliasInput.classList.remove('border-green-300');
+                    aliasInput.classList.add('border-red-300');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking tool name:', error);
+            validationDiv.textContent = 'Error checking tool name availability.';
+            validationDiv.className = 'mt-2 text-xs text-red-600';
+        } finally {
+            updateWizardNavigation();
+        }
+    }, 500);
+}
+
+
 // Handle next to step 2 - parse data first
 async function handleNextToStep2() {
     const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
@@ -2489,6 +2557,7 @@ async function handleNextToStep2() {
 
     // For curl, show info in preview and go to step 2
     if (selectedType === 'curl') {
+        const alias = document.getElementById('curlToolAlias')?.value?.trim();
         const curlPasteMode = document.getElementById('curlPasteMode');
         const isPasteMode = !curlPasteMode?.classList.contains('hidden');
 
@@ -2562,6 +2631,7 @@ async function handleNextToStep2() {
         // Store curl config without executing - execution will happen at runtime
         currentDataSource = {
             type: 'curl',
+            alias: alias,
             name: curlUrl,
             url: curlUrl,
             method: curlMethod,
@@ -2801,16 +2871,23 @@ function updateWizardNavigation() {
             const webUrl = document.getElementById('webUrl')?.value?.trim();
             canProceed = !!webUrl;
         } else if (selectedType === 'curl') {
+            const aliasInput = document.getElementById('curlToolAlias');
+            const alias = aliasInput?.value.trim();
+            const validationDiv = document.getElementById('alias-validation');
+            const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
+
             const curlPasteMode = document.getElementById('curlPasteMode');
             const isPasteMode = !curlPasteMode?.classList.contains('hidden');
-
+            let hasCurlInfo = false;
             if (isPasteMode) {
                 const curlCommand = document.getElementById('curlCommand')?.value?.trim();
-                canProceed = !!curlCommand;
+                hasCurlInfo = !!curlCommand;
             } else {
                 const curlUrl = document.getElementById('curlUrl')?.value?.trim();
-                canProceed = !!curlUrl;
+                hasCurlInfo = !!curlUrl;
             }
+            
+            canProceed = isAliasValid && hasCurlInfo;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3168,10 +3245,12 @@ function displayCurlPreview(curlOptions) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
 
-    const { url, method, headers, body } = curlOptions || {};
+    const { url, method, headers, body, alias } = curlOptions || {};
 
     console.log('🔍 displayCurlPreview called with:', curlOptions);
     console.log('🔍 URL value:', url);
+
+    const toolName = alias ? `${alias}_curl` : 'execute_curl_request';
 
     const html = `
         <div class="space-y-4">
@@ -3216,7 +3295,7 @@ function displayCurlPreview(curlOptions) {
                         <div class="space-y-2 text-sm text-sky-700">
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-sky-500"></i>
-                                <span>A tool named <code class="text-xs bg-sky-100 px-1 py-0.5 rounded">execute_curl_request</code> will be generated.</span>
+                                <span>A tool named <code class="text-xs bg-sky-100 px-1 py-0.5 rounded">${toolName}</code> will be generated.</span>
                             </div>
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-sky-500"></i>
