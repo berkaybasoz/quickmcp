@@ -16,7 +16,7 @@ POSTGRESQL
 HOST: localhost
 PORT: 5432
 DB:   quickmcp
-USER: root
+USER: user
 PWD:  password
 
 

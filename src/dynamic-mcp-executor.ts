@@ -392,23 +392,106 @@ export class DynamicMCPExecutor {
           }
 
         case 'mysql':
-          const [rows] = await connection.execute(sqlQuery, Object.values(args).filter(v => v !== undefined && v !== null));
-
+          // For SELECT with LIMIT/OFFSET, use query() instead of execute() to avoid prepared statement issues
           if (operation === 'SELECT') {
-            return rows;
-          } else {
-            return { rowsAffected: (rows as any).affectedRows };
+            const limit = args.limit || 100;
+            const offset = args.offset || 0;
+            // Replace placeholders with actual values for SELECT
+            const selectQuery = sqlQuery.replace('LIMIT ? OFFSET ?', `LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`);
+            const [selectRows] = await connection.query(selectQuery);
+            return selectRows;
           }
+
+          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed
+          if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
+            const [aggRows] = await connection.query(sqlQuery);
+            return aggRows;
+          }
+
+          // Build parameters array for INSERT/UPDATE/DELETE
+          let mysqlParams: any[] = [];
+          if (operation === 'INSERT') {
+            // Extract column names from INSERT query to ensure correct order
+            // Format: INSERT INTO `table` (`col1`, `col2`, ...) VALUES (?, ?, ...)
+            const insertMatch = sqlQuery.match(/INSERT INTO\s+`[^`]+`\s+\(([^)]+)\)/i);
+            if (insertMatch) {
+              const columnNames = insertMatch[1].match(/`([^`]+)`/g)?.map(c => c.replace(/`/g, '')) || [];
+              mysqlParams = columnNames.map(col => args[col] === undefined ? null : args[col]);
+            } else {
+              mysqlParams = Object.entries(args)
+                .filter(([key]) => key.toLowerCase() !== 'id')
+                .map(([, value]) => value === undefined ? null : value);
+            }
+          } else if (operation === 'UPDATE') {
+            // Extract column names from UPDATE query SET clause
+            // Format: UPDATE `table` SET `col1` = ?, `col2` = ? WHERE `id` = ?
+            const setMatch = sqlQuery.match(/SET\s+(.+?)\s+WHERE/i);
+            if (setMatch) {
+              const columnNames = setMatch[1].match(/`([^`]+)`\s*=/g)?.map(c => c.replace(/`|=/g, '').trim()) || [];
+              const updateValues = columnNames.map(col => args[col] === undefined ? null : args[col]);
+              mysqlParams = [...updateValues, args.id];
+            } else {
+              const updateValues = Object.entries(args)
+                .filter(([key]) => key.toLowerCase() !== 'id')
+                .map(([, value]) => value === undefined ? null : value);
+              mysqlParams = [...updateValues, args.id];
+            }
+          } else if (operation === 'DELETE') {
+            mysqlParams = [args.id];
+          }
+
+          const [rows] = await connection.execute(sqlQuery, mysqlParams);
+          return { rowsAffected: (rows as any).affectedRows };
 
         case 'postgresql':
-          const values = Object.values(args).filter(v => v !== undefined && v !== null);
-          const pgResult = await connection.query(sqlQuery, values);
-
+          // For SELECT, use parameterized query
           if (operation === 'SELECT') {
-            return pgResult.rows;
-          } else {
-            return { rowsAffected: pgResult.rowCount };
+            const limit = args.limit || 100;
+            const offset = args.offset || 0;
+            const pgSelectResult = await connection.query(sqlQuery, [limit, offset]);
+            return pgSelectResult.rows;
           }
+
+          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed
+          if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
+            const pgAggResult = await connection.query(sqlQuery);
+            return pgAggResult.rows;
+          }
+
+          // Build parameters array for INSERT/UPDATE/DELETE
+          let pgParams: any[] = [];
+          if (operation === 'INSERT') {
+            // Extract column names from INSERT query to ensure correct order
+            // Format: INSERT INTO "table" ("col1", "col2", ...) VALUES ($1, $2, ...)
+            const insertMatch = sqlQuery.match(/INSERT INTO\s+"[^"]+"\s+\(([^)]+)\)/i);
+            if (insertMatch) {
+              const columnNames = insertMatch[1].match(/"([^"]+)"/g)?.map(c => c.replace(/"/g, '')) || [];
+              pgParams = columnNames.map(col => args[col] === undefined ? null : args[col]);
+            } else {
+              pgParams = Object.entries(args)
+                .filter(([key]) => key.toLowerCase() !== 'id')
+                .map(([, value]) => value === undefined ? null : value);
+            }
+          } else if (operation === 'UPDATE') {
+            // Extract column names from UPDATE query SET clause
+            // Format: UPDATE "table" SET "col1" = $1, "col2" = $2 WHERE "id" = $N
+            const setMatch = sqlQuery.match(/SET\s+(.+?)\s+WHERE/i);
+            if (setMatch) {
+              const columnNames = setMatch[1].match(/"([^"]+)"\s*=/g)?.map(c => c.replace(/"|=/g, '').trim()) || [];
+              const updateValues = columnNames.map(col => args[col] === undefined ? null : args[col]);
+              pgParams = [...updateValues, args.id];
+            } else {
+              const updateValues = Object.entries(args)
+                .filter(([key]) => key.toLowerCase() !== 'id')
+                .map(([, value]) => value === undefined ? null : value);
+              pgParams = [...updateValues, args.id];
+            }
+          } else if (operation === 'DELETE') {
+            pgParams = [args.id];
+          }
+
+          const pgResult = await connection.query(sqlQuery, pgParams);
+          return { rowsAffected: pgResult.rowCount };
 
         default:
           throw new Error(`Unsupported database type: ${type}`);

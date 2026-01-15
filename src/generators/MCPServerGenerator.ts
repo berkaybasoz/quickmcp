@@ -525,44 +525,46 @@ export class MCPServerGenerator {
   }
 
   private generateSelectQuery(tableName: string, columns: ParsedColumn[], dbType: string, withParams: boolean = true): string {
-    const columnList = columns.map(col => `[${col.name}]`).join(', ');
-    let query = `SELECT ${columnList} FROM [${tableName}]`;
+    const columnList = columns.map(col => this.quoteIdentifier(col.name, dbType)).join(', ');
+    let query = `SELECT ${columnList} FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
     if (withParams) {
-      // Filter out problematic columns for WHERE clause (e.g., ntext columns in SQL Server)
-      const filterableColumns = columns.filter(col => {
-        // For SQL Server, exclude large text columns that can't be compared
-        if (dbType === 'mssql') {
-          // Skip columns that might be ntext, text, or image types
-          // These are typically identified by their string type and large content
-          return true; // We'll handle this at parameter level instead
+      if (dbType === 'mysql' || dbType === 'postgresql') {
+        // MySQL and PostgreSQL: simple query without complex WHERE, parameters handled in executor
+        const orderColumn = columns.find(col =>
+          col.name.toLowerCase() === 'id' ||
+          col.name.toLowerCase().includes('created') ||
+          col.name.toLowerCase().includes('timestamp')
+        ) || columns[0];
+
+        if (orderColumn) {
+          query += ` ORDER BY ${this.quoteIdentifier(orderColumn.name, dbType)}`;
         }
-        return true;
-      });
 
-      const whereConditions = filterableColumns.map(col =>
-        `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-      ).join(' AND ');
-
-      query += ` WHERE ${whereConditions}`;
-
-      // Add ORDER BY clause for consistent pagination
-      // Find the first suitable column for ordering (prefer id, created_at, or first column)
-      const orderColumn = columns.find(col =>
-        col.name.toLowerCase() === 'id' ||
-        col.name.toLowerCase().includes('created') ||
-        col.name.toLowerCase().includes('timestamp')
-      ) || columns[0];
-
-      if (orderColumn) {
-        query += ` ORDER BY [${orderColumn.name}]`;
-      }
-
-      if (dbType === 'mssql') {
-        // Use OFFSET/FETCH for proper pagination with ORDER BY
-        query += ' OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
+        if (dbType === 'mysql') {
+          query += ' LIMIT ? OFFSET ?';
+        } else {
+          query += ' LIMIT $1 OFFSET $2';
+        }
       } else {
-        query += ' LIMIT @limit OFFSET @offset';
+        // MSSQL: keep existing logic with @params
+        const whereConditions = columns.map(col =>
+          `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+        ).join(' AND ');
+
+        query += ` WHERE ${whereConditions}`;
+
+        const orderColumn = columns.find(col =>
+          col.name.toLowerCase() === 'id' ||
+          col.name.toLowerCase().includes('created') ||
+          col.name.toLowerCase().includes('timestamp')
+        ) || columns[0];
+
+        if (orderColumn) {
+          query += ` ORDER BY ${this.quoteIdentifier(orderColumn.name, dbType)}`;
+        }
+
+        query += ' OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY';
       }
     }
 
@@ -571,118 +573,104 @@ export class MCPServerGenerator {
 
   private generateInsertQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
     const insertColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
-    const columnNames = insertColumns.map(col => `[${col.name}]`).join(', ');
-    const paramNames = insertColumns.map(col => `@${col.name}`).join(', ');
+    const columnNames = insertColumns.map(col => this.quoteIdentifier(col.name, dbType)).join(', ');
+    const paramNames = insertColumns.map((col, idx) => this.getParamPlaceholder(col.name, idx + 1, dbType)).join(', ');
 
-    return `INSERT INTO [${tableName}] (${columnNames}) VALUES (${paramNames})`;
+    return `INSERT INTO ${this.quoteIdentifier(tableName, dbType)} (${columnNames}) VALUES (${paramNames})`;
   }
 
   private generateUpdateQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
     const updateColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
-    const setClause = updateColumns.map(col => `[${col.name}] = @${col.name}`).join(', ');
 
-    return `UPDATE [${tableName}] SET ${setClause} WHERE [Id] = @id`;
+    if (dbType === 'mysql') {
+      const setClause = updateColumns.map(col => `${this.quoteIdentifier(col.name, dbType)} = ?`).join(', ');
+      return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
+    } else if (dbType === 'postgresql') {
+      const setClause = updateColumns.map((col, idx) => `${this.quoteIdentifier(col.name, dbType)} = $${idx + 1}`).join(', ');
+      return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('id', dbType)} = $${updateColumns.length + 1}`;
+    } else {
+      const setClause = updateColumns.map(col => `${this.quoteIdentifier(col.name, dbType)} = @${col.name}`).join(', ');
+      return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('Id', dbType)} = @id`;
+    }
   }
 
   private generateDeleteQuery(tableName: string, dbType: string): string {
-    return `DELETE FROM [${tableName}] WHERE [Id] = @id`;
+    if (dbType === 'mysql') {
+      return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
+    } else if (dbType === 'postgresql') {
+      return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = $1`;
+    } else {
+      return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('Id', dbType)} = @id`;
+    }
   }
 
   private generateCountQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
-    let query = `SELECT COUNT(*) as total_count FROM [${tableName}]`;
+    let query = `SELECT COUNT(*) as total_count FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    // Filter out problematic columns for WHERE clause (e.g., ntext columns in SQL Server)
-    const filterableColumns = columns.filter(col => {
-      // For SQL Server, exclude large text columns that can't be compared
-      if (dbType === 'mssql') {
-        // Skip columns that might be ntext, text, or image types
-        // These are typically identified by their string type and large content
-        return true; // We'll handle this at parameter level instead
-      }
-      return true;
-    });
-
-    const whereConditions = filterableColumns.map(col =>
-      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-    ).join(' AND ');
-
-    query += ` WHERE ${whereConditions}`;
+    if (dbType === 'mssql') {
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+      ).join(' AND ');
+      query += ` WHERE ${whereConditions}`;
+    }
+    // MySQL and PostgreSQL: no WHERE clause for simple count
 
     return query;
   }
 
   private generateMinQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
-    let query = `SELECT MIN([${columnName}]) as min_value FROM [${tableName}]`;
+    let query = `SELECT MIN(${this.quoteIdentifier(columnName, dbType)}) as min_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    const filterableColumns = columns.filter(col => {
-      if (dbType === 'mssql') {
-        return true; // We'll handle this at parameter level instead
-      }
-      return true;
-    });
-
-    const whereConditions = filterableColumns.map(col =>
-      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-    ).join(' AND ');
-
-    query += ` WHERE ${whereConditions}`;
+    if (dbType === 'mssql') {
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+      ).join(' AND ');
+      query += ` WHERE ${whereConditions}`;
+    }
 
     return query;
   }
 
   private generateMaxQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
-    let query = `SELECT MAX([${columnName}]) as max_value FROM [${tableName}]`;
+    let query = `SELECT MAX(${this.quoteIdentifier(columnName, dbType)}) as max_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    const filterableColumns = columns.filter(col => {
-      if (dbType === 'mssql') {
-        return true; // We'll handle this at parameter level instead
-      }
-      return true;
-    });
-
-    const whereConditions = filterableColumns.map(col =>
-      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-    ).join(' AND ');
-
-    query += ` WHERE ${whereConditions}`;
+    if (dbType === 'mssql') {
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+      ).join(' AND ');
+      query += ` WHERE ${whereConditions}`;
+    }
 
     return query;
   }
 
   private generateSumQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
-    let query = `SELECT SUM([${columnName}]) as sum_value FROM [${tableName}]`;
+    let query = `SELECT SUM(${this.quoteIdentifier(columnName, dbType)}) as sum_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    const filterableColumns = columns.filter(col => {
-      if (dbType === 'mssql') {
-        return true; // We'll handle this at parameter level instead
-      }
-      return true;
-    });
-
-    const whereConditions = filterableColumns.map(col =>
-      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-    ).join(' AND ');
-
-    query += ` WHERE ${whereConditions}`;
+    if (dbType === 'mssql') {
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+      ).join(' AND ');
+      query += ` WHERE ${whereConditions}`;
+    }
 
     return query;
   }
 
   private generateAvgQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
-    let query = `SELECT AVG(CAST([${columnName}] AS FLOAT)) as avg_value FROM [${tableName}]`;
+    let query: string;
 
-    const filterableColumns = columns.filter(col => {
-      if (dbType === 'mssql') {
-        return true; // We'll handle this at parameter level instead
-      }
-      return true;
-    });
-
-    const whereConditions = filterableColumns.map(col =>
-      `(@filter_${col.name} IS NULL OR [${col.name}] = @filter_${col.name})`
-    ).join(' AND ');
-
-    query += ` WHERE ${whereConditions}`;
+    if (dbType === 'mysql') {
+      query = `SELECT AVG(${this.quoteIdentifier(columnName, dbType)}) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
+    } else if (dbType === 'postgresql') {
+      query = `SELECT AVG(${this.quoteIdentifier(columnName, dbType)}::FLOAT) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
+    } else {
+      query = `SELECT AVG(CAST(${this.quoteIdentifier(columnName, dbType)} AS FLOAT)) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
+      const whereConditions = columns.map(col =>
+        `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
+      ).join(' AND ');
+      query += ` WHERE ${whereConditions}`;
+    }
 
     return query;
   }
@@ -692,6 +680,31 @@ export class MCPServerGenerator {
       .replace(/[^a-z0-9]/g, '_')
       .replace(/_{2,}/g, '_')
       .replace(/^_|_$/g, '');
+  }
+
+  // Database-specific SQL formatting helpers
+  private quoteIdentifier(name: string, dbType: string): string {
+    switch (dbType) {
+      case 'mysql':
+        return `\`${name}\``;
+      case 'postgresql':
+        return `"${name}"`;
+      case 'mssql':
+      default:
+        return `[${name}]`;
+    }
+  }
+
+  private getParamPlaceholder(name: string, index: number, dbType: string): string {
+    switch (dbType) {
+      case 'mysql':
+        return '?';
+      case 'postgresql':
+        return `$${index}`;
+      case 'mssql':
+      default:
+        return `@${name}`;
+    }
   }
 
   // Public methods for management
