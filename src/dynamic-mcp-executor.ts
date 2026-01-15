@@ -1,17 +1,12 @@
 import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager';
+import { ActiveDatabaseConnection } from './types';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
 
-interface DatabaseConnection {
-  type: 'mssql' | 'mysql' | 'postgresql';
-  connection: any;
-  config: any;
-}
-
 export class DynamicMCPExecutor {
   private sqliteManager: SQLiteManager;
-  private dbConnections: Map<string, DatabaseConnection> = new Map();
+  private dbConnections: Map<string, ActiveDatabaseConnection> = new Map();
 
   constructor() {
     this.sqliteManager = new SQLiteManager();
@@ -263,13 +258,13 @@ export class DynamicMCPExecutor {
     }
   }
 
-  private async getOrCreateConnection(serverId: string, dbConfig: any): Promise<DatabaseConnection> {
+  private async getOrCreateConnection(serverId: string, dbConfig: any): Promise<ActiveDatabaseConnection> {
     if (this.dbConnections.has(serverId)) {
       return this.dbConnections.get(serverId)!;
     }
 
     let connection: any;
-    let dbConnection: DatabaseConnection;
+    let dbConnection: ActiveDatabaseConnection;
 
     try {
       switch (dbConfig.type) {
@@ -320,7 +315,6 @@ export class DynamicMCPExecutor {
       }
 
       dbConnection = {
-        type: dbConfig.type,
         connection,
         config: dbConfig
       };
@@ -334,8 +328,9 @@ export class DynamicMCPExecutor {
     }
   }
 
-  private async executeQuery(dbConnection: DatabaseConnection, sqlQuery: string, args: any, operation: string): Promise<any> {
-    const { type, connection } = dbConnection;
+  private async executeQuery(dbConnection: ActiveDatabaseConnection, sqlQuery: string, args: any, operation: string): Promise<any> {
+    const { connection, config } = dbConnection;
+    const type = config.type;
 
     try {
       switch (type) {
@@ -513,7 +508,7 @@ export class DynamicMCPExecutor {
     // Close all database connections
     for (const [serverId, dbConnection] of this.dbConnections.entries()) {
       try {
-        switch (dbConnection.type) {
+        switch (dbConnection.config.type) {
           case 'mssql':
             await dbConnection.connection.close();
             break;

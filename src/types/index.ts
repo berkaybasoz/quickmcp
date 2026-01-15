@@ -77,3 +77,8 @@ export interface MCPTestResponse {
   data?: any;
   error?: string;
 }
+
+export interface ActiveDatabaseConnection {
+  connection: any;
+  config: any;
+}
