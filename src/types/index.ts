@@ -19,14 +19,43 @@ export interface DataSource {
   type: DataSourceType;
   name: string;
   connection?: DatabaseConnection;
-  filePath?: string;
   data?: any[];
+}
+
+export interface FileDataSource extends DataSource {
+  filePath: string;
+}
+
+export interface CsvDataSource extends FileDataSource {
+  type: DataSourceType.CSV;
+}
+
+export interface ExcelDataSource extends FileDataSource {
+  type: DataSourceType.Excel;
 }
 
 export interface CurlDataSource extends DataSource {
   type: DataSourceType.Curl;
   curlSetting: CurlSetting;
 }
+
+
+export function createCsvDataSource(name: string, filePath: string): CsvDataSource {
+  return {
+    type: DataSourceType.CSV,
+    name,
+    filePath
+  };
+}
+
+export function createExcelDataSource(name: string, filePath: string): ExcelDataSource {
+  return {
+    type: DataSourceType.Excel,
+    name,
+    filePath
+  };
+}
+
 
 export function createCurlDataSource(name: string, curlSetting: CurlSetting): CurlDataSource {
   return {

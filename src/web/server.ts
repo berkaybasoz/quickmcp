@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, FileDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -146,7 +146,7 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     const { type, connection, swaggerUrl, curlSetting } = req.body as any;
     const file = req.file;
 
-    let dataSource: DataSource | CurlDataSource;
+    let dataSource: DataSource | CurlDataSource | CsvDataSource | ExcelDataSource;
 
     // Accept database parse either when type==='database' OR when a connection payload is present
     if (type === DataSourceType.Database || connection) {
@@ -255,11 +255,13 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         });
     } else if (file) {
-      dataSource = {
-        type: type as DataSourceType,
-        name: file.originalname,
-        filePath: file.path
-      };
+      if (type === DataSourceType.CSV) {
+        dataSource = createCsvDataSource(file.originalname, file.path);
+      } else if (type === DataSourceType.Excel) {
+        dataSource = createExcelDataSource(file.originalname, file.path);
+      } else {
+        throw new Error('Invalid file type');
+      }
     } else {
       throw new Error('No file or connection provided');
     }
