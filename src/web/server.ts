@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -143,10 +143,10 @@ app.get('/api/health', (req, res) => {
 // Parse data source endpoint
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   try {
-    const { type, connection, swaggerUrl, curlOptions } = req.body as any;
+    const { type, connection, swaggerUrl, curlSetting } = req.body as any;
     const file = req.file;
 
-    let dataSource: DataSource;
+    let dataSource: DataSource | CurlDataSource;
 
     // Accept database parse either when type==='database' OR when a connection payload is present
     if (type === DataSourceType.Database || connection) {
@@ -212,25 +212,21 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
       });
     } else if (type === DataSourceType.Curl) {
         let opts;
-        if (typeof curlOptions === 'string') {
+        if (typeof curlSetting === 'string') {
             try {
-                opts = JSON.parse(curlOptions);
+                opts = JSON.parse(curlSetting);
             } catch (e) {
-                throw new Error('Invalid curlOptions JSON');
+                throw new Error('Invalid curlSetting JSON');
             }
         } else {
-            opts = curlOptions;
+            opts = curlSetting;
         }
 
         if (!opts || !opts.url) {
-            throw new Error('Missing curlOptions or url');
+            throw new Error('Missing curlSetting or url');
         }
 
-        dataSource = {
-            type: DataSourceType.Curl,
-            name: `cURL to ${opts.url}`,
-            curlOptions: opts
-        };
+        dataSource = createCurlDataSource(`cURL to ${opts.url}`, opts);
         
         // For cURL, there's no data to parse beforehand.
         // The "data" is what the cURL command will fetch at runtime.

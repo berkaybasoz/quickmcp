@@ -1,4 +1,4 @@
-export interface CurlOptions {
+export interface CurlSetting {
   url: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: { [key: string]: string };
@@ -21,7 +21,19 @@ export interface DataSource {
   connection?: DatabaseConnection;
   filePath?: string;
   data?: any[];
-  curlOptions?: CurlOptions;
+}
+
+export interface CurlDataSource extends DataSource {
+  type: DataSourceType.Curl;
+  curlSetting: CurlSetting;
+}
+
+export function createCurlDataSource(name: string, curlSetting: CurlSetting): CurlDataSource {
+  return {
+    type: DataSourceType.Curl,
+    name,
+    curlSetting
+  };
 }
 
 export interface DatabaseConnection {

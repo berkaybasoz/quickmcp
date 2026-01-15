@@ -2717,13 +2717,13 @@ async function handleNextToStep2() {
                 throw new Error('Body field contains invalid JSON.');
             }
 
-            const curlOptions = {
+            const curlSetting = {
                 url: curlUrl,
                 method: document.getElementById('curlMethod')?.value,
                 headers: headers,
                 body: body,
             };
-            formData.append('curlOptions', JSON.stringify(curlOptions));
+            formData.append('curlSetting', JSON.stringify(curlSetting));
         }
 
         const response = await fetch('/api/parse', {
@@ -2737,7 +2737,7 @@ async function handleNextToStep2() {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
             if (currentDataSource.type ===  DataSourceType.Curl) {
-                displayCurlPreview(currentDataSource.curlOptions);
+                displayCurlPreview(currentDataSource.curlSetting);
             } else {
                 displayDataPreview(result.data.parsedData);
             }
@@ -3251,13 +3251,13 @@ function displayWebpagePreview(dataSource) {
     preview.innerHTML = html;
 }
 
-function displayCurlPreview(curlOptions) {
+function displayCurlPreview(curlSetting) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
 
-    const { url, method, headers, body, alias } = curlOptions || {};
+    const { url, method, headers, body, alias } = curlSetting || {};
 
-    console.log('🔍 displayCurlPreview called with:', curlOptions);
+    console.log('🔍 displayCurlPreview called with:', curlSetting);
     console.log('🔍 URL value:', url);
 
     const toolName = alias ? `${alias}_curl` : 'execute_curl_request';
@@ -3284,7 +3284,7 @@ function displayCurlPreview(curlOptions) {
                         ${!url ? `
                         <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
                             <p class="text-xs text-red-700 font-semibold mb-2">DEBUG: URL is empty!</p>
-                            <pre class="text-xs text-red-900 overflow-auto">${JSON.stringify(curlOptions, null, 2)}</pre>
+                            <pre class="text-xs text-red-900 overflow-auto">${JSON.stringify(curlSetting, null, 2)}</pre>
                         </div>
                         ` : ''}
 
