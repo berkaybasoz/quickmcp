@@ -5,9 +5,9 @@ export { DatabaseParser } from './DatabaseParser';
 import { CsvParser } from './CsvParser';
 import { ExcelParser } from './ExcelParser';
 import { DatabaseParser } from './DatabaseParser';
-import { DataSource, DataSourceType, ParsedData, CsvDataSource, ExcelDataSource, CurlDataSource } from '../types';
+import { DataSource, DataSourceType, ParsedData, CsvDataSource, ExcelDataSource, JsonDataSource, CurlDataSource } from '../types';
 
-type AnyDataSource = DataSource | CsvDataSource | ExcelDataSource | CurlDataSource;
+type AnyDataSource = DataSource | CsvDataSource | ExcelDataSource | JsonDataSource | CurlDataSource;
 
 export class DataSourceParser {
   private csvParser = new CsvParser();
@@ -32,9 +32,12 @@ export class DataSourceParser {
         if (!dataSource.connection) throw new Error('Database connection required for database parsing');
         return await this.databaseParser.parse(dataSource.connection);
 
-      case DataSourceType.JSON:
-        if (!dataSource.data) throw new Error('Data required for JSON parsing');
-        return this.parseJsonData(dataSource.data);
+      case DataSourceType.JSON: {
+        const jsonSource = dataSource as JsonDataSource;
+        if (!jsonSource.data) 
+          throw new Error('Data required for JSON parsing');
+        return this.parseJsonData(jsonSource.data);
+      }
 
       default:
         throw new Error(`Unsupported data source type: ${dataSource.type}`);
