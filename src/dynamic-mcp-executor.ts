@@ -290,7 +290,7 @@ export class DynamicMCPExecutor {
           break;
 
         case 'mysql':
-          connection = mysql.createConnection({
+          connection = await mysql.createConnection({
             host: dbConfig.host,
             port: dbConfig.port || 3306,
             database: dbConfig.database,
@@ -298,7 +298,6 @@ export class DynamicMCPExecutor {
             password: dbConfig.password
           });
 
-          await connection.connect();
           console.error(`🔗 Connected to MySQL database for server ${serverId}`);
           break;
 
