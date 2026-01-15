@@ -444,18 +444,18 @@ export class DynamicMCPExecutor {
           return { rowsAffected: (rows as any).affectedRows };
 
         case 'postgresql':
-          // For SELECT, use parameterized query
+          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed (check BEFORE SELECT)
+          if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
+            const pgAggResult = await connection.query(sqlQuery);
+            return pgAggResult.rows;
+          }
+
+          // For SELECT with LIMIT/OFFSET
           if (operation === 'SELECT') {
             const limit = args.limit || 100;
             const offset = args.offset || 0;
             const pgSelectResult = await connection.query(sqlQuery, [limit, offset]);
             return pgSelectResult.rows;
-          }
-
-          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed
-          if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
-            const pgAggResult = await connection.query(sqlQuery);
-            return pgAggResult.rows;
           }
 
           // Build parameters array for INSERT/UPDATE/DELETE
