@@ -26,6 +26,13 @@ export class IntegratedMCPServer {
       {
         name: 'quickmcp-integrated-server',
         version: '1.0.0'
+      },
+      {
+        capabilities: {
+          tools: {},
+          resources: {},
+          prompts: {}
+        }
       }
     );
 

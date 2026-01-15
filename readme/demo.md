@@ -2,7 +2,23 @@ MSSQL
 HOST: localhost
 PORT: 1435
 DB:   OrderTransmissionDB
+USER: sa
 PWD:  OrderApp123!
+
+MYSQL
+HOST: localhost
+PORT: 3306
+DB:   quickmcp
+USER: root
+PWD:  password
+
+POSTGRESQL
+HOST: localhost
+PORT: 5432
+DB:   quickmcp
+USER: root
+PWD:  password
+
 
 REST: https://petstore.swagger.io/v2/swagger.json
 

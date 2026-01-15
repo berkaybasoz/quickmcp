@@ -15,5 +15,54 @@ services:
     command: ["/bin/bash", "/entrypoint.sh"]
     restart: unless-stopped
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: quickmcp-postgres
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: quickmcp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: quickmcp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: quickmcp
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: quickmcp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  hazelcast:
+    image: hazelcast/hazelcast:5.3-slim
+    container_name: quickmcp-hazelcast
+    ports:
+      - "5701:5701"
+    volumes:
+      - hazelcast_data:/data/hazelcast
+    restart: unless-stopped
+
 volumes:
   mssql_data:
+  postgres_data:
+  mysql_data:
+  redis_data:
+  hazelcast_data:
