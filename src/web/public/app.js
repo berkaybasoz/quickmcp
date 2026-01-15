@@ -2532,7 +2532,7 @@ async function handleNextToStep2() {
     }
 
     // For web page, show info in preview and go to step 2
-    if (selectedType === 'web') {
+    if (selectedType === DataSourceType.Webpage) {
         const alias = document.getElementById('webToolAlias')?.value?.trim();
         const webUrl = document.getElementById('webUrl')?.value?.trim();
         if (!webUrl || !alias) {

@@ -1,5 +1,16 @@
 // Shared utility functions for QuickMCP
 
+// DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
+const DataSourceType = {
+    Database: 'database',
+    CSV: 'csv',
+    Excel: 'excel',
+    JSON: 'json',
+    Curl: 'curl',
+    Webpage: 'webpage',
+    Rest: 'rest'
+};
+
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Close sidebar when overlay is clicked on mobile

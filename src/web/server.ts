@@ -255,6 +255,42 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Webpage) {
+        const { webUrl, alias } = req.body as any;
+
+        if (!webUrl) {
+            throw new Error('Missing webUrl');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Webpage,
+            name: alias || 'webpage',
+            url: webUrl,
+            alias: alias
+        };
+
+        // For Webpage, content is fetched at runtime
+        const parsedData = [{
+            tableName: 'webpage',
+            headers: ['url', 'content'],
+            rows: [],
+            metadata: {
+                rowCount: 0,
+                columnCount: 2,
+                dataTypes: {
+                    url: 'string',
+                    content: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
