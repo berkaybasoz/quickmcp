@@ -126,11 +126,7 @@ export class DynamicMCPExecutor {
     const url = queryConfig.url;
     console.error(`🌐 Fetching webpage: ${url}`);
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; QuickMCP/1.0; +https://github.com/berkaybasoz/quickmcp)'
-      }
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
