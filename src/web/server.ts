@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -308,50 +308,42 @@ app.post('/api/generate', async (req, res) => {
     }
 
     let parsedForGen: any = null;
-    let dbConfForGen: any = null;
-
-    //console.log('🔍 dataSource.type:', dataSource?.type);
-    //console.log('🔍 dataSource:', JSON.stringify(dataSource, null, 2));
+    let dbConfForGen: GeneratorConfig | null = null;
 
     if (dataSource?.type === DataSourceType.Rest) {
       const restSource = dataSource as RestDataSource;
-      parsedForGen = parsedData; // endpoints array from client
-      dbConfForGen = { type: DataSourceType.Rest, baseUrl: restSource.baseUrl || restSource.swaggerUrl };
-      //console.log('✅ REST config created');
+      parsedForGen = parsedData;
+      dbConfForGen = createRestGeneratorConfig(restSource.baseUrl || restSource.swaggerUrl);
     } else if (dataSource?.type === DataSourceType.Webpage) {
-      parsedForGen = {}; // No tables for webpage
-      dbConfForGen = { type: DataSourceType.Webpage, alias: dataSource.alias, url: dataSource.url || dataSource.name };
-      //console.log('✅ Webpage config created:', dbConfForGen);
+      parsedForGen = {};
+      dbConfForGen = createWebpageGeneratorConfig(dataSource.url || dataSource.name, dataSource.alias);
     } else if (dataSource?.type === DataSourceType.Curl) {
-        parsedForGen = {}; // No tables for curl
-        //console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
-        dbConfForGen = {
-          type: DataSourceType.Curl,
-          alias: dataSource.alias,
-          url: dataSource.url,
-          method: dataSource.method || 'GET',
-          headers: dataSource.headers || {},
-          body: dataSource.body || {}
-        };
-        //console.log('✅ cURL config created:', JSON.stringify(dbConfForGen, null, 2));
+      parsedForGen = {};
+      dbConfForGen = createCurlGeneratorConfig(
+        dataSource.url,
+        dataSource.method || 'GET',
+        dataSource.headers || {},
+        dataSource.body || {},
+        dataSource.alias
+      );
     } else {
       // Use provided parsed data or re-parse if not available
       const fullParsedData = parsedData || await parser.parse(dataSource);
 
       // Convert to the format expected by new generator
       const parsedDataObject: { [tableName: string]: any[] } = {};
-      fullParsedData.forEach((data, index) => {
+      fullParsedData.forEach((data: ParsedData, index: number) => {
         const tableName = data.tableName || `table_${index}`;
-        parsedDataObject[tableName] = data.rows.map(row => {
-          const obj: any = {};
-          data.headers.forEach((header, i) => {
+        parsedDataObject[tableName] = data.rows.map((row: any[]) => {
+          const obj: { [key: string]: any } = {};
+          data.headers.forEach((header: string, i: number) => {
             obj[header] = row[i];
           });
           return obj;
         });
       });
       parsedForGen = parsedDataObject;
-      dbConfForGen = dataSource.connection || { type: DataSourceType.CSV, server: 'local', database: name };
+      dbConfForGen = dataSource.connection || createFileGeneratorConfig(name);
     }
 
     // Generate virtual server (saves to SQLite database)

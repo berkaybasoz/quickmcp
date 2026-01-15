@@ -1,3 +1,5 @@
+
+
 let currentParsedData = null;
 let currentDataSource = null;
 let currentWizardStep = 1;
@@ -2869,7 +2871,7 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Rest) {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             canProceed = !!swaggerUrl;
-        } else if (selectedType === DataSourceType.Web) {
+        } else if (selectedType === DataSourceType.Webpage) {
             const aliasInput = document.getElementById('webToolAlias');
             const alias = aliasInput?.value.trim();
             const validationDiv = document.getElementById('web-alias-validation');
@@ -2880,7 +2882,7 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Curl) {
             const aliasInput = document.getElementById('curlToolAlias');
             const alias = aliasInput?.value.trim();
-            const validationDiv = document.getElementById('alias-validation');
+            const validationDiv = document.getElementById('curl-alias-validation');
             const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
 
             const curlPasteMode = document.getElementById('curlPasteMode');
@@ -2925,7 +2927,7 @@ function toggleDataSourceFields() {
         updateDefaultPort();
     } else if (selectedType === DataSourceType.Rest) {
         restSection?.classList.remove('hidden');
-    } else if (selectedType === DataSourceType.Web) {
+    } else if (selectedType === DataSourceType.Webpage) {
         webSection?.classList.remove('hidden');
     } else if (selectedType === DataSourceType.Curl) {
         curlSection?.classList.remove('hidden');

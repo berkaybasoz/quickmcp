@@ -164,3 +164,82 @@ export interface ActiveDatabaseConnection {
   connection: any;
   config: any;
 }
+
+// Generator Config interfaces - used by MCPServerGenerator
+export interface BaseGeneratorConfig {
+  type: DataSourceType | string;
+}
+
+export interface RestGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Rest;
+  baseUrl: string;
+}
+
+export interface WebpageGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Webpage;
+  url: string;
+  alias?: string;
+}
+
+export interface CurlGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Curl;
+  url: string;
+  alias?: string;
+  method: string;
+  headers: { [key: string]: string };
+  body: { [key: string]: any };
+}
+
+export interface FileGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.CSV | DataSourceType.Excel;
+  server: string;
+  database: string;
+}
+
+export type GeneratorConfig =
+  | RestGeneratorConfig
+  | WebpageGeneratorConfig
+  | CurlGeneratorConfig
+  | FileGeneratorConfig
+  | DatabaseConnection;
+
+// Generator Config factory functions
+export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
+  return {
+    type: DataSourceType.Rest,
+    baseUrl
+  };
+}
+
+export function createWebpageGeneratorConfig(url: string, alias?: string): WebpageGeneratorConfig {
+  return {
+    type: DataSourceType.Webpage,
+    url,
+    alias
+  };
+}
+
+export function createCurlGeneratorConfig(
+  url: string,
+  method: string = 'GET',
+  headers: { [key: string]: string } = {},
+  body: { [key: string]: any } = {},
+  alias?: string
+): CurlGeneratorConfig {
+  return {
+    type: DataSourceType.Curl,
+    url,
+    method,
+    headers,
+    body,
+    alias
+  };
+}
+
+export function createFileGeneratorConfig(database: string, type: DataSourceType.CSV | DataSourceType.Excel = DataSourceType.CSV): FileGeneratorConfig {
+  return {
+    type,
+    server: 'local',
+    database
+  };
+}
