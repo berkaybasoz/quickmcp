@@ -1,5 +1,5 @@
 import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager';
-import { ActiveDatabaseConnection } from './types';
+import { ActiveDatabaseConnection, DataSourceType } from './types';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
@@ -39,15 +39,15 @@ export class DynamicMCPExecutor {
       const serverConfig = this.getServerConfig(serverId);
       const queryConfig = this.parseQueryConfig(tool.sqlQuery);
 
-      if (queryConfig?.type === 'rest') {
+      if (queryConfig?.type === DataSourceType.Rest) {
         return await this.executeRestCall(queryConfig, args);
       }
 
-      if (queryConfig?.type === 'webpage') {
+      if (queryConfig?.type === DataSourceType.Webpage) {
         return await this.executeWebpageFetch(queryConfig);
       }
 
-      if (queryConfig?.type === 'curl') {
+      if (queryConfig?.type === DataSourceType.Curl) {
         return await this.executeCurlRequest(queryConfig, args);
       }
 

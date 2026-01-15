@@ -1,4 +1,5 @@
 import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager';
+import { DataSourceType } from '../types';
 
 interface ParsedColumn {
   name: string;
@@ -47,14 +48,14 @@ export class MCPServerGenerator {
       //console.log('🔍 MCPServerGenerator - dbConfig:', JSON.stringify(dbConfig, null, 2));
 
       // Treat array parsedData as REST endpoints even if dbConfig.type is missing
-      if (Array.isArray(parsedData) || dbConfig?.type === 'rest') {
+      if (Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest) {
         const endpoints = Array.isArray(parsedData) ? parsedData : [];
         tools = this.generateToolsForRest(serverId, parsedData, dbConfig, selectedTables);
         //console.log('✅ Generated REST tools:', tools.length);
-      } else if (dbConfig?.type === 'webpage') {
+      } else if (dbConfig?.type === DataSourceType.Webpage) {
         tools = this.generateToolsForWebpage(serverId, dbConfig);
         //console.log('✅ Generated webpage tools:', tools.length);
-      } else if (dbConfig?.type === 'curl') {
+      } else if (dbConfig?.type === DataSourceType.Curl) {
         tools = this.generateToolsForCurl(serverId, dbConfig);
       } else {
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -67,7 +68,7 @@ export class MCPServerGenerator {
 
       // Generate and save resources (skip for REST, webpage, and curl)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === 'rest' || dbConfig?.type === 'webpage' || dbConfig?.type === 'curl')) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -109,7 +110,7 @@ export class MCPServerGenerator {
         props[p.name] = { type: t, description: p.description || '' };
       });
       const inputSchema = { type: 'object', properties: props, required: [] as string[] };
-      const sqlQuery = JSON.stringify({ type: 'rest', baseUrl: dbConfig?.baseUrl, method: ep.method, path: ep.path });
+      const sqlQuery = JSON.stringify({ type: DataSourceType.Rest, baseUrl: dbConfig?.baseUrl, method: ep.method, path: ep.path });
       return {
         server_id: serverId,
         name,
@@ -141,7 +142,7 @@ export class MCPServerGenerator {
         required: []
       },
       sqlQuery: JSON.stringify({
-        type: 'webpage',
+        type: DataSourceType.Webpage,
         url: url
       }),
       operation: 'SELECT'

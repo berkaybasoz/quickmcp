@@ -10,7 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { DatabaseParser } from './parsers/DatabaseParser';
 import { MCPServerGenerator } from './generators/MCPServerGenerator';
-import { DatabaseConnection, ParsedData } from './types';
+import { DatabaseConnection, ParsedData, DataSourceType } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -238,7 +238,7 @@ class QuickMCPServer {
         description: args.description || `MCP Server for ${this.currentConnection?.database}`,
         version: args.version || '1.0.0',
         dataSource: {
-          type: 'database' as const,
+          type: DataSourceType.Database,
           name: `Database (${this.currentConnection?.type})`,
           connection: this.currentConnection || undefined
         },

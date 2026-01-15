@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, MCPServerConfig, ParsedData } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -149,7 +149,7 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     let dataSource: DataSource;
 
     // Accept database parse either when type==='database' OR when a connection payload is present
-    if (type === 'database' || connection) {
+    if (type === DataSourceType.Database || connection) {
       let connObj: any = connection;
       if (typeof connObj === 'string') {
         try { connObj = JSON.parse(connObj); } catch { connObj = null; }
@@ -158,11 +158,11 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
         throw new Error('Missing or invalid database connection');
       }
       dataSource = {
-        type: 'database',
+        type: DataSourceType.Database,
         name: `Database (${connObj.type})`,
         connection: connObj
       } as any;
-    } else if (type === 'rest') {
+    } else if (type === DataSourceType.Rest) {
       if (!swaggerUrl) throw new Error('Missing swaggerUrl');
       // Fetch OpenAPI spec
       const resp = await fetch(swaggerUrl);
@@ -206,11 +206,11 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
       return res.json({
         success: true,
         data: {
-          dataSource: { type: 'rest', swaggerUrl, baseUrl },
+          dataSource: { type: DataSourceType.Rest, swaggerUrl, baseUrl },
           parsedData: endpoints
         }
       });
-    } else if (type === 'curl') {
+    } else if (type === DataSourceType.Curl) {
         let opts;
         if (typeof curlOptions === 'string') {
             try {
@@ -227,7 +227,7 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
         }
 
         dataSource = {
-            type: 'curl',
+            type: DataSourceType.Curl,
             name: `cURL to ${opts.url}`,
             curlOptions: opts
         };
@@ -260,7 +260,7 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
         });
     } else if (file) {
       dataSource = {
-        type: type as 'csv' | 'excel',
+        type: type as DataSourceType,
         name: file.originalname,
         filePath: file.path
       };
@@ -314,19 +314,19 @@ app.post('/api/generate', async (req, res) => {
     //console.log('🔍 dataSource.type:', dataSource?.type);
     //console.log('🔍 dataSource:', JSON.stringify(dataSource, null, 2));
 
-    if (dataSource?.type === 'rest') {
+    if (dataSource?.type === DataSourceType.Rest) {
       parsedForGen = parsedData; // endpoints array from client
-      dbConfForGen = { type: 'rest', baseUrl: dataSource.baseUrl || dataSource.swaggerUrl };
+      dbConfForGen = { type: DataSourceType.Rest, baseUrl: dataSource.baseUrl || dataSource.swaggerUrl };
       //console.log('✅ REST config created');
-    } else if (dataSource?.type === 'webpage') {
+    } else if (dataSource?.type === DataSourceType.Webpage) {
       parsedForGen = {}; // No tables for webpage
-      dbConfForGen = { type: 'webpage', alias: dataSource.alias, url: dataSource.url || dataSource.name };
+      dbConfForGen = { type: DataSourceType.Webpage, alias: dataSource.alias, url: dataSource.url || dataSource.name };
       //console.log('✅ Webpage config created:', dbConfForGen);
-    } else if (dataSource?.type === 'curl') {
+    } else if (dataSource?.type === DataSourceType.Curl) {
         parsedForGen = {}; // No tables for curl
         //console.log('🔍 DEBUG dataSource for curl:', JSON.stringify(dataSource, null, 2));
         dbConfForGen = {
-          type: 'curl',
+          type: DataSourceType.Curl,
           alias: dataSource.alias,
           url: dataSource.url,
           method: dataSource.method || 'GET',
@@ -351,7 +351,7 @@ app.post('/api/generate', async (req, res) => {
         });
       });
       parsedForGen = parsedDataObject;
-      dbConfForGen = dataSource.connection || { type: 'csv', server: 'local', database: name };
+      dbConfForGen = dataSource.connection || { type: DataSourceType.CSV, server: 'local', database: name };
     }
 
     // Generate virtual server (saves to SQLite database)

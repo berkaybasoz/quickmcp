@@ -5,8 +5,18 @@ export interface CurlOptions {
   body?: string;
 }
 
+export enum DataSourceType {
+  Database = 'database',
+  CSV = 'csv',
+  Excel = 'excel',
+  JSON = 'json',
+  Curl = 'curl',
+  Webpage = 'webpage',
+  Rest = 'rest',
+}
+
 export interface DataSource {
-  type: 'database' | 'csv' | 'excel' | 'json' | 'curl';
+  type: DataSourceType;
   name: string;
   connection?: DatabaseConnection;
   filePath?: string;

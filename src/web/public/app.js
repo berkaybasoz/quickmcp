@@ -917,7 +917,7 @@ function selectOnlyBasicTools(tableIndex) {
 function getSelectedTablesAndTools() {
     const selectedTables = [];
     // REST mode: collect selected endpoints
-    if (currentDataSource?.type === 'rest' && Array.isArray(currentParsedData)) {
+    if (currentDataSource?.type === DataSourceType.Rest && Array.isArray(currentParsedData)) {
         currentParsedData.forEach((_, idx) => {
             const cb = document.getElementById(`rest-endpoint-${idx}`);
             if (cb && cb.checked) {
@@ -975,7 +975,7 @@ async function generateServer() {
     let selectedTablesConfig = getSelectedTablesAndTools();
 
     // For webpage and curl, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === 'webpage' || currentDataSource?.type === 'curl') {
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl) {
         selectedTablesConfig = []; // Empty is OK for webpage and curl
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
@@ -2540,7 +2540,7 @@ async function handleNextToStep2() {
 
         // Store the URL without parsing - parsing will happen at runtime
         currentDataSource = {
-            type: 'webpage',
+            type: DataSourceType.Webpage,
             alias: alias,
             name: webUrl,
             url: webUrl
@@ -2558,7 +2558,7 @@ async function handleNextToStep2() {
     }
 
     // For curl, show info in preview and go to step 2
-    if (selectedType === 'curl') {
+    if (selectedType === DataSourceType.Curl) {
         const alias = document.getElementById('curlToolAlias')?.value?.trim();
         const curlPasteMode = document.getElementById('curlPasteMode');
         const isPasteMode = !curlPasteMode?.classList.contains('hidden');
@@ -2632,7 +2632,7 @@ async function handleNextToStep2() {
 
         // Store curl config without executing - execution will happen at runtime
         currentDataSource = {
-            type: 'curl',
+            type: DataSourceType.Curl,
             alias: alias,
             name: curlUrl,
             url: curlUrl,
@@ -2671,15 +2671,15 @@ async function handleNextToStep2() {
         formData.append('type', selectedType);
 
         const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
-        if (selectedType === 'csv' || selectedType === 'excel') {
+        if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput?.files[0]) {
                 throw new Error('Please select a file');
             }
             formData.append('file', fileInput.files[0]);
-        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
+        } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
             const connection = {
-                type: dbTypes.has(selectedType) ? selectedType : 'database',
+                type: dbTypes.has(selectedType) ? selectedType : DataSourceType.Database,
                 host: document.getElementById('dbHost')?.value,
                 port: parseInt(document.getElementById('dbPort')?.value),
                 database: document.getElementById('dbName')?.value,
@@ -2687,7 +2687,7 @@ async function handleNextToStep2() {
                 password: document.getElementById('dbPassword')?.value
             };
             formData.append('connection', JSON.stringify(connection));
-            formData.set('type', 'database');
+            formData.set('type', DataSourceType.Database);
             // Güvenli olması için metin alanlarını da ekle (multer text fields)
             formData.append('dbType', connection.type || '');
             formData.append('dbHost', connection.host || '');
@@ -2695,11 +2695,11 @@ async function handleNextToStep2() {
             formData.append('dbName', connection.database || '');
             formData.append('dbUser', connection.username || '');
             formData.append('dbPassword', connection.password || '');
-        } else if (selectedType === 'rest') {
+        } else if (selectedType === DataSourceType.Rest) {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             if (!swaggerUrl) throw new Error('Please enter Swagger/OpenAPI URL');
             formData.append('swaggerUrl', swaggerUrl);
-        } else if (selectedType === 'curl') {
+        } else if (selectedType === DataSourceType.Curl) {
             const curlUrl = document.getElementById('curlUrl')?.value?.trim();
             if (!curlUrl) throw new Error('Please enter a request URL');
 
@@ -2736,7 +2736,7 @@ async function handleNextToStep2() {
         if (result.success) {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
-            if (currentDataSource.type === 'curl') {
+            if (currentDataSource.type ===  DataSourceType.Curl) {
                 displayCurlPreview(currentDataSource.curlOptions);
             } else {
                 displayDataPreview(result.data.parsedData);
@@ -2749,7 +2749,7 @@ async function handleNextToStep2() {
         }
     } catch (error) {
         const selectedTypeOnError = document.querySelector('input[name="dataSourceType"]:checked')?.value;
-        if (selectedTypeOnError === 'rest') {
+        if (selectedTypeOnError === DataSourceType.Rest) {
             showError('rest-parse-error', error.message);
         } else {
             showError('parse-error', error.message);
@@ -2777,7 +2777,7 @@ function goToWizardStep(stepNumber) {
     if (stepNumber === 3) {
         const webpageInfoBox = document.getElementById('webpage-info-box');
         if (webpageInfoBox) {
-            if (currentDataSource?.type === 'webpage') {
+            if (currentDataSource?.type === DataSourceType.Webpage) {
                 webpageInfoBox.classList.remove('hidden');
             } else {
                 webpageInfoBox.classList.add('hidden');
@@ -2854,22 +2854,22 @@ function updateWizardNavigation() {
         let canProceed = false;
         
         const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
-        if (selectedType === 'csv' || selectedType === 'excel') {
+        if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
             // For file uploads, need parsed data
             canProceed = hasParsedData;
-        } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
+        } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
             // For database, check if all required fields are filled
-            const dbType = dbTypes.has(selectedType) ? selectedType : 'database';
+            const dbType = dbTypes.has(selectedType) ? selectedType : DataSourceType.Database;
             const dbHost = document.getElementById('dbHost')?.value;
             const dbName = document.getElementById('dbName')?.value;
             const dbUser = document.getElementById('dbUser')?.value;
             const dbPassword = document.getElementById('dbPassword')?.value;
             
             canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
-        } else if (selectedType === 'rest') {
+        } else if (selectedType === DataSourceType.Rest) {
             const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
             canProceed = !!swaggerUrl;
-        } else if (selectedType === 'web') {
+        } else if (selectedType === DataSourceType.Web) {
             const aliasInput = document.getElementById('webToolAlias');
             const alias = aliasInput?.value.trim();
             const validationDiv = document.getElementById('web-alias-validation');
@@ -2877,7 +2877,7 @@ function updateWizardNavigation() {
             
             const webUrl = document.getElementById('webUrl')?.value?.trim();
             canProceed = isAliasValid && !!webUrl;
-        } else if (selectedType === 'curl') {
+        } else if (selectedType === DataSourceType.Curl) {
             const aliasInput = document.getElementById('curlToolAlias');
             const alias = aliasInput?.value.trim();
             const validationDiv = document.getElementById('alias-validation');
@@ -2918,16 +2918,16 @@ function toggleDataSourceFields() {
     curlSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
-    if (selectedType === 'csv' || selectedType === 'excel') {
+    if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         fileSection?.classList.remove('hidden');
-    } else if (selectedType === 'database' || dbTypes.has(selectedType)) {
+    } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
         dbSection?.classList.remove('hidden');
         updateDefaultPort();
-    } else if (selectedType === 'rest') {
+    } else if (selectedType === DataSourceType.Rest) {
         restSection?.classList.remove('hidden');
-    } else if (selectedType === 'web') {
+    } else if (selectedType === DataSourceType.Web) {
         webSection?.classList.remove('hidden');
-    } else if (selectedType === 'curl') {
+    } else if (selectedType === DataSourceType.Curl) {
         curlSection?.classList.remove('hidden');
         // Add listener here to be robust
         const curlUrlInput = document.getElementById('curlUrl');

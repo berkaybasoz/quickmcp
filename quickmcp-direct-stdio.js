@@ -283,7 +283,7 @@ async function handleMessage(message) {
           if (tool && tool.sqlQuery) {
             try { restSpec = JSON.parse(tool.sqlQuery); } catch (_) { restSpec = null; }
           }
-          if (restSpec && restSpec.type === 'rest') {
+          if (restSpec && restSpec.type === DataSourceType.Rest) {
             // Fill from server config or heuristics
             let baseUrl = restSpec.baseUrl;
             try {

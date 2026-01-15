@@ -5,7 +5,7 @@ export { DatabaseParser } from './DatabaseParser';
 import { CsvParser } from './CsvParser';
 import { ExcelParser } from './ExcelParser';
 import { DatabaseParser } from './DatabaseParser';
-import { DataSource, ParsedData } from '../types';
+import { DataSource, DataSourceType, ParsedData } from '../types';
 
 export class DataSourceParser {
   private csvParser = new CsvParser();
@@ -14,21 +14,21 @@ export class DataSourceParser {
 
   async parse(dataSource: DataSource): Promise<ParsedData[]> {
     switch (dataSource.type) {
-      case 'csv':
+      case DataSourceType.CSV:
         if (!dataSource.filePath) throw new Error('File path required for CSV parsing');
         const csvData = await this.csvParser.parse(dataSource.filePath);
         return [csvData];
 
-      case 'excel':
+      case DataSourceType.Excel:
         if (!dataSource.filePath) throw new Error('File path required for Excel parsing');
         const excelData = await this.excelParser.parse(dataSource.filePath);
         return [excelData];
 
-      case 'database':
+      case DataSourceType.Database:
         if (!dataSource.connection) throw new Error('Database connection required for database parsing');
         return await this.databaseParser.parse(dataSource.connection);
 
-      case 'json':
+      case DataSourceType.JSON:
         if (!dataSource.data) throw new Error('Data required for JSON parsing');
         return this.parseJsonData(dataSource.data);
 
