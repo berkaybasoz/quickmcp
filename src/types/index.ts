@@ -41,8 +41,18 @@ export interface JsonDataSource extends DataSource {
 export interface CurlDataSource extends DataSource {
   type: DataSourceType.Curl;
   curlSetting: CurlSetting;
+  //alias?: string;
 }
 
+export interface WebpageDataSource extends DataSource {
+  type: DataSourceType.Webpage;
+}
+
+export interface RestDataSource extends DataSource {
+  type: DataSourceType.Rest;
+  swaggerUrl: string;
+  baseUrl?: string;
+}
 
 export function createCsvDataSource(name: string, filePath: string): CsvDataSource {
   return {
@@ -74,6 +84,15 @@ export function createCurlDataSource(name: string, curlSetting: CurlSetting): Cu
     type: DataSourceType.Curl,
     name,
     curlSetting
+  };
+}
+
+export function createRestDataSource(name: string, swaggerUrl: string, baseUrl?: string): RestDataSource {
+  return {
+    type: DataSourceType.Rest,
+    name,
+    swaggerUrl,
+    baseUrl
   };
 }
 

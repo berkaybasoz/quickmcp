@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, FileDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -203,10 +203,11 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
           }
         }
       }
+      const restDataSource: RestDataSource = createRestDataSource(`REST API`, swaggerUrl, baseUrl);
       return res.json({
         success: true,
         data: {
-          dataSource: { type: DataSourceType.Rest, swaggerUrl, baseUrl },
+          dataSource: restDataSource,
           parsedData: endpoints
         }
       });
@@ -313,8 +314,9 @@ app.post('/api/generate', async (req, res) => {
     //console.log('🔍 dataSource:', JSON.stringify(dataSource, null, 2));
 
     if (dataSource?.type === DataSourceType.Rest) {
+      const restSource = dataSource as RestDataSource;
       parsedForGen = parsedData; // endpoints array from client
-      dbConfForGen = { type: DataSourceType.Rest, baseUrl: dataSource.baseUrl || dataSource.swaggerUrl };
+      dbConfForGen = { type: DataSourceType.Rest, baseUrl: restSource.baseUrl || restSource.swaggerUrl };
       //console.log('✅ REST config created');
     } else if (dataSource?.type === DataSourceType.Webpage) {
       parsedForGen = {}; // No tables for webpage
