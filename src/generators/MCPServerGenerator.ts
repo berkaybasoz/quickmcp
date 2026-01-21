@@ -57,6 +57,8 @@ export class MCPServerGenerator {
         //console.log('✅ Generated webpage tools:', tools.length);
       } else if (dbConfig?.type === DataSourceType.Curl) {
         tools = this.generateToolsForCurl(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GitHub) {
+        tools = this.generateToolsForGitHub(serverId, dbConfig);
       } else {
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
         //console.log('✅ Generated data tools:', tools.length);
@@ -66,9 +68,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, and curl)
+      // Generate and save resources (skip for REST, webpage, curl, and GitHub)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -190,6 +192,207 @@ export class MCPServerGenerator {
     };
 
     return [tool];
+  }
+
+  private generateToolsForGitHub(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { token, owner, repo } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.GitHub,
+      token,
+      owner,
+      repo
+    };
+
+    // List repositories for authenticated user
+    tools.push({
+      server_id: serverId,
+      name: 'list_repos',
+      description: 'List repositories for the authenticated user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          per_page: { type: 'number', description: 'Results per page (max 100)', default: 30 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/user/repos', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Search repositories
+    tools.push({
+      server_id: serverId,
+      name: 'search_repos',
+      description: 'Search for repositories on GitHub',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query' },
+          per_page: { type: 'number', description: 'Results per page (max 100)', default: 30 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search/repositories', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get repository details
+    tools.push({
+      server_id: serverId,
+      name: 'get_repo',
+      description: 'Get details of a specific repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' }
+        },
+        required: ['owner', 'repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // List issues
+    tools.push({
+      server_id: serverId,
+      name: 'list_issues',
+      description: 'List issues for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          state: { type: 'string', description: 'Issue state (open, closed, all)', default: 'open' },
+          per_page: { type: 'number', description: 'Results per page', default: 30 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['owner', 'repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/issues', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Create issue
+    tools.push({
+      server_id: serverId,
+      name: 'create_issue',
+      description: 'Create a new issue in a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          title: { type: 'string', description: 'Issue title' },
+          body: { type: 'string', description: 'Issue body' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Labels to add' }
+        },
+        required: ['owner', 'repo', 'title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/issues', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    // List pull requests
+    tools.push({
+      server_id: serverId,
+      name: 'list_pull_requests',
+      description: 'List pull requests for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          state: { type: 'string', description: 'PR state (open, closed, all)', default: 'open' },
+          per_page: { type: 'number', description: 'Results per page', default: 30 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['owner', 'repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/pulls', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get file contents
+    tools.push({
+      server_id: serverId,
+      name: 'get_file_contents',
+      description: 'Get contents of a file from a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          path: { type: 'string', description: 'Path to the file' },
+          ref: { type: 'string', description: 'Branch, tag, or commit (default: default branch)' }
+        },
+        required: ['owner', 'repo', 'path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/contents/{path}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // List commits
+    tools.push({
+      server_id: serverId,
+      name: 'list_commits',
+      description: 'List commits for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          sha: { type: 'string', description: 'Branch name or commit SHA' },
+          per_page: { type: 'number', description: 'Results per page', default: 30 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['owner', 'repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/commits', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get user info
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get information about a GitHub user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'GitHub username (leave empty for authenticated user)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/user', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Create a comment on an issue
+    tools.push({
+      server_id: serverId,
+      name: 'create_issue_comment',
+      description: 'Create a comment on an issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string', description: 'Repository owner' },
+          repo: { type: 'string', description: 'Repository name' },
+          issue_number: { type: 'number', description: 'Issue number' },
+          body: { type: 'string', description: 'Comment body' }
+        },
+        required: ['owner', 'repo', 'issue_number', 'body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/issues/{issue_number}/comments', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
   }
 
   private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {

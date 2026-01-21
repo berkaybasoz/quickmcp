@@ -442,6 +442,16 @@
                                                 <p class="text-xs text-slate-500">Make a raw HTTP request.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="github" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-500/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/github.png" alt="GitHub" class="w-12 h-12 object-contain rounded-lg" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">GitHub</h4>
+                                                <p class="text-xs text-slate-500">Connect to GitHub API.</p>
+                                            </div>
+                                        </label>
                                     </div>
 
                                     <!-- File Upload -->
@@ -576,6 +586,43 @@
                                                 <textarea id="curlBody" rows="4" class="input font-mono text-xs" placeholder='{ "key": "value" }'></textarea>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- GitHub Config -->
+                                    <div id="github-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                                                <div class="text-sm text-slate-600">
+                                                    <p class="font-medium text-slate-700 mb-1">GitHub Personal Access Token</p>
+                                                    <p>Create a token at <a href="https://github.com/settings/tokens" target="_blank" class="text-blue-600 hover:underline">github.com/settings/tokens</a> with <code class="bg-slate-200 px-1 rounded">repo</code> scope for full access.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">GitHub Token</label>
+                                            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">Your GitHub Personal Access Token (PAT).</p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Owner (Optional)</label>
+                                                <input type="text" id="githubOwner" placeholder="e.g., octocat" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Default repository owner/organization.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Repo (Optional)</label>
+                                                <input type="text" id="githubRepo" placeholder="e.g., hello-world" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Default repository name.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>10 tools</strong> will be created: list_repos, search_repos, get_repo, list_issues, create_issue, list_pull_requests, get_file_contents, list_commits, get_user, create_issue_comment
+                                            </p>
+                                        </div>
+                                        <div id="github-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Loading/Error -->

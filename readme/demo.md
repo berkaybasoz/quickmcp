@@ -32,3 +32,5 @@ curl -X GET "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
 
 curl -X GET https://api.restful-api.dev/objects
 
+github notion'da
+

@@ -51,6 +51,10 @@ export class DynamicMCPExecutor {
         return await this.executeCurlRequest(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.GitHub) {
+        return await this.executeGitHubCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -198,6 +202,111 @@ export class DynamicMCPExecutor {
         success: true,
         data: dataArray,
         rowCount: dataArray.length
+    };
+  }
+
+  private async executeGitHubCall(queryConfig: any, args: any): Promise<any> {
+    const { token, endpoint, method, owner: defaultOwner, repo: defaultRepo } = queryConfig;
+
+    // Use args owner/repo if provided, otherwise use defaults from config
+    const owner = args.owner || defaultOwner;
+    const repo = args.repo || defaultRepo;
+
+    // Build the URL by replacing path parameters
+    let url = `https://api.github.com${endpoint}`;
+
+    // Replace path parameters like {owner}, {repo}, {path}, {issue_number}
+    url = url.replace('{owner}', owner || '');
+    url = url.replace('{repo}', repo || '');
+    if (args.path) {
+      url = url.replace('{path}', args.path);
+    }
+    if (args.issue_number) {
+      url = url.replace('{issue_number}', args.issue_number);
+    }
+    if (args.username) {
+      url = url.replace('/user', `/users/${args.username}`);
+    }
+
+    // Build query parameters for GET requests
+    const queryParams: string[] = [];
+    const bodyParams: any = {};
+
+    for (const [key, value] of Object.entries(args)) {
+      if (value === undefined || value === null) continue;
+
+      // Skip path parameters
+      if (['owner', 'repo', 'path', 'issue_number', 'username'].includes(key)) continue;
+
+      if (method === 'GET') {
+        queryParams.push(`${key}=${encodeURIComponent(String(value))}`);
+      } else {
+        bodyParams[key] = value;
+      }
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🐙 GitHub API call: ${method} ${url}`);
+
+    const fetchOptions: RequestInit = {
+      method: method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'QuickMCP'
+      }
+    };
+
+    if (method !== 'GET' && Object.keys(bodyParams).length > 0) {
+      fetchOptions.body = JSON.stringify(bodyParams);
+      (fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, fetchOptions);
+    const contentType = response.headers.get('content-type');
+
+    let responseData: any;
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
+    }
+
+    console.error(`✅ GitHub API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error(`❌ GitHub API error:`, responseData);
+      return {
+        success: false,
+        error: `GitHub API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData.message || responseData,
+          documentation_url: responseData.documentation_url
+        }],
+        rowCount: 1
+      };
+    }
+
+    // Handle different response types
+    let dataArray: any[];
+    if (Array.isArray(responseData)) {
+      dataArray = responseData;
+    } else if (responseData.items) {
+      // Search results have items array
+      dataArray = responseData.items;
+    } else {
+      dataArray = [responseData];
+    }
+
+    return {
+      success: true,
+      data: dataArray,
+      rowCount: dataArray.length
     };
   }
 

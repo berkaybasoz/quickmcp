@@ -976,9 +976,9 @@ async function generateServer() {
     // Get selected tables and their tool configurations
     let selectedTablesConfig = getSelectedTablesAndTools();
 
-    // For webpage and curl, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl) {
-        selectedTablesConfig = []; // Empty is OK for webpage and curl
+    // For webpage, curl, and GitHub, we don't need table selection - runtime execution will happen
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub) {
+        selectedTablesConfig = []; // Empty is OK for webpage, curl, and GitHub
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
@@ -2654,6 +2654,57 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For GitHub, show info in preview and go to step 2
+    if (selectedType === DataSourceType.GitHub) {
+        const githubToken = document.getElementById('githubToken')?.value?.trim();
+        const githubOwner = document.getElementById('githubOwner')?.value?.trim();
+        const githubRepo = document.getElementById('githubRepo')?.value?.trim();
+
+        if (!githubToken) {
+            showError('github-parse-error', 'Please enter a GitHub Token');
+            return;
+        }
+
+        // Store GitHub config
+        currentDataSource = {
+            type: DataSourceType.GitHub,
+            name: 'GitHub',
+            token: githubToken,
+            owner: githubOwner,
+            repo: githubRepo
+        };
+        currentParsedData = [{
+            tableName: 'github_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repos', 'List repositories for the authenticated user'],
+                ['search_repos', 'Search for repositories on GitHub'],
+                ['get_repo', 'Get details of a specific repository'],
+                ['list_issues', 'List issues for a repository'],
+                ['create_issue', 'Create a new issue in a repository'],
+                ['list_pull_requests', 'List pull requests for a repository'],
+                ['get_file_contents', 'Get contents of a file from a repository'],
+                ['list_commits', 'List commits for a repository'],
+                ['get_user', 'Get information about a GitHub user'],
+                ['create_issue_comment', 'Create a comment on an issue']
+            ],
+            metadata: {
+                rowCount: 10,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📋 GitHub config saved, showing preview info');
+
+        // Display GitHub preview
+        displayGitHubPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2738,8 +2789,12 @@ async function handleNextToStep2() {
         if (result.success) {
             currentParsedData = result.data.parsedData;
             currentDataSource = result.data.dataSource;
-            if (currentDataSource.type ===  DataSourceType.Curl) {
+            if (currentDataSource.type === DataSourceType.Curl) {
                 displayCurlPreview(currentDataSource.curlSetting);
+            } else if (currentDataSource.type === DataSourceType.GitHub) {
+                displayGitHubPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Webpage) {
+                displayWebpagePreview(currentDataSource);
             } else {
                 displayDataPreview(result.data.parsedData);
             }
@@ -2895,8 +2950,11 @@ function updateWizardNavigation() {
                 const curlUrl = document.getElementById('curlUrl')?.value?.trim();
                 hasCurlInfo = !!curlUrl;
             }
-            
+
             canProceed = isAliasValid && hasCurlInfo;
+        } else if (selectedType === DataSourceType.GitHub) {
+            const githubToken = document.getElementById('githubToken')?.value?.trim();
+            canProceed = !!githubToken;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -2911,6 +2969,7 @@ function toggleDataSourceFields() {
     const restSection = document.getElementById('rest-section');
     const webSection = document.getElementById('web-section');
     const curlSection = document.getElementById('curl-section');
+    const githubSection = document.getElementById('github-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -2918,6 +2977,7 @@ function toggleDataSourceFields() {
     restSection?.classList.add('hidden');
     webSection?.classList.add('hidden');
     curlSection?.classList.add('hidden');
+    githubSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -2942,6 +3002,14 @@ function toggleDataSourceFields() {
         if (curlCommandInput && !curlCommandInput.dataset.listenerAttached) {
             curlCommandInput.addEventListener('input', updateWizardNavigation);
             curlCommandInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.GitHub) {
+        githubSection?.classList.remove('hidden');
+        // Add listener for GitHub token input
+        const githubTokenInput = document.getElementById('githubToken');
+        if (githubTokenInput && !githubTokenInput.dataset.listenerAttached) {
+            githubTokenInput.addEventListener('input', updateWizardNavigation);
+            githubTokenInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -3312,6 +3380,87 @@ function displayCurlPreview(curlSetting) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-sky-500"></i>
                                 <span>You can override request parameters like headers or body at runtime when calling the tool.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGitHubPreview(githubConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { token, owner, repo } = githubConfig || {};
+
+    const tools = [
+        { name: 'list_repos', desc: 'List repositories for the authenticated user' },
+        { name: 'search_repos', desc: 'Search for repositories on GitHub' },
+        { name: 'get_repo', desc: 'Get details of a specific repository' },
+        { name: 'list_issues', desc: 'List issues for a repository' },
+        { name: 'create_issue', desc: 'Create a new issue in a repository' },
+        { name: 'list_pull_requests', desc: 'List pull requests for a repository' },
+        { name: 'get_file_contents', desc: 'Get contents of a file from a repository' },
+        { name: 'list_commits', desc: 'List commits for a repository' },
+        { name: 'get_user', desc: 'Get information about a GitHub user' },
+        { name: 'create_issue_comment', desc: 'Create a comment on an issue' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-slate-800 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-github text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">GitHub API Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with GitHub API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Token:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${token ? '••••••••' + token.slice(-4) : 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Owner:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${owner || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Repo:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${repo || 'Not set'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>All GitHub API tools will use your token for authentication.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Default owner/repo can be overridden when calling tools.</span>
                             </div>
                         </div>
                     </div>

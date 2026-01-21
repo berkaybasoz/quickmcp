@@ -13,6 +13,7 @@ export enum DataSourceType {
   Curl = 'curl',
   Webpage = 'webpage',
   Rest = 'rest',
+  GitHub = 'github',
 }
 
 export interface DataSource {
@@ -103,6 +104,13 @@ export interface DatabaseConnection {
   username?: string;
   password?: string;
   type: 'mysql' | 'postgresql' | 'sqlite' | 'mssql';
+}
+
+export interface GitHubConnection {
+  token: string;
+  owner?: string;
+  repo?: string;
+  type: 'github';
 }
 
 export interface MCPServerConfig {
@@ -196,12 +204,21 @@ export interface FileGeneratorConfig extends BaseGeneratorConfig {
   database: string;
 }
 
+export interface GitHubGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GitHub;
+  token: string;
+  owner?: string;
+  repo?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
   | CurlGeneratorConfig
   | FileGeneratorConfig
-  | DatabaseConnection;
+  | GitHubGeneratorConfig
+  | DatabaseConnection
+  | GitHubConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -241,5 +258,14 @@ export function createFileGeneratorConfig(database: string, type: DataSourceType
     type,
     server: 'local',
     database
+  };
+}
+
+export function createGitHubGeneratorConfig(token: string, owner?: string, repo?: string): GitHubGeneratorConfig {
+  return {
+    type: DataSourceType.GitHub,
+    token,
+    owner,
+    repo
   };
 }

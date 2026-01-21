@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -291,6 +291,54 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.GitHub) {
+        const { githubToken, githubOwner, githubRepo } = req.body as any;
+
+        if (!githubToken) {
+            throw new Error('Missing GitHub token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GitHub,
+            name: 'GitHub',
+            token: githubToken,
+            owner: githubOwner,
+            repo: githubRepo
+        };
+
+        // For GitHub, tools are predefined - no parsing needed
+        const parsedData = [{
+            tableName: 'github_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repos', 'List repositories for the authenticated user'],
+                ['search_repos', 'Search for repositories on GitHub'],
+                ['get_repo', 'Get details of a specific repository'],
+                ['list_issues', 'List issues for a repository'],
+                ['create_issue', 'Create a new issue in a repository'],
+                ['list_pull_requests', 'List pull requests for a repository'],
+                ['get_file_contents', 'Get contents of a file from a repository'],
+                ['list_commits', 'List commits for a repository'],
+                ['get_user', 'Get information about a GitHub user'],
+                ['create_issue_comment', 'Create a comment on an issue']
+            ],
+            metadata: {
+                rowCount: 10,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -331,6 +379,8 @@ app.post('/api/generate', async (req, res) => {
     
     console.log('🔍 Generate request received:');
     console.log('- Name:', name);
+    console.log('- DataSource type:', dataSource?.type);
+    console.log('- DataSource:', JSON.stringify(dataSource, null, 2));
     console.log('- Selected tables:', selectedTables?.length || 0);
     console.log('- Parsed data tables:', parsedData?.length || 0);
 
@@ -361,6 +411,13 @@ app.post('/api/generate', async (req, res) => {
         dataSource.headers || {},
         dataSource.body || {},
         dataSource.alias
+      );
+    } else if (dataSource?.type === DataSourceType.GitHub) {
+      parsedForGen = {};
+      dbConfForGen = createGitHubGeneratorConfig(
+        dataSource.token,
+        dataSource.owner,
+        dataSource.repo
       );
     } else {
       // Use provided parsed data or re-parse if not available
