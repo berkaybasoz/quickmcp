@@ -976,9 +976,9 @@ async function generateServer() {
     // Get selected tables and their tool configurations
     let selectedTablesConfig = getSelectedTablesAndTools();
 
-    // For webpage, curl, GitHub, and Jira, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira) {
-        selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, and Jira
+    // For webpage, curl, GitHub, Jira, and FTP, we don't need table selection - runtime execution will happen
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp) {
+        selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, Jira, and FTP
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
@@ -2762,6 +2762,61 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For FTP, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Ftp) {
+        const ftpHost = document.getElementById('ftpHost')?.value?.trim();
+        const ftpPort = document.getElementById('ftpPort')?.value?.trim() || '21';
+        const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
+        const ftpPassword = document.getElementById('ftpPassword')?.value?.trim();
+        const ftpBasePath = document.getElementById('ftpBasePath')?.value?.trim() || '/';
+        const ftpSecure = document.getElementById('ftpSecure')?.value === 'true';
+
+        if (!ftpHost || !ftpUsername || !ftpPassword) {
+            showError('ftp-parse-error', 'Please enter FTP host, username, and password');
+            return;
+        }
+
+        // Store FTP config
+        currentDataSource = {
+            type: DataSourceType.Ftp,
+            name: 'FTP',
+            host: ftpHost,
+            port: parseInt(ftpPort),
+            username: ftpUsername,
+            password: ftpPassword,
+            basePath: ftpBasePath,
+            secure: ftpSecure
+        };
+        currentParsedData = [{
+            tableName: 'ftp_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files and directories in a path'],
+                ['download_file', 'Download a file from FTP server'],
+                ['upload_file', 'Upload a file to FTP server'],
+                ['delete_file', 'Delete a file from FTP server'],
+                ['create_directory', 'Create a new directory'],
+                ['delete_directory', 'Delete a directory'],
+                ['rename', 'Rename a file or directory'],
+                ['get_file_info', 'Get information about a file']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📁 FTP config saved, showing preview info');
+
+        // Display FTP preview
+        displayFtpPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2852,6 +2907,8 @@ async function handleNextToStep2() {
                 displayGitHubPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Ftp) {
+                displayFtpPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
             } else {
@@ -3019,6 +3076,11 @@ function updateWizardNavigation() {
             const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
             const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
             canProceed = !!jiraHost && !!jiraEmail && !!jiraApiToken;
+        } else if (selectedType === DataSourceType.Ftp) {
+            const ftpHost = document.getElementById('ftpHost')?.value?.trim();
+            const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
+            const ftpPassword = document.getElementById('ftpPassword')?.value?.trim();
+            canProceed = !!ftpHost && !!ftpUsername && !!ftpPassword;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3035,6 +3097,7 @@ function toggleDataSourceFields() {
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
     const jiraSection = document.getElementById('jira-section');
+    const ftpSection = document.getElementById('ftp-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3044,6 +3107,7 @@ function toggleDataSourceFields() {
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
+    ftpSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3094,6 +3158,24 @@ function toggleDataSourceFields() {
         if (jiraApiTokenInput && !jiraApiTokenInput.dataset.listenerAttached) {
             jiraApiTokenInput.addEventListener('input', updateWizardNavigation);
             jiraApiTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Ftp) {
+        ftpSection?.classList.remove('hidden');
+        // Add listeners for FTP inputs
+        const ftpHostInput = document.getElementById('ftpHost');
+        const ftpUsernameInput = document.getElementById('ftpUsername');
+        const ftpPasswordInput = document.getElementById('ftpPassword');
+        if (ftpHostInput && !ftpHostInput.dataset.listenerAttached) {
+            ftpHostInput.addEventListener('input', updateWizardNavigation);
+            ftpHostInput.dataset.listenerAttached = 'true';
+        }
+        if (ftpUsernameInput && !ftpUsernameInput.dataset.listenerAttached) {
+            ftpUsernameInput.addEventListener('input', updateWizardNavigation);
+            ftpUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (ftpPasswordInput && !ftpPasswordInput.dataset.listenerAttached) {
+            ftpPasswordInput.addEventListener('input', updateWizardNavigation);
+            ftpPasswordInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -3552,6 +3634,96 @@ function displayGitHubPreview(githubConfig) {
                                 <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
                                 <span>Default owner/repo can be overridden when calling tools.</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayFtpPreview(ftpConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { host, port, username, basePath, secure } = ftpConfig || {};
+    const isSftp = port === 22;
+    const protocolName = isSftp ? 'SFTP' : (secure ? 'FTPS' : 'FTP');
+
+    const tools = [
+        { name: 'list_files', desc: 'List files and directories in a path' },
+        { name: 'download_file', desc: 'Download a file from server' },
+        { name: 'upload_file', desc: 'Upload a file to server' },
+        { name: 'delete_file', desc: 'Delete a file from server' },
+        { name: 'create_directory', desc: 'Create a new directory' },
+        { name: 'delete_directory', desc: 'Delete a directory' },
+        { name: 'rename', desc: 'Rename a file or directory' },
+        { name: 'get_file_info', desc: 'Get information about a file' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-folder-open text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">${protocolName} Server Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with ${protocolName === 'SFTP' ? 'an SFTP (SSH)' : 'an FTP'} server.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Host:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${host || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Port:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${port || 21}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Username:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${username || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Protocol:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${protocolName}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Base Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${basePath || '/'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>All ${protocolName} tools will use your credentials for authentication.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>File paths can be specified when calling tools.</span>
+                            </div>
+                            ${isSftp ? '<div class="flex items-start gap-2"><i class="fas fa-lock mt-0.5 text-blue-500"></i><span>Connection is secured via SSH.</span></div>' : ''}
                         </div>
                     </div>
                 </div>

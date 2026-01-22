@@ -15,6 +15,7 @@ export enum DataSourceType {
   Rest = 'rest',
   GitHub = 'github',
   Jira = 'jira',
+  Ftp = 'ftp',
 }
 
 export interface DataSource {
@@ -221,6 +222,16 @@ export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   apiVersion?: 'v2' | 'v3'; // v2 for Jira Server, v3 for Jira Cloud
 }
 
+export interface FtpGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Ftp;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  secure?: boolean; // FTPS
+  basePath?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -228,6 +239,7 @@ export type GeneratorConfig =
   | FileGeneratorConfig
   | GitHubGeneratorConfig
   | JiraGeneratorConfig
+  | FtpGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -289,5 +301,17 @@ export function createJiraGeneratorConfig(host: string, email: string, apiToken:
     apiToken,
     projectKey,
     apiVersion: apiVersion || 'v2' // Default to v2 for Jira Server compatibility
+  };
+}
+
+export function createFtpGeneratorConfig(host: string, port: number, username: string, password: string, secure?: boolean, basePath?: string): FtpGeneratorConfig {
+  return {
+    type: DataSourceType.Ftp,
+    host,
+    port: port || 21,
+    username,
+    password,
+    secure: secure || false,
+    basePath: basePath || '/'
   };
 }

@@ -59,6 +59,10 @@ export class DynamicMCPExecutor {
         return await this.executeJiraCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Ftp) {
+        return await this.executeFtpCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -555,6 +559,401 @@ export class DynamicMCPExecutor {
       } else {
         delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       }
+    }
+  }
+
+  private async executeFtpCall(queryConfig: any, args: any): Promise<any> {
+    let { host, port, username, password, secure, basePath, operation } = queryConfig;
+
+    // Clean up host - remove protocol prefixes
+    let isSftp = false;
+    if (host.startsWith('sftp://')) {
+      host = host.replace('sftp://', '');
+      isSftp = true;
+    } else if (host.startsWith('ftp://')) {
+      host = host.replace('ftp://', '');
+    } else if (host.startsWith('ftps://')) {
+      host = host.replace('ftps://', '');
+      secure = true;
+    }
+
+    // Remove port from host if included (e.g., host:port format)
+    if (host.includes(':')) {
+      const parts = host.split(':');
+      host = parts[0];
+      if (!port) port = parseInt(parts[1]);
+    }
+
+    // Determine if SFTP based on port
+    const effectivePort = port || 21;
+    if (effectivePort === 22) {
+      isSftp = true;
+    }
+
+    console.error(`📁 ${isSftp ? 'SFTP' : 'FTP'} operation: ${operation} on ${host}:${effectivePort}`);
+
+    if (isSftp) {
+      return await this.executeSftpCall(host, effectivePort, username, password, basePath, operation, args);
+    }
+
+    // Use basic-ftp for FTP/FTPS
+    const { Client } = await import('basic-ftp');
+    const client = new Client();
+
+    try {
+      // Connect to FTP server
+      await client.access({
+        host,
+        port: effectivePort,
+        user: username,
+        password,
+        secure: secure || false,
+        secureOptions: secure ? { rejectUnauthorized: false } : undefined
+      });
+
+      console.error(`✅ Connected to FTP server ${host}`);
+
+      let result: any;
+
+      switch (operation) {
+        case 'list': {
+          const listPath = args.path || basePath || '/';
+          const files = await client.list(listPath);
+          result = files.map(file => ({
+            name: file.name,
+            type: file.type === 2 ? 'directory' : 'file',
+            size: file.size,
+            modifiedAt: file.modifiedAt?.toISOString(),
+            permissions: file.permissions,
+            user: file.user,
+            group: file.group
+          }));
+          break;
+        }
+
+        case 'download': {
+          const remotePath = args.remotePath;
+          if (!remotePath) throw new Error('remotePath is required for download');
+
+          // Download to a buffer using a writable stream
+          const chunks: Buffer[] = [];
+          const { Writable } = await import('stream');
+          const writableStream = new Writable({
+            write(chunk, encoding, callback) {
+              chunks.push(Buffer.from(chunk));
+              callback();
+            }
+          });
+
+          await client.downloadTo(writableStream, remotePath);
+          const content = Buffer.concat(chunks);
+
+          result = [{
+            remotePath,
+            content: content.toString('base64'),
+            size: content.length,
+            encoding: 'base64'
+          }];
+          break;
+        }
+
+        case 'upload': {
+          const remotePath = args.remotePath;
+          const content = args.content;
+          const isBase64 = args.isBase64;
+
+          if (!remotePath) throw new Error('remotePath is required for upload');
+          if (!content) throw new Error('content is required for upload');
+
+          // Create a readable stream from content
+          const { Readable } = await import('stream');
+          const buffer = isBase64 ? Buffer.from(content, 'base64') : Buffer.from(content, 'utf-8');
+          const readableStream = Readable.from(buffer);
+
+          await client.uploadFrom(readableStream, remotePath);
+
+          result = [{
+            success: true,
+            remotePath,
+            size: buffer.length,
+            message: 'File uploaded successfully'
+          }];
+          break;
+        }
+
+        case 'deleteFile': {
+          const remotePath = args.remotePath;
+          if (!remotePath) throw new Error('remotePath is required for delete');
+
+          await client.remove(remotePath);
+
+          result = [{
+            success: true,
+            remotePath,
+            message: 'File deleted successfully'
+          }];
+          break;
+        }
+
+        case 'mkdir': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for mkdir');
+
+          await client.ensureDir(path);
+
+          result = [{
+            success: true,
+            path,
+            message: 'Directory created successfully'
+          }];
+          break;
+        }
+
+        case 'rmdir': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for rmdir');
+
+          await client.removeDir(path);
+
+          result = [{
+            success: true,
+            path,
+            message: 'Directory deleted successfully'
+          }];
+          break;
+        }
+
+        case 'rename': {
+          const oldPath = args.oldPath;
+          const newPath = args.newPath;
+          if (!oldPath || !newPath) throw new Error('oldPath and newPath are required for rename');
+
+          await client.rename(oldPath, newPath);
+
+          result = [{
+            success: true,
+            oldPath,
+            newPath,
+            message: 'Renamed successfully'
+          }];
+          break;
+        }
+
+        case 'stat': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for stat');
+
+          const size = await client.size(path);
+          const lastMod = await client.lastMod(path);
+
+          result = [{
+            path,
+            size,
+            modifiedAt: lastMod?.toISOString()
+          }];
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown FTP operation: ${operation}`);
+      }
+
+      console.error(`✅ FTP operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+
+    } catch (error) {
+      console.error(`❌ FTP error:`, error);
+      return {
+        success: false,
+        error: `FTP error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{
+          error: error instanceof Error ? error.message : String(error)
+        }],
+        rowCount: 1
+      };
+    } finally {
+      client.close();
+    }
+  }
+
+  private async executeSftpCall(host: string, port: number, username: string, password: string, basePath: string, operation: string, args: any): Promise<any> {
+    // Dynamically import ssh2-sftp-client
+    const SftpClient = (await import('ssh2-sftp-client')).default;
+    const sftp = new SftpClient();
+
+    try {
+      // Connect to SFTP server
+      await sftp.connect({
+        host,
+        port: port || 22,
+        username,
+        password,
+        readyTimeout: 30000,
+        retries: 2,
+        retry_minTimeout: 2000
+      });
+
+      console.error(`✅ Connected to SFTP server ${host}`);
+
+      let result: any;
+
+      switch (operation) {
+        case 'list': {
+          const listPath = args.path || basePath || '/';
+          const files = await sftp.list(listPath);
+          result = files.map((file: any) => ({
+            name: file.name,
+            type: file.type === 'd' ? 'directory' : 'file',
+            size: file.size,
+            modifiedAt: file.modifyTime ? new Date(file.modifyTime).toISOString() : null,
+            accessedAt: file.accessTime ? new Date(file.accessTime).toISOString() : null,
+            owner: file.owner,
+            group: file.group,
+            rights: file.rights
+          }));
+          break;
+        }
+
+        case 'download': {
+          const remotePath = args.remotePath;
+          if (!remotePath) throw new Error('remotePath is required for download');
+
+          const content = await sftp.get(remotePath);
+          const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content as string);
+
+          result = [{
+            remotePath,
+            content: buffer.toString('base64'),
+            size: buffer.length,
+            encoding: 'base64'
+          }];
+          break;
+        }
+
+        case 'upload': {
+          const remotePath = args.remotePath;
+          const content = args.content;
+          const isBase64 = args.isBase64;
+
+          if (!remotePath) throw new Error('remotePath is required for upload');
+          if (!content) throw new Error('content is required for upload');
+
+          const buffer = isBase64 ? Buffer.from(content, 'base64') : Buffer.from(content, 'utf-8');
+          await sftp.put(buffer, remotePath);
+
+          result = [{
+            success: true,
+            remotePath,
+            size: buffer.length,
+            message: 'File uploaded successfully'
+          }];
+          break;
+        }
+
+        case 'deleteFile': {
+          const remotePath = args.remotePath;
+          if (!remotePath) throw new Error('remotePath is required for delete');
+
+          await sftp.delete(remotePath);
+
+          result = [{
+            success: true,
+            remotePath,
+            message: 'File deleted successfully'
+          }];
+          break;
+        }
+
+        case 'mkdir': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for mkdir');
+
+          await sftp.mkdir(path, true); // recursive
+
+          result = [{
+            success: true,
+            path,
+            message: 'Directory created successfully'
+          }];
+          break;
+        }
+
+        case 'rmdir': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for rmdir');
+
+          await sftp.rmdir(path, true); // recursive
+
+          result = [{
+            success: true,
+            path,
+            message: 'Directory deleted successfully'
+          }];
+          break;
+        }
+
+        case 'rename': {
+          const oldPath = args.oldPath;
+          const newPath = args.newPath;
+          if (!oldPath || !newPath) throw new Error('oldPath and newPath are required for rename');
+
+          await sftp.rename(oldPath, newPath);
+
+          result = [{
+            success: true,
+            oldPath,
+            newPath,
+            message: 'Renamed successfully'
+          }];
+          break;
+        }
+
+        case 'stat': {
+          const path = args.path;
+          if (!path) throw new Error('path is required for stat');
+
+          const stats = await sftp.stat(path);
+
+          result = [{
+            path,
+            size: stats.size,
+            modifiedAt: stats.modifyTime ? new Date(stats.modifyTime).toISOString() : null,
+            accessedAt: stats.accessTime ? new Date(stats.accessTime).toISOString() : null,
+            isDirectory: stats.isDirectory,
+            isFile: stats.isFile
+          }];
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown SFTP operation: ${operation}`);
+      }
+
+      console.error(`✅ SFTP operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+
+    } catch (error) {
+      console.error(`❌ SFTP error:`, error);
+      return {
+        success: false,
+        error: `SFTP error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{
+          error: error instanceof Error ? error.message : String(error)
+        }],
+        rowCount: 1
+      };
+    } finally {
+      await sftp.end();
     }
   }
 

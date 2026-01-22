@@ -37,3 +37,10 @@ github notion'da
 jira
 https://jira.softtech.com.tr
 berkay.basoz
+
+
+sftp
+sftp://select.datascope.refinitiv.com
+user: r9039747
+port: 22
+Şifre: Ca..raC..e2...!

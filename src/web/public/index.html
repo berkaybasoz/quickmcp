@@ -462,6 +462,16 @@
                                                 <p class="text-xs text-slate-500">Connect to Jira API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="ftp" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-folder-open text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">FTP</h4>
+                                                <p class="text-xs text-slate-500">Connect to FTP/SFTP server.</p>
+                                            </div>
+                                        </label>
                                     </div>
 
                                     <!-- File Upload -->
@@ -685,6 +695,65 @@
                                             </p>
                                         </div>
                                         <div id="jira-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- FTP Config -->
+                                    <div id="ftp-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                                                <div class="text-sm text-slate-600">
+                                                    <p class="font-medium text-slate-700 mb-1">FTP/SFTP Server Connection</p>
+                                                    <p>Connect to an FTP, FTPS, or SFTP server to manage files and directories. SFTP (port 22) is automatically detected.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Host</label>
+                                                <input type="text" id="ftpHost" placeholder="ftp.example.com" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Hostname or IP (without protocol prefix).</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Port</label>
+                                                <input type="number" id="ftpPort" placeholder="21" value="21" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">21=FTP, 22=SFTP, 990=FTPS</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
+                                                <input type="text" id="ftpUsername" placeholder="ftpuser" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">FTP username.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Password</label>
+                                                <input type="password" id="ftpPassword" placeholder="Your password" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">FTP password.</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base Path (Optional)</label>
+                                                <input type="text" id="ftpBasePath" placeholder="/" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Default directory to start in.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Secure Connection (FTPS)</label>
+                                                <select id="ftpSecure" class="input">
+                                                    <option value="false">No (Plain FTP)</option>
+                                                    <option value="true">Yes (FTPS - Explicit TLS)</option>
+                                                </select>
+                                                <p class="text-xs text-slate-500 mt-2">Enable for encrypted connections.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>8 tools</strong> will be created: list_files, download_file, upload_file, delete_file, create_directory, delete_directory, rename, get_file_info
+                                            </p>
+                                        </div>
+                                        <div id="ftp-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Loading/Error -->

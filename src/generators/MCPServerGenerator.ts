@@ -63,6 +63,8 @@ export class MCPServerGenerator {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
         //console.log('✅ Generated Jira tools:', tools.length);
+      } else if (dbConfig?.type === DataSourceType.Ftp) {
+        tools = this.generateToolsForFtp(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -73,9 +75,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, GitHub, and Jira)
+      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, and FTP)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -633,6 +635,155 @@ export class MCPServerGenerator {
         required: ['issueKey']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/comment`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForFtp(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { host, port, username, password, secure, basePath } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.Ftp,
+      host,
+      port: port || 21,
+      username,
+      password,
+      secure: secure || false,
+      basePath: basePath || '/'
+    };
+
+    // List files and directories
+    tools.push({
+      server_id: serverId,
+      name: 'list_files',
+      description: 'List files and directories in a path',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to list (default: base path)', default: '/' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'list' }),
+      operation: 'SELECT'
+    });
+
+    // Download file
+    tools.push({
+      server_id: serverId,
+      name: 'download_file',
+      description: 'Download a file from the FTP server (returns base64 encoded content)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          remotePath: { type: 'string', description: 'Remote file path to download' }
+        },
+        required: ['remotePath']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'download' }),
+      operation: 'SELECT'
+    });
+
+    // Upload file
+    tools.push({
+      server_id: serverId,
+      name: 'upload_file',
+      description: 'Upload a file to the FTP server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          remotePath: { type: 'string', description: 'Remote file path to upload to' },
+          content: { type: 'string', description: 'File content (base64 encoded for binary files)' },
+          isBase64: { type: 'boolean', description: 'Whether content is base64 encoded', default: false }
+        },
+        required: ['remotePath', 'content']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'upload' }),
+      operation: 'INSERT'
+    });
+
+    // Delete file
+    tools.push({
+      server_id: serverId,
+      name: 'delete_file',
+      description: 'Delete a file from the FTP server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          remotePath: { type: 'string', description: 'Remote file path to delete' }
+        },
+        required: ['remotePath']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deleteFile' }),
+      operation: 'DELETE'
+    });
+
+    // Create directory
+    tools.push({
+      server_id: serverId,
+      name: 'create_directory',
+      description: 'Create a new directory on the FTP server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path of the directory to create' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mkdir' }),
+      operation: 'INSERT'
+    });
+
+    // Delete directory
+    tools.push({
+      server_id: serverId,
+      name: 'delete_directory',
+      description: 'Delete a directory from the FTP server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path of the directory to delete' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'rmdir' }),
+      operation: 'DELETE'
+    });
+
+    // Rename file or directory
+    tools.push({
+      server_id: serverId,
+      name: 'rename',
+      description: 'Rename a file or directory on the FTP server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          oldPath: { type: 'string', description: 'Current path of the file or directory' },
+          newPath: { type: 'string', description: 'New path for the file or directory' }
+        },
+        required: ['oldPath', 'newPath']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'rename' }),
+      operation: 'UPDATE'
+    });
+
+    // Get file info
+    tools.push({
+      server_id: serverId,
+      name: 'get_file_info',
+      description: 'Get information about a file (size, modified date, etc.)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to the file' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'stat' }),
       operation: 'SELECT'
     });
 

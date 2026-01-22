@@ -10,7 +10,8 @@ const DataSourceType = {
     Webpage: 'webpage',
     Rest: 'rest',
     GitHub: 'github',
-    Jira: 'jira'
+    Jira: 'jira',
+    Ftp: 'ftp'
 };
 
 // Initialize sidebar functionality

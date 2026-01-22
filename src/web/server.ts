@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -391,6 +391,55 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Ftp) {
+        const { ftpHost, ftpPort, ftpUsername, ftpPassword, ftpSecure, ftpBasePath } = req.body as any;
+
+        if (!ftpHost || !ftpUsername || !ftpPassword) {
+            throw new Error('Missing FTP host, username, or password');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Ftp,
+            name: 'FTP',
+            host: ftpHost,
+            port: parseInt(ftpPort) || 21,
+            username: ftpUsername,
+            password: ftpPassword,
+            secure: ftpSecure === 'true' || ftpSecure === true,
+            basePath: ftpBasePath || '/'
+        };
+
+        // For FTP, tools are predefined - no parsing needed
+        const parsedData = [{
+            tableName: 'ftp_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files and directories in a path'],
+                ['download_file', 'Download a file from FTP server'],
+                ['upload_file', 'Upload a file to FTP server'],
+                ['delete_file', 'Delete a file from FTP server'],
+                ['create_directory', 'Create a new directory'],
+                ['delete_directory', 'Delete a directory'],
+                ['rename', 'Rename a file or directory'],
+                ['get_file_info', 'Get information about a file']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -479,6 +528,16 @@ app.post('/api/generate', async (req, res) => {
         dataSource.apiToken,
         dataSource.projectKey,
         dataSource.apiVersion
+      );
+    } else if (dataSource?.type === DataSourceType.Ftp) {
+      parsedForGen = {};
+      dbConfForGen = createFtpGeneratorConfig(
+        dataSource.host,
+        dataSource.port,
+        dataSource.username,
+        dataSource.password,
+        dataSource.secure,
+        dataSource.basePath
       );
     } else {
       // Use provided parsed data or re-parse if not available
