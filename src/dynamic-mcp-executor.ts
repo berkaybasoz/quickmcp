@@ -55,6 +55,10 @@ export class DynamicMCPExecutor {
         return await this.executeGitHubCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Jira) {
+        return await this.executeJiraCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -308,6 +312,250 @@ export class DynamicMCPExecutor {
       data: dataArray,
       rowCount: dataArray.length
     };
+  }
+
+  private async executeJiraCall(queryConfig: any, args: any): Promise<any> {
+    const { host, email, apiToken, endpoint, method, projectKey: defaultProjectKey, apiVersion } = queryConfig;
+
+    // Build authorization header based on API version
+    // v3 (Jira Cloud): Basic Auth with email:apiToken
+    // v2 (Jira Server): Bearer token (PAT) or Basic Auth with username:password
+    let authHeader: string;
+    if (apiVersion === 'v3') {
+      // Jira Cloud uses Basic Auth with email:apiToken
+      const authString = Buffer.from(`${email}:${apiToken}`).toString('base64');
+      authHeader = `Basic ${authString}`;
+    } else {
+      // Jira Server uses Bearer token (PAT) for newer versions
+      // If apiToken looks like a PAT (no special chars), use Bearer
+      // Otherwise fall back to Basic Auth
+      if (apiToken && !apiToken.includes(':')) {
+        authHeader = `Bearer ${apiToken}`;
+      } else {
+        const authString = Buffer.from(`${email}:${apiToken}`).toString('base64');
+        authHeader = `Basic ${authString}`;
+      }
+    }
+
+    // Build the URL by replacing path parameters
+    // Check if host already includes protocol
+    const baseUrl = host.startsWith('http://') || host.startsWith('https://') ? host : `https://${host}`;
+    let url = `${baseUrl}${endpoint}`;
+
+    // Use args projectKey if provided, otherwise use default from config
+    const projectKey = args.projectKey || defaultProjectKey;
+
+    // Replace path parameters like {issueKey}, {projectKey}
+    if (args.issueKey) {
+      url = url.replace('{issueKey}', args.issueKey);
+    }
+    if (projectKey) {
+      url = url.replace('{projectKey}', projectKey);
+    }
+
+    // Build query parameters for GET requests
+    const queryParams: string[] = [];
+    const bodyParams: any = {};
+
+    for (const [key, value] of Object.entries(args)) {
+      if (value === undefined || value === null) continue;
+
+      // Skip path parameters
+      if (['issueKey', 'projectKey'].includes(key)) continue;
+
+      if (method === 'GET') {
+        // Handle arrays for fields parameter
+        if (Array.isArray(value)) {
+          queryParams.push(`${key}=${encodeURIComponent(value.join(','))}`);
+        } else {
+          queryParams.push(`${key}=${encodeURIComponent(String(value))}`);
+        }
+      } else {
+        bodyParams[key] = value;
+      }
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🎫 Jira API call: ${method} ${url}`);
+
+    // Temporarily disable SSL verification for corporate Jira servers with self-signed certs
+    const originalTlsReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+    const fetchOptions: RequestInit = {
+      method: method || 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    };
+
+    // Build request body for POST/PUT methods
+    if (method === 'POST' || method === 'PUT') {
+      let body: any = {};
+
+      // Handle create_issue
+      if (endpoint === '/rest/api/2/issue' && method === 'POST') {
+        body = {
+          fields: {
+            project: { key: projectKey || args.projectKey },
+            issuetype: { name: args.issueType },
+            summary: args.summary
+          }
+        };
+        if (args.description) {
+          body.fields.description = {
+            type: 'doc',
+            version: 1,
+            content: [{
+              type: 'paragraph',
+              content: [{ type: 'text', text: args.description }]
+            }]
+          };
+        }
+        if (args.priority) {
+          body.fields.priority = { name: args.priority };
+        }
+        if (args.assignee) {
+          body.fields.assignee = { accountId: args.assignee };
+        }
+        if (args.labels) {
+          body.fields.labels = args.labels;
+        }
+      }
+      // Handle add_comment
+      else if (endpoint.includes('/comment') && method === 'POST') {
+        body = {
+          body: {
+            type: 'doc',
+            version: 1,
+            content: [{
+              type: 'paragraph',
+              content: [{ type: 'text', text: args.body }]
+            }]
+          }
+        };
+      }
+      // Handle transition_issue
+      else if (endpoint.includes('/transitions') && method === 'POST') {
+        body = {
+          transition: { id: args.transitionId }
+        };
+        if (args.comment) {
+          body.update = {
+            comment: [{
+              add: {
+                body: {
+                  type: 'doc',
+                  version: 1,
+                  content: [{
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: args.comment }]
+                  }]
+                }
+              }
+            }]
+          };
+        }
+      }
+      // Handle update_issue
+      else if (endpoint.includes('/issue/') && method === 'PUT' && !endpoint.includes('/assignee')) {
+        body = { fields: {} };
+        if (args.summary) body.fields.summary = args.summary;
+        if (args.description) {
+          body.fields.description = {
+            type: 'doc',
+            version: 1,
+            content: [{
+              type: 'paragraph',
+              content: [{ type: 'text', text: args.description }]
+            }]
+          };
+        }
+        if (args.priority) body.fields.priority = { name: args.priority };
+        if (args.labels) body.fields.labels = args.labels;
+      }
+      // Handle assign_issue
+      else if (endpoint.includes('/assignee')) {
+        body = { accountId: args.accountId === '-1' ? null : args.accountId };
+      }
+      else {
+        body = bodyParams;
+      }
+
+      if (Object.keys(body).length > 0) {
+        fetchOptions.body = JSON.stringify(body);
+      }
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+      const contentType = response.headers.get('content-type');
+
+      let responseData: any;
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        responseData = text ? JSON.parse(text) : {};
+      } else {
+        responseData = await response.text();
+      }
+
+      console.error(`✅ Jira API response: ${response.status}`);
+
+      if (!response.ok) {
+        console.error(`❌ Jira API error:`, responseData);
+        return {
+          success: false,
+          error: `Jira API error: ${response.status}`,
+          data: [{
+            status: response.status,
+            message: responseData.errorMessages?.join(', ') || responseData.message || JSON.stringify(responseData),
+            errors: responseData.errors
+          }],
+          rowCount: 1
+        };
+      }
+
+      // Handle different response types
+      let dataArray: any[];
+      if (Array.isArray(responseData)) {
+        dataArray = responseData;
+      } else if (responseData.issues) {
+        // Search results have issues array
+        dataArray = responseData.issues;
+      } else if (responseData.values) {
+        // Paginated results (projects)
+        dataArray = responseData.values;
+      } else if (responseData.transitions) {
+        // Transitions list
+        dataArray = responseData.transitions;
+      } else if (responseData.comments) {
+        // Comments list
+        dataArray = responseData.comments;
+      } else if (Object.keys(responseData).length === 0) {
+        // Empty response (e.g., successful update/delete)
+        dataArray = [{ success: true, message: 'Operation completed successfully' }];
+      } else {
+        dataArray = [responseData];
+      }
+
+      return {
+        success: true,
+        data: dataArray,
+        rowCount: dataArray.length
+      };
+    } finally {
+      // Restore original SSL verification setting
+      if (originalTlsReject !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTlsReject;
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      }
+    }
   }
 
   private async executeDatabaseQuery(serverId: string, serverConfig: any, tool: ToolDefinition, args: any): Promise<any> {

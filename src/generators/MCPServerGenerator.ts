@@ -45,7 +45,7 @@ export class MCPServerGenerator {
       // Generate and save tools
       let tools: ToolDefinition[] = [];
       //console.log('🔍 MCPServerGenerator - dbConfig.type:', dbConfig?.type);
-      //console.log('🔍 MCPServerGenerator - dbConfig:', JSON.stringify(dbConfig, null, 2));
+      //console.log('🔍 MCPServerGenerator - DataSourceType.Jira:', DataSourceType.Jira);
 
       // Treat array parsedData as REST endpoints even if dbConfig.type is missing
       if (Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest) {
@@ -59,7 +59,12 @@ export class MCPServerGenerator {
         tools = this.generateToolsForCurl(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GitHub) {
         tools = this.generateToolsForGitHub(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Jira) {
+        //console.log('✅ Matched Jira type, generating Jira tools');
+        tools = this.generateToolsForJira(serverId, dbConfig);
+        //console.log('✅ Generated Jira tools:', tools.length);
       } else {
+        //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
         //console.log('✅ Generated data tools:', tools.length);
       }
@@ -68,9 +73,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, and GitHub)
+      // Generate and save resources (skip for REST, webpage, curl, GitHub, and Jira)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -390,6 +395,245 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/issues/{issue_number}/comments', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForJira(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { host, email, apiToken, projectKey, apiVersion } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    // Determine API version (default to v2 for Jira Server compatibility)
+    const version = apiVersion || 'v2';
+    const apiPath = `/rest/api/${version === 'v3' ? '3' : '2'}`;
+
+    // For Jira Server (v2), list_projects uses /project, for Cloud (v3) uses /project/search
+    const listProjectsEndpoint = version === 'v3' ? `${apiPath}/project/search` : `${apiPath}/project`;
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.Jira,
+      host,
+      email,
+      apiToken,
+      projectKey,
+      apiVersion: version
+    };
+
+    // Search issues using JQL
+    tools.push({
+      server_id: serverId,
+      name: 'search_issues',
+      description: 'Search for issues using JQL (Jira Query Language)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          jql: { type: 'string', description: 'JQL query string (e.g., "project = MYPROJ AND status = Open")' },
+          maxResults: { type: 'number', description: 'Maximum number of results (default: 50)', default: 50 },
+          startAt: { type: 'number', description: 'Index of first result (default: 0)', default: 0 },
+          fields: { type: 'array', items: { type: 'string' }, description: 'Fields to return (default: all)' }
+        },
+        required: ['jql']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/search`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get issue details
+    tools.push({
+      server_id: serverId,
+      name: 'get_issue',
+      description: 'Get details of a specific issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          fields: { type: 'array', items: { type: 'string' }, description: 'Fields to return' },
+          expand: { type: 'string', description: 'Fields to expand (e.g., changelog, renderedFields)' }
+        },
+        required: ['issueKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Create issue
+    tools.push({
+      server_id: serverId,
+      name: 'create_issue',
+      description: 'Create a new issue in Jira',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectKey: { type: 'string', description: 'Project key (e.g., PROJ)' },
+          issueType: { type: 'string', description: 'Issue type (e.g., Bug, Story, Task)' },
+          summary: { type: 'string', description: 'Issue summary/title' },
+          description: { type: 'string', description: 'Issue description' },
+          priority: { type: 'string', description: 'Priority (e.g., High, Medium, Low)' },
+          assignee: { type: 'string', description: 'Assignee account ID' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Labels to add' }
+        },
+        required: ['projectKey', 'issueType', 'summary']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue`, method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    // Update issue
+    tools.push({
+      server_id: serverId,
+      name: 'update_issue',
+      description: 'Update an existing issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          summary: { type: 'string', description: 'New summary' },
+          description: { type: 'string', description: 'New description' },
+          priority: { type: 'string', description: 'New priority' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'New labels' }
+        },
+        required: ['issueKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}`, method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    // Add comment
+    tools.push({
+      server_id: serverId,
+      name: 'add_comment',
+      description: 'Add a comment to an issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          body: { type: 'string', description: 'Comment body text' }
+        },
+        required: ['issueKey', 'body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/comment`, method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    // Get transitions
+    tools.push({
+      server_id: serverId,
+      name: 'get_transitions',
+      description: 'Get available transitions for an issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' }
+        },
+        required: ['issueKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/transitions`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Transition issue
+    tools.push({
+      server_id: serverId,
+      name: 'transition_issue',
+      description: 'Transition an issue to a new status',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          transitionId: { type: 'string', description: 'Transition ID (get from get_transitions)' },
+          comment: { type: 'string', description: 'Optional comment to add during transition' }
+        },
+        required: ['issueKey', 'transitionId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/transitions`, method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    // List projects
+    tools.push({
+      server_id: serverId,
+      name: 'list_projects',
+      description: 'List all projects accessible to the user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          maxResults: { type: 'number', description: 'Maximum number of results', default: 50 },
+          startAt: { type: 'number', description: 'Index of first result', default: 0 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: listProjectsEndpoint, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get project
+    tools.push({
+      server_id: serverId,
+      name: 'get_project',
+      description: 'Get details of a specific project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectKey: { type: 'string', description: 'Project key (e.g., PROJ)' }
+        },
+        required: ['projectKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/project/{projectKey}`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Get user
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get information about a Jira user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          accountId: { type: 'string', description: 'User account ID' },
+          username: { type: 'string', description: 'Username (for Jira Server)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/user`, method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    // Assign issue
+    tools.push({
+      server_id: serverId,
+      name: 'assign_issue',
+      description: 'Assign an issue to a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          accountId: { type: 'string', description: 'Account ID of the user to assign (-1 to unassign)' }
+        },
+        required: ['issueKey', 'accountId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/assignee`, method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    // Get issue comments
+    tools.push({
+      server_id: serverId,
+      name: 'get_issue_comments',
+      description: 'Get comments on an issue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          issueKey: { type: 'string', description: 'Issue key (e.g., PROJ-123)' },
+          maxResults: { type: 'number', description: 'Maximum number of results', default: 50 },
+          startAt: { type: 'number', description: 'Index of first result', default: 0 }
+        },
+        required: ['issueKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: `${apiPath}/issue/{issueKey}/comment`, method: 'GET' }),
+      operation: 'SELECT'
     });
 
     return tools;

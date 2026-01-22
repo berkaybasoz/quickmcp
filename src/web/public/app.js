@@ -976,9 +976,9 @@ async function generateServer() {
     // Get selected tables and their tool configurations
     let selectedTablesConfig = getSelectedTablesAndTools();
 
-    // For webpage, curl, and GitHub, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub) {
-        selectedTablesConfig = []; // Empty is OK for webpage, curl, and GitHub
+    // For webpage, curl, GitHub, and Jira, we don't need table selection - runtime execution will happen
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira) {
+        selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, and Jira
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
@@ -2705,6 +2705,63 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Jira, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Jira) {
+        const jiraHost = document.getElementById('jiraHost')?.value?.trim();
+        const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
+        const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
+        const jiraProjectKey = document.getElementById('jiraProjectKey')?.value?.trim();
+        const jiraApiVersion = document.getElementById('jiraApiVersion')?.value || 'v2';
+
+        if (!jiraHost || !jiraEmail || !jiraApiToken) {
+            showError('jira-parse-error', 'Please enter Jira host, email, and API token');
+            return;
+        }
+
+        // Store Jira config
+        currentDataSource = {
+            type: DataSourceType.Jira,
+            name: 'Jira',
+            apiVersion: jiraApiVersion,
+            host: jiraHost,
+            email: jiraEmail,
+            apiToken: jiraApiToken,
+            projectKey: jiraProjectKey
+        };
+        currentParsedData = [{
+            tableName: 'jira_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_issues', 'Search for issues using JQL'],
+                ['get_issue', 'Get details of a specific issue'],
+                ['create_issue', 'Create a new issue'],
+                ['update_issue', 'Update an existing issue'],
+                ['add_comment', 'Add a comment to an issue'],
+                ['get_transitions', 'Get available transitions for an issue'],
+                ['transition_issue', 'Transition an issue to a new status'],
+                ['list_projects', 'List all projects'],
+                ['get_project', 'Get details of a specific project'],
+                ['get_user', 'Get information about a Jira user'],
+                ['assign_issue', 'Assign an issue to a user'],
+                ['get_issue_comments', 'Get comments on an issue']
+            ],
+            metadata: {
+                rowCount: 12,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📋 Jira config saved, showing preview info');
+
+        // Display Jira preview
+        displayJiraPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2793,6 +2850,8 @@ async function handleNextToStep2() {
                 displayCurlPreview(currentDataSource.curlSetting);
             } else if (currentDataSource.type === DataSourceType.GitHub) {
                 displayGitHubPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Jira) {
+                displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
             } else {
@@ -2955,6 +3014,11 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.GitHub) {
             const githubToken = document.getElementById('githubToken')?.value?.trim();
             canProceed = !!githubToken;
+        } else if (selectedType === DataSourceType.Jira) {
+            const jiraHost = document.getElementById('jiraHost')?.value?.trim();
+            const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
+            const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
+            canProceed = !!jiraHost && !!jiraEmail && !!jiraApiToken;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -2970,6 +3034,7 @@ function toggleDataSourceFields() {
     const webSection = document.getElementById('web-section');
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
+    const jiraSection = document.getElementById('jira-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -2978,6 +3043,7 @@ function toggleDataSourceFields() {
     webSection?.classList.add('hidden');
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
+    jiraSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3010,6 +3076,24 @@ function toggleDataSourceFields() {
         if (githubTokenInput && !githubTokenInput.dataset.listenerAttached) {
             githubTokenInput.addEventListener('input', updateWizardNavigation);
             githubTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Jira) {
+        jiraSection?.classList.remove('hidden');
+        // Add listeners for Jira inputs
+        const jiraHostInput = document.getElementById('jiraHost');
+        const jiraEmailInput = document.getElementById('jiraEmail');
+        const jiraApiTokenInput = document.getElementById('jiraApiToken');
+        if (jiraHostInput && !jiraHostInput.dataset.listenerAttached) {
+            jiraHostInput.addEventListener('input', updateWizardNavigation);
+            jiraHostInput.dataset.listenerAttached = 'true';
+        }
+        if (jiraEmailInput && !jiraEmailInput.dataset.listenerAttached) {
+            jiraEmailInput.addEventListener('input', updateWizardNavigation);
+            jiraEmailInput.dataset.listenerAttached = 'true';
+        }
+        if (jiraApiTokenInput && !jiraApiTokenInput.dataset.listenerAttached) {
+            jiraApiTokenInput.addEventListener('input', updateWizardNavigation);
+            jiraApiTokenInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -3138,6 +3222,12 @@ function startRenameServer(serverId, currentName) {
 
     if (!nameSpan) {
         console.error('Could not find name span for server:', serverId);
+        return;
+    }
+
+    // Check if already in edit mode (input exists inside span)
+    if (nameSpan.querySelector('input')) {
+        console.log('Already in edit mode, ignoring double click');
         return;
     }
 
@@ -3461,6 +3551,89 @@ function displayGitHubPreview(githubConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
                                 <span>Default owner/repo can be overridden when calling tools.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayJiraPreview(jiraConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { host, email, projectKey } = jiraConfig || {};
+
+    const tools = [
+        { name: 'search_issues', desc: 'Search for issues using JQL' },
+        { name: 'get_issue', desc: 'Get details of a specific issue' },
+        { name: 'create_issue', desc: 'Create a new issue' },
+        { name: 'update_issue', desc: 'Update an existing issue' },
+        { name: 'add_comment', desc: 'Add a comment to an issue' },
+        { name: 'get_transitions', desc: 'Get available transitions for an issue' },
+        { name: 'transition_issue', desc: 'Transition an issue to a new status' },
+        { name: 'list_projects', desc: 'List all projects' },
+        { name: 'get_project', desc: 'Get details of a specific project' },
+        { name: 'get_user', desc: 'Get information about a Jira user' },
+        { name: 'assign_issue', desc: 'Assign an issue to a user' },
+        { name: 'get_issue_comments', desc: 'Get comments on an issue' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-jira text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Jira API Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Jira API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Host:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${host || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Email:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${email || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Project:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${projectKey || 'Not set'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>All Jira API tools will use your email and API token for authentication.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Default project key can be overridden when calling tools.</span>
                             </div>
                         </div>
                     </div>

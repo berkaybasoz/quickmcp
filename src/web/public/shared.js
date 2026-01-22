@@ -9,7 +9,8 @@ const DataSourceType = {
     Curl: 'curl',
     Webpage: 'webpage',
     Rest: 'rest',
-    GitHub: 'github'
+    GitHub: 'github',
+    Jira: 'jira'
 };
 
 // Initialize sidebar functionality

@@ -34,3 +34,6 @@ curl -X GET https://api.restful-api.dev/objects
 
 github notion'da
 
+jira
+https://jira.softtech.com.tr
+berkay.basoz

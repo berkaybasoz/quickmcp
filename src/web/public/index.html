@@ -452,6 +452,16 @@
                                                 <p class="text-xs text-slate-500">Connect to GitHub API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="jira" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fab fa-jira text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Jira</h4>
+                                                <p class="text-xs text-slate-500">Connect to Jira API.</p>
+                                            </div>
+                                        </label>
                                     </div>
 
                                     <!-- File Upload -->
@@ -623,6 +633,58 @@
                                             </p>
                                         </div>
                                         <div id="github-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Jira Config -->
+                                    <div id="jira-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                                                <div class="text-sm text-slate-600">
+                                                    <p class="font-medium text-slate-700 mb-1">Jira API Token</p>
+                                                    <p>Create an API token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" class="text-blue-600 hover:underline">id.atlassian.com/manage-profile/security/api-tokens</a>. Use your Atlassian account email and the API token for authentication.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Jira Host</label>
+                                                <input type="text" id="jiraHost" placeholder="https://your-domain.atlassian.net" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Jira domain (with or without https://).</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Version</label>
+                                                <select id="jiraApiVersion" class="input">
+                                                    <option value="v2">API v2 (Jira Server / Data Center)</option>
+                                                    <option value="v3">API v3 (Jira Cloud)</option>
+                                                </select>
+                                                <p class="text-xs text-slate-500 mt-2">Select based on your Jira deployment type.</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Email/Username</label>
+                                                <input type="text" id="jiraEmail" placeholder="you@example.com" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Atlassian account email.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Token</label>
+                                                <input type="password" id="jiraApiToken" placeholder="Your API token" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Jira API token.</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Project Key (Optional)</label>
+                                            <input type="text" id="jiraProjectKey" placeholder="e.g., MYPROJ" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">Default project key for issue operations.</p>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>12 tools</strong> will be created: search_issues, get_issue, create_issue, update_issue, add_comment, get_transitions, transition_issue, list_projects, get_project, get_user, assign_issue, get_issue_comments
+                                            </p>
+                                        </div>
+                                        <div id="jira-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Loading/Error -->

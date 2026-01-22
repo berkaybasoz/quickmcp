@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -339,6 +339,58 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Jira) {
+        const { jiraHost, jiraEmail, jiraApiToken, jiraProjectKey, jiraApiVersion } = req.body as any;
+
+        if (!jiraHost || !jiraEmail || !jiraApiToken) {
+            throw new Error('Missing Jira host, email, or API token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Jira,
+            name: 'Jira',
+            host: jiraHost,
+            email: jiraEmail,
+            apiVersion: jiraApiVersion || 'v2',
+            apiToken: jiraApiToken,
+            projectKey: jiraProjectKey
+        };
+
+        // For Jira, tools are predefined - no parsing needed
+        const parsedData = [{
+            tableName: 'jira_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_issues', 'Search for issues using JQL'],
+                ['get_issue', 'Get details of a specific issue'],
+                ['create_issue', 'Create a new issue'],
+                ['update_issue', 'Update an existing issue'],
+                ['add_comment', 'Add a comment to an issue'],
+                ['get_transitions', 'Get available transitions for an issue'],
+                ['transition_issue', 'Transition an issue to a new status'],
+                ['list_projects', 'List all projects'],
+                ['get_project', 'Get details of a specific project'],
+                ['get_user', 'Get information about a Jira user'],
+                ['assign_issue', 'Assign an issue to a user'],
+                ['get_issue_comments', 'Get comments on an issue']
+            ],
+            metadata: {
+                rowCount: 12,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -418,6 +470,15 @@ app.post('/api/generate', async (req, res) => {
         dataSource.token,
         dataSource.owner,
         dataSource.repo
+      );
+    } else if (dataSource?.type === DataSourceType.Jira) {
+      parsedForGen = {};
+      dbConfForGen = createJiraGeneratorConfig(
+        dataSource.host,
+        dataSource.email,
+        dataSource.apiToken,
+        dataSource.projectKey,
+        dataSource.apiVersion
       );
     } else {
       // Use provided parsed data or re-parse if not available

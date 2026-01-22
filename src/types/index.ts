@@ -14,6 +14,7 @@ export enum DataSourceType {
   Webpage = 'webpage',
   Rest = 'rest',
   GitHub = 'github',
+  Jira = 'jira',
 }
 
 export interface DataSource {
@@ -211,12 +212,22 @@ export interface GitHubGeneratorConfig extends BaseGeneratorConfig {
   repo?: string;
 }
 
+export interface JiraGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Jira;
+  host: string;
+  email: string;
+  apiToken: string;
+  projectKey?: string;
+  apiVersion?: 'v2' | 'v3'; // v2 for Jira Server, v3 for Jira Cloud
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
   | CurlGeneratorConfig
   | FileGeneratorConfig
   | GitHubGeneratorConfig
+  | JiraGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -267,5 +278,16 @@ export function createGitHubGeneratorConfig(token: string, owner?: string, repo?
     token,
     owner,
     repo
+  };
+}
+
+export function createJiraGeneratorConfig(host: string, email: string, apiToken: string, projectKey?: string, apiVersion?: 'v2' | 'v3'): JiraGeneratorConfig {
+  return {
+    type: DataSourceType.Jira,
+    host,
+    email,
+    apiToken,
+    projectKey,
+    apiVersion: apiVersion || 'v2' // Default to v2 for Jira Server compatibility
   };
 }
