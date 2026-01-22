@@ -63,6 +63,10 @@ export class DynamicMCPExecutor {
         return await this.executeFtpCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.LocalFS) {
+        return await this.executeLocalFSCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -954,6 +958,252 @@ export class DynamicMCPExecutor {
       };
     } finally {
       await sftp.end();
+    }
+  }
+
+  private async executeLocalFSCall(queryConfig: any, args: any): Promise<any> {
+    const { basePath, allowWrite, allowDelete, operation } = queryConfig;
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const { glob } = await import('glob');
+
+    console.error(`📂 LocalFS operation: ${operation} in ${basePath}`);
+
+    // Resolve path relative to basePath
+    const resolvePath = (p: string) => {
+      if (!p || p === '.') return basePath;
+      // Prevent path traversal attacks
+      const resolved = path.resolve(basePath, p);
+      if (!resolved.startsWith(path.resolve(basePath))) {
+        throw new Error('Path traversal not allowed');
+      }
+      return resolved;
+    };
+
+    try {
+      let result: any;
+
+      switch (operation) {
+        case 'list': {
+          const listPath = resolvePath(args.path || '.');
+          const entries = await fs.readdir(listPath, { withFileTypes: true });
+          result = await Promise.all(entries.map(async (entry) => {
+            const fullPath = path.join(listPath, entry.name);
+            try {
+              const stats = await fs.stat(fullPath);
+              return {
+                name: entry.name,
+                type: entry.isDirectory() ? 'directory' : 'file',
+                size: stats.size,
+                modifiedAt: stats.mtime.toISOString(),
+                createdAt: stats.birthtime.toISOString()
+              };
+            } catch {
+              return {
+                name: entry.name,
+                type: entry.isDirectory() ? 'directory' : 'file'
+              };
+            }
+          }));
+          break;
+        }
+
+        case 'read': {
+          const filePath = resolvePath(args.path);
+          const encoding = args.encoding || 'utf8';
+
+          if (encoding === 'base64') {
+            const content = await fs.readFile(filePath);
+            result = [{
+              path: args.path,
+              content: content.toString('base64'),
+              encoding: 'base64',
+              size: content.length
+            }];
+          } else {
+            const content = await fs.readFile(filePath, 'utf8');
+            result = [{
+              path: args.path,
+              content,
+              encoding: 'utf8',
+              size: content.length
+            }];
+          }
+          break;
+        }
+
+        case 'write': {
+          if (allowWrite === false) {
+            throw new Error('Write operations are not allowed');
+          }
+          const filePath = resolvePath(args.path);
+          const content = args.encoding === 'base64'
+            ? Buffer.from(args.content, 'base64')
+            : args.content;
+
+          // Ensure directory exists
+          await fs.mkdir(path.dirname(filePath), { recursive: true });
+          await fs.writeFile(filePath, content);
+
+          result = [{
+            success: true,
+            path: args.path,
+            message: 'File written successfully'
+          }];
+          break;
+        }
+
+        case 'deleteFile': {
+          if (!allowDelete) {
+            throw new Error('Delete operations are not allowed');
+          }
+          const filePath = resolvePath(args.path);
+          await fs.unlink(filePath);
+
+          result = [{
+            success: true,
+            path: args.path,
+            message: 'File deleted successfully'
+          }];
+          break;
+        }
+
+        case 'mkdir': {
+          if (allowWrite === false) {
+            throw new Error('Write operations are not allowed');
+          }
+          const dirPath = resolvePath(args.path);
+          await fs.mkdir(dirPath, { recursive: true });
+
+          result = [{
+            success: true,
+            path: args.path,
+            message: 'Directory created successfully'
+          }];
+          break;
+        }
+
+        case 'rmdir': {
+          if (!allowDelete) {
+            throw new Error('Delete operations are not allowed');
+          }
+          const dirPath = resolvePath(args.path);
+          await fs.rm(dirPath, { recursive: args.recursive || false });
+
+          result = [{
+            success: true,
+            path: args.path,
+            message: 'Directory deleted successfully'
+          }];
+          break;
+        }
+
+        case 'rename': {
+          if (allowWrite === false) {
+            throw new Error('Write operations are not allowed');
+          }
+          const oldPath = resolvePath(args.oldPath);
+          const newPath = resolvePath(args.newPath);
+          await fs.rename(oldPath, newPath);
+
+          result = [{
+            success: true,
+            oldPath: args.oldPath,
+            newPath: args.newPath,
+            message: 'Renamed successfully'
+          }];
+          break;
+        }
+
+        case 'stat': {
+          const filePath = resolvePath(args.path);
+          const stats = await fs.stat(filePath);
+
+          result = [{
+            path: args.path,
+            size: stats.size,
+            isFile: stats.isFile(),
+            isDirectory: stats.isDirectory(),
+            modifiedAt: stats.mtime.toISOString(),
+            createdAt: stats.birthtime.toISOString(),
+            accessedAt: stats.atime.toISOString()
+          }];
+          break;
+        }
+
+        case 'search': {
+          const searchPath = resolvePath(args.path || '.');
+          const pattern = args.pattern;
+          const recursive = args.recursive !== false;
+
+          const globPattern = recursive
+            ? path.join(searchPath, '**', pattern)
+            : path.join(searchPath, pattern);
+
+          const files = await glob(globPattern, { nodir: false });
+
+          result = await Promise.all(files.map(async (file: string) => {
+            try {
+              const stats = await fs.stat(file);
+              return {
+                path: path.relative(basePath, file),
+                name: path.basename(file),
+                type: stats.isDirectory() ? 'directory' : 'file',
+                size: stats.size,
+                modifiedAt: stats.mtime.toISOString()
+              };
+            } catch {
+              return {
+                path: path.relative(basePath, file),
+                name: path.basename(file)
+              };
+            }
+          }));
+          break;
+        }
+
+        case 'copy': {
+          if (allowWrite === false) {
+            throw new Error('Write operations are not allowed');
+          }
+          const sourcePath = resolvePath(args.sourcePath);
+          const destPath = resolvePath(args.destPath);
+
+          // Ensure destination directory exists
+          await fs.mkdir(path.dirname(destPath), { recursive: true });
+          await fs.copyFile(sourcePath, destPath);
+
+          result = [{
+            success: true,
+            sourcePath: args.sourcePath,
+            destPath: args.destPath,
+            message: 'File copied successfully'
+          }];
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown LocalFS operation: ${operation}`);
+      }
+
+      console.error(`✅ LocalFS operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+
+    } catch (error) {
+      console.error(`❌ LocalFS error:`, error);
+      return {
+        success: false,
+        error: `LocalFS error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{
+          error: error instanceof Error ? error.message : String(error)
+        }],
+        rowCount: 1
+      };
     }
   }
 

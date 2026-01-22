@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -138,6 +138,54 @@ const generatedServers = new Map<string, {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// List directories endpoint for directory picker
+app.get('/api/directories', async (req, res) => {
+  try {
+    const fs = await import('fs/promises');
+    const pathModule = await import('path');
+    const os = await import('os');
+
+    let requestedPath = req.query.path as string;
+
+    // Default to home directory if no path provided
+    if (!requestedPath || requestedPath === '~') {
+      requestedPath = os.homedir();
+    }
+
+    // Resolve the path
+    const resolvedPath = pathModule.resolve(requestedPath);
+
+    // Read directory contents
+    const entries = await fs.readdir(resolvedPath, { withFileTypes: true });
+
+    // Filter only directories and sort
+    const directories = entries
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
+      .map(entry => ({
+        name: entry.name,
+        path: pathModule.join(resolvedPath, entry.name)
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Get parent directory
+    const parentPath = pathModule.dirname(resolvedPath);
+    const hasParent = parentPath !== resolvedPath;
+
+    res.json({
+      success: true,
+      currentPath: resolvedPath,
+      parentPath: hasParent ? parentPath : null,
+      directories
+    });
+  } catch (error) {
+    console.error('Directory listing error:', error);
+    res.status(400).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list directories'
+    });
+  }
 });
 
 // Parse data source endpoint
@@ -440,6 +488,54 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.LocalFS) {
+        const { localfsBasePath, localfsAllowWrite, localfsAllowDelete } = req.body as any;
+
+        if (!localfsBasePath) {
+            throw new Error('Missing base path for Local Filesystem');
+        }
+
+        const dataSource = {
+            type: DataSourceType.LocalFS,
+            name: 'LocalFS',
+            basePath: localfsBasePath,
+            allowWrite: localfsAllowWrite === 'true' || localfsAllowWrite === true,
+            allowDelete: localfsAllowDelete === 'true' || localfsAllowDelete === true
+        };
+
+        // For LocalFS, tools are predefined - no parsing needed
+        const parsedData = [{
+            tableName: 'localfs_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files and directories in a path'],
+                ['read_file', 'Read contents of a file'],
+                ['write_file', 'Write content to a file'],
+                ['delete_file', 'Delete a file'],
+                ['create_directory', 'Create a new directory'],
+                ['delete_directory', 'Delete a directory'],
+                ['rename', 'Rename a file or directory'],
+                ['get_file_info', 'Get information about a file'],
+                ['search_files', 'Search for files by name pattern'],
+                ['copy_file', 'Copy a file to another location']
+            ],
+            metadata: {
+                rowCount: 10,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -538,6 +634,13 @@ app.post('/api/generate', async (req, res) => {
         dataSource.password,
         dataSource.secure,
         dataSource.basePath
+      );
+    } else if (dataSource?.type === DataSourceType.LocalFS) {
+      parsedForGen = {};
+      dbConfForGen = createLocalFSGeneratorConfig(
+        dataSource.basePath,
+        dataSource.allowWrite,
+        dataSource.allowDelete
       );
     } else {
       // Use provided parsed data or re-parse if not available

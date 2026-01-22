@@ -16,6 +16,7 @@ export enum DataSourceType {
   GitHub = 'github',
   Jira = 'jira',
   Ftp = 'ftp',
+  LocalFS = 'localfs',
 }
 
 export interface DataSource {
@@ -232,6 +233,13 @@ export interface FtpGeneratorConfig extends BaseGeneratorConfig {
   basePath?: string;
 }
 
+export interface LocalFSGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.LocalFS;
+  basePath: string;
+  allowWrite?: boolean;
+  allowDelete?: boolean;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -240,6 +248,7 @@ export type GeneratorConfig =
   | GitHubGeneratorConfig
   | JiraGeneratorConfig
   | FtpGeneratorConfig
+  | LocalFSGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -313,5 +322,14 @@ export function createFtpGeneratorConfig(host: string, port: number, username: s
     password,
     secure: secure || false,
     basePath: basePath || '/'
+  };
+}
+
+export function createLocalFSGeneratorConfig(basePath: string, allowWrite?: boolean, allowDelete?: boolean): LocalFSGeneratorConfig {
+  return {
+    type: DataSourceType.LocalFS,
+    basePath: basePath || '/',
+    allowWrite: allowWrite ?? true,
+    allowDelete: allowDelete ?? false
   };
 }

@@ -65,6 +65,8 @@ export class MCPServerGenerator {
         //console.log('✅ Generated Jira tools:', tools.length);
       } else if (dbConfig?.type === DataSourceType.Ftp) {
         tools = this.generateToolsForFtp(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.LocalFS) {
+        tools = this.generateToolsForLocalFS(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -75,9 +77,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, and FTP)
+      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, and LocalFS)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -786,6 +788,201 @@ export class MCPServerGenerator {
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'stat' }),
       operation: 'SELECT'
     });
+
+    return tools;
+  }
+
+  private generateToolsForLocalFS(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { basePath, allowWrite, allowDelete } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.LocalFS,
+      basePath: basePath || '/',
+      allowWrite: allowWrite ?? true,
+      allowDelete: allowDelete ?? false
+    };
+
+    // List files and directories
+    tools.push({
+      server_id: serverId,
+      name: 'list_files',
+      description: 'List files and directories in a path',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to list (default: base path)', default: '.' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'list' }),
+      operation: 'SELECT'
+    });
+
+    // Read file
+    tools.push({
+      server_id: serverId,
+      name: 'read_file',
+      description: 'Read contents of a file (returns text or base64 for binary)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to the file to read' },
+          encoding: { type: 'string', description: 'Encoding (utf8, base64)', default: 'utf8' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'read' }),
+      operation: 'SELECT'
+    });
+
+    // Write file (only if allowed)
+    if (allowWrite !== false) {
+      tools.push({
+        server_id: serverId,
+        name: 'write_file',
+        description: 'Write content to a file',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Path to the file to write' },
+            content: { type: 'string', description: 'Content to write' },
+            encoding: { type: 'string', description: 'Encoding (utf8, base64)', default: 'utf8' }
+          },
+          required: ['path', 'content']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'write' }),
+        operation: 'INSERT'
+      });
+    }
+
+    // Delete file (only if allowed)
+    if (allowDelete) {
+      tools.push({
+        server_id: serverId,
+        name: 'delete_file',
+        description: 'Delete a file',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Path to the file to delete' }
+          },
+          required: ['path']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deleteFile' }),
+        operation: 'DELETE'
+      });
+    }
+
+    // Create directory (only if write allowed)
+    if (allowWrite !== false) {
+      tools.push({
+        server_id: serverId,
+        name: 'create_directory',
+        description: 'Create a new directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Path of the directory to create' }
+          },
+          required: ['path']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mkdir' }),
+        operation: 'INSERT'
+      });
+    }
+
+    // Delete directory (only if allowed)
+    if (allowDelete) {
+      tools.push({
+        server_id: serverId,
+        name: 'delete_directory',
+        description: 'Delete a directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Path of the directory to delete' },
+            recursive: { type: 'boolean', description: 'Delete recursively', default: false }
+          },
+          required: ['path']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'rmdir' }),
+        operation: 'DELETE'
+      });
+    }
+
+    // Rename file or directory (only if write allowed)
+    if (allowWrite !== false) {
+      tools.push({
+        server_id: serverId,
+        name: 'rename',
+        description: 'Rename a file or directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            oldPath: { type: 'string', description: 'Current path' },
+            newPath: { type: 'string', description: 'New path' }
+          },
+          required: ['oldPath', 'newPath']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'rename' }),
+        operation: 'UPDATE'
+      });
+    }
+
+    // Get file info
+    tools.push({
+      server_id: serverId,
+      name: 'get_file_info',
+      description: 'Get information about a file or directory',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to the file or directory' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'stat' }),
+      operation: 'SELECT'
+    });
+
+    // Search files
+    tools.push({
+      server_id: serverId,
+      name: 'search_files',
+      description: 'Search for files by name pattern',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to search in', default: '.' },
+          pattern: { type: 'string', description: 'Search pattern (e.g., *.txt, report*)' },
+          recursive: { type: 'boolean', description: 'Search recursively', default: true }
+        },
+        required: ['pattern']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'search' }),
+      operation: 'SELECT'
+    });
+
+    // Copy file (only if write allowed)
+    if (allowWrite !== false) {
+      tools.push({
+        server_id: serverId,
+        name: 'copy_file',
+        description: 'Copy a file to another location',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sourcePath: { type: 'string', description: 'Source file path' },
+            destPath: { type: 'string', description: 'Destination file path' }
+          },
+          required: ['sourcePath', 'destPath']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'copy' }),
+        operation: 'INSERT'
+      });
+    }
 
     return tools;
   }

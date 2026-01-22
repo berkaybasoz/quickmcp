@@ -11,7 +11,8 @@ const DataSourceType = {
     Rest: 'rest',
     GitHub: 'github',
     Jira: 'jira',
-    Ftp: 'ftp'
+    Ftp: 'ftp',
+    LocalFS: 'localfs'
 };
 
 // Initialize sidebar functionality

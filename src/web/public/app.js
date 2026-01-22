@@ -977,7 +977,7 @@ async function generateServer() {
     let selectedTablesConfig = getSelectedTablesAndTools();
 
     // For webpage, curl, GitHub, Jira, and FTP, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp) {
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp || currentDataSource?.type === DataSourceType.LocalFS) {
         selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, Jira, and FTP
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
@@ -2817,6 +2817,63 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For LocalFS, show info in preview and go to step 2
+    if (selectedType === DataSourceType.LocalFS) {
+        const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
+        const localfsAllowWrite = document.getElementById('localfsAllowWrite')?.value === 'true';
+        const localfsAllowDelete = document.getElementById('localfsAllowDelete')?.value === 'true';
+
+        if (!localfsBasePath) {
+            showError('localfs-parse-error', 'Please enter a base path');
+            return;
+        }
+
+        // Store LocalFS config
+        currentDataSource = {
+            type: DataSourceType.LocalFS,
+            name: 'LocalFS',
+            basePath: localfsBasePath,
+            allowWrite: localfsAllowWrite,
+            allowDelete: localfsAllowDelete
+        };
+
+        // Calculate tool count based on permissions
+        let toolCount = 4; // list_files, read_file, get_file_info, search_files (always available)
+        if (localfsAllowWrite) toolCount += 4; // write_file, create_directory, rename, copy_file
+        if (localfsAllowDelete) toolCount += 2; // delete_file, delete_directory
+
+        currentParsedData = [{
+            tableName: 'localfs_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files and directories in a path'],
+                ['read_file', 'Read contents of a file'],
+                ['write_file', 'Write content to a file'],
+                ['delete_file', 'Delete a file'],
+                ['create_directory', 'Create a new directory'],
+                ['delete_directory', 'Delete a directory'],
+                ['rename', 'Rename a file or directory'],
+                ['get_file_info', 'Get information about a file'],
+                ['search_files', 'Search for files by name pattern'],
+                ['copy_file', 'Copy a file to another location']
+            ],
+            metadata: {
+                rowCount: toolCount,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📂 LocalFS config saved, showing preview info');
+
+        // Display LocalFS preview
+        displayLocalFSPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -2909,6 +2966,8 @@ async function handleNextToStep2() {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
                 displayFtpPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.LocalFS) {
+                displayLocalFSPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
             } else {
@@ -3081,6 +3140,9 @@ function updateWizardNavigation() {
             const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
             const ftpPassword = document.getElementById('ftpPassword')?.value?.trim();
             canProceed = !!ftpHost && !!ftpUsername && !!ftpPassword;
+        } else if (selectedType === DataSourceType.LocalFS) {
+            const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
+            canProceed = !!localfsBasePath;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3098,6 +3160,7 @@ function toggleDataSourceFields() {
     const githubSection = document.getElementById('github-section');
     const jiraSection = document.getElementById('jira-section');
     const ftpSection = document.getElementById('ftp-section');
+    const localfsSection = document.getElementById('localfs-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3108,6 +3171,7 @@ function toggleDataSourceFields() {
     githubSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
+    localfsSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3176,6 +3240,14 @@ function toggleDataSourceFields() {
         if (ftpPasswordInput && !ftpPasswordInput.dataset.listenerAttached) {
             ftpPasswordInput.addEventListener('input', updateWizardNavigation);
             ftpPasswordInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.LocalFS) {
+        localfsSection?.classList.remove('hidden');
+        // Add listener for LocalFS base path input
+        const localfsBasePathInput = document.getElementById('localfsBasePath');
+        if (localfsBasePathInput && !localfsBasePathInput.dataset.listenerAttached) {
+            localfsBasePathInput.addEventListener('input', updateWizardNavigation);
+            localfsBasePathInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -3734,6 +3806,87 @@ function displayFtpPreview(ftpConfig) {
     preview.innerHTML = html;
 }
 
+function displayLocalFSPreview(localfsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { basePath, allowWrite, allowDelete } = localfsConfig || {};
+
+    const tools = [
+        { name: 'list_files', desc: 'List files and directories', enabled: true },
+        { name: 'read_file', desc: 'Read contents of a file', enabled: true },
+        { name: 'write_file', desc: 'Write content to a file', enabled: allowWrite !== false },
+        { name: 'delete_file', desc: 'Delete a file', enabled: allowDelete },
+        { name: 'create_directory', desc: 'Create a new directory', enabled: allowWrite !== false },
+        { name: 'delete_directory', desc: 'Delete a directory', enabled: allowDelete },
+        { name: 'rename', desc: 'Rename a file or directory', enabled: allowWrite !== false },
+        { name: 'get_file_info', desc: 'Get file information', enabled: true },
+        { name: 'search_files', desc: 'Search for files by pattern', enabled: true },
+        { name: 'copy_file', desc: 'Copy a file', enabled: allowWrite !== false }
+    ].filter(t => t.enabled);
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-violet-500 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-hard-drive text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Local Filesystem Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to access local files and directories.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div class="col-span-2">
+                                    <span class="text-slate-500">Base Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${basePath || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Write Access:</span>
+                                    <span class="ml-2 font-mono ${allowWrite !== false ? 'text-green-600' : 'text-red-600'}">${allowWrite !== false ? 'Enabled' : 'Disabled'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Delete Access:</span>
+                                    <span class="ml-2 font-mono ${allowDelete ? 'text-red-600' : 'text-slate-600'}">${allowDelete ? 'Enabled' : 'Disabled'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-shield-alt mt-0.5 text-blue-500"></i>
+                                <span>Path traversal outside base path is blocked for security.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>All file paths will be relative to the base path.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
 function displayJiraPreview(jiraConfig) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
@@ -3816,3 +3969,123 @@ function displayJiraPreview(jiraConfig) {
 
     preview.innerHTML = html;
 }
+
+// Directory Picker functionality
+let directoryPickerCurrentPath = '~';
+
+function initDirectoryPicker() {
+    const browseBtn = document.getElementById('browseDirectoryBtn');
+    const modal = document.getElementById('directoryPickerModal');
+    const overlay = document.getElementById('directoryPickerOverlay');
+    const closeBtn = document.getElementById('closeDirectoryPicker');
+    const cancelBtn = document.getElementById('dirPickerCancel');
+    const selectBtn = document.getElementById('dirPickerSelect');
+    const homeBtn = document.getElementById('dirPickerHome');
+    const upBtn = document.getElementById('dirPickerUp');
+
+    if (!browseBtn || !modal) return;
+
+    // Open modal
+    browseBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        loadDirectories('~');
+    });
+
+    // Close modal
+    const closeModal = () => modal.classList.add('hidden');
+    overlay?.addEventListener('click', closeModal);
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+
+    // Home button
+    homeBtn?.addEventListener('click', () => loadDirectories('~'));
+
+    // Up button
+    upBtn?.addEventListener('click', () => {
+        const currentPathEl = document.getElementById('dirPickerCurrentPath');
+        if (currentPathEl) {
+            const parentPath = currentPathEl.dataset.parent;
+            if (parentPath) {
+                loadDirectories(parentPath);
+            }
+        }
+    });
+
+    // Select button
+    selectBtn?.addEventListener('click', () => {
+        const selectedEl = document.getElementById('dirPickerSelected');
+        const basePathInput = document.getElementById('localfsBasePath');
+        if (selectedEl && basePathInput && selectedEl.textContent !== '-') {
+            basePathInput.value = selectedEl.textContent;
+            basePathInput.dispatchEvent(new Event('input'));
+            closeModal();
+        }
+    });
+}
+
+async function loadDirectories(path) {
+    const listEl = document.getElementById('dirPickerList');
+    const currentPathEl = document.getElementById('dirPickerCurrentPath');
+    const selectedEl = document.getElementById('dirPickerSelected');
+    const upBtn = document.getElementById('dirPickerUp');
+
+    if (!listEl) return;
+
+    // Show loading
+    listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Loading...</p></div>';
+
+    try {
+        const response = await fetch('/api/directories?path=' + encodeURIComponent(path));
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to load directories');
+        }
+
+        // Update current path
+        if (currentPathEl) {
+            currentPathEl.textContent = result.currentPath;
+            currentPathEl.dataset.parent = result.parentPath || '';
+        }
+
+        // Update selected
+        if (selectedEl) {
+            selectedEl.textContent = result.currentPath;
+        }
+
+        // Enable/disable up button
+        if (upBtn) {
+            upBtn.disabled = !result.parentPath;
+            upBtn.classList.toggle('opacity-50', !result.parentPath);
+        }
+
+        // Render directories
+        if (result.directories.length === 0) {
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-folder-open text-2xl"></i><p class="mt-2">No subdirectories</p></div>';
+        } else {
+            listEl.innerHTML = result.directories.map(dir => {
+                const escapedPath = dir.path.replace(/'/g, "\\'");
+                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + dir.path + '" ondblclick="loadDirectories(\'' + escapedPath + '\')" onclick="selectDirectory(\'' + escapedPath + '\')">' +
+                    '<div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-200"><i class="fas fa-folder text-lg"></i></div>' +
+                    '<div class="flex-1 min-w-0"><div class="font-medium text-slate-900 truncate">' + dir.name + '</div><div class="text-xs text-slate-500 truncate">' + dir.path + '</div></div>' +
+                    '<i class="fas fa-chevron-right text-slate-400 group-hover:text-slate-600"></i></button>';
+            }).join('');
+        }
+
+        directoryPickerCurrentPath = result.currentPath;
+
+    } catch (error) {
+        console.error('Failed to load directories:', error);
+        listEl.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl"></i><p class="mt-2">' + error.message + '</p><button type="button" onclick="loadDirectories(\'~\')" class="mt-3 text-sm text-blue-600 hover:underline">Go to Home</button></div>';
+    }
+}
+
+function selectDirectory(path) {
+    const selectedEl = document.getElementById('dirPickerSelected');
+    if (selectedEl) {
+        selectedEl.textContent = path;
+    }
+}
+
+// Initialize directory picker when DOM is ready
+document.addEventListener('DOMContentLoaded', initDirectoryPicker);
