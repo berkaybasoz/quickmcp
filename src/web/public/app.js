@@ -81,6 +81,17 @@ function initializeManageServersPage() {
     
     // Apply the visual state
     applyRightPanelCollapsedState();
+
+    // Collapse panel when clicking outside
+    if (!panel.dataset.docClickAttached) {
+        document.addEventListener('click', (e) => {
+            if (panel.classList.contains('collapsed')) return;
+            if (panel.contains(e.target)) return;
+            try { localStorage.setItem('rightPanelCollapsed', 'true'); } catch {}
+            applyRightPanelCollapsedState();
+        });
+        panel.dataset.docClickAttached = 'true';
+    }
 }
 
 // Initialize the app
