@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -536,6 +536,58 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Email) {
+        const { emailImapHost, emailImapPort, emailSmtpHost, emailSmtpPort, emailUsername, emailPassword, emailSecure } = req.body as any;
+
+        if (!emailImapHost || !emailSmtpHost || !emailUsername || !emailPassword) {
+            throw new Error('Missing email configuration (IMAP host, SMTP host, username, or password)');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Email,
+            name: 'Email',
+            imapHost: emailImapHost,
+            imapPort: parseInt(emailImapPort) || 993,
+            smtpHost: emailSmtpHost,
+            smtpPort: parseInt(emailSmtpPort) || 587,
+            username: emailUsername,
+            password: emailPassword,
+            secure: emailSecure === 'true' || emailSecure === true
+        };
+
+        // For Email, tools are predefined
+        const parsedData = [{
+            tableName: 'email_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_folders', 'List all email folders/mailboxes'],
+                ['list_emails', 'List emails in a folder'],
+                ['read_email', 'Read a specific email by ID'],
+                ['search_emails', 'Search emails by criteria'],
+                ['send_email', 'Send a new email'],
+                ['reply_email', 'Reply to an email'],
+                ['forward_email', 'Forward an email'],
+                ['move_email', 'Move email to another folder'],
+                ['delete_email', 'Delete an email'],
+                ['mark_read', 'Mark email as read/unread']
+            ],
+            metadata: {
+                rowCount: 10,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -641,6 +693,18 @@ app.post('/api/generate', async (req, res) => {
         dataSource.basePath,
         dataSource.allowWrite,
         dataSource.allowDelete
+      );
+    } else if (dataSource?.type === DataSourceType.Email) {
+      parsedForGen = {};
+      dbConfForGen = createEmailGeneratorConfig(
+        dataSource.mode || 'both',
+        dataSource.imapHost,
+        dataSource.imapPort,
+        dataSource.smtpHost,
+        dataSource.smtpPort,
+        dataSource.username,
+        dataSource.password,
+        dataSource.secure
       );
     } else {
       // Use provided parsed data or re-parse if not available

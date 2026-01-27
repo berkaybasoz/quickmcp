@@ -977,7 +977,7 @@ async function generateServer() {
     let selectedTablesConfig = getSelectedTablesAndTools();
 
     // For webpage, curl, GitHub, Jira, and FTP, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp || currentDataSource?.type === DataSourceType.LocalFS) {
+    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp || currentDataSource?.type === DataSourceType.LocalFS || currentDataSource?.type === DataSourceType.Email) {
         selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, Jira, and FTP
         //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
     } else if (selectedTablesConfig.length === 0) {
@@ -2874,6 +2874,90 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Email, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Email) {
+        const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
+        const emailImapHost = document.getElementById('emailImapHost')?.value?.trim();
+        const emailImapPort = document.getElementById('emailImapPort')?.value?.trim() || '993';
+        const emailSmtpHost = document.getElementById('emailSmtpHost')?.value?.trim();
+        const emailSmtpPort = document.getElementById('emailSmtpPort')?.value?.trim() || '587';
+        const emailUsername = document.getElementById('emailUsername')?.value?.trim();
+        const emailPassword = document.getElementById('emailPassword')?.value?.trim();
+        const emailSecure = document.getElementById('emailSecure')?.value === 'true';
+
+        // Validate based on mode
+        if (!emailUsername || !emailPassword) {
+            showError('email-parse-error', 'Please enter username and password');
+            return;
+        }
+        if ((emailMode === 'read' || emailMode === 'both') && !emailImapHost) {
+            showError('email-parse-error', 'Please enter IMAP host for reading emails');
+            return;
+        }
+        if ((emailMode === 'write' || emailMode === 'both') && !emailSmtpHost) {
+            showError('email-parse-error', 'Please enter SMTP host for sending emails');
+            return;
+        }
+
+        // Define tools based on mode
+        const readTools = [
+            ['list_folders', 'List all email folders (INBOX, Sent, etc.)'],
+            ['list_emails', 'List emails in a folder'],
+            ['read_email', 'Read a specific email by UID'],
+            ['search_emails', 'Search emails with criteria'],
+            ['move_email', 'Move email to another folder'],
+            ['delete_email', 'Delete an email'],
+            ['mark_read', 'Mark email as read/unread']
+        ];
+        const writeTools = [
+            ['send_email', 'Send a new email'],
+            ['reply_email', 'Reply to an email'],
+            ['forward_email', 'Forward an email']
+        ];
+
+        let toolRows = [];
+        if (emailMode === 'read') {
+            toolRows = readTools;
+        } else if (emailMode === 'write') {
+            toolRows = writeTools;
+        } else {
+            toolRows = [...readTools, ...writeTools];
+        }
+
+        // Store Email config
+        currentDataSource = {
+            type: DataSourceType.Email,
+            name: 'Email',
+            mode: emailMode,
+            imapHost: emailMode !== 'write' ? emailImapHost : null,
+            imapPort: emailMode !== 'write' ? parseInt(emailImapPort) : null,
+            smtpHost: emailMode !== 'read' ? emailSmtpHost : null,
+            smtpPort: emailMode !== 'read' ? parseInt(emailSmtpPort) : null,
+            username: emailUsername,
+            password: emailPassword,
+            secure: emailSecure
+        };
+        currentParsedData = [{
+            tableName: 'email_tools',
+            headers: ['tool', 'description'],
+            rows: toolRows,
+            metadata: {
+                rowCount: toolRows.length,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📧 Email config saved, showing preview info, mode:', emailMode);
+
+        // Display Email preview
+        displayEmailPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3143,6 +3227,23 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.LocalFS) {
             const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
             canProceed = !!localfsBasePath;
+        } else if (selectedType === DataSourceType.Email) {
+            const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
+            const emailImapHost = document.getElementById('emailImapHost')?.value?.trim();
+            const emailSmtpHost = document.getElementById('emailSmtpHost')?.value?.trim();
+            const emailUsername = document.getElementById('emailUsername')?.value?.trim();
+            const emailPassword = document.getElementById('emailPassword')?.value?.trim();
+
+            const hasCredentials = !!emailUsername && !!emailPassword;
+
+            if (emailMode === 'read') {
+                canProceed = hasCredentials && !!emailImapHost;
+            } else if (emailMode === 'write') {
+                canProceed = hasCredentials && !!emailSmtpHost;
+            } else {
+                // both
+                canProceed = hasCredentials && !!emailImapHost && !!emailSmtpHost;
+            }
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3161,6 +3262,7 @@ function toggleDataSourceFields() {
     const jiraSection = document.getElementById('jira-section');
     const ftpSection = document.getElementById('ftp-section');
     const localfsSection = document.getElementById('localfs-section');
+    const emailSection = document.getElementById('email-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3172,6 +3274,7 @@ function toggleDataSourceFields() {
     jiraSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
     localfsSection?.classList.add('hidden');
+    emailSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3249,9 +3352,74 @@ function toggleDataSourceFields() {
             localfsBasePathInput.addEventListener('input', updateWizardNavigation);
             localfsBasePathInput.dataset.listenerAttached = 'true';
         }
+    } else if (selectedType === DataSourceType.Email) {
+        emailSection?.classList.remove('hidden');
+        // Add listeners for Email mode radios
+        document.querySelectorAll('input[name="emailMode"]').forEach(radio => {
+            if (!radio.dataset.listenerAttached) {
+                radio.addEventListener('change', handleEmailModeChange);
+                radio.dataset.listenerAttached = 'true';
+            }
+        });
+        // Add listeners for Email inputs
+        const emailImapHostInput = document.getElementById('emailImapHost');
+        const emailSmtpHostInput = document.getElementById('emailSmtpHost');
+        const emailUsernameInput = document.getElementById('emailUsername');
+        const emailPasswordInput = document.getElementById('emailPassword');
+        if (emailImapHostInput && !emailImapHostInput.dataset.listenerAttached) {
+            emailImapHostInput.addEventListener('input', updateWizardNavigation);
+            emailImapHostInput.dataset.listenerAttached = 'true';
+        }
+        if (emailSmtpHostInput && !emailSmtpHostInput.dataset.listenerAttached) {
+            emailSmtpHostInput.addEventListener('input', updateWizardNavigation);
+            emailSmtpHostInput.dataset.listenerAttached = 'true';
+        }
+        if (emailUsernameInput && !emailUsernameInput.dataset.listenerAttached) {
+            emailUsernameInput.addEventListener('input', updateWizardNavigation);
+            emailUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (emailPasswordInput && !emailPasswordInput.dataset.listenerAttached) {
+            emailPasswordInput.addEventListener('input', updateWizardNavigation);
+            emailPasswordInput.dataset.listenerAttached = 'true';
+        }
+        // Initialize email mode UI
+        handleEmailModeChange();
     }
 
     // Update wizard navigation state
+    updateWizardNavigation();
+}
+
+// Handle email operation mode change
+function handleEmailModeChange() {
+    const mode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
+    const imapSection = document.getElementById('email-imap-section');
+    const smtpSection = document.getElementById('email-smtp-section');
+    const toolsCount = document.getElementById('email-tools-count');
+    const toolsList = document.getElementById('email-tools-list');
+
+    const readTools = ['list_folders', 'list_emails', 'read_email', 'search_emails', 'move_email', 'delete_email', 'mark_read'];
+    const writeTools = ['send_email', 'reply_email', 'forward_email'];
+
+    if (mode === 'read') {
+        imapSection?.classList.remove('hidden');
+        smtpSection?.classList.add('hidden');
+        if (toolsCount) toolsCount.textContent = `${readTools.length} tools`;
+        if (toolsList) toolsList.textContent = readTools.join(', ');
+    } else if (mode === 'write') {
+        imapSection?.classList.add('hidden');
+        smtpSection?.classList.remove('hidden');
+        if (toolsCount) toolsCount.textContent = `${writeTools.length} tools`;
+        if (toolsList) toolsList.textContent = writeTools.join(', ');
+    } else {
+        // both
+        imapSection?.classList.remove('hidden');
+        smtpSection?.classList.remove('hidden');
+        const allTools = [...readTools, ...writeTools];
+        if (toolsCount) toolsCount.textContent = `${allTools.length} tools`;
+        if (toolsList) toolsList.textContent = allTools.join(', ');
+    }
+
     updateWizardNavigation();
 }
 
@@ -3876,6 +4044,131 @@ function displayLocalFSPreview(localfsConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
                                 <span>All file paths will be relative to the base path.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayEmailPreview(emailConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { mode, imapHost, imapPort, smtpHost, smtpPort, username, secure } = emailConfig || {};
+
+    const readTools = [
+        { name: 'list_folders', desc: 'List all email folders (INBOX, Sent, etc.)' },
+        { name: 'list_emails', desc: 'List emails in a folder' },
+        { name: 'read_email', desc: 'Read a specific email by UID' },
+        { name: 'search_emails', desc: 'Search emails with criteria' },
+        { name: 'move_email', desc: 'Move email to another folder' },
+        { name: 'delete_email', desc: 'Delete an email' },
+        { name: 'mark_read', desc: 'Mark email as read/unread' }
+    ];
+    const writeTools = [
+        { name: 'send_email', desc: 'Send a new email' },
+        { name: 'reply_email', desc: 'Reply to an email' },
+        { name: 'forward_email', desc: 'Forward an email' }
+    ];
+
+    let tools = [];
+    let modeLabel = 'Read & Send';
+    let modeIcon = 'fa-envelope';
+    if (mode === 'read') {
+        tools = readTools;
+        modeLabel = 'Read Only (IMAP)';
+        modeIcon = 'fa-inbox';
+    } else if (mode === 'write') {
+        tools = writeTools;
+        modeLabel = 'Send Only (SMTP)';
+        modeIcon = 'fa-paper-plane';
+    } else {
+        tools = [...readTools, ...writeTools];
+    }
+
+    const showImap = mode !== 'write';
+    const showSmtp = mode !== 'read';
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-rose-500 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fas ${modeIcon} text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Email Configuration - ${modeLabel}</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to ${mode === 'read' ? 'read emails' : mode === 'write' ? 'send emails' : 'read and send emails'}.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                ${showImap ? `
+                                <div>
+                                    <span class="text-slate-500">IMAP Server:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${imapHost || 'Not set'}:${imapPort || 993}</span>
+                                </div>
+                                ` : ''}
+                                ${showSmtp ? `
+                                <div>
+                                    <span class="text-slate-500">SMTP Server:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${smtpHost || 'Not set'}:${smtpPort || 587}</span>
+                                </div>
+                                ` : ''}
+                                <div>
+                                    <span class="text-slate-500">Username:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${username || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Secure:</span>
+                                    <span class="ml-2 font-mono ${secure !== false ? 'text-green-600' : 'text-yellow-600'}">${secure !== false ? 'TLS/SSL Enabled' : 'Plain'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            ${showImap && showSmtp ? `
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>IMAP is used for reading emails, SMTP for sending.</span>
+                            </div>
+                            ` : showImap ? `
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-inbox mt-0.5 text-blue-500"></i>
+                                <span>Using IMAP for reading emails only.</span>
+                            </div>
+                            ` : `
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-paper-plane mt-0.5 text-green-500"></i>
+                                <span>Using SMTP for sending emails only.</span>
+                            </div>
+                            `}
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-shield-alt mt-0.5 text-blue-500"></i>
+                                <span>Credentials are stored securely in the server configuration.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>For Gmail, make sure to use an App Password.</span>
                             </div>
                         </div>
                     </div>

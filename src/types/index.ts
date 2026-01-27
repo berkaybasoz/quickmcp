@@ -17,6 +17,7 @@ export enum DataSourceType {
   Jira = 'jira',
   Ftp = 'ftp',
   LocalFS = 'localfs',
+  Email = 'email',
 }
 
 export interface DataSource {
@@ -240,6 +241,18 @@ export interface LocalFSGeneratorConfig extends BaseGeneratorConfig {
   allowDelete?: boolean;
 }
 
+export interface EmailGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Email;
+  mode: 'read' | 'write' | 'both';
+  imapHost?: string;
+  imapPort?: number;
+  smtpHost?: string;
+  smtpPort?: number;
+  username: string;
+  password: string;
+  secure?: boolean;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -249,6 +262,7 @@ export type GeneratorConfig =
   | JiraGeneratorConfig
   | FtpGeneratorConfig
   | LocalFSGeneratorConfig
+  | EmailGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -331,5 +345,28 @@ export function createLocalFSGeneratorConfig(basePath: string, allowWrite?: bool
     basePath: basePath || '/',
     allowWrite: allowWrite ?? true,
     allowDelete: allowDelete ?? false
+  };
+}
+
+export function createEmailGeneratorConfig(
+  mode: 'read' | 'write' | 'both',
+  imapHost: string | undefined,
+  imapPort: number | undefined,
+  smtpHost: string | undefined,
+  smtpPort: number | undefined,
+  username: string,
+  password: string,
+  secure?: boolean
+): EmailGeneratorConfig {
+  return {
+    type: DataSourceType.Email,
+    mode,
+    imapHost: mode !== 'write' ? imapHost : undefined,
+    imapPort: mode !== 'write' ? (imapPort || 993) : undefined,
+    smtpHost: mode !== 'read' ? smtpHost : undefined,
+    smtpPort: mode !== 'read' ? (smtpPort || 587) : undefined,
+    username,
+    password,
+    secure: secure ?? true
   };
 }

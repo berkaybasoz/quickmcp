@@ -67,6 +67,10 @@ export class DynamicMCPExecutor {
         return await this.executeLocalFSCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Email) {
+        return await this.executeEmailCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -1199,6 +1203,344 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `LocalFS error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{
+          error: error instanceof Error ? error.message : String(error)
+        }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private async executeEmailCall(queryConfig: any, args: any): Promise<any> {
+    const { imapHost, imapPort, smtpHost, smtpPort, username, password, secure, operation } = queryConfig;
+
+    console.error(`📧 Email operation: ${operation}`);
+
+    try {
+      let result: any;
+
+      // IMAP operations (reading emails)
+      if (['listFolders', 'listEmails', 'readEmail', 'searchEmails', 'moveEmail', 'deleteEmail', 'markRead'].includes(operation)) {
+        const { ImapFlow } = await import('imapflow');
+
+        const client = new ImapFlow({
+          host: imapHost,
+          port: imapPort || 993,
+          secure: secure ?? true,
+          auth: {
+            user: username,
+            pass: password
+          },
+          logger: false
+        });
+
+        await client.connect();
+
+        try {
+          switch (operation) {
+            case 'listFolders': {
+              const folders = await client.list();
+              result = folders.map((f: any) => ({
+                name: f.name,
+                path: f.path,
+                delimiter: f.delimiter,
+                flags: f.flags
+              }));
+              break;
+            }
+
+            case 'listEmails': {
+              const folder = args.folder || 'INBOX';
+              const limit = args.limit || 20;
+              const page = args.page || 1;
+
+              const lock = await client.getMailboxLock(folder);
+              try {
+                const messages: any[] = [];
+                const mailbox = client.mailbox;
+                const total = (mailbox && typeof mailbox === 'object' && 'exists' in mailbox) ? mailbox.exists : 0;
+                const start = Math.max(1, total - (page * limit) + 1);
+                const end = Math.max(1, total - ((page - 1) * limit));
+
+                if (total > 0) {
+                  for await (const message of client.fetch(`${start}:${end}`, { envelope: true, flags: true, uid: true })) {
+                    messages.push({
+                      uid: message.uid,
+                      seq: message.seq,
+                      from: message.envelope?.from?.[0]?.address,
+                      to: message.envelope?.to?.map((t: any) => t.address),
+                      subject: message.envelope?.subject,
+                      date: message.envelope?.date,
+                      flags: Array.from(message.flags || []),
+                      seen: message.flags?.has('\\Seen')
+                    });
+                  }
+                }
+
+                result = {
+                  folder,
+                  total,
+                  page,
+                  limit,
+                  messages: messages.reverse()
+                };
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+
+            case 'readEmail': {
+              const folder = args.folder || 'INBOX';
+              const uid = args.uid;
+
+              const lock = await client.getMailboxLock(folder);
+              try {
+                const message = await client.fetchOne(uid.toString(), { source: true, envelope: true, flags: true, uid: true }, { uid: true });
+
+                if (!message) {
+                  throw new Error(`Email with UID ${uid} not found`);
+                }
+
+                const { simpleParser } = await import('mailparser');
+                const parsed = await simpleParser(message.source);
+
+                result = [{
+                  uid: message.uid,
+                  from: parsed.from?.text,
+                  to: parsed.to?.text,
+                  cc: parsed.cc?.text,
+                  subject: parsed.subject,
+                  date: parsed.date?.toISOString(),
+                  text: parsed.text,
+                  html: parsed.html,
+                  attachments: parsed.attachments?.map((a: any) => ({
+                    filename: a.filename,
+                    contentType: a.contentType,
+                    size: a.size
+                  }))
+                }];
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+
+            case 'searchEmails': {
+              const folder = args.folder || 'INBOX';
+              const searchCriteria: any = {};
+
+              if (args.from) searchCriteria.from = args.from;
+              if (args.to) searchCriteria.to = args.to;
+              if (args.subject) searchCriteria.subject = args.subject;
+              if (args.since) searchCriteria.since = new Date(args.since);
+              if (args.before) searchCriteria.before = new Date(args.before);
+              if (args.unseen) searchCriteria.seen = false;
+
+              const lock = await client.getMailboxLock(folder);
+              try {
+                const searchResult = await client.search(searchCriteria, { uid: true });
+                const uids = Array.isArray(searchResult) ? searchResult : [];
+
+                const messages: any[] = [];
+                if (uids.length > 0) {
+                  const uidList = uids.slice(0, 50).join(',');
+                  for await (const message of client.fetch(uidList, { envelope: true, flags: true, uid: true }, { uid: true })) {
+                    messages.push({
+                      uid: message.uid,
+                      from: message.envelope?.from?.[0]?.address,
+                      subject: message.envelope?.subject,
+                      date: message.envelope?.date,
+                      seen: message.flags?.has('\\Seen')
+                    });
+                  }
+                }
+
+                result = {
+                  folder,
+                  totalMatches: uids.length,
+                  messages
+                };
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+
+            case 'moveEmail': {
+              const sourceFolder = args.sourceFolder || 'INBOX';
+              const uid = args.uid;
+              const destFolder = args.destFolder;
+
+              const lock = await client.getMailboxLock(sourceFolder);
+              try {
+                await client.messageMove(uid.toString(), destFolder, { uid: true });
+                result = [{
+                  success: true,
+                  message: `Email moved to ${destFolder}`
+                }];
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+
+            case 'deleteEmail': {
+              const folder = args.folder || 'INBOX';
+              const uid = args.uid;
+
+              const lock = await client.getMailboxLock(folder);
+              try {
+                await client.messageDelete(uid.toString(), { uid: true });
+                result = [{
+                  success: true,
+                  message: 'Email deleted'
+                }];
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+
+            case 'markRead': {
+              const folder = args.folder || 'INBOX';
+              const uid = args.uid;
+              const read = args.read !== false;
+
+              const lock = await client.getMailboxLock(folder);
+              try {
+                if (read) {
+                  await client.messageFlagsAdd(uid.toString(), ['\\Seen'], { uid: true });
+                } else {
+                  await client.messageFlagsRemove(uid.toString(), ['\\Seen'], { uid: true });
+                }
+                result = [{
+                  success: true,
+                  message: `Email marked as ${read ? 'read' : 'unread'}`
+                }];
+              } finally {
+                lock.release();
+              }
+              break;
+            }
+          }
+        } finally {
+          await client.logout();
+        }
+      }
+
+      // SMTP operations (sending emails)
+      if (['sendEmail', 'replyEmail', 'forwardEmail'].includes(operation)) {
+        const nodemailer = await import('nodemailer');
+
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort || 587,
+          secure: (smtpPort || 587) === 465,
+          auth: {
+            user: username,
+            pass: password
+          }
+        });
+
+        switch (operation) {
+          case 'sendEmail': {
+            const info = await transporter.sendMail({
+              from: username,
+              to: args.to,
+              cc: args.cc,
+              bcc: args.bcc,
+              subject: args.subject,
+              text: args.body,
+              html: args.html
+            });
+
+            result = [{
+              success: true,
+              messageId: info.messageId,
+              message: 'Email sent successfully'
+            }];
+            break;
+          }
+
+          case 'replyEmail':
+          case 'forwardEmail': {
+            // For reply/forward, we first need to fetch the original email
+            const { ImapFlow } = await import('imapflow');
+            const imapClient = new ImapFlow({
+              host: imapHost,
+              port: imapPort || 993,
+              secure: secure ?? true,
+              auth: { user: username, pass: password },
+              logger: false
+            });
+
+            await imapClient.connect();
+
+            try {
+              const folder = args.folder || 'INBOX';
+              const lock = await imapClient.getMailboxLock(folder);
+
+              try {
+                const originalMsg = await imapClient.fetchOne(args.uid.toString(), { source: true, envelope: true }, { uid: true });
+                if (!originalMsg) throw new Error('Original email not found');
+
+                const { simpleParser } = await import('mailparser');
+                const parsed = await simpleParser(originalMsg.source);
+
+                let to: string;
+                let subject: string;
+                let body: string;
+
+                if (operation === 'replyEmail') {
+                  to = args.replyAll
+                    ? [parsed.from?.text, ...(parsed.to?.value || []).map((t: any) => t.address)].filter(Boolean).join(', ')
+                    : parsed.from?.text || '';
+                  subject = parsed.subject?.startsWith('Re:') ? parsed.subject : `Re: ${parsed.subject}`;
+                  body = `${args.body}\n\n--- Original Message ---\nFrom: ${parsed.from?.text}\nDate: ${parsed.date}\nSubject: ${parsed.subject}\n\n${parsed.text}`;
+                } else {
+                  to = args.to;
+                  subject = parsed.subject?.startsWith('Fwd:') ? parsed.subject : `Fwd: ${parsed.subject}`;
+                  body = `${args.body || ''}\n\n--- Forwarded Message ---\nFrom: ${parsed.from?.text}\nDate: ${parsed.date}\nSubject: ${parsed.subject}\n\n${parsed.text}`;
+                }
+
+                const info = await transporter.sendMail({
+                  from: username,
+                  to,
+                  subject,
+                  text: body,
+                  html: args.html
+                });
+
+                result = [{
+                  success: true,
+                  messageId: info.messageId,
+                  message: operation === 'replyEmail' ? 'Reply sent successfully' : 'Email forwarded successfully'
+                }];
+              } finally {
+                lock.release();
+              }
+            } finally {
+              await imapClient.logout();
+            }
+            break;
+          }
+        }
+      }
+
+      console.error(`✅ Email operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+
+    } catch (error) {
+      console.error(`❌ Email error:`, error);
+      return {
+        success: false,
+        error: `Email error: ${error instanceof Error ? error.message : String(error)}`,
         data: [{
           error: error instanceof Error ? error.message : String(error)
         }],

@@ -12,7 +12,8 @@ const DataSourceType = {
     GitHub: 'github',
     Jira: 'jira',
     Ftp: 'ftp',
-    LocalFS: 'localfs'
+    LocalFS: 'localfs',
+    Email: 'email'
 };
 
 // Initialize sidebar functionality

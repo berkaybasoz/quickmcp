@@ -44,3 +44,11 @@ sftp://select.datascope.refinitiv.com
 user: r9039747
 port: 22
 Şifre: Ca..raC..e2...!
+
+mail
+imap sunucu: imap.gmail.com 
+imap port: 993
+smtp sunucu: smtp.gmail.com
+smtp port: 587
+mail: archdrawcontact@gmail.com
+pwd: jxxl ufwl klup ckrk

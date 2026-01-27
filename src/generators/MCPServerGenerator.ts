@@ -67,6 +67,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForFtp(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.LocalFS) {
         tools = this.generateToolsForLocalFS(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Email) {
+        tools = this.generateToolsForEmail(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -77,9 +79,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, and LocalFS)
+      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, LocalFS, and Email)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS || dbConfig?.type === DataSourceType.Email)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -980,6 +982,220 @@ export class MCPServerGenerator {
           required: ['sourcePath', 'destPath']
         },
         sqlQuery: JSON.stringify({ ...baseConfig, operation: 'copy' }),
+        operation: 'INSERT'
+      });
+    }
+
+    return tools;
+  }
+
+  private generateToolsForEmail(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { mode, imapHost, imapPort, smtpHost, smtpPort, username, password, secure } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    const emailMode = mode || 'both';
+    const canRead = emailMode === 'read' || emailMode === 'both';
+    const canWrite = emailMode === 'write' || emailMode === 'both';
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.Email,
+      mode: emailMode,
+      imapHost: canRead ? imapHost : undefined,
+      imapPort: canRead ? (imapPort || 993) : undefined,
+      smtpHost: canWrite ? smtpHost : undefined,
+      smtpPort: canWrite ? (smtpPort || 587) : undefined,
+      username,
+      password,
+      secure: secure ?? true
+    };
+
+    // === READ TOOLS (IMAP) ===
+    if (canRead) {
+      // List folders
+      tools.push({
+        server_id: serverId,
+        name: 'list_folders',
+        description: 'List all email folders/mailboxes',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listFolders' }),
+        operation: 'SELECT'
+      });
+
+      // List emails
+      tools.push({
+        server_id: serverId,
+        name: 'list_emails',
+        description: 'List emails in a folder',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name (default: INBOX)', default: 'INBOX' },
+            limit: { type: 'number', description: 'Maximum number of emails to return', default: 20 },
+            page: { type: 'number', description: 'Page number for pagination', default: 1 }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listEmails' }),
+        operation: 'SELECT'
+      });
+
+      // Read email
+      tools.push({
+        server_id: serverId,
+        name: 'read_email',
+        description: 'Read a specific email by UID',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            uid: { type: 'number', description: 'Email UID' }
+          },
+          required: ['uid']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'readEmail' }),
+        operation: 'SELECT'
+      });
+
+      // Search emails
+      tools.push({
+        server_id: serverId,
+        name: 'search_emails',
+        description: 'Search emails by criteria',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            from: { type: 'string', description: 'From address filter' },
+            to: { type: 'string', description: 'To address filter' },
+            subject: { type: 'string', description: 'Subject filter' },
+            since: { type: 'string', description: 'Emails since date (YYYY-MM-DD)' },
+            before: { type: 'string', description: 'Emails before date (YYYY-MM-DD)' },
+            unseen: { type: 'boolean', description: 'Only unread emails' }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'searchEmails' }),
+        operation: 'SELECT'
+      });
+
+      // Move email
+      tools.push({
+        server_id: serverId,
+        name: 'move_email',
+        description: 'Move email to another folder',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sourceFolder: { type: 'string', description: 'Source folder', default: 'INBOX' },
+            uid: { type: 'number', description: 'Email UID' },
+            destFolder: { type: 'string', description: 'Destination folder' }
+          },
+          required: ['uid', 'destFolder']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'moveEmail' }),
+        operation: 'UPDATE'
+      });
+
+      // Delete email
+      tools.push({
+        server_id: serverId,
+        name: 'delete_email',
+        description: 'Delete an email (move to Trash)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            uid: { type: 'number', description: 'Email UID' }
+          },
+          required: ['uid']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deleteEmail' }),
+        operation: 'DELETE'
+      });
+
+      // Mark read/unread
+      tools.push({
+        server_id: serverId,
+        name: 'mark_read',
+        description: 'Mark email as read or unread',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            uid: { type: 'number', description: 'Email UID' },
+            read: { type: 'boolean', description: 'Mark as read (true) or unread (false)', default: true }
+          },
+          required: ['uid']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'markRead' }),
+        operation: 'UPDATE'
+      });
+    }
+
+    // === WRITE TOOLS (SMTP) ===
+    if (canWrite) {
+      // Send email
+      tools.push({
+        server_id: serverId,
+        name: 'send_email',
+        description: 'Send a new email',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            to: { type: 'string', description: 'Recipient email address(es), comma-separated' },
+            cc: { type: 'string', description: 'CC recipients, comma-separated' },
+            bcc: { type: 'string', description: 'BCC recipients, comma-separated' },
+            subject: { type: 'string', description: 'Email subject' },
+            body: { type: 'string', description: 'Email body (plain text)' },
+            html: { type: 'string', description: 'Email body (HTML)' }
+          },
+          required: ['to', 'subject', 'body']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'sendEmail' }),
+        operation: 'INSERT'
+      });
+
+      // Reply email
+      tools.push({
+        server_id: serverId,
+        name: 'reply_email',
+        description: 'Reply to an email',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            uid: { type: 'number', description: 'Original email UID' },
+            body: { type: 'string', description: 'Reply body (plain text)' },
+            html: { type: 'string', description: 'Reply body (HTML)' },
+            replyAll: { type: 'boolean', description: 'Reply to all recipients', default: false }
+          },
+          required: ['uid', 'body']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'replyEmail' }),
+        operation: 'INSERT'
+      });
+
+      // Forward email
+      tools.push({
+        server_id: serverId,
+        name: 'forward_email',
+        description: 'Forward an email',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            folder: { type: 'string', description: 'Folder name', default: 'INBOX' },
+            uid: { type: 'number', description: 'Email UID to forward' },
+            to: { type: 'string', description: 'Forward to address(es), comma-separated' },
+            body: { type: 'string', description: 'Additional message' }
+          },
+          required: ['uid', 'to']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'forwardEmail' }),
         operation: 'INSERT'
       });
     }
