@@ -2888,6 +2888,72 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Gmail, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Gmail) {
+        const gmailMode = document.querySelector('input[name="gmailMode"]:checked')?.value || 'both';
+        const gmailUsername = document.getElementById('gmailUsername')?.value?.trim();
+        const gmailPassword = document.getElementById('gmailPassword')?.value?.trim();
+        const gmailSecure = document.getElementById('gmailSecure')?.value === 'true';
+
+        if (!gmailUsername || !gmailPassword) {
+            showError('gmail-parse-error', 'Please enter username and password');
+            return;
+        }
+
+        const readTools = [
+            ['list_folders', 'List all email folders (INBOX, Sent, etc.)'],
+            ['list_emails', 'List emails in a folder'],
+            ['read_email', 'Read a specific email by UID'],
+            ['search_emails', 'Search emails with criteria'],
+            ['move_email', 'Move email to another folder'],
+            ['delete_email', 'Delete an email'],
+            ['mark_read', 'Mark email as read/unread']
+        ];
+        const writeTools = [
+            ['send_email', 'Send a new email'],
+            ['reply_email', 'Reply to an email'],
+            ['forward_email', 'Forward an email']
+        ];
+
+        let toolRows = [];
+        if (gmailMode === 'read') {
+            toolRows = readTools;
+        } else if (gmailMode === 'write') {
+            toolRows = writeTools;
+        } else {
+            toolRows = [...readTools, ...writeTools];
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Email,
+            name: 'Gmail',
+            mode: gmailMode,
+            imapHost: gmailMode !== 'write' ? 'imap.gmail.com' : null,
+            imapPort: gmailMode !== 'write' ? 993 : null,
+            smtpHost: gmailMode !== 'read' ? 'smtp.gmail.com' : null,
+            smtpPort: gmailMode !== 'read' ? 587 : null,
+            username: gmailUsername,
+            password: gmailPassword,
+            secure: gmailSecure
+        };
+        currentParsedData = [{
+            tableName: 'email_tools',
+            headers: ['tool', 'description'],
+            rows: toolRows,
+            metadata: {
+                rowCount: toolRows.length,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📧 Gmail config saved, showing preview info, mode:', gmailMode);
+
+        displayEmailPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Email, show info in preview and go to step 3
     if (selectedType === DataSourceType.Email) {
         const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
@@ -3465,6 +3531,19 @@ function updateWizardNavigation() {
         } else {
             canProceed = hasCredentials && !!emailImapHost && !!emailSmtpHost;
         }
+    } else if (selectedType === DataSourceType.Gmail) {
+        const gmailMode = document.querySelector('input[name="gmailMode"]:checked')?.value || 'both';
+        const gmailUsername = document.getElementById('gmailUsername')?.value?.trim();
+        const gmailPassword = document.getElementById('gmailPassword')?.value?.trim();
+        const hasCredentials = !!gmailUsername && !!gmailPassword;
+
+        if (gmailMode === 'read') {
+            canProceed = hasCredentials;
+        } else if (gmailMode === 'write') {
+            canProceed = hasCredentials;
+        } else {
+            canProceed = hasCredentials;
+        }
     } else if (selectedType === DataSourceType.Slack) {
         const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
         canProceed = !!slackBotToken;
@@ -3502,6 +3581,7 @@ function toggleDataSourceFields() {
     const ftpSection = document.getElementById('ftp-section');
     const localfsSection = document.getElementById('localfs-section');
     const emailSection = document.getElementById('email-section');
+    const gmailSection = document.getElementById('gmail-section');
     const slackSection = document.getElementById('slack-section');
     const discordSection = document.getElementById('discord-section');
     const dockerSection = document.getElementById('docker-section');
@@ -3519,6 +3599,7 @@ function toggleDataSourceFields() {
     ftpSection?.classList.add('hidden');
     localfsSection?.classList.add('hidden');
     emailSection?.classList.add('hidden');
+    gmailSection?.classList.add('hidden');
     slackSection?.classList.add('hidden');
     discordSection?.classList.add('hidden');
     dockerSection?.classList.add('hidden');
@@ -3633,6 +3714,25 @@ function toggleDataSourceFields() {
         }
         // Initialize email mode UI
         handleEmailModeChange();
+    } else if (selectedType === DataSourceType.Gmail) {
+        gmailSection?.classList.remove('hidden');
+        document.querySelectorAll('input[name="gmailMode"]').forEach(radio => {
+            if (!radio.dataset.listenerAttached) {
+                radio.addEventListener('change', handleGmailModeChange);
+                radio.dataset.listenerAttached = 'true';
+            }
+        });
+        const gmailUsernameInput = document.getElementById('gmailUsername');
+        const gmailPasswordInput = document.getElementById('gmailPassword');
+        if (gmailUsernameInput && !gmailUsernameInput.dataset.listenerAttached) {
+            gmailUsernameInput.addEventListener('input', updateWizardNavigation);
+            gmailUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (gmailPasswordInput && !gmailPasswordInput.dataset.listenerAttached) {
+            gmailPasswordInput.addEventListener('input', updateWizardNavigation);
+            gmailPasswordInput.dataset.listenerAttached = 'true';
+        }
+        handleGmailModeChange();
     } else if (selectedType === DataSourceType.Slack) {
         slackSection?.classList.remove('hidden');
         // Add listener for Slack bot token input
@@ -3690,6 +3790,29 @@ function handleEmailModeChange() {
         // both
         imapSection?.classList.remove('hidden');
         smtpSection?.classList.remove('hidden');
+        const allTools = [...readTools, ...writeTools];
+        if (toolsCount) toolsCount.textContent = `${allTools.length} tools`;
+        if (toolsList) toolsList.textContent = allTools.join(', ');
+    }
+
+    updateWizardNavigation();
+}
+
+function handleGmailModeChange() {
+    const mode = document.querySelector('input[name="gmailMode"]:checked')?.value || 'both';
+    const toolsCount = document.getElementById('gmail-tools-count');
+    const toolsList = document.getElementById('gmail-tools-list');
+
+    const readTools = ['list_folders', 'list_emails', 'read_email', 'search_emails', 'move_email', 'delete_email', 'mark_read'];
+    const writeTools = ['send_email', 'reply_email', 'forward_email'];
+
+    if (mode === 'read') {
+        if (toolsCount) toolsCount.textContent = `${readTools.length} tools`;
+        if (toolsList) toolsList.textContent = readTools.join(', ');
+    } else if (mode === 'write') {
+        if (toolsCount) toolsCount.textContent = `${writeTools.length} tools`;
+        if (toolsList) toolsList.textContent = writeTools.join(', ');
+    } else {
         const allTools = [...readTools, ...writeTools];
         if (toolsCount) toolsCount.textContent = `${allTools.length} tools`;
         if (toolsList) toolsList.textContent = allTools.join(', ');
