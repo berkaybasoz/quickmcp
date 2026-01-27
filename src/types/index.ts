@@ -22,6 +22,7 @@ export enum DataSourceType {
   Discord = 'discord',
   Docker = 'docker',
   Kubernetes = 'kubernetes',
+  Elasticsearch = 'elasticsearch',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -40,6 +41,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Discord,
     DataSourceType.Docker,
     DataSourceType.Kubernetes,
+    DataSourceType.Elasticsearch,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -303,6 +305,15 @@ export interface KubernetesGeneratorConfig extends BaseGeneratorConfig {
   namespace?: string;
 }
 
+export interface ElasticsearchGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Elasticsearch;
+  baseUrl: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  index?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -317,6 +328,7 @@ export type GeneratorConfig =
   | DiscordGeneratorConfig
   | DockerGeneratorConfig
   | KubernetesGeneratorConfig
+  | ElasticsearchGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -468,5 +480,22 @@ export function createKubernetesGeneratorConfig(
     kubectlPath: kubectlPath || 'kubectl',
     kubeconfig,
     namespace
+  };
+}
+
+export function createElasticsearchGeneratorConfig(
+  baseUrl: string,
+  apiKey?: string,
+  username?: string,
+  password?: string,
+  index?: string
+): ElasticsearchGeneratorConfig {
+  return {
+    type: DataSourceType.Elasticsearch,
+    baseUrl,
+    apiKey,
+    username,
+    password,
+    index
   };
 }

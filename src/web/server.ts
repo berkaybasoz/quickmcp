@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -761,6 +761,51 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Elasticsearch) {
+        const { baseUrl, apiKey, username, password, index } = req.body as any;
+
+        if (!baseUrl) {
+            throw new Error('Missing Elasticsearch baseUrl');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Elasticsearch,
+            name: 'Elasticsearch',
+            baseUrl,
+            apiKey: apiKey || '',
+            username: username || '',
+            password: password || '',
+            index: index || ''
+        };
+
+        const parsedData = [{
+            tableName: 'elasticsearch_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_indices', 'List indices in the cluster'],
+                ['get_cluster_health', 'Get cluster health'],
+                ['search', 'Search documents in an index'],
+                ['get_document', 'Get a document by ID'],
+                ['index_document', 'Index (create/update) a document'],
+                ['delete_document', 'Delete a document by ID']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -904,6 +949,15 @@ app.post('/api/generate', async (req, res) => {
         dataSource.kubeconfig,
         dataSource.namespace
       );
+    } else if (dataSource?.type === DataSourceType.Elasticsearch) {
+      parsedForGen = {};
+      dbConfForGen = createElasticsearchGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.username,
+        dataSource.password,
+        dataSource.index
+      );
     } else {
       // Use provided parsed data or re-parse if not available
       const fullParsedData = parsedData || await parser.parse(dataSource);
@@ -975,11 +1029,13 @@ app.get('/api/servers', (req, res) => {
     const type = typeof rawType === 'string' ? rawType : 'unknown';
     const tools = gen.getToolsForServer(server.id);
     const resources = gen.getResourcesForServer(server.id);
+    const inferredType = inferTypeFromTools(tools);
+    const finalType = inferredType || type;
     return {
       id: server.id,
       name: server.name,
-      type,
-      description: `${server.name} - Virtual MCP Server (${type})`,
+      type: finalType,
+      description: `${server.name} - Virtual MCP Server (${finalType})`,
       version: "1.0.0",
       toolsCount: tools.length,
       resourcesCount: resources.length,
@@ -1034,13 +1090,16 @@ app.get('/api/servers/:id', (req, res) => {
 
   const tools = generator.getToolsForServer(server.id);
   const resources = generator.getResourcesForServer(server.id);
+  const rawType = (server.dbConfig as any)?.type || 'unknown';
+  const inferredType = inferTypeFromTools(tools);
+  const finalType = inferredType || (typeof rawType === 'string' ? rawType : 'unknown');
 
   res.json({
     success: true,
     data: {
       config: {
         name: server.name,
-        description: `${server.name} - Virtual MCP Server (${server.dbConfig.type})`,
+        description: `${server.name} - Virtual MCP Server (${finalType})`,
         version: "1.0.0",
         tools: tools.map(tool => ({
           name: tool.name,
@@ -1059,6 +1118,13 @@ app.get('/api/servers/:id', (req, res) => {
     }
   });
 });
+
+function inferTypeFromTools(tools: any[]): string | null {
+  const names = new Set((tools || []).map(t => t.name));
+  if (names.has('list_indices') && names.has('get_cluster_health')) return DataSourceType.Elasticsearch;
+  if (names.has('list_contexts') && names.has('list_pods')) return DataSourceType.Kubernetes;
+  return null;
+}
 
 // Get server data endpoint - provides sample data from database
 app.get('/api/servers/:id/data', async (req, res) => {

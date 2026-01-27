@@ -87,6 +87,10 @@ export class DynamicMCPExecutor {
         return await this.executeKubernetesCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Elasticsearch) {
+        return await this.executeElasticsearchCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -606,6 +610,109 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Kubernetes error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private async executeElasticsearchCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, username, password, index: defaultIndex, operation } = queryConfig;
+    if (!baseUrl) {
+      return {
+        success: false,
+        error: 'Elasticsearch baseUrl is missing',
+        data: [{ error: 'Elasticsearch baseUrl is missing' }],
+        rowCount: 1
+      };
+    }
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      headers['Authorization'] = `ApiKey ${apiKey}`;
+    } else if (username && password) {
+      const token = Buffer.from(`${username}:${password}`).toString('base64');
+      headers['Authorization'] = `Basic ${token}`;
+    }
+
+    const resolveIndex = (override?: string) => override || defaultIndex || '';
+
+    try {
+      let result: any = null;
+      switch (operation) {
+        case 'listIndices': {
+          const response = await fetch(`${baseUrl}/_cat/indices?format=json`, { headers });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Failed to list indices');
+          break;
+        }
+        case 'getClusterHealth': {
+          const response = await fetch(`${baseUrl}/_cluster/health`, { headers });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Failed to get cluster health');
+          break;
+        }
+        case 'search': {
+          const idx = resolveIndex(args.index);
+          if (!idx) throw new Error('index is required');
+          const size = Number.isFinite(Number(args.size)) ? Number(args.size) : 10;
+          const body = args.query ? { query: args.query, size } : { size };
+          const response = await fetch(`${baseUrl}/${encodeURIComponent(idx)}/_search`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body)
+          });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Search failed');
+          break;
+        }
+        case 'getDocument': {
+          const idx = resolveIndex(args.index);
+          if (!idx) throw new Error('index is required');
+          if (!args.id) throw new Error('id is required');
+          const response = await fetch(`${baseUrl}/${encodeURIComponent(idx)}/_doc/${encodeURIComponent(String(args.id))}`, { headers });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Get document failed');
+          break;
+        }
+        case 'indexDocument': {
+          const idx = resolveIndex(args.index);
+          if (!idx) throw new Error('index is required');
+          if (!args.document) throw new Error('document is required');
+          const refresh = args.refresh === false ? 'false' : 'true';
+          const idPart = args.id ? `/${encodeURIComponent(String(args.id))}` : '';
+          const response = await fetch(`${baseUrl}/${encodeURIComponent(idx)}/_doc${idPart}?refresh=${refresh}`, {
+            method: args.id ? 'PUT' : 'POST',
+            headers,
+            body: JSON.stringify(args.document)
+          });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Index document failed');
+          break;
+        }
+        case 'deleteDocument': {
+          const idx = resolveIndex(args.index);
+          if (!idx) throw new Error('index is required');
+          if (!args.id) throw new Error('id is required');
+          const response = await fetch(`${baseUrl}/${encodeURIComponent(idx)}/_doc/${encodeURIComponent(String(args.id))}`, {
+            method: 'DELETE',
+            headers
+          });
+          result = await response.json();
+          if (!response.ok) throw new Error(result?.error?.reason || 'Delete document failed');
+          break;
+        }
+        default:
+          throw new Error(`Unknown Elasticsearch operation: ${operation}`);
+      }
+
+      const dataArray = Array.isArray(result) ? result : [result];
+      return { success: true, data: dataArray, rowCount: dataArray.length };
+    } catch (error) {
+      console.error('❌ Elasticsearch error:', error);
+      return {
+        success: false,
+        error: `Elasticsearch error: ${error instanceof Error ? error.message : String(error)}`,
         data: [{ error: error instanceof Error ? error.message : String(error) }],
         rowCount: 1
       };

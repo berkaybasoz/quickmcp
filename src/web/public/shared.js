@@ -17,7 +17,8 @@ const DataSourceType = {
     Slack: 'slack',
     Discord: 'discord',
     Docker: 'docker',
-    Kubernetes: 'kubernetes'
+    Kubernetes: 'kubernetes',
+    Elasticsearch: 'elasticsearch'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -34,7 +35,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Slack,
         DataSourceType.Discord,
         DataSourceType.Docker,
-        DataSourceType.Kubernetes
+        DataSourceType.Kubernetes,
+        DataSourceType.Elasticsearch
     ];
     return noTableTypes.includes(type);
 }

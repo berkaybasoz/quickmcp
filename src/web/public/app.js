@@ -3114,6 +3114,47 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Elasticsearch, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Elasticsearch) {
+        const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
+        const index = document.getElementById('esIndex')?.value?.trim();
+        const apiKey = document.getElementById('esApiKey')?.value?.trim();
+        const username = document.getElementById('esUsername')?.value?.trim();
+        const password = document.getElementById('esPassword')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('elasticsearch-parse-error', 'Please enter Elasticsearch base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Elasticsearch,
+            name: 'Elasticsearch',
+            baseUrl,
+            index: index || '',
+            apiKey: apiKey || '',
+            username: username || '',
+            password: password || ''
+        };
+        currentParsedData = [{
+            tableName: 'elasticsearch_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_indices', 'List indices in the cluster'],
+                ['get_cluster_health', 'Get cluster health'],
+                ['search', 'Search documents in an index'],
+                ['get_document', 'Get a document by ID'],
+                ['index_document', 'Index (create/update) a document'],
+                ['delete_document', 'Delete a document by ID']
+            ],
+            metadata: { rowCount: 6, columnCount: 2, dataTypes: { tool: 'string', description: 'string' } }
+        }];
+
+        displayElasticsearchPreview(currentDataSource);
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3210,6 +3251,8 @@ async function handleNextToStep2() {
                 displayLocalFSPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Elasticsearch) {
+                displayElasticsearchPreview(currentDataSource);
             } else {
                 displayDataPreview(result.data.parsedData);
             }
@@ -3412,6 +3455,9 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Kubernetes) {
             // No required fields for Kubernetes preview
             canProceed = true;
+        } else if (selectedType === DataSourceType.Elasticsearch) {
+            const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
+            canProceed = !!baseUrl;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3435,6 +3481,7 @@ function toggleDataSourceFields() {
     const discordSection = document.getElementById('discord-section');
     const dockerSection = document.getElementById('docker-section');
     const kubernetesSection = document.getElementById('kubernetes-section');
+    const elasticsearchSection = document.getElementById('elasticsearch-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3451,6 +3498,7 @@ function toggleDataSourceFields() {
     discordSection?.classList.add('hidden');
     dockerSection?.classList.add('hidden');
     kubernetesSection?.classList.add('hidden');
+    elasticsearchSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3579,6 +3627,13 @@ function toggleDataSourceFields() {
         dockerSection?.classList.remove('hidden');
     } else if (selectedType === DataSourceType.Kubernetes) {
         kubernetesSection?.classList.remove('hidden');
+    } else if (selectedType === DataSourceType.Elasticsearch) {
+        elasticsearchSection?.classList.remove('hidden');
+        const esBaseUrlInput = document.getElementById('esBaseUrl');
+        if (esBaseUrlInput && !esBaseUrlInput.dataset.listenerAttached) {
+            esBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            esBaseUrlInput.dataset.listenerAttached = 'true';
+        }
     }
 
     // Update wizard navigation state
@@ -4681,6 +4736,79 @@ function displayKubernetesPreview(kubeConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Ensure kubectl can access the cluster.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayElasticsearchPreview(esConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = esConfig?.baseUrl || 'Not set';
+    const index = esConfig?.index || 'Not set';
+    const tools = [
+        { name: 'list_indices', desc: 'List indices in the cluster' },
+        { name: 'get_cluster_health', desc: 'Get cluster health' },
+        { name: 'search', desc: 'Search documents in an index' },
+        { name: 'get_document', desc: 'Get a document by ID' },
+        { name: 'index_document', desc: 'Index (create/update) a document' },
+        { name: 'delete_document', desc: 'Delete a document by ID' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/elasticsearch.png" alt="Elasticsearch" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Elasticsearch Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Elasticsearch.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Index:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${index}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Uses Elasticsearch REST API.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Provide API key or username/password if required.</span>
                             </div>
                         </div>
                     </div>

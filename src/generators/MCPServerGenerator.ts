@@ -77,6 +77,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForDocker(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Kubernetes) {
         tools = this.generateToolsForKubernetes(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Elasticsearch) {
+        tools = this.generateToolsForElasticsearch(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -1739,6 +1741,107 @@ export class MCPServerGenerator {
         required: ['name']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deletePod' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForElasticsearch(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, username, password, index } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.Elasticsearch,
+      baseUrl,
+      apiKey,
+      username,
+      password,
+      index
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_indices',
+      description: 'List indices in the cluster',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listIndices' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_cluster_health',
+      description: 'Get cluster health',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getClusterHealth' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search documents in an index',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          index: { type: 'string', description: 'Index name (overrides default)' },
+          query: { type: 'object', description: 'Elasticsearch query DSL' },
+          size: { type: 'number', description: 'Number of results', default: 10 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'search' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_document',
+      description: 'Get a document by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          index: { type: 'string', description: 'Index name (overrides default)' },
+          id: { type: 'string', description: 'Document ID' }
+        },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getDocument' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'index_document',
+      description: 'Index (create/update) a document',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          index: { type: 'string', description: 'Index name (overrides default)' },
+          id: { type: 'string', description: 'Optional document ID' },
+          document: { type: 'object', description: 'Document body' },
+          refresh: { type: 'boolean', description: 'Refresh index', default: true }
+        },
+        required: ['document']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'indexDocument' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_document',
+      description: 'Delete a document by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          index: { type: 'string', description: 'Index name (overrides default)' },
+          id: { type: 'string', description: 'Document ID' }
+        },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deleteDocument' }),
       operation: 'DELETE'
     });
 
