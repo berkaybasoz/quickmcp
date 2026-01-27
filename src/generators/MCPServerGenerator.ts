@@ -61,8 +61,6 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGitHub(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.X) {
         tools = this.generateToolsForX(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.X) {
-        tools = this.generateToolsForX(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);

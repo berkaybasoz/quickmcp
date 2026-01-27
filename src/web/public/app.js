@@ -2899,45 +2899,6 @@ async function handleNextToStep3() {
         return;
     }
 
-    // For X, show info in preview and go to step 3
-    if (selectedType === DataSourceType.X) {
-        const xToken = document.getElementById('xToken')?.value?.trim();
-        const xUsername = document.getElementById('xUsername')?.value?.trim();
-
-        if (!xToken) {
-            showError('x-parse-error', 'Please enter an X API token');
-            return;
-        }
-
-        currentDataSource = {
-            type: DataSourceType.X,
-            name: 'X',
-            token: xToken,
-            username: xUsername
-        };
-        currentParsedData = [{
-            tableName: 'x_tools',
-            headers: ['tool', 'description'],
-            rows: [
-                ['get_user_by_username', 'Get X user details by username'],
-                ['get_user', 'Get X user details by user ID'],
-                ['get_user_tweets', 'Get recent tweets from a user'],
-                ['search_recent_tweets', 'Search recent tweets by query'],
-                ['get_tweet', 'Get a tweet by ID'],
-                ['create_tweet', 'Create a new tweet']
-            ],
-            metadata: {
-                rowCount: 6,
-                columnCount: 2,
-                dataTypes: { tool: 'string', description: 'string' }
-            }
-        }];
-
-        displayXPreview(currentDataSource);
-        goToWizardStep(3);
-        return;
-    }
-
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3624,8 +3585,6 @@ async function handleNextToStep3() {
                 displayGitHubPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.X) {
                 displayXPreview(currentDataSource);
-            } else if (currentDataSource.type === DataSourceType.X) {
-                displayXPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -3809,9 +3768,6 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.X) {
         const xToken = document.getElementById('xToken')?.value?.trim();
         canProceed = !!xToken;
-    } else if (selectedType === DataSourceType.X) {
-        const xToken = document.getElementById('xToken')?.value?.trim();
-        canProceed = !!xToken;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -3895,7 +3851,6 @@ function toggleDataSourceFields() {
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
     const xSection = document.getElementById('x-section');
-    const xSection = document.getElementById('x-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -3916,7 +3871,6 @@ function toggleDataSourceFields() {
     webSection?.classList.add('hidden');
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
-    xSection?.classList.add('hidden');
     xSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
@@ -3962,13 +3916,6 @@ function toggleDataSourceFields() {
         if (githubTokenInput && !githubTokenInput.dataset.listenerAttached) {
             githubTokenInput.addEventListener('input', updateWizardNavigation);
             githubTokenInput.dataset.listenerAttached = 'true';
-        }
-    } else if (selectedType === DataSourceType.X) {
-        xSection?.classList.remove('hidden');
-        const xTokenInput = document.getElementById('xToken');
-        if (xTokenInput && !xTokenInput.dataset.listenerAttached) {
-            xTokenInput.addEventListener('input', updateWizardNavigation);
-            xTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.X) {
         xSection?.classList.remove('hidden');
