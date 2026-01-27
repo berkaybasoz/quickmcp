@@ -265,26 +265,8 @@ function setupEventListeners() {
     document.getElementById('back-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
 }
 
-async function deleteAllServers() {
-    const confirmDelete = confirm('Delete all MCP servers? This cannot be undone.');
-    if (!confirmDelete) return;
-
-    try {
-        const response = await fetch('/api/servers');
-        const result = await response.json();
-        const servers = Array.isArray(result.data) ? result.data : [];
-
-        for (const server of servers) {
-            await fetch(`/api/servers/${encodeURIComponent(server.id)}`, { method: 'DELETE' });
-        }
-
-        allServers = [];
-        displayServers([]);
-        updateServerSearchCount(0, 0);
-    } catch (error) {
-        console.error('Failed to delete all servers:', error);
-        alert('Failed to delete all servers. Please try again.');
-    }
+function deleteAllServers() {
+    showDeleteAllConfirmModal();
 }
 
 // Parse cURL command
@@ -1145,7 +1127,12 @@ function displayServers(servers) {
 
     // Build list view: clean, compact, zebra rows
     const headerHtml = `
-        <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border border-slate-200 rounded-t-xl text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+        <div class="flex items-center justify-end px-5 py-3 bg-slate-50 border border-slate-200 rounded-t-xl">
+            <button id="deleteAllServersBtn" class="px-3 py-1.5 rounded-lg border border-red-200 text-red-700 hover:border-red-400 hover:text-red-600 transition-colors text-xs font-medium">
+                Delete All
+            </button>
+        </div>
+        <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border-x border-b border-slate-200 text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
             <div class="col-span-4">Name</div>
             <div class="col-span-2">Type</div>
             <div class="col-span-1">Version</div>
@@ -1197,6 +1184,12 @@ function displayServers(servers) {
             <div class="divide-y divide-slate-200 md:divide-y-0">${rowsHtml}</div>
         </div>
     `;
+
+    const deleteAllBtn = document.getElementById('deleteAllServersBtn');
+    if (deleteAllBtn && !deleteAllBtn.dataset.listenerAttached) {
+        deleteAllBtn.addEventListener('click', deleteAllServers);
+        deleteAllBtn.dataset.listenerAttached = 'true';
+    }
 }
 
 function filterServers(servers, query, opts = {}) {
@@ -2253,6 +2246,102 @@ function showDeleteConfirmModal(serverId, serverName) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
+function showDeleteAllConfirmModal() {
+    const modalHtml = `
+        <div id="delete-all-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+                        <i class="fas fa-trash text-2xl text-red-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete All Servers</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        Are you sure you want to delete <strong>all MCP servers</strong>?
+                        <br><br>
+                        This action cannot be undone and will permanently remove all server files and configurations.
+                    </p>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeDeleteAllConfirmModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200">
+                            Cancel
+                        </button>
+                        <button onclick="confirmDeleteAllServers()" class="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all duration-200">
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteAllConfirmModal() {
+    const modal = document.getElementById('delete-all-confirm-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showDeleteAllLoadingModal() {
+    const modalHtml = `
+        <div id="delete-all-loading-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6 text-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Deleting Servers</h3>
+                    <p class="text-gray-600">Please wait while we remove all servers and their files...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteAllLoadingModal() {
+    const modal = document.getElementById('delete-all-loading-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function showDeleteAllSuccessModal() {
+    const modalHtml = `
+        <div id="delete-all-success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
+                        <i class="fas fa-check text-2xl text-green-600"></i>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">All Servers Deleted</h3>
+                    <p class="text-gray-600 text-center mb-6">
+                        All MCP servers have been permanently removed from your system.
+                    </p>
+                    
+                    <button onclick="closeDeleteAllSuccessModal()" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-all duration-200">
+                        <i class="fas fa-check mr-2"></i>
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeDeleteAllSuccessModal() {
+    const modal = document.getElementById('delete-all-success-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 function closeDeleteConfirmModal() {
     const modal = document.getElementById('delete-confirm-modal');
     if (modal) {
@@ -2294,6 +2383,33 @@ async function confirmDeleteServer(serverId) {
         closeDeleteLoadingModal();
         showDeleteErrorModal(error.message);
         console.error('Delete failed:', error);
+    }
+}
+
+async function confirmDeleteAllServers() {
+    closeDeleteAllConfirmModal();
+    showDeleteAllLoadingModal();
+
+    try {
+        const response = await fetch('/api/servers');
+        const result = await response.json();
+        const servers = Array.isArray(result.data) ? result.data : [];
+
+        for (const server of servers) {
+            await fetch(`/api/servers/${encodeURIComponent(server.id)}`, { method: 'DELETE' });
+        }
+
+        closeDeleteAllLoadingModal();
+        showDeleteAllSuccessModal();
+
+        allServers = [];
+        displayServers([]);
+        updateServerSearchCount(0, 0);
+        loadTestServers();
+    } catch (error) {
+        closeDeleteAllLoadingModal();
+        showDeleteErrorModal(error.message || 'Failed to delete all servers.');
+        console.error('Failed to delete all servers:', error);
     }
 }
 
