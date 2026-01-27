@@ -208,6 +208,9 @@ function setupEventListeners() {
         applyServerFilters();
     });
 
+    const deleteAllBtn = document.getElementById('deleteAllServersBtn');
+    if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllServers);
+
     // Collapsible left sidebar toggle
     const leftToggle = document.getElementById('sidebarCollapseBtn');
     if (leftToggle) {
@@ -260,6 +263,28 @@ function setupEventListeners() {
     document.getElementById('back-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
     document.getElementById('next-to-step-4')?.addEventListener('click', () => goToWizardStep(4));
     document.getElementById('back-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
+}
+
+async function deleteAllServers() {
+    const confirmDelete = confirm('Delete all MCP servers? This cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+        const response = await fetch('/api/servers');
+        const result = await response.json();
+        const servers = Array.isArray(result.data) ? result.data : [];
+
+        for (const server of servers) {
+            await fetch(`/api/servers/${encodeURIComponent(server.id)}`, { method: 'DELETE' });
+        }
+
+        allServers = [];
+        displayServers([]);
+        updateServerSearchCount(0, 0);
+    } catch (error) {
+        console.error('Failed to delete all servers:', error);
+        alert('Failed to delete all servers. Please try again.');
+    }
 }
 
 // Parse cURL command
