@@ -1,50 +1,52 @@
 import { test, expect } from '@playwright/test';
 
-const CURL_SERVER_NAME = process.env.CURL_SERVER_NAME;
-const CURL_COMMAND = process.env.CURL_COMMAND;
-
-test.describe('cURL template', () => {
+const JIRA_SERVER_NAME = process.env.JIRA_SERVER_NAME;
+const JIRA_URL = process.env.JIRA_URL;
+const JIRA_USER = process.env.JIRA_USER;
+const JIRA_TOKEN = process.env.JIRA_TEST_TOKEN;
+test.describe('Jira template', () => {
   test.beforeEach(async ({ request }) => {
-    if (!CURL_SERVER_NAME) return;
+    if (!JIRA_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(CURL_SERVER_NAME)}`);
+      await request.delete(`/api/servers/${encodeURIComponent(JIRA_SERVER_NAME)}`);
     } catch {
       // ignore if missing
     }
   });
 
   test.afterEach(async ({ request }) => {
-    if (!CURL_SERVER_NAME) return;
+    if (!JIRA_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(CURL_SERVER_NAME)}`);
+      //await request.delete(`/api/servers/${encodeURIComponent(JIRA_SERVER_NAME)}`);
     } catch {
       // ignore if cleanup fails
     }
   });
 
-  test('generate cURL server via UI', async ({ page }) => {
-    if (!CURL_SERVER_NAME || !CURL_COMMAND) {
-      throw new Error('Missing CURL_SERVER_NAME/CURL_COMMAND in .env.test');
+  test('generate Jira server via UI', async ({ page }) => {
+    if (!JIRA_TOKEN || !JIRA_SERVER_NAME || !JIRA_URL || !JIRA_USER) {
+      throw new Error('Missing JIRA_TEST_TOKEN/JIRA_SERVER_NAME/JIRA_URL/JIRA_USER in .env.test');
     }
 
     await page.goto('/');
 
-    await page.locator('input[name="dataSourceType"][value="curl"]').check({ force: true });
+    await page.locator('input[name="dataSourceType"][value="jira"]').check({ force: true });
 
     await page.locator('#next-to-step-2:not([disabled])').click();
     await expect(page.locator('#wizard-step-2')).toBeVisible();
-    await expect(page.locator('#curl-section')).toBeVisible();
+    await expect(page.locator('#jira-section')).toBeVisible();
 
-    await page.fill('#curlToolAlias', 'binance');
-    await page.locator('#curlCommand').fill(CURL_COMMAND);
+    await page.fill('#jiraHost', JIRA_URL);
+    await page.fill('#jiraEmail', JIRA_USER);
+    await page.fill('#jiraApiToken', JIRA_TOKEN);
 
     await page.locator('#next-to-step-3:not([disabled])').click();
     await expect(page.locator('#wizard-step-3')).toBeVisible();
 
     await page.locator('#next-to-step-4:not([disabled])').click();
 
-    await page.fill('#serverName', CURL_SERVER_NAME);
-    await page.fill('#serverDescription', 'cURL binance test');
+    await page.fill('#serverName', JIRA_SERVER_NAME);
+    await page.fill('#serverDescription', 'Jira softtech test');
 
     const generateBtn = page.locator('#generateBtn');
     await expect(generateBtn).toBeEnabled();
@@ -58,6 +60,6 @@ test.describe('cURL template', () => {
 
     const successModal = page.locator('#success-modal');
     await expect(successModal).toBeVisible();
-    await expect(page.locator('#success-message')).toContainText(CURL_SERVER_NAME);
+    await expect(page.locator('#success-message')).toContainText(JIRA_SERVER_NAME);
   });
 });

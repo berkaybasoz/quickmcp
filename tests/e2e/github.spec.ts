@@ -1,28 +1,30 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = 'GITHUB-BERKAY';
-
+const GITHUB_SERVER_NAME = process.env.GITHUB_SERVER_NAME;
+const GITHUB_TOKEN = process.env.GITHUB_TEST_TOKEN;
 test.describe('GitHub template', () => {
   test.beforeEach(async ({ request }) => {
+    if (!GITHUB_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      await request.delete(`/api/servers/${encodeURIComponent(GITHUB_SERVER_NAME)}`);
     } catch {
       // ignore if missing
     }
   });
 
   test.afterEach(async ({ request }) => {
+    if (!GITHUB_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      //await request.delete(`/api/servers/${encodeURIComponent(GITHUB_SERVER_NAME)}`);
     } catch {
       // ignore if cleanup fails
     }
   });
 
   test('generate GitHub server via UI', async ({ page }) => {
-    const token = process.env.GITHUB_TEST_TOKEN;
-    if (!token) {
-      throw new Error('Missing GITHUB_TEST_TOKEN env var');
+
+    if (!GITHUB_TOKEN || !GITHUB_SERVER_NAME) {
+      throw new Error('Missing GITHUB_TEST_TOKEN/GITHUB_SERVER_NAME env var');
     }
 
     await page.goto('/');
@@ -33,14 +35,14 @@ test.describe('GitHub template', () => {
     await expect(page.locator('#wizard-step-2')).toBeVisible();
     await expect(page.locator('#github-section')).toBeVisible();
 
-    await page.fill('#githubToken', token);
+    await page.fill('#githubToken', GITHUB_TOKEN);
 
     await page.locator('#next-to-step-3:not([disabled])').click();
     await expect(page.locator('#wizard-step-3')).toBeVisible();
 
     await page.locator('#next-to-step-4:not([disabled])').click();
 
-    await page.fill('#serverName', SERVER_NAME);
+    await page.fill('#serverName', GITHUB_SERVER_NAME);
     await page.fill('#serverDescription', 'GitHub token test');
 
     const generateBtn = page.locator('#generateBtn');
@@ -55,6 +57,6 @@ test.describe('GitHub template', () => {
 
     const successModal = page.locator('#success-modal');
     await expect(successModal).toBeVisible();
-    await expect(page.locator('#success-message')).toContainText(SERVER_NAME);
+    await expect(page.locator('#success-message')).toContainText(GITHUB_SERVER_NAME);
   });
 });

@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = 'WEBPAGE-DOLAB';
-const WEB_URL = 'https://dolab-html.vercel.app/index.html';
-const WEB_ALIAS = 'dolab';
+const SERVER_NAME = process.env.WEBPAGE_SERVER_NAME;
+const WEB_URL = process.env.WEBPAGE_URL;
+const WEB_ALIAS = process.env.WEBPAGE_ALIAS;
 
 test.describe('Webpage template', () => {
   test.beforeEach(async ({ request }) => {
+    if (!SERVER_NAME) return;
     try {
       await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
     } catch {
@@ -14,6 +15,7 @@ test.describe('Webpage template', () => {
   });
 
   test.afterEach(async ({ request }) => {
+    if (!SERVER_NAME) return;
     try {
       //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
     } catch {
@@ -22,6 +24,10 @@ test.describe('Webpage template', () => {
   });
 
   test('generate Webpage server via UI', async ({ page }) => {
+    if (!SERVER_NAME || !WEB_URL || !WEB_ALIAS) {
+      throw new Error('Missing WEBPAGE_SERVER_NAME/WEBPAGE_URL/WEBPAGE_ALIAS in .env.test');
+    }
+
     await page.goto('/');
 
     await page.locator('input[name="dataSourceType"][value="webpage"]').check({ force: true });

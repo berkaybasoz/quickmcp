@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = 'REST-PETSTORE';
-const SWAGGER_URL = 'https://petstore.swagger.io/v2/swagger.json';
+const SERVER_NAME = process.env.REST_SERVER_NAME;
+const SWAGGER_URL = process.env.REST_SWAGGER_URL;
 
 test.describe('REST template', () => {
   test.beforeEach(async ({ request }) => {
+    if (!SERVER_NAME) return;
     try {
       await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
     } catch {
@@ -13,6 +14,7 @@ test.describe('REST template', () => {
   });
 
   test.afterEach(async ({ request }) => {
+    if (!SERVER_NAME) return;
     try {
       //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
     } catch {
@@ -21,6 +23,10 @@ test.describe('REST template', () => {
   });
 
   test('generate REST server via UI', async ({ page }) => {
+    if (!SERVER_NAME || !SWAGGER_URL) {
+      throw new Error('Missing REST_SERVER_NAME/REST_SWAGGER_URL in .env.test');
+    }
+
     await page.goto('/');
 
     await page.locator('input[name="dataSourceType"][value="rest"]').check({ force: true });
