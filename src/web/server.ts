@@ -10,6 +10,7 @@ import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
 import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1020,6 +1021,12 @@ app.post('/api/generate', async (req, res) => {
         dataSource.token,
         dataSource.username
       );
+    } else if (dataSource?.type === DataSourceType.X) {
+      parsedForGen = {};
+      dbConfForGen = createXGeneratorConfig(
+        dataSource.token,
+        dataSource.username
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1272,6 +1279,8 @@ function inferTypeFromTools(tools: any[]): string | null {
   const names = new Set((tools || []).map(t => t.name));
   if (names.has('list_indices') && names.has('get_cluster_health')) return DataSourceType.Elasticsearch;
   if (names.has('list_contexts') && names.has('list_pods')) return DataSourceType.Kubernetes;
+  if (names.has('list_projects') && names.has('get_current_project')) return DataSourceType.OpenShift;
+  if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
   if (names.has('list_projects') && names.has('get_current_project')) return DataSourceType.OpenShift;
   if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
   return null;
