@@ -17,7 +17,7 @@ test.describe('Gmail template', () => {
   test.afterEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
     } catch {
       // ignore if cleanup fails
     }

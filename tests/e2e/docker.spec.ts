@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = process.env.FTP_SERVER_NAME;
-const FTP_HOST = process.env.FTP_HOST;
-const FTP_PORT = process.env.FTP_PORT;
-const FTP_USER = process.env.FTP_USER;
-const FTP_PWD = process.env.FTP_PWD;
+const SERVER_NAME = process.env.DOCKER_SERVER_NAME;
+const DOCKER_PATH = process.env.DOCKER_PATH || 'docker';
 
-test.describe('FTP template', () => {
+test.describe('Docker template', () => {
   test.beforeEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
@@ -25,23 +22,22 @@ test.describe('FTP template', () => {
     }
   });
 
-  test('generate FTP server via UI', async ({ page }) => {
-    if (!SERVER_NAME || !FTP_HOST || !FTP_PORT || !FTP_USER || !FTP_PWD) {
-      throw new Error('Missing FTP_* env vars in .env.test');
+  test('generate Docker server via UI', async ({ page }) => {
+    if (!SERVER_NAME) {
+      throw new Error('Missing DOCKER_SERVER_NAME in .env.test');
     }
 
     await page.goto('/');
 
-    await page.locator('input[name="dataSourceType"][value="ftp"]').check({ force: true });
+    await page.locator('input[name="dataSourceType"][value="docker"]').check({ force: true });
 
     await page.locator('#next-to-step-2:not([disabled])').click();
     await expect(page.locator('#wizard-step-2')).toBeVisible();
-    await expect(page.locator('#ftp-section')).toBeVisible();
+    await expect(page.locator('#docker-section')).toBeVisible();
 
-    await page.fill('#ftpHost', FTP_HOST);
-    await page.fill('#ftpPort', FTP_PORT);
-    await page.fill('#ftpUsername', FTP_USER);
-    await page.fill('#ftpPassword', FTP_PWD);
+    if (DOCKER_PATH && DOCKER_PATH !== 'docker') {
+      await page.fill('#dockerPath', DOCKER_PATH);
+    }
 
     await page.locator('#next-to-step-3:not([disabled])').click();
     await expect(page.locator('#wizard-step-3')).toBeVisible();
@@ -49,7 +45,7 @@ test.describe('FTP template', () => {
     await page.locator('#next-to-step-4:not([disabled])').click();
 
     await page.fill('#serverName', SERVER_NAME);
-    await page.fill('#serverDescription', 'SFTP test');
+    await page.fill('#serverDescription', 'Docker template test');
 
     const generateBtn = page.locator('#generateBtn');
     await expect(generateBtn).toBeEnabled();
