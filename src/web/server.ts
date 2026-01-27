@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -677,6 +677,48 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Docker) {
+        const { dockerPath } = req.body as any;
+
+        const dataSource = {
+            type: DataSourceType.Docker,
+            name: 'Docker',
+            dockerPath: dockerPath || 'docker'
+        };
+
+        const parsedData = [{
+            tableName: 'docker_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_images', 'List local Docker images'],
+                ['list_containers', 'List Docker containers (running and stopped)'],
+                ['get_container', 'Get detailed information about a container'],
+                ['start_container', 'Start a stopped container'],
+                ['stop_container', 'Stop a running container'],
+                ['restart_container', 'Restart a container'],
+                ['remove_container', 'Remove a container'],
+                ['remove_image', 'Remove a Docker image'],
+                ['pull_image', 'Pull a Docker image from registry'],
+                ['get_logs', 'Get recent logs from a container'],
+                ['exec_in_container', 'Execute a command inside a running container']
+            ],
+            metadata: {
+                rowCount: 11,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -807,6 +849,11 @@ app.post('/api/generate', async (req, res) => {
         dataSource.botToken,
         dataSource.defaultGuildId,
         dataSource.defaultChannelId
+      );
+    } else if (dataSource?.type === DataSourceType.Docker) {
+      parsedForGen = {};
+      dbConfForGen = createDockerGeneratorConfig(
+        dataSource.dockerPath
       );
     } else {
       // Use provided parsed data or re-parse if not available

@@ -73,6 +73,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForSlack(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Discord) {
         tools = this.generateToolsForDiscord(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Docker) {
+        tools = this.generateToolsForDocker(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -1484,6 +1486,125 @@ export class MCPServerGenerator {
         required: ['messageId', 'emoji']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'addReaction' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForDocker(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { dockerPath } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.Docker,
+      dockerPath: dockerPath || 'docker'
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_images',
+      description: 'List local Docker images',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listImages' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_containers',
+      description: 'List Docker containers (running and stopped)',
+      inputSchema: {
+        type: 'object',
+        properties: { all: { type: 'boolean', description: 'Include stopped containers', default: true } },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listContainers' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_container',
+      description: 'Get detailed information about a container',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string', description: 'Container ID or name' } },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'inspectContainer' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'start_container',
+      description: 'Start a stopped container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'startContainer' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'stop_container',
+      description: 'Stop a running container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'stopContainer' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'restart_container',
+      description: 'Restart a container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'restartContainer' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'remove_container',
+      description: 'Remove a container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' }, force: { type: 'boolean', default: false } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'removeContainer' }),
+      operation: 'DELETE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'remove_image',
+      description: 'Remove a Docker image',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Image ID or name:tag' }, force: { type: 'boolean', default: false } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'removeImage' }),
+      operation: 'DELETE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'pull_image',
+      description: 'Pull a Docker image from registry',
+      inputSchema: { type: 'object', properties: { name: { type: 'string', description: 'Image name, e.g. nginx:latest' } }, required: ['name'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'pullImage' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_logs',
+      description: 'Get recent logs from a container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' }, tail: { type: 'number', default: 100 } }, required: ['id'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getLogs' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'exec_in_container',
+      description: 'Execute a command inside a running container',
+      inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' }, cmd: { type: 'string', description: 'Command to execute' } }, required: ['id', 'cmd'] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'execInContainer' }),
       operation: 'INSERT'
     });
 

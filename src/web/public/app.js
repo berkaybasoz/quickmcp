@@ -3048,6 +3048,38 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Docker, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Docker) {
+        const dockerPath = document.getElementById('dockerPath')?.value?.trim();
+        currentDataSource = {
+            type: DataSourceType.Docker,
+            name: 'Docker',
+            dockerPath: dockerPath || 'docker'
+        };
+        currentParsedData = [{
+            tableName: 'docker_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_images', 'List local Docker images'],
+                ['list_containers', 'List Docker containers (running and stopped)'],
+                ['get_container', 'Get detailed information about a container'],
+                ['start_container', 'Start a stopped container'],
+                ['stop_container', 'Stop a running container'],
+                ['restart_container', 'Restart a container'],
+                ['remove_container', 'Remove a container'],
+                ['remove_image', 'Remove a Docker image'],
+                ['pull_image', 'Pull a Docker image from registry'],
+                ['get_logs', 'Get recent logs from a container'],
+                ['exec_in_container', 'Execute a command inside a running container']
+            ],
+            metadata: { rowCount: 11, columnCount: 2, dataTypes: { tool: 'string', description: 'string' } }
+        }];
+
+        displayDockerPreview(currentDataSource);
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3340,6 +3372,9 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Discord) {
             const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
             canProceed = !!discordBotToken;
+        } else if (selectedType === DataSourceType.Docker) {
+            // No required fields for Docker preview
+            canProceed = true;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3361,6 +3396,7 @@ function toggleDataSourceFields() {
     const emailSection = document.getElementById('email-section');
     const slackSection = document.getElementById('slack-section');
     const discordSection = document.getElementById('discord-section');
+    const dockerSection = document.getElementById('docker-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3375,6 +3411,7 @@ function toggleDataSourceFields() {
     emailSection?.classList.add('hidden');
     slackSection?.classList.add('hidden');
     discordSection?.classList.add('hidden');
+    dockerSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3499,6 +3536,8 @@ function toggleDataSourceFields() {
             discordTokenInput.addEventListener('input', updateWizardNavigation);
             discordTokenInput.dataset.listenerAttached = 'true';
         }
+    } else if (selectedType === DataSourceType.Docker) {
+        dockerSection?.classList.remove('hidden');
     }
 
     // Update wizard navigation state
@@ -4447,6 +4486,79 @@ function displayDiscordPreview(discordConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Enable Privileged Intents (Guild Members, Message Content) if needed.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayDockerPreview(dockerConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const dockerPath = dockerConfig?.dockerPath || 'docker';
+    const tools = [
+        { name: 'list_images', desc: 'List local Docker images' },
+        { name: 'list_containers', desc: 'List Docker containers (running and stopped)' },
+        { name: 'get_container', desc: 'Get detailed information about a container' },
+        { name: 'start_container', desc: 'Start a stopped container' },
+        { name: 'stop_container', desc: 'Stop a running container' },
+        { name: 'restart_container', desc: 'Restart a container' },
+        { name: 'remove_container', desc: 'Remove a container' },
+        { name: 'remove_image', desc: 'Remove a Docker image' },
+        { name: 'pull_image', desc: 'Pull a Docker image from registry' },
+        { name: 'get_logs', desc: 'Get recent logs from a container' },
+        { name: 'exec_in_container', desc: 'Execute a command inside a running container' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-docker text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Docker Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to manage local Docker.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Docker Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${dockerPath}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Works with Docker Desktop/Engine installed locally.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Make sure your user can run the docker CLI.</span>
                             </div>
                         </div>
                     </div>

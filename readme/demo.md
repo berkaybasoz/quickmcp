@@ -1,3 +1,6 @@
+~/Library/Logs/Claude/mcp-server-quickmcp-local.log
+
+
 MSSQL
 HOST: localhost
 PORT: 1435

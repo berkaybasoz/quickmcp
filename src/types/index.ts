@@ -20,6 +20,7 @@ export enum DataSourceType {
   Email = 'email',
   Slack = 'slack',
   Discord = 'discord',
+  Docker = 'docker',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -36,6 +37,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Email,
     DataSourceType.Slack,
     DataSourceType.Discord,
+    DataSourceType.Docker,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -287,6 +289,11 @@ export interface DiscordGeneratorConfig extends BaseGeneratorConfig {
   defaultChannelId?: string;
 }
 
+export interface DockerGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Docker;
+  dockerPath?: string; // default: 'docker'
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -299,6 +306,7 @@ export type GeneratorConfig =
   | EmailGeneratorConfig
   | SlackGeneratorConfig
   | DiscordGeneratorConfig
+  | DockerGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -428,5 +436,14 @@ export function createDiscordGeneratorConfig(
     botToken,
     defaultGuildId,
     defaultChannelId,
+  };
+}
+
+export function createDockerGeneratorConfig(
+  dockerPath?: string
+): DockerGeneratorConfig {
+  return {
+    type: DataSourceType.Docker,
+    dockerPath: dockerPath || 'docker'
   };
 }

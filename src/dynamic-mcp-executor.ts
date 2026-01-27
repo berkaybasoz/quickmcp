@@ -79,6 +79,10 @@ export class DynamicMCPExecutor {
         return await this.executeDiscordCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Docker) {
+        return await this.executeDockerCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -250,6 +254,208 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Discord error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private async executeDockerCall(queryConfig: any, args: any): Promise<any> {
+    const { dockerPath = 'docker', operation } = queryConfig;
+    console.error(`🐳 Docker operation: ${operation}`);
+
+    const run = async (cmd: string, cmdArgs: string[], parse: 'json' | 'lines' | 'text' = 'json') => {
+      const { execFile } = await import('child_process');
+      return new Promise<any[]>((resolve, reject) => {
+        // Debug: show command for diagnosis
+        console.error(`🐳 docker exec: ${cmd} ${cmdArgs.join(' ')}`);
+        const child = execFile(cmd, cmdArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 8000 }, (err, stdout, stderr) => {
+          if (err) {
+            const msg = (stderr && stderr.trim()) || err.message || 'docker command failed';
+            console.error(`🐳 docker error: ${msg}`);
+            return reject(new Error(`${msg}`));
+          }
+          try {
+            if (parse === 'json') {
+              // Some docker commands output JSON per line when using Go template
+              const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+              const items = lines.map(line => {
+                try { return JSON.parse(line); } catch { return null; }
+              }).filter(Boolean) as any[];
+              resolve(items);
+            } else if (parse === 'lines') {
+              const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+              resolve(lines.map(l => ({ line: l })));
+            } else {
+              resolve([{ output: stdout }]);
+            }
+          } catch (e) {
+            resolve([{ output: stdout }]);
+          }
+        });
+      });
+    };
+
+    // Try to resolve a working docker binary path
+    const resolveDockerBin = async (): Promise<string> => {
+      const isWin = process.platform === 'win32';
+      const pf = process.env['ProgramFiles'] || 'C:\\\\Program Files';
+
+      const candidates = [
+        dockerPath,
+        process.env.DOCKER_PATH,
+        // macOS/Linux common locations
+        '/opt/homebrew/bin/docker', // Apple Silicon Homebrew
+        '/usr/local/bin/docker',     // Intel mac / common
+        '/usr/bin/docker',
+        '/bin/docker',
+        // Windows typical installs (Docker Desktop)
+        isWin ? `${pf}\\Docker\\Docker\\resources\\bin\\docker.exe` : undefined,
+        isWin ? `${pf}\\Docker\\Docker\\resources\\bin\\com.docker.cli.exe` : undefined,
+      ].filter((p): p is string => !!p);
+
+      for (const bin of candidates) {
+        try {
+          // If docker is present, this should run even if daemon is down
+          // '--version' prints client version without connecting to daemon
+          await run(bin, ['--version'], 'text');
+          return bin;
+        } catch (e: any) {
+          if (typeof e?.message === 'string' && e.message.includes('ENOENT')) {
+            continue; // not found, try next
+          }
+          // If binary exists but daemon not running, still accept this bin
+          if (typeof e?.message === 'string' && (e.message.includes('Cannot connect to the Docker daemon') || e.message.includes('permission denied'))) {
+            return bin;
+          }
+          // Some environments print version to stderr; allow this bin anyway
+          if (typeof e?.message === 'string' && e.message.toLowerCase().includes('version')) {
+            return bin;
+          }
+        }
+      }
+      // Fallback to provided dockerPath; subsequent runs will error with a clear message
+      return dockerPath;
+    };
+
+    const bin = await resolveDockerBin();
+    console.error(`🐳 docker bin selected: ${bin}`);
+
+    try {
+      // Preflight: ensure daemon reachable; provide clear error instead of generic timeout
+      try {
+        await run(bin, ['info'], 'text');
+      } catch (e: any) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return {
+          success: false,
+          error: `Docker daemon not reachable: ${msg}. Start Docker Desktop/Engine or fix DOCKER_HOST/context.`,
+          data: [{ error: msg }],
+          rowCount: 1
+        };
+      }
+
+      let result: any[] = [];
+      switch (operation) {
+        case 'listImages': {
+          result = await run(bin, ['images', '--format', '{{json .}}'], 'json');
+          break;
+        }
+        case 'listContainers': {
+          const all = args.all !== false; // default true
+          const baseArgs = ['ps', all ? '-a' : '', '--format', '{{json .}}'].filter(Boolean) as string[];
+          result = await run(bin, baseArgs, 'json');
+          break;
+        }
+        case 'inspectContainer': {
+          if (!args.id) throw new Error('id is required');
+          // docker inspect outputs a JSON array
+          const { execFile } = await import('child_process');
+          const out = await new Promise<string>((resolve, reject) => {
+            execFile(bin, ['inspect', String(args.id)], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+              if (err) reject(new Error(stderr || err.message)); else resolve(stdout);
+            });
+          });
+          const arr = JSON.parse(out);
+          result = Array.isArray(arr) ? arr : [arr];
+          break;
+        }
+        case 'startContainer': {
+          if (!args.id) throw new Error('id is required');
+          await run(bin, ['start', String(args.id)], 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'stopContainer': {
+          if (!args.id) throw new Error('id is required');
+          await run(bin, ['stop', String(args.id)], 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'restartContainer': {
+          if (!args.id) throw new Error('id is required');
+          await run(bin, ['restart', String(args.id)], 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'removeContainer': {
+          if (!args.id) throw new Error('id is required');
+          const cmdArgs = ['rm'];
+          if (args.force) cmdArgs.push('-f');
+          cmdArgs.push(String(args.id));
+          await run(bin, cmdArgs, 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'removeImage': {
+          if (!args.id) throw new Error('id is required');
+          const cmdArgs = ['rmi'];
+          if (args.force) cmdArgs.push('-f');
+          cmdArgs.push(String(args.id));
+          await run(bin, cmdArgs, 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'pullImage': {
+          if (!args.name) throw new Error('name is required');
+          const lines = await run(bin, ['pull', String(args.name)], 'lines');
+          result = lines;
+          break;
+        }
+        case 'getLogs': {
+          if (!args.id) throw new Error('id is required');
+          const tail = Math.max(1, Math.min(10000, Number(args.tail) || 100));
+          const lines = await run(bin, ['logs', '--tail', String(tail), String(args.id)], 'lines');
+          result = lines.map((l: any) => ({ log: l.line }));
+          break;
+        }
+        case 'execInContainer': {
+          if (!args.id || !args.cmd) throw new Error('id and cmd are required');
+          // Split command respecting spaces simply (user supplies full command string)
+          const cmdParts = String(args.cmd).split(' ').filter(Boolean);
+          const { execFile } = await import('child_process');
+          const out = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+            execFile(bin, ['exec', String(args.id), ...cmdParts], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+              if (err) reject(new Error(stderr || err.message)); else resolve({ stdout, stderr });
+            });
+          });
+          result = [{ stdout: out.stdout, stderr: out.stderr }];
+          break;
+        }
+        default:
+          throw new Error(`Unknown Docker operation: ${operation}`);
+      }
+
+      return {
+        success: true,
+        data: result,
+        rowCount: result.length
+      };
+    } catch (error) {
+      console.error('❌ Docker error:', error);
+      return {
+        success: false,
+        error: `Docker error: ${error instanceof Error ? error.message : String(error)}`,
         data: [{ error: error instanceof Error ? error.message : String(error) }],
         rowCount: 1
       };
