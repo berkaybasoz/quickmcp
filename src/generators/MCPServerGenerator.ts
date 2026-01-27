@@ -59,6 +59,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForCurl(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GitHub) {
         tools = this.generateToolsForGitHub(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.X) {
+        tools = this.generateToolsForX(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -414,6 +416,120 @@ export class MCPServerGenerator {
         required: ['owner', 'repo', 'issue_number', 'body']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repos/{owner}/{repo}/issues/{issue_number}/comments', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForX(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { token, username } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.X,
+      token,
+      username
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_by_username',
+      description: 'Get X user details by username',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'X username (without @)' },
+          'user.fields': { type: 'string', description: 'Comma-separated user fields (optional)' }
+        },
+        required: ['username']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/users/by/username/{username}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get X user details by user ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'X user ID' },
+          'user.fields': { type: 'string', description: 'Comma-separated user fields (optional)' }
+        },
+        required: ['user_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/users/{user_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_tweets',
+      description: 'Get recent tweets from a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'X user ID' },
+          max_results: { type: 'number', description: 'Maximum tweets (max 100)', default: 10 },
+          'tweet.fields': { type: 'string', description: 'Comma-separated tweet fields (optional)' },
+          exclude: { type: 'string', description: 'Comma-separated exclusions (e.g., retweets,replies)' }
+        },
+        required: ['user_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/users/{user_id}/tweets', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_recent_tweets',
+      description: 'Search recent tweets by query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query (e.g., "from:jack -is:retweet")' },
+          max_results: { type: 'number', description: 'Maximum tweets (max 100)', default: 10 },
+          'tweet.fields': { type: 'string', description: 'Comma-separated tweet fields (optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/tweets/search/recent', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_tweet',
+      description: 'Get a tweet by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          tweet_id: { type: 'string', description: 'Tweet ID' },
+          'tweet.fields': { type: 'string', description: 'Comma-separated tweet fields (optional)' }
+        },
+        required: ['tweet_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/tweets/{tweet_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_tweet',
+      description: 'Create a new tweet',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Tweet text' },
+          reply_in_reply_to_tweet_id: { type: 'string', description: 'Reply to tweet ID (optional)' },
+          quote_tweet_id: { type: 'string', description: 'Quote tweet ID (optional)' },
+          media_ids: { type: 'array', items: { type: 'string' }, description: 'Media IDs (optional)' }
+        },
+        required: ['text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/tweets', method: 'POST' }),
       operation: 'INSERT'
     });
 

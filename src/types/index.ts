@@ -25,6 +25,7 @@ export enum DataSourceType {
   Kubernetes = 'kubernetes',
   Elasticsearch = 'elasticsearch',
   OpenShift = 'openshift',
+  X = 'x',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -46,6 +47,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Kubernetes,
     DataSourceType.Elasticsearch,
     DataSourceType.OpenShift,
+    DataSourceType.X,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -148,6 +150,12 @@ export interface GitHubConnection {
   type: 'github';
 }
 
+export interface XConnection {
+  token: string;
+  username?: string;
+  type: 'x';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -246,6 +254,12 @@ export interface GitHubGeneratorConfig extends BaseGeneratorConfig {
   repo?: string;
 }
 
+export interface XGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.X;
+  token: string;
+  username?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -339,6 +353,7 @@ export type GeneratorConfig =
   | CurlGeneratorConfig
   | FileGeneratorConfig
   | GitHubGeneratorConfig
+  | XGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -351,7 +366,8 @@ export type GeneratorConfig =
   | ElasticsearchGeneratorConfig
   | OpenShiftGeneratorConfig
   | DatabaseConnection
-  | GitHubConnection;
+  | GitHubConnection
+  | XConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -400,6 +416,14 @@ export function createGitHubGeneratorConfig(token: string, owner?: string, repo?
     token,
     owner,
     repo
+  };
+}
+
+export function createXGeneratorConfig(token: string, username?: string): XGeneratorConfig {
+  return {
+    type: DataSourceType.X,
+    token,
+    username
   };
 }
 
