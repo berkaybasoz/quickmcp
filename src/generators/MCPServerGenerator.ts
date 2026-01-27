@@ -1,5 +1,5 @@
 import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager';
-import { DataSourceType } from '../types';
+import { DataSourceType, shouldGenerateResources } from '../types';
 
 interface ParsedColumn {
   name: string;
@@ -71,6 +71,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForEmail(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Slack) {
         tools = this.generateToolsForSlack(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Discord) {
+        tools = this.generateToolsForDiscord(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -81,9 +83,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, LocalFS, Email, and Slack)
+      // Generate and save resources when applicable
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS || dbConfig?.type === DataSourceType.Email || dbConfig?.type === DataSourceType.Slack)) {
+      if (shouldGenerateResources(parsedData, dbConfig)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -1356,6 +1358,133 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'searchMessages' }),
       operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForDiscord(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { botToken, defaultGuildId, defaultChannelId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.Discord,
+      botToken,
+      defaultGuildId,
+      defaultChannelId,
+    };
+
+    // List guilds that the bot is in
+    tools.push({
+      server_id: serverId,
+      name: 'list_guilds',
+      description: 'List guilds (servers) the bot has access to',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listGuilds' }),
+      operation: 'SELECT'
+    });
+
+    // List channels in a guild
+    tools.push({
+      server_id: serverId,
+      name: 'list_channels',
+      description: 'List channels in a Discord guild',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          guildId: { type: 'string', description: 'Guild (server) ID; falls back to defaultGuildId' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listChannels' }),
+      operation: 'SELECT'
+    });
+
+    // List members in a guild
+    tools.push({
+      server_id: serverId,
+      name: 'list_users',
+      description: 'List members in a Discord guild',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          guildId: { type: 'string', description: 'Guild (server) ID; falls back to defaultGuildId' },
+          limit: { type: 'number', description: 'Max members to return (1-1000)', default: 100 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listMembers' }),
+      operation: 'SELECT'
+    });
+
+    // Send a message to a channel
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message to a Discord channel',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channelId: { type: 'string', description: 'Channel ID; falls back to defaultChannelId' },
+          content: { type: 'string', description: 'Message content' },
+          replyToMessageId: { type: 'string', description: 'Optional message ID to reply to' }
+        },
+        required: ['content']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'sendMessage' }),
+      operation: 'INSERT'
+    });
+
+    // Get recent messages in a channel
+    tools.push({
+      server_id: serverId,
+      name: 'get_channel_history',
+      description: 'Get recent messages from a Discord channel',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channelId: { type: 'string', description: 'Channel ID; falls back to defaultChannelId' },
+          limit: { type: 'number', description: 'Number of messages to return (1-100)', default: 20 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getChannelMessages' }),
+      operation: 'SELECT'
+    });
+
+    // Get user info (via guild member if guild provided)
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_info',
+      description: 'Get information about a Discord user (requires guildId for full member data)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          userId: { type: 'string', description: 'User ID' },
+          guildId: { type: 'string', description: 'Optional guild ID for member info; falls back to defaultGuildId' }
+        },
+        required: ['userId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getUserInfo' }),
+      operation: 'SELECT'
+    });
+
+    // Add reaction to a message
+    tools.push({
+      server_id: serverId,
+      name: 'add_reaction',
+      description: 'Add an emoji reaction to a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channelId: { type: 'string', description: 'Channel ID; falls back to defaultChannelId' },
+          messageId: { type: 'string', description: 'Message ID' },
+          emoji: { type: 'string', description: 'Emoji (unicode or name:id for custom)' }
+        },
+        required: ['messageId', 'emoji']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'addReaction' }),
+      operation: 'INSERT'
     });
 
     return tools;

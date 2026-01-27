@@ -19,6 +19,26 @@ export enum DataSourceType {
   LocalFS = 'localfs',
   Email = 'email',
   Slack = 'slack',
+  Discord = 'discord',
+}
+
+// Utility: determine when resources should be skipped for a data source
+export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean {
+  const type = dbConfig?.type as DataSourceType | string | undefined;
+  const nonResourceTypes = new Set<string>([
+    DataSourceType.Rest,
+    DataSourceType.Webpage,
+    DataSourceType.Curl,
+    DataSourceType.GitHub,
+    DataSourceType.Jira,
+    DataSourceType.Ftp,
+    DataSourceType.LocalFS,
+    DataSourceType.Email,
+    DataSourceType.Slack,
+    DataSourceType.Discord,
+  ]);
+
+  return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
 }
 
 export interface DataSource {
@@ -260,6 +280,13 @@ export interface SlackGeneratorConfig extends BaseGeneratorConfig {
   defaultChannel?: string;
 }
 
+export interface DiscordGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Discord;
+  botToken: string;
+  defaultGuildId?: string;
+  defaultChannelId?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -271,6 +298,7 @@ export type GeneratorConfig =
   | LocalFSGeneratorConfig
   | EmailGeneratorConfig
   | SlackGeneratorConfig
+  | DiscordGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -387,5 +415,18 @@ export function createSlackGeneratorConfig(
     type: DataSourceType.Slack,
     botToken,
     defaultChannel
+  };
+}
+
+export function createDiscordGeneratorConfig(
+  botToken: string,
+  defaultGuildId?: string,
+  defaultChannelId?: string
+): DiscordGeneratorConfig {
+  return {
+    type: DataSourceType.Discord,
+    botToken,
+    defaultGuildId,
+    defaultChannelId,
   };
 }

@@ -75,11 +75,184 @@ export class DynamicMCPExecutor {
         return await this.executeSlackCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Discord) {
+        return await this.executeDiscordCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
       console.error(`❌ Error executing tool ${toolName}:`, error);
       throw error;
+    }
+  }
+
+  private async executeDiscordCall(queryConfig: any, args: any): Promise<any> {
+    const { botToken, defaultGuildId, defaultChannelId, operation } = queryConfig;
+
+    const baseUrl = 'https://discord.com/api/v10';
+    const headers: Record<string, string> = {
+      'Authorization': `Bot ${botToken}`,
+      'Content-Type': 'application/json'
+    };
+
+    console.error(`💬 Discord operation: ${operation}`);
+
+    try {
+      let result: any = [];
+      switch (operation) {
+        case 'listGuilds': {
+          const response = await fetch(`${baseUrl}/users/@me/guilds`, { headers });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to list guilds');
+          result = (Array.isArray(data) ? data : []).map((g: any) => ({
+            id: g.id,
+            name: g.name,
+            owner: g.owner,
+            permissions: g.permissions,
+            approximate_member_count: g.approximate_member_count
+          }));
+          break;
+        }
+
+        case 'listChannels': {
+          const guildId = args.guildId || defaultGuildId;
+          if (!guildId) throw new Error('guildId is required');
+          const response = await fetch(`${baseUrl}/guilds/${guildId}/channels`, { headers });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to list channels');
+          result = (Array.isArray(data) ? data : []).map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            parent_id: c.parent_id,
+            topic: c.topic
+          }));
+          break;
+        }
+
+        case 'listMembers': {
+          const guildId = args.guildId || defaultGuildId;
+          if (!guildId) throw new Error('guildId is required');
+          const limit = Math.max(1, Math.min(1000, Number(args.limit) || 100));
+          const response = await fetch(`${baseUrl}/guilds/${guildId}/members?limit=${limit}`, { headers });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to list members');
+          result = (Array.isArray(data) ? data : []).map((m: any) => ({
+            user_id: m.user?.id,
+            username: `${m.user?.username}#${m.user?.discriminator}`,
+            nick: m.nick,
+            joined_at: m.joined_at,
+            roles: m.roles
+          }));
+          break;
+        }
+
+        case 'sendMessage': {
+          const channelId = args.channelId || defaultChannelId;
+          if (!channelId) throw new Error('channelId is required');
+          const body: any = { content: args.content };
+          if (args.replyToMessageId) {
+            body.message_reference = { message_id: args.replyToMessageId };
+          }
+          const response = await fetch(`${baseUrl}/channels/${channelId}/messages`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body)
+          });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to send message');
+          result = [{
+            success: true,
+            id: data.id,
+            channel_id: data.channel_id,
+            content: data.content
+          }];
+          break;
+        }
+
+        case 'getChannelMessages': {
+          const channelId = args.channelId || defaultChannelId;
+          if (!channelId) throw new Error('channelId is required');
+          const limit = Math.max(1, Math.min(100, Number(args.limit) || 20));
+          const response = await fetch(`${baseUrl}/channels/${channelId}/messages?limit=${limit}`, { headers });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to get channel messages');
+          result = (Array.isArray(data) ? data : []).map((m: any) => ({
+            id: m.id,
+            author_id: m.author?.id,
+            author_username: `${m.author?.username}#${m.author?.discriminator}`,
+            content: m.content,
+            timestamp: m.timestamp
+          }));
+          break;
+        }
+
+        case 'getUserInfo': {
+          const userId = args.userId;
+          if (!userId) throw new Error('userId is required');
+          const guildId = args.guildId || defaultGuildId;
+          // Try guild member endpoint if guild available
+          if (guildId) {
+            const response = await fetch(`${baseUrl}/guilds/${guildId}/members/${userId}`, { headers });
+            const data: any = await response.json();
+            if (response.ok) {
+              result = [{
+                user_id: data.user?.id,
+                username: `${data.user?.username}#${data.user?.discriminator}`,
+                nick: data.nick,
+                joined_at: data.joined_at,
+                roles: data.roles
+              }];
+              break;
+            }
+          }
+          // Fallback: public user endpoint (might be restricted)
+          const response = await fetch(`${baseUrl}/users/${userId}`, { headers });
+          const data: any = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to get user info');
+          result = [{ id: data.id, username: `${data.username}#${data.discriminator}` }];
+          break;
+        }
+
+        case 'addReaction': {
+          const channelId = args.channelId || defaultChannelId;
+          if (!channelId) throw new Error('channelId is required');
+          const messageId = args.messageId;
+          const emoji = args.emoji;
+          if (!messageId || !emoji) throw new Error('messageId and emoji are required');
+          const encodedEmoji = encodeURIComponent(emoji);
+          const response = await fetch(`${baseUrl}/channels/${channelId}/messages/${messageId}/reactions/${encodedEmoji}/@me`, {
+            method: 'PUT',
+            headers
+          });
+          if (!response.ok && response.status !== 204) {
+            const data: any = await response.json().catch(() => ({}));
+            throw new Error(data.message || `Failed to add reaction (${response.status})`);
+          }
+          result = [{ success: true }];
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown Discord operation: ${operation}`);
+      }
+
+      console.error(`✅ Discord operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+    } catch (error) {
+      console.error(`❌ Discord error:`, error);
+      return {
+        success: false,
+        error: `Discord error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
     }
   }
 

@@ -502,6 +502,16 @@
                                                 <p class="text-xs text-slate-500">Messaging & channels.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="discord" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/discord.png" alt="Discord" class="w-10 h-10">
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Discord</h4>
+                                                <p class="text-xs text-slate-500">Servers, channels, messages.</p>
+                                            </div>
+                                        </label>
                                     </div>
 
                                     <!-- File Upload -->
@@ -990,6 +1000,47 @@
                                             </p>
                                         </div>
                                         <div id="slack-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Discord Section -->
+                                    <div id="discord-section" class="hidden space-y-6 animate-fadeIn">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <p class="text-sm text-indigo-700">
+                                                <i class="fas fa-info-circle mr-2"></i>
+                                                Enter your Discord Bot Token. Create a bot at <a href="https://discord.com/developers/applications" target="_blank" class="underline font-semibold">discord.com/developers</a>
+                                            </p>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Bot Token <span class="text-red-500">*</span></label>
+                                                <input type="password" id="discordBotToken" placeholder="Bot token" class="input">
+                                                <p class="text-xs text-slate-500 mt-2">Found under Bot settings. Kept securely.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Guild ID (Optional)</label>
+                                                <input type="text" id="discordDefaultGuildId" placeholder="Guild (server) ID" class="input">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Channel ID (Optional)</label>
+                                                <input type="text" id="discordDefaultChannelId" placeholder="Channel ID" class="input">
+                                            </div>
+                                        </div>
+
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: list_guilds, list_channels, list_users, send_message, get_channel_history, get_user_info, add_reaction
+                                            </p>
+                                        </div>
+
+                                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p class="text-sm text-yellow-700">
+                                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                                <strong>Required Bot Permissions:</strong> Read Messages/View Channels, Send Messages, Read Message History, Add Reactions, and Guild Members intent.
+                                            </p>
+                                        </div>
+                                        <div id="discord-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Loading/Error -->

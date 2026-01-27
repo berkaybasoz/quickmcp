@@ -14,7 +14,8 @@ const DataSourceType = {
     Ftp: 'ftp',
     LocalFS: 'localfs',
     Email: 'email',
-    Slack: 'slack'
+    Slack: 'slack',
+    Discord: 'discord'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -28,7 +29,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Ftp,
         DataSourceType.LocalFS,
         DataSourceType.Email,
-        DataSourceType.Slack
+        DataSourceType.Slack,
+        DataSourceType.Discord
     ];
     return noTableTypes.includes(type);
 }

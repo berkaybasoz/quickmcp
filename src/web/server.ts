@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -633,6 +633,50 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Discord) {
+        const { discordBotToken, discordDefaultGuildId, discordDefaultChannelId } = req.body as any;
+
+        if (!discordBotToken) {
+            throw new Error('Missing Discord Bot Token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Discord,
+            name: 'Discord',
+            botToken: discordBotToken,
+            defaultGuildId: discordDefaultGuildId || '',
+            defaultChannelId: discordDefaultChannelId || ''
+        };
+
+        const parsedData = [{
+            tableName: 'discord_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_guilds', 'List guilds (servers) the bot has access to'],
+                ['list_channels', 'List channels in a guild'],
+                ['list_users', 'List members in a guild'],
+                ['send_message', 'Send a message to a channel'],
+                ['get_channel_history', 'Get recent messages in a channel'],
+                ['get_user_info', 'Get information about a user'],
+                ['add_reaction', 'Add an emoji reaction to a message']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -756,6 +800,13 @@ app.post('/api/generate', async (req, res) => {
       dbConfForGen = createSlackGeneratorConfig(
         dataSource.botToken,
         dataSource.defaultChannel
+      );
+    } else if (dataSource?.type === DataSourceType.Discord) {
+      parsedForGen = {};
+      dbConfForGen = createDiscordGeneratorConfig(
+        dataSource.botToken,
+        dataSource.defaultGuildId,
+        dataSource.defaultChannelId
       );
     } else {
       // Use provided parsed data or re-parse if not available

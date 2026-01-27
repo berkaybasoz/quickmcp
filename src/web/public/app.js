@@ -3004,6 +3004,50 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Discord, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Discord) {
+        const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
+        const discordDefaultGuildId = document.getElementById('discordDefaultGuildId')?.value?.trim();
+        const discordDefaultChannelId = document.getElementById('discordDefaultChannelId')?.value?.trim();
+
+        if (!discordBotToken) {
+            showError('discord-parse-error', 'Please enter a Discord Bot Token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Discord,
+            name: 'Discord',
+            botToken: discordBotToken,
+            defaultGuildId: discordDefaultGuildId || '',
+            defaultChannelId: discordDefaultChannelId || ''
+        };
+        currentParsedData = [{
+            tableName: 'discord_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_guilds', 'List guilds (servers) the bot has access to'],
+                ['list_channels', 'List channels in a guild'],
+                ['list_users', 'List members in a guild'],
+                ['send_message', 'Send a message to a channel'],
+                ['get_channel_history', 'Get recent messages in a channel'],
+                ['get_user_info', 'Get information about a user'],
+                ['add_reaction', 'Add an emoji reaction to a message']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('💬 Discord config saved, showing preview info');
+
+        displayDiscordPreview(currentDataSource);
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3293,6 +3337,9 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Slack) {
             const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
             canProceed = !!slackBotToken;
+        } else if (selectedType === DataSourceType.Discord) {
+            const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
+            canProceed = !!discordBotToken;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3313,6 +3360,7 @@ function toggleDataSourceFields() {
     const localfsSection = document.getElementById('localfs-section');
     const emailSection = document.getElementById('email-section');
     const slackSection = document.getElementById('slack-section');
+    const discordSection = document.getElementById('discord-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3326,6 +3374,7 @@ function toggleDataSourceFields() {
     localfsSection?.classList.add('hidden');
     emailSection?.classList.add('hidden');
     slackSection?.classList.add('hidden');
+    discordSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3442,6 +3491,13 @@ function toggleDataSourceFields() {
         if (slackBotTokenInput && !slackBotTokenInput.dataset.listenerAttached) {
             slackBotTokenInput.addEventListener('input', updateWizardNavigation);
             slackBotTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Discord) {
+        discordSection?.classList.remove('hidden');
+        const discordTokenInput = document.getElementById('discordBotToken');
+        if (discordTokenInput && !discordTokenInput.dataset.listenerAttached) {
+            discordTokenInput.addEventListener('input', updateWizardNavigation);
+            discordTokenInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -4308,6 +4364,89 @@ function displaySlackPreview(slackConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Make sure your Slack app has the required OAuth scopes.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayDiscordPreview(discordConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { botToken, defaultGuildId, defaultChannelId } = discordConfig || {};
+    const maskedToken = botToken ? `${botToken.substring(0, 10)}...${botToken.slice(-4)}` : 'Not set';
+
+    const tools = [
+        { name: 'list_guilds', desc: 'List guilds (servers) the bot has access to' },
+        { name: 'list_channels', desc: 'List channels in a guild' },
+        { name: 'list_users', desc: 'List members in a guild' },
+        { name: 'send_message', desc: 'Send a message to a channel' },
+        { name: 'get_channel_history', desc: 'Get recent messages in a channel' },
+        { name: 'get_user_info', desc: 'Get information about a user' },
+        { name: 'add_reaction', desc: 'Add an emoji reaction to a message' },
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/discord.png" alt="Discord" class="w-10 h-10">
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Discord Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Discord.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Bot Token:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${maskedToken}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Guild:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${defaultGuildId || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Channel:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${defaultChannelId || 'Not set'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>List guilds/channels/members and send messages.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-shield-alt mt-0.5 text-blue-500"></i>
+                                <span>Bot token is stored securely in the server configuration.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Enable Privileged Intents (Guild Members, Message Content) if needed.</span>
                             </div>
                         </div>
                     </div>
