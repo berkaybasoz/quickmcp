@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = 'CURL-BINANCE';
-const CURL_COMMAND = 'curl -X GET "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"';
+const SERVER_NAME = 'GITHUB-BERKAY';
 
-test.describe('cURL template', () => {
+test.describe('GitHub template', () => {
   test.beforeEach(async ({ request }) => {
     try {
       await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
@@ -20,17 +19,21 @@ test.describe('cURL template', () => {
     }
   });
 
-  test('generate cURL server via UI', async ({ page }) => {
+  test('generate GitHub server via UI', async ({ page }) => {
+    const token = process.env.GITHUB_TEST_TOKEN;
+    if (!token) {
+      throw new Error('Missing GITHUB_TEST_TOKEN env var');
+    }
+
     await page.goto('/');
 
-    await page.locator('input[name="dataSourceType"][value="curl"]').check({ force: true });
+    await page.locator('input[name="dataSourceType"][value="github"]').check({ force: true });
 
     await page.locator('#next-to-step-2:not([disabled])').click();
     await expect(page.locator('#wizard-step-2')).toBeVisible();
-    await expect(page.locator('#curl-section')).toBeVisible();
+    await expect(page.locator('#github-section')).toBeVisible();
 
-    await page.fill('#curlToolAlias', 'binance');
-    await page.locator('#curlCommand').fill(CURL_COMMAND);
+    await page.fill('#githubToken', token);
 
     await page.locator('#next-to-step-3:not([disabled])').click();
     await expect(page.locator('#wizard-step-3')).toBeVisible();
@@ -38,7 +41,7 @@ test.describe('cURL template', () => {
     await page.locator('#next-to-step-4:not([disabled])').click();
 
     await page.fill('#serverName', SERVER_NAME);
-    await page.fill('#serverDescription', 'cURL binance test');
+    await page.fill('#serverDescription', 'GitHub token test');
 
     const generateBtn = page.locator('#generateBtn');
     await expect(generateBtn).toBeEnabled();
