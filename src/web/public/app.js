@@ -3080,6 +3080,40 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Kubernetes, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Kubernetes) {
+        const kubectlPath = document.getElementById('kubectlPath')?.value?.trim();
+        const kubeconfig = document.getElementById('kubeconfigPath')?.value?.trim();
+        const namespace = document.getElementById('kubernetesNamespace')?.value?.trim();
+        currentDataSource = {
+            type: DataSourceType.Kubernetes,
+            name: 'Kubernetes',
+            kubectlPath: kubectlPath || 'kubectl',
+            kubeconfig: kubeconfig || '',
+            namespace: namespace || ''
+        };
+        currentParsedData = [{
+            tableName: 'kubernetes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_contexts', 'List kubeconfig contexts'],
+                ['get_current_context', 'Get current kubeconfig context'],
+                ['list_namespaces', 'List namespaces in the cluster'],
+                ['list_pods', 'List pods in a namespace'],
+                ['get_pod', 'Get a pod by name'],
+                ['describe_pod', 'Describe a pod (text output)'],
+                ['list_deployments', 'List deployments in a namespace'],
+                ['scale_deployment', 'Scale a deployment to a replica count'],
+                ['delete_pod', 'Delete a pod']
+            ],
+            metadata: { rowCount: 9, columnCount: 2, dataTypes: { tool: 'string', description: 'string' } }
+        }];
+
+        displayKubernetesPreview(currentDataSource);
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3375,6 +3409,9 @@ function updateWizardNavigation() {
         } else if (selectedType === DataSourceType.Docker) {
             // No required fields for Docker preview
             canProceed = true;
+        } else if (selectedType === DataSourceType.Kubernetes) {
+            // No required fields for Kubernetes preview
+            canProceed = true;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3397,6 +3434,7 @@ function toggleDataSourceFields() {
     const slackSection = document.getElementById('slack-section');
     const discordSection = document.getElementById('discord-section');
     const dockerSection = document.getElementById('docker-section');
+    const kubernetesSection = document.getElementById('kubernetes-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3412,6 +3450,7 @@ function toggleDataSourceFields() {
     slackSection?.classList.add('hidden');
     discordSection?.classList.add('hidden');
     dockerSection?.classList.add('hidden');
+    kubernetesSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3538,6 +3577,8 @@ function toggleDataSourceFields() {
         }
     } else if (selectedType === DataSourceType.Docker) {
         dockerSection?.classList.remove('hidden');
+    } else if (selectedType === DataSourceType.Kubernetes) {
+        kubernetesSection?.classList.remove('hidden');
     }
 
     // Update wizard navigation state
@@ -4559,6 +4600,87 @@ function displayDockerPreview(dockerConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Make sure your user can run the docker CLI.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayKubernetesPreview(kubeConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const kubectlPath = kubeConfig?.kubectlPath || 'kubectl';
+    const kubeconfig = kubeConfig?.kubeconfig || 'Default';
+    const namespace = kubeConfig?.namespace || 'Default';
+    const tools = [
+        { name: 'list_contexts', desc: 'List kubeconfig contexts' },
+        { name: 'get_current_context', desc: 'Get current kubeconfig context' },
+        { name: 'list_namespaces', desc: 'List namespaces in the cluster' },
+        { name: 'list_pods', desc: 'List pods in a namespace' },
+        { name: 'get_pod', desc: 'Get a pod by name' },
+        { name: 'describe_pod', desc: 'Describe a pod (text output)' },
+        { name: 'list_deployments', desc: 'List deployments in a namespace' },
+        { name: 'scale_deployment', desc: 'Scale a deployment to a replica count' },
+        { name: 'delete_pod', desc: 'Delete a pod' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/kubernetes.png" alt="Kubernetes" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Kubernetes Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Kubernetes via kubectl.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">kubectl Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${kubectlPath}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Kubeconfig:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${kubeconfig}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Namespace:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${namespace}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Uses your current kubeconfig and context.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Ensure kubectl can access the cluster.</span>
                             </div>
                         </div>
                     </div>

@@ -75,6 +75,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForDiscord(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Docker) {
         tools = this.generateToolsForDocker(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Kubernetes) {
+        tools = this.generateToolsForKubernetes(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -1606,6 +1608,138 @@ export class MCPServerGenerator {
       inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'Container ID or name' }, cmd: { type: 'string', description: 'Command to execute' } }, required: ['id', 'cmd'] },
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'execInContainer' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForKubernetes(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { kubectlPath, kubeconfig, namespace } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.Kubernetes,
+      kubectlPath: kubectlPath || 'kubectl',
+      kubeconfig,
+      namespace
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_contexts',
+      description: 'List kubeconfig contexts',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listContexts' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_current_context',
+      description: 'Get current kubeconfig context',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getCurrentContext' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_namespaces',
+      description: 'List namespaces in the cluster',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listNamespaces' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_pods',
+      description: 'List pods in a namespace',
+      inputSchema: {
+        type: 'object',
+        properties: { namespace: { type: 'string', description: 'Namespace override' } },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listPods' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_pod',
+      description: 'Get a pod by name',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Pod name' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getPod' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'describe_pod',
+      description: 'Describe a pod (text output)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Pod name' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'describePod' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_deployments',
+      description: 'List deployments in a namespace',
+      inputSchema: {
+        type: 'object',
+        properties: { namespace: { type: 'string', description: 'Namespace override' } },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listDeployments' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'scale_deployment',
+      description: 'Scale a deployment to a replica count',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Deployment name' },
+          replicas: { type: 'number', description: 'Desired replica count' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name', 'replicas']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'scaleDeployment' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_pod',
+      description: 'Delete a pod',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Pod name' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deletePod' }),
+      operation: 'DELETE'
     });
 
     return tools;

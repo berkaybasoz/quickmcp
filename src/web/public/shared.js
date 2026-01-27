@@ -16,7 +16,8 @@ const DataSourceType = {
     Email: 'email',
     Slack: 'slack',
     Discord: 'discord',
-    Docker: 'docker'
+    Docker: 'docker',
+    Kubernetes: 'kubernetes'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -32,7 +33,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Email,
         DataSourceType.Slack,
         DataSourceType.Discord,
-        DataSourceType.Docker
+        DataSourceType.Docker,
+        DataSourceType.Kubernetes
     ];
     return noTableTypes.includes(type);
 }

@@ -513,6 +513,16 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="kubernetes" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/kubernetes.png" alt="Kubernetes" class="w-12 h-12 object-contain rounded-lg" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Kubernetes</h4>
+                                                <p class="text-xs text-slate-500">kubectl contexts, pods, deployments.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="discord" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -1031,6 +1041,39 @@
                                             <p class="text-sm text-blue-700">
                                                 <i class="fas fa-tools mr-2"></i>
                                                 <strong>10 tools</strong> will be created: list_images, list_containers, get_container, start_container, stop_container, restart_container, remove_container, remove_image, pull_image, get_logs, exec_in_container
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kubernetes Section -->
+                                    <div id="kubernetes-section" class="hidden space-y-6 animate-fadeIn">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <p class="text-sm text-sky-700">
+                                                <i class="fas fa-info-circle mr-2"></i>
+                                                Uses local kubectl. Ensure your kubeconfig and context are set.
+                                            </p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">kubectl Path (Optional)</label>
+                                                <input type="text" id="kubectlPath" placeholder="kubectl" class="input">
+                                                <p class="text-xs text-slate-500 mt-2">Overrides default 'kubectl' if needed.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Kubeconfig Path (Optional)</label>
+                                                <input type="text" id="kubeconfigPath" placeholder="~/.kube/config" class="input">
+                                                <p class="text-xs text-slate-500 mt-2">Leave blank to use default kubeconfig.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Namespace (Optional)</label>
+                                                <input type="text" id="kubernetesNamespace" placeholder="default" class="input">
+                                                <p class="text-xs text-slate-500 mt-2">Used for pod/deployment operations.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>9 tools</strong> will be created: list_contexts, get_current_context, list_namespaces, list_pods, get_pod, describe_pod, list_deployments, scale_deployment, delete_pod
                                             </p>
                                         </div>
                                     </div>

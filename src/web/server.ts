@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -719,6 +719,48 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Kubernetes) {
+        const { kubectlPath, kubeconfig, namespace } = req.body as any;
+
+        const dataSource = {
+            type: DataSourceType.Kubernetes,
+            name: 'Kubernetes',
+            kubectlPath: kubectlPath || 'kubectl',
+            kubeconfig: kubeconfig || '',
+            namespace: namespace || ''
+        };
+
+        const parsedData = [{
+            tableName: 'kubernetes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_contexts', 'List kubeconfig contexts'],
+                ['get_current_context', 'Get current kubeconfig context'],
+                ['list_namespaces', 'List namespaces in the cluster'],
+                ['list_pods', 'List pods in a namespace'],
+                ['get_pod', 'Get a pod by name'],
+                ['describe_pod', 'Describe a pod (text output)'],
+                ['list_deployments', 'List deployments in a namespace'],
+                ['scale_deployment', 'Scale a deployment to a replica count'],
+                ['delete_pod', 'Delete a pod']
+            ],
+            metadata: {
+                rowCount: 9,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -854,6 +896,13 @@ app.post('/api/generate', async (req, res) => {
       parsedForGen = {};
       dbConfForGen = createDockerGeneratorConfig(
         dataSource.dockerPath
+      );
+    } else if (dataSource?.type === DataSourceType.Kubernetes) {
+      parsedForGen = {};
+      dbConfForGen = createKubernetesGeneratorConfig(
+        dataSource.kubectlPath,
+        dataSource.kubeconfig,
+        dataSource.namespace
       );
     } else {
       // Use provided parsed data or re-parse if not available

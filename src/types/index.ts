@@ -21,6 +21,7 @@ export enum DataSourceType {
   Slack = 'slack',
   Discord = 'discord',
   Docker = 'docker',
+  Kubernetes = 'kubernetes',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -38,6 +39,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Slack,
     DataSourceType.Discord,
     DataSourceType.Docker,
+    DataSourceType.Kubernetes,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -294,6 +296,13 @@ export interface DockerGeneratorConfig extends BaseGeneratorConfig {
   dockerPath?: string; // default: 'docker'
 }
 
+export interface KubernetesGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Kubernetes;
+  kubectlPath?: string; // default: 'kubectl'
+  kubeconfig?: string;
+  namespace?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -307,6 +316,7 @@ export type GeneratorConfig =
   | SlackGeneratorConfig
   | DiscordGeneratorConfig
   | DockerGeneratorConfig
+  | KubernetesGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -445,5 +455,18 @@ export function createDockerGeneratorConfig(
   return {
     type: DataSourceType.Docker,
     dockerPath: dockerPath || 'docker'
+  };
+}
+
+export function createKubernetesGeneratorConfig(
+  kubectlPath?: string,
+  kubeconfig?: string,
+  namespace?: string
+): KubernetesGeneratorConfig {
+  return {
+    type: DataSourceType.Kubernetes,
+    kubectlPath: kubectlPath || 'kubectl',
+    kubeconfig,
+    namespace
   };
 }
