@@ -252,15 +252,30 @@
                                         </div>
                                     </div>
                                     <div class="mt-3">
+                                        <p class="text-sm font-bold text-slate-400">Template</p>
+                                        <p class="text-xs text-slate-400">Configure source</p>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div id="step-3-indicator"
+                                            class="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 rounded-lg font-bold transition-all">
+                                            3</div>
+                                        <div class="flex-1 h-1 bg-slate-100 mx-4 rounded-full overflow-hidden">
+                                            <div id="progress-3-4"
+                                                class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
                                         <p class="text-sm font-bold text-slate-400">Preview</p>
                                         <p class="text-xs text-slate-400">Validate data</p>
                                     </div>
                                 </div>
                                 <div>
                                     <div class="flex items-center">
-                                        <div id="step-3-indicator"
+                                        <div id="step-4-indicator"
                                             class="flex items-center justify-center w-10 h-10 bg-slate-100 text-slate-400 rounded-lg font-bold transition-all">
-                                            3</div>
+                                            4</div>
                                     </div>
                                     <div class="mt-3">
                                         <p class="text-sm font-bold text-slate-400">Configure</p>
@@ -544,6 +559,28 @@
                                         </label>
                                     </div>
 
+                                    <!-- Navigation -->
+                                    <div class="flex justify-end pt-4 border-t border-slate-100">
+                                        <button id="next-to-step-2"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
+                                            disabled>
+                                            Next Step <i class="fas fa-arrow-right ml-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div id="wizard-step-2" class="wizard-step hidden">
+                                <div
+                                    class="bg-slate-50/50 p-6 border-b border-slate-200/60 flex justify-between items-center">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">Template Configuration</h3>
+                                        <p class="text-sm text-slate-500">Fill in the template fields for your data source.</p>
+                                    </div>
+                                </div>
+                                <div class="p-8 space-y-6">
+                                    <div id="wizard-step-2-content" class="space-y-6">
                                     <!-- File Upload -->
                                     <div id="file-upload-section" class="hidden animate-fade-in">
                                         <div id="fileUpload"
@@ -1178,29 +1215,7 @@
                                     <div id="parse-error"
                                         class="hidden p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
                                     </div>
-
-                                    <!-- Navigation -->
-                                    <div class="flex justify-end pt-4 border-t border-slate-100">
-                                        <button id="next-to-step-2"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
-                                            disabled>
-                                            Next Step <i class="fas fa-arrow-right ml-2"></i>
-                                        </button>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 2 -->
-                            <div id="wizard-step-2" class="wizard-step hidden">
-                                <div
-                                    class="bg-slate-50/50 p-6 border-b border-slate-200/60 flex justify-between items-center">
-                                    <div>
-                                        <h3 class="text-lg font-bold text-slate-900">Data Preview</h3>
-                                        <p class="text-sm text-slate-500">Review the detected schema and data.</p>
-                                    </div>
-                                </div>
-                                <div class="p-8 space-y-6">
-                                    <div id="data-preview" class="space-y-4"></div>
 
                                     <div class="flex justify-between pt-4 border-t border-slate-100">
                                         <button id="back-to-step-1"
@@ -1208,8 +1223,9 @@
                                             <i class="fas fa-arrow-left mr-2"></i> Back
                                         </button>
                                         <button id="next-to-step-3"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30">
-                                            Configure Server <i class="fas fa-arrow-right ml-2"></i>
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled>
+                                            Preview Data <i class="fas fa-arrow-right ml-2"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -1217,6 +1233,29 @@
 
                             <!-- Step 3 -->
                             <div id="wizard-step-3" class="wizard-step hidden">
+                                <div class="bg-slate-50/50 p-6 border-b border-slate-200/60">
+                                    <h3 class="text-lg font-bold text-slate-900">Data Preview</h3>
+                                    <p class="text-sm text-slate-500">Review the detected schema and data.</p>
+                                </div>
+                                <div class="p-8 space-y-6">
+                                    <div id="data-preview" class="space-y-4"></div>
+
+                                    <div class="flex justify-between pt-4 border-t border-slate-100">
+                                        <button id="back-to-step-2"
+                                            class="text-slate-600 hover:text-slate-900 font-medium px-4 py-2">
+                                            <i class="fas fa-arrow-left mr-2"></i> Back
+                                        </button>
+                                        <button id="next-to-step-4"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled>
+                                            Configure Server <i class="fas fa-arrow-right ml-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div id="wizard-step-4" class="wizard-step hidden">
                                 <div class="bg-slate-50/50 p-6 border-b border-slate-200/60">
                                     <h3 class="text-lg font-bold text-slate-900">Final Configuration</h3>
                                     <p class="text-sm text-slate-500">Set your server details and generate.</p>
@@ -1255,7 +1294,7 @@
                                     </div>
 
                                     <div class="flex justify-between pt-4 border-t border-slate-100">
-                                        <button id="back-to-step-2"
+                                        <button id="back-to-step-3"
                                             class="text-slate-600 hover:text-slate-900 font-medium px-4 py-2">
                                             <i class="fas fa-arrow-left mr-2"></i> Back
                                         </button>
@@ -1266,11 +1305,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                        </div>
-                    </div>
-
-                    
 
                     <!-- Test Servers Tab -->
                     <div id="test-tab" class="tab-content hidden animate-fade-in">

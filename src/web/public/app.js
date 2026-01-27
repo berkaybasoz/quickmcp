@@ -243,10 +243,12 @@ function setupEventListeners() {
     });
 
     // Wizard navigation
-    document.getElementById('next-to-step-2')?.addEventListener('click', handleNextToStep2);
+    document.getElementById('next-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
     document.getElementById('back-to-step-1')?.addEventListener('click', () => goToWizardStep(1));
-    document.getElementById('next-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
+    document.getElementById('next-to-step-3')?.addEventListener('click', handleNextToStep3);
     document.getElementById('back-to-step-2')?.addEventListener('click', () => goToWizardStep(2));
+    document.getElementById('next-to-step-4')?.addEventListener('click', () => goToWizardStep(4));
+    document.getElementById('back-to-step-3')?.addEventListener('click', () => goToWizardStep(3));
 }
 
 // Parse cURL command
@@ -487,12 +489,14 @@ function setupFileUpload() {
         if (files.length > 0) {
             fileInput.files = files;
             updateFileUploadDisplay(files[0].name);
+            updateWizardNavigation();
         }
     });
 
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             updateFileUploadDisplay(e.target.files[0].name);
+            updateWizardNavigation();
         }
     });
 }
@@ -1053,7 +1057,7 @@ function resetForm() {
     const generateBtn = document.getElementById('generateBtn');
     if (generateBtn) generateBtn.disabled = true;
 
-    const nextBtn = document.getElementById('next-to-step-2');
+    const nextBtn = document.getElementById('next-to-step-3');
     if (nextBtn) nextBtn.disabled = true;
 }
 
@@ -1093,7 +1097,7 @@ function displayServers(servers) {
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">No Servers Generated Yet</h3>
                     <p class="text-gray-600 mb-6">Create your first MCP server by uploading data or connecting to a database.</p>
-                    <button class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 transform hover:scale-[1.02]" onclick="window.location.href='/'">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-xl shadow-blue-500/40" onclick="window.location.href='/'">
                         <i class="fas fa-rocket mr-2"></i>
                         Generate Your First Server
                     </button>
@@ -2521,8 +2525,8 @@ async function checkAlias(aliasType) {
 }
 
 
-// Handle next to step 2 - parse data first
-async function handleNextToStep2() {
+// Handle next to step 3 - parse data first
+async function handleNextToStep3() {
     const selectedType = document.querySelector('input[name="dataSourceType"]:checked')?.value;
 
     if (!selectedType) {
@@ -2530,7 +2534,7 @@ async function handleNextToStep2() {
         return;
     }
 
-    // For web page, show info in preview and go to step 2
+    // For web page, show info in preview and go to step 3
     if (selectedType === DataSourceType.Webpage) {
         const alias = document.getElementById('webToolAlias')?.value?.trim();
         const webUrl = document.getElementById('webUrl')?.value?.trim();
@@ -2553,12 +2557,12 @@ async function handleNextToStep2() {
         // Display info message in preview
         displayWebpagePreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For curl, show info in preview and go to step 2
+    // For curl, show info in preview and go to step 3
     if (selectedType === DataSourceType.Curl) {
         const alias = document.getElementById('curlToolAlias')?.value?.trim();
         const curlPasteMode = document.getElementById('curlPasteMode');
@@ -2648,12 +2652,12 @@ async function handleNextToStep2() {
         // Display info message in preview
         displayCurlPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For GitHub, show info in preview and go to step 2
+    // For GitHub, show info in preview and go to step 3
     if (selectedType === DataSourceType.GitHub) {
         const githubToken = document.getElementById('githubToken')?.value?.trim();
         const githubOwner = document.getElementById('githubOwner')?.value?.trim();
@@ -2699,12 +2703,12 @@ async function handleNextToStep2() {
         // Display GitHub preview
         displayGitHubPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For Jira, show info in preview and go to step 2
+    // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -2756,12 +2760,12 @@ async function handleNextToStep2() {
         // Display Jira preview
         displayJiraPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For FTP, show info in preview and go to step 2
+    // For FTP, show info in preview and go to step 3
     if (selectedType === DataSourceType.Ftp) {
         const ftpHost = document.getElementById('ftpHost')?.value?.trim();
         const ftpPort = document.getElementById('ftpPort')?.value?.trim() || '21';
@@ -2811,12 +2815,12 @@ async function handleNextToStep2() {
         // Display FTP preview
         displayFtpPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For LocalFS, show info in preview and go to step 2
+    // For LocalFS, show info in preview and go to step 3
     if (selectedType === DataSourceType.LocalFS) {
         const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
         const localfsAllowWrite = document.getElementById('localfsAllowWrite')?.value === 'true';
@@ -2868,12 +2872,12 @@ async function handleNextToStep2() {
         // Display LocalFS preview
         displayLocalFSPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For Email, show info in preview and go to step 2
+    // For Email, show info in preview and go to step 3
     if (selectedType === DataSourceType.Email) {
         const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
         const emailImapHost = document.getElementById('emailImapHost')?.value?.trim();
@@ -2952,12 +2956,12 @@ async function handleNextToStep2() {
         // Display Email preview
         displayEmailPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For Slack, show info in preview and go to step 2
+    // For Slack, show info in preview and go to step 3
     if (selectedType === DataSourceType.Slack) {
         const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
         const slackDefaultChannel = document.getElementById('slackDefaultChannel')?.value?.trim();
@@ -2999,12 +3003,12 @@ async function handleNextToStep2() {
         // Display Slack preview
         displaySlackPreview(currentDataSource);
 
-        // Go to step 2 (preview)
-        goToWizardStep(2);
+        // Go to step 3 (preview)
+        goToWizardStep(3);
         return;
     }
 
-    // For Discord, show info in preview and go to step 2
+    // For Discord, show info in preview and go to step 3
     if (selectedType === DataSourceType.Discord) {
         const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
         const discordDefaultGuildId = document.getElementById('discordDefaultGuildId')?.value?.trim();
@@ -3044,11 +3048,11 @@ async function handleNextToStep2() {
         console.log('💬 Discord config saved, showing preview info');
 
         displayDiscordPreview(currentDataSource);
-        goToWizardStep(2);
+        goToWizardStep(3);
         return;
     }
 
-    // For Docker, show info in preview and go to step 2
+    // For Docker, show info in preview and go to step 3
     if (selectedType === DataSourceType.Docker) {
         const dockerPath = document.getElementById('dockerPath')?.value?.trim();
         currentDataSource = {
@@ -3076,11 +3080,11 @@ async function handleNextToStep2() {
         }];
 
         displayDockerPreview(currentDataSource);
-        goToWizardStep(2);
+        goToWizardStep(3);
         return;
     }
 
-    // For Kubernetes, show info in preview and go to step 2
+    // For Kubernetes, show info in preview and go to step 3
     if (selectedType === DataSourceType.Kubernetes) {
         const kubectlPath = document.getElementById('kubectlPath')?.value?.trim();
         const kubeconfig = document.getElementById('kubeconfigPath')?.value?.trim();
@@ -3110,11 +3114,11 @@ async function handleNextToStep2() {
         }];
 
         displayKubernetesPreview(currentDataSource);
-        goToWizardStep(2);
+        goToWizardStep(3);
         return;
     }
 
-    // For Elasticsearch, show info in preview and go to step 2
+    // For Elasticsearch, show info in preview and go to step 3
     if (selectedType === DataSourceType.Elasticsearch) {
         const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
         const index = document.getElementById('esIndex')?.value?.trim();
@@ -3151,19 +3155,19 @@ async function handleNextToStep2() {
         }];
 
         displayElasticsearchPreview(currentDataSource);
-        goToWizardStep(2);
+        goToWizardStep(3);
         return;
     }
 
-    // If we already have parsed data, just go to step 2
+    // If we already have parsed data, just go to step 3
     if (currentParsedData) {
-        goToWizardStep(2);
+        goToWizardStep(3);
         return;
     }
 
     const loading = document.getElementById('parse-loading');
     const errorDiv = document.getElementById('parse-error');
-    const nextBtn = document.getElementById('next-to-step-2');
+    const nextBtn = document.getElementById('next-to-step-3');
 
     loading?.classList.remove('hidden');
     errorDiv?.classList.add('hidden');
@@ -3257,8 +3261,8 @@ async function handleNextToStep2() {
                 displayDataPreview(result.data.parsedData);
             }
 
-            // Go to step 2 after successful parse
-            goToWizardStep(2);
+            // Go to step 3 after successful parse
+            goToWizardStep(3);
         } else {
             throw new Error(result.error);
         }
@@ -3311,34 +3315,35 @@ function goToWizardStep(stepNumber) {
 
 function updateWizardProgress(activeStep) {
     // Reset all step indicators
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 4; i++) {
         const indicator = document.getElementById(`step-${i}-indicator`);
         const stepText = indicator?.parentElement.nextElementSibling.querySelector('p');
 
         if (i < activeStep) {
             // Completed step
-            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-blue-500');
+            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-blue-500', 'bg-slate-100', 'text-slate-400');
             indicator?.classList.add('bg-green-500', 'text-white');
-            stepText?.classList.remove('text-gray-500', 'text-blue-600');
+            stepText?.classList.remove('text-gray-500', 'text-blue-600', 'text-slate-400');
             stepText?.classList.add('text-green-600');
         } else if (i === activeStep) {
             // Current step
-            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-green-500');
+            indicator?.classList.remove('bg-gray-300', 'text-gray-600', 'bg-green-500', 'bg-slate-100', 'text-slate-400');
             indicator?.classList.add('bg-blue-500', 'text-white');
-            stepText?.classList.remove('text-gray-500', 'text-green-600');
+            stepText?.classList.remove('text-gray-500', 'text-green-600', 'text-slate-400');
             stepText?.classList.add('text-blue-600');
         } else {
             // Future step
             indicator?.classList.remove('bg-blue-500', 'bg-green-500', 'text-white');
-            indicator?.classList.add('bg-gray-300', 'text-gray-600');
+            indicator?.classList.add('bg-slate-100', 'text-slate-400');
             stepText?.classList.remove('text-blue-600', 'text-green-600');
-            stepText?.classList.add('text-gray-500');
+            stepText?.classList.add('text-slate-400');
         }
     }
 
     // Update progress bars
     const progress12 = document.getElementById('progress-1-2');
     const progress23 = document.getElementById('progress-2-3');
+    const progress34 = document.getElementById('progress-3-4');
 
     if (activeStep >= 2) {
         progress12?.classList.remove('bg-gray-200');
@@ -3355,112 +3360,121 @@ function updateWizardProgress(activeStep) {
         progress23?.classList.remove('bg-green-500');
         progress23?.classList.add('bg-gray-200');
     }
+
+    if (activeStep >= 4) {
+        progress34?.classList.remove('bg-gray-200');
+        progress34?.classList.add('bg-green-500');
+    } else {
+        progress34?.classList.remove('bg-green-500');
+        progress34?.classList.add('bg-gray-200');
+    }
 }
 
 function updateWizardNavigation() {
     const nextToStep2 = document.getElementById('next-to-step-2');
+    const nextToStep3 = document.getElementById('next-to-step-3');
+    const nextToStep4 = document.getElementById('next-to-step-4');
 
-    // Only enable step 2 if data source is configured and parsed, or if database connection is ready
+    const hasDataSource = document.querySelector('input[name="dataSourceType"]:checked');
+    const selectedType = hasDataSource?.value;
+
     if (nextToStep2) {
-        const hasDataSource = document.querySelector('input[name="dataSourceType"]:checked');
-        const selectedType = hasDataSource?.value;
-        const hasParsedData = currentParsedData !== null;
-        
-        let canProceed = false;
-        
-        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
-        if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
-            // For file uploads, need parsed data
-            canProceed = hasParsedData;
-        } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
-            // For database, check if all required fields are filled
-            const dbType = dbTypes.has(selectedType) ? selectedType : DataSourceType.Database;
-            const dbHost = document.getElementById('dbHost')?.value;
-            const dbName = document.getElementById('dbName')?.value;
-            const dbUser = document.getElementById('dbUser')?.value;
-            const dbPassword = document.getElementById('dbPassword')?.value;
-            
-            canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
-        } else if (selectedType === DataSourceType.Rest) {
-            const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
-            canProceed = !!swaggerUrl;
-        } else if (selectedType === DataSourceType.Webpage) {
-            const aliasInput = document.getElementById('webToolAlias');
-            const alias = aliasInput?.value.trim();
-            const validationDiv = document.getElementById('web-alias-validation');
-            const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
-            
-            const webUrl = document.getElementById('webUrl')?.value?.trim();
-            canProceed = isAliasValid && !!webUrl;
-        } else if (selectedType === DataSourceType.Curl) {
-            const aliasInput = document.getElementById('curlToolAlias');
-            const alias = aliasInput?.value.trim();
-            const validationDiv = document.getElementById('curl-alias-validation');
-            const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
+        nextToStep2.disabled = !hasDataSource;
+    }
 
-            const curlPasteMode = document.getElementById('curlPasteMode');
-            const isPasteMode = !curlPasteMode?.classList.contains('hidden');
-            let hasCurlInfo = false;
-            if (isPasteMode) {
-                const curlCommand = document.getElementById('curlCommand')?.value?.trim();
-                hasCurlInfo = !!curlCommand;
-            } else {
-                const curlUrl = document.getElementById('curlUrl')?.value?.trim();
-                hasCurlInfo = !!curlUrl;
-            }
+    let canProceed = false;
+    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
+    if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
+        const fileInput = document.getElementById('fileInput');
+        canProceed = !!fileInput?.files?.length;
+    } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
+        const dbType = dbTypes.has(selectedType) ? selectedType : DataSourceType.Database;
+        const dbHost = document.getElementById('dbHost')?.value;
+        const dbName = document.getElementById('dbName')?.value;
+        const dbUser = document.getElementById('dbUser')?.value;
+        const dbPassword = document.getElementById('dbPassword')?.value;
+        canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
+    } else if (selectedType === DataSourceType.Rest) {
+        const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
+        canProceed = !!swaggerUrl;
+    } else if (selectedType === DataSourceType.Webpage) {
+        const aliasInput = document.getElementById('webToolAlias');
+        const alias = aliasInput?.value.trim();
+        const validationDiv = document.getElementById('web-alias-validation');
+        const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
+        const webUrl = document.getElementById('webUrl')?.value?.trim();
+        canProceed = isAliasValid && !!webUrl;
+    } else if (selectedType === DataSourceType.Curl) {
+        const aliasInput = document.getElementById('curlToolAlias');
+        const alias = aliasInput?.value.trim();
+        const validationDiv = document.getElementById('curl-alias-validation');
+        const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
 
-            canProceed = isAliasValid && hasCurlInfo;
-        } else if (selectedType === DataSourceType.GitHub) {
-            const githubToken = document.getElementById('githubToken')?.value?.trim();
-            canProceed = !!githubToken;
-        } else if (selectedType === DataSourceType.Jira) {
-            const jiraHost = document.getElementById('jiraHost')?.value?.trim();
-            const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
-            const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
-            canProceed = !!jiraHost && !!jiraEmail && !!jiraApiToken;
-        } else if (selectedType === DataSourceType.Ftp) {
-            const ftpHost = document.getElementById('ftpHost')?.value?.trim();
-            const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
-            const ftpPassword = document.getElementById('ftpPassword')?.value?.trim();
-            canProceed = !!ftpHost && !!ftpUsername && !!ftpPassword;
-        } else if (selectedType === DataSourceType.LocalFS) {
-            const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
-            canProceed = !!localfsBasePath;
-        } else if (selectedType === DataSourceType.Email) {
-            const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
-            const emailImapHost = document.getElementById('emailImapHost')?.value?.trim();
-            const emailSmtpHost = document.getElementById('emailSmtpHost')?.value?.trim();
-            const emailUsername = document.getElementById('emailUsername')?.value?.trim();
-            const emailPassword = document.getElementById('emailPassword')?.value?.trim();
-
-            const hasCredentials = !!emailUsername && !!emailPassword;
-
-            if (emailMode === 'read') {
-                canProceed = hasCredentials && !!emailImapHost;
-            } else if (emailMode === 'write') {
-                canProceed = hasCredentials && !!emailSmtpHost;
-            } else {
-                // both
-                canProceed = hasCredentials && !!emailImapHost && !!emailSmtpHost;
-            }
-        } else if (selectedType === DataSourceType.Slack) {
-            const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
-            canProceed = !!slackBotToken;
-        } else if (selectedType === DataSourceType.Discord) {
-            const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
-            canProceed = !!discordBotToken;
-        } else if (selectedType === DataSourceType.Docker) {
-            // No required fields for Docker preview
-            canProceed = true;
-        } else if (selectedType === DataSourceType.Kubernetes) {
-            // No required fields for Kubernetes preview
-            canProceed = true;
-        } else if (selectedType === DataSourceType.Elasticsearch) {
-            const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
-            canProceed = !!baseUrl;
+        const curlPasteMode = document.getElementById('curlPasteMode');
+        const isPasteMode = !curlPasteMode?.classList.contains('hidden');
+        let hasCurlInfo = false;
+        if (isPasteMode) {
+            const curlCommand = document.getElementById('curlCommand')?.value?.trim();
+            hasCurlInfo = !!curlCommand;
+        } else {
+            const curlUrl = document.getElementById('curlUrl')?.value?.trim();
+            hasCurlInfo = !!curlUrl;
         }
 
-        nextToStep2.disabled = !hasDataSource || !canProceed;
+        canProceed = isAliasValid && hasCurlInfo;
+    } else if (selectedType === DataSourceType.GitHub) {
+        const githubToken = document.getElementById('githubToken')?.value?.trim();
+        canProceed = !!githubToken;
+    } else if (selectedType === DataSourceType.Jira) {
+        const jiraHost = document.getElementById('jiraHost')?.value?.trim();
+        const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
+        const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
+        canProceed = !!jiraHost && !!jiraEmail && !!jiraApiToken;
+    } else if (selectedType === DataSourceType.Ftp) {
+        const ftpHost = document.getElementById('ftpHost')?.value?.trim();
+        const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
+        const ftpPassword = document.getElementById('ftpPassword')?.value?.trim();
+        canProceed = !!ftpHost && !!ftpUsername && !!ftpPassword;
+    } else if (selectedType === DataSourceType.LocalFS) {
+        const localfsBasePath = document.getElementById('localfsBasePath')?.value?.trim();
+        canProceed = !!localfsBasePath;
+    } else if (selectedType === DataSourceType.Email) {
+        const emailMode = document.querySelector('input[name="emailMode"]:checked')?.value || 'both';
+        const emailImapHost = document.getElementById('emailImapHost')?.value?.trim();
+        const emailSmtpHost = document.getElementById('emailSmtpHost')?.value?.trim();
+        const emailUsername = document.getElementById('emailUsername')?.value?.trim();
+        const emailPassword = document.getElementById('emailPassword')?.value?.trim();
+
+        const hasCredentials = !!emailUsername && !!emailPassword;
+
+        if (emailMode === 'read') {
+            canProceed = hasCredentials && !!emailImapHost;
+        } else if (emailMode === 'write') {
+            canProceed = hasCredentials && !!emailSmtpHost;
+        } else {
+            canProceed = hasCredentials && !!emailImapHost && !!emailSmtpHost;
+        }
+    } else if (selectedType === DataSourceType.Slack) {
+        const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
+        canProceed = !!slackBotToken;
+    } else if (selectedType === DataSourceType.Discord) {
+        const discordBotToken = document.getElementById('discordBotToken')?.value?.trim();
+        canProceed = !!discordBotToken;
+    } else if (selectedType === DataSourceType.Docker) {
+        canProceed = true;
+    } else if (selectedType === DataSourceType.Kubernetes) {
+        canProceed = true;
+    } else if (selectedType === DataSourceType.Elasticsearch) {
+        const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    }
+
+    if (nextToStep3) {
+        nextToStep3.disabled = !hasDataSource || !canProceed;
+    }
+
+    if (nextToStep4) {
+        nextToStep4.disabled = currentParsedData === null;
     }
 }
 
