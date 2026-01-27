@@ -69,6 +69,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForLocalFS(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Email) {
         tools = this.generateToolsForEmail(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Slack) {
+        tools = this.generateToolsForSlack(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -79,9 +81,9 @@ export class MCPServerGenerator {
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
-      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, LocalFS, and Email)
+      // Generate and save resources (skip for REST, webpage, curl, GitHub, Jira, FTP, LocalFS, Email, and Slack)
       let resources: ResourceDefinition[] = [];
-      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS || dbConfig?.type === DataSourceType.Email)) {
+      if (!(Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest || dbConfig?.type === DataSourceType.Webpage || dbConfig?.type === DataSourceType.Curl || dbConfig?.type === DataSourceType.GitHub || dbConfig?.type === DataSourceType.Jira || dbConfig?.type === DataSourceType.Ftp || dbConfig?.type === DataSourceType.LocalFS || dbConfig?.type === DataSourceType.Email || dbConfig?.type === DataSourceType.Slack)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
         if (resources.length > 0) {
           this.sqliteManager.saveResources(resources);
@@ -1199,6 +1201,162 @@ export class MCPServerGenerator {
         operation: 'INSERT'
       });
     }
+
+    return tools;
+  }
+
+  private generateToolsForSlack(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { botToken, defaultChannel } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    // Base config stored in sqlQuery
+    const baseConfig = {
+      type: DataSourceType.Slack,
+      botToken,
+      defaultChannel
+    };
+
+    // List channels
+    tools.push({
+      server_id: serverId,
+      name: 'list_channels',
+      description: 'List all channels in the Slack workspace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          types: { type: 'string', description: 'Channel types: public_channel, private_channel, mpim, im', default: 'public_channel,private_channel' },
+          limit: { type: 'number', description: 'Maximum number of channels to return', default: 100 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listChannels' }),
+      operation: 'SELECT'
+    });
+
+    // List users
+    tools.push({
+      server_id: serverId,
+      name: 'list_users',
+      description: 'List all users in the Slack workspace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Maximum number of users to return', default: 100 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listUsers' }),
+      operation: 'SELECT'
+    });
+
+    // Send message
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message to a Slack channel',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', description: 'Channel ID or name (e.g., #general or C1234567890)' },
+          text: { type: 'string', description: 'Message text' },
+          thread_ts: { type: 'string', description: 'Thread timestamp to reply in thread' }
+        },
+        required: ['channel', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'sendMessage' }),
+      operation: 'INSERT'
+    });
+
+    // Get channel history
+    tools.push({
+      server_id: serverId,
+      name: 'get_channel_history',
+      description: 'Get message history from a Slack channel',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', description: 'Channel ID' },
+          limit: { type: 'number', description: 'Number of messages to return', default: 20 },
+          oldest: { type: 'string', description: 'Only messages after this Unix timestamp' },
+          latest: { type: 'string', description: 'Only messages before this Unix timestamp' }
+        },
+        required: ['channel']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getChannelHistory' }),
+      operation: 'SELECT'
+    });
+
+    // Get user info
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_info',
+      description: 'Get information about a Slack user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user: { type: 'string', description: 'User ID' }
+        },
+        required: ['user']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getUserInfo' }),
+      operation: 'SELECT'
+    });
+
+    // Add reaction
+    tools.push({
+      server_id: serverId,
+      name: 'add_reaction',
+      description: 'Add an emoji reaction to a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', description: 'Channel ID where the message is' },
+          timestamp: { type: 'string', description: 'Message timestamp' },
+          name: { type: 'string', description: 'Emoji name (without colons, e.g., thumbsup)' }
+        },
+        required: ['channel', 'timestamp', 'name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'addReaction' }),
+      operation: 'INSERT'
+    });
+
+    // Upload file
+    tools.push({
+      server_id: serverId,
+      name: 'upload_file',
+      description: 'Upload a file to a Slack channel',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channels: { type: 'string', description: 'Channel IDs (comma-separated)' },
+          content: { type: 'string', description: 'File content (for text files)' },
+          filename: { type: 'string', description: 'Filename' },
+          title: { type: 'string', description: 'Title of the file' },
+          initial_comment: { type: 'string', description: 'Initial comment to add' }
+        },
+        required: ['channels', 'content', 'filename']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'uploadFile' }),
+      operation: 'INSERT'
+    });
+
+    // Search messages
+    tools.push({
+      server_id: serverId,
+      name: 'search_messages',
+      description: 'Search for messages in the Slack workspace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          count: { type: 'number', description: 'Number of results to return', default: 20 },
+          sort: { type: 'string', description: 'Sort order: score or timestamp', default: 'score' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'searchMessages' }),
+      operation: 'SELECT'
+    });
 
     return tools;
   }

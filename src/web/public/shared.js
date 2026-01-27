@@ -13,7 +13,8 @@ const DataSourceType = {
     Jira: 'jira',
     Ftp: 'ftp',
     LocalFS: 'localfs',
-    Email: 'email'
+    Email: 'email',
+    Slack: 'slack'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -26,7 +27,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Jira,
         DataSourceType.Ftp,
         DataSourceType.LocalFS,
-        DataSourceType.Email
+        DataSourceType.Email,
+        DataSourceType.Slack
     ];
     return noTableTypes.includes(type);
 }

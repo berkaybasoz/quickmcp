@@ -18,6 +18,7 @@ export enum DataSourceType {
   Ftp = 'ftp',
   LocalFS = 'localfs',
   Email = 'email',
+  Slack = 'slack',
 }
 
 export interface DataSource {
@@ -253,6 +254,12 @@ export interface EmailGeneratorConfig extends BaseGeneratorConfig {
   secure?: boolean;
 }
 
+export interface SlackGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Slack;
+  botToken: string;
+  defaultChannel?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -263,6 +270,7 @@ export type GeneratorConfig =
   | FtpGeneratorConfig
   | LocalFSGeneratorConfig
   | EmailGeneratorConfig
+  | SlackGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -368,5 +376,16 @@ export function createEmailGeneratorConfig(
     username,
     password,
     secure: secure ?? true
+  };
+}
+
+export function createSlackGeneratorConfig(
+  botToken: string,
+  defaultChannel?: string
+): SlackGeneratorConfig {
+  return {
+    type: DataSourceType.Slack,
+    botToken,
+    defaultChannel
   };
 }

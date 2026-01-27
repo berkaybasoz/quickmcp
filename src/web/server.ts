@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -588,6 +588,51 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Slack) {
+        const { slackBotToken, slackDefaultChannel } = req.body as any;
+
+        if (!slackBotToken) {
+            throw new Error('Missing Slack Bot Token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Slack,
+            name: 'Slack',
+            botToken: slackBotToken,
+            defaultChannel: slackDefaultChannel || ''
+        };
+
+        // For Slack, tools are predefined
+        const parsedData = [{
+            tableName: 'slack_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_channels', 'List all channels in the workspace'],
+                ['list_users', 'List all users in the workspace'],
+                ['send_message', 'Send a message to a channel'],
+                ['get_channel_history', 'Get message history from a channel'],
+                ['get_user_info', 'Get information about a user'],
+                ['add_reaction', 'Add an emoji reaction to a message'],
+                ['upload_file', 'Upload a file to a channel'],
+                ['search_messages', 'Search for messages in the workspace']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -705,6 +750,12 @@ app.post('/api/generate', async (req, res) => {
         dataSource.username,
         dataSource.password,
         dataSource.secure
+      );
+    } else if (dataSource?.type === DataSourceType.Slack) {
+      parsedForGen = {};
+      dbConfForGen = createSlackGeneratorConfig(
+        dataSource.botToken,
+        dataSource.defaultChannel
       );
     } else {
       // Use provided parsed data or re-parse if not available

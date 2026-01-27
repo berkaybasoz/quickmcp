@@ -71,6 +71,10 @@ export class DynamicMCPExecutor {
         return await this.executeEmailCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Slack) {
+        return await this.executeSlackCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -1541,6 +1545,202 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Email error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{
+          error: error instanceof Error ? error.message : String(error)
+        }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private async executeSlackCall(queryConfig: any, args: any): Promise<any> {
+    const { botToken, operation } = queryConfig;
+
+    try {
+      const baseUrl = 'https://slack.com/api';
+      const headers = {
+        'Authorization': `Bearer ${botToken}`,
+        'Content-Type': 'application/json; charset=utf-8'
+      };
+
+      let result: any;
+
+      switch (operation) {
+        case 'listChannels': {
+          const types = args.types || 'public_channel,private_channel';
+          const limit = args.limit || 100;
+          const response = await fetch(`${baseUrl}/conversations.list?types=${encodeURIComponent(types)}&limit=${limit}`, { headers });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to list channels');
+          result = data.channels?.map((ch: any) => ({
+            id: ch.id,
+            name: ch.name,
+            is_private: ch.is_private,
+            is_archived: ch.is_archived,
+            num_members: ch.num_members,
+            topic: ch.topic?.value,
+            purpose: ch.purpose?.value
+          })) || [];
+          break;
+        }
+
+        case 'listUsers': {
+          const limit = args.limit || 100;
+          const response = await fetch(`${baseUrl}/users.list?limit=${limit}`, { headers });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to list users');
+          result = data.members?.filter((u: any) => !u.deleted && !u.is_bot).map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            real_name: u.real_name,
+            display_name: u.profile?.display_name,
+            email: u.profile?.email,
+            is_admin: u.is_admin,
+            is_owner: u.is_owner
+          })) || [];
+          break;
+        }
+
+        case 'sendMessage': {
+          const response = await fetch(`${baseUrl}/chat.postMessage`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              channel: args.channel,
+              text: args.text,
+              thread_ts: args.thread_ts
+            })
+          });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to send message');
+          result = [{
+            success: true,
+            channel: data.channel,
+            ts: data.ts,
+            message: 'Message sent successfully'
+          }];
+          break;
+        }
+
+        case 'getChannelHistory': {
+          const params = new URLSearchParams({
+            channel: args.channel,
+            limit: String(args.limit || 20)
+          });
+          if (args.oldest) params.append('oldest', args.oldest);
+          if (args.latest) params.append('latest', args.latest);
+
+          const response = await fetch(`${baseUrl}/conversations.history?${params}`, { headers });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to get channel history');
+          result = data.messages?.map((m: any) => ({
+            ts: m.ts,
+            user: m.user,
+            text: m.text,
+            thread_ts: m.thread_ts,
+            reply_count: m.reply_count,
+            reactions: m.reactions
+          })) || [];
+          break;
+        }
+
+        case 'getUserInfo': {
+          const response = await fetch(`${baseUrl}/users.info?user=${args.user}`, { headers });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to get user info');
+          const u = data.user;
+          result = [{
+            id: u.id,
+            name: u.name,
+            real_name: u.real_name,
+            display_name: u.profile?.display_name,
+            email: u.profile?.email,
+            title: u.profile?.title,
+            phone: u.profile?.phone,
+            is_admin: u.is_admin,
+            is_owner: u.is_owner,
+            tz: u.tz
+          }];
+          break;
+        }
+
+        case 'addReaction': {
+          const response = await fetch(`${baseUrl}/reactions.add`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              channel: args.channel,
+              timestamp: args.timestamp,
+              name: args.name
+            })
+          });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to add reaction');
+          result = [{ success: true, message: 'Reaction added successfully' }];
+          break;
+        }
+
+        case 'uploadFile': {
+          const response = await fetch(`${baseUrl}/files.upload`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              channels: args.channels,
+              content: args.content,
+              filename: args.filename,
+              title: args.title,
+              initial_comment: args.initial_comment
+            })
+          });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to upload file');
+          result = [{
+            success: true,
+            file_id: data.file?.id,
+            file_name: data.file?.name,
+            message: 'File uploaded successfully'
+          }];
+          break;
+        }
+
+        case 'searchMessages': {
+          const params = new URLSearchParams({
+            query: args.query,
+            count: String(args.count || 20),
+            sort: args.sort || 'score'
+          });
+          const response = await fetch(`${baseUrl}/search.messages?${params}`, { headers });
+          const data: any = await response.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to search messages');
+          result = data.messages?.matches?.map((m: any) => ({
+            ts: m.ts,
+            channel: m.channel?.name,
+            channel_id: m.channel?.id,
+            user: m.user,
+            username: m.username,
+            text: m.text,
+            permalink: m.permalink
+          })) || [];
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown Slack operation: ${operation}`);
+      }
+
+      console.error(`✅ Slack operation ${operation} completed successfully`);
+
+      return {
+        success: true,
+        data: Array.isArray(result) ? result : [result],
+        rowCount: Array.isArray(result) ? result.length : 1
+      };
+
+    } catch (error) {
+      console.error(`❌ Slack error:`, error);
+      return {
+        success: false,
+        error: `Slack error: ${error instanceof Error ? error.message : String(error)}`,
         data: [{
           error: error instanceof Error ? error.message : String(error)
         }],

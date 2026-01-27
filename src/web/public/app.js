@@ -2957,6 +2957,53 @@ async function handleNextToStep2() {
         return;
     }
 
+    // For Slack, show info in preview and go to step 2
+    if (selectedType === DataSourceType.Slack) {
+        const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
+        const slackDefaultChannel = document.getElementById('slackDefaultChannel')?.value?.trim();
+
+        if (!slackBotToken) {
+            showError('slack-parse-error', 'Please enter a Slack Bot Token');
+            return;
+        }
+
+        // Store Slack config
+        currentDataSource = {
+            type: DataSourceType.Slack,
+            name: 'Slack',
+            botToken: slackBotToken,
+            defaultChannel: slackDefaultChannel || ''
+        };
+        currentParsedData = [{
+            tableName: 'slack_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_channels', 'List all channels in the workspace'],
+                ['list_users', 'List all users in the workspace'],
+                ['send_message', 'Send a message to a channel'],
+                ['get_channel_history', 'Get message history from a channel'],
+                ['get_user_info', 'Get information about a user'],
+                ['add_reaction', 'Add an emoji reaction to a message'],
+                ['upload_file', 'Upload a file to a channel'],
+                ['search_messages', 'Search for messages in the workspace']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('💬 Slack config saved, showing preview info');
+
+        // Display Slack preview
+        displaySlackPreview(currentDataSource);
+
+        // Go to step 2 (preview)
+        goToWizardStep(2);
+        return;
+    }
+
     // If we already have parsed data, just go to step 2
     if (currentParsedData) {
         goToWizardStep(2);
@@ -3243,6 +3290,9 @@ function updateWizardNavigation() {
                 // both
                 canProceed = hasCredentials && !!emailImapHost && !!emailSmtpHost;
             }
+        } else if (selectedType === DataSourceType.Slack) {
+            const slackBotToken = document.getElementById('slackBotToken')?.value?.trim();
+            canProceed = !!slackBotToken;
         }
 
         nextToStep2.disabled = !hasDataSource || !canProceed;
@@ -3262,6 +3312,7 @@ function toggleDataSourceFields() {
     const ftpSection = document.getElementById('ftp-section');
     const localfsSection = document.getElementById('localfs-section');
     const emailSection = document.getElementById('email-section');
+    const slackSection = document.getElementById('slack-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -3274,6 +3325,7 @@ function toggleDataSourceFields() {
     ftpSection?.classList.add('hidden');
     localfsSection?.classList.add('hidden');
     emailSection?.classList.add('hidden');
+    slackSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -3383,6 +3435,14 @@ function toggleDataSourceFields() {
         }
         // Initialize email mode UI
         handleEmailModeChange();
+    } else if (selectedType === DataSourceType.Slack) {
+        slackSection?.classList.remove('hidden');
+        // Add listener for Slack bot token input
+        const slackBotTokenInput = document.getElementById('slackBotToken');
+        if (slackBotTokenInput && !slackBotTokenInput.dataset.listenerAttached) {
+            slackBotTokenInput.addEventListener('input', updateWizardNavigation);
+            slackBotTokenInput.dataset.listenerAttached = 'true';
+        }
     }
 
     // Update wizard navigation state
@@ -4168,6 +4228,86 @@ function displayEmailPreview(emailConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>For Gmail, make sure to use an App Password.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySlackPreview(slackConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { botToken, defaultChannel } = slackConfig || {};
+    const maskedToken = botToken ? `${botToken.substring(0, 10)}...${botToken.slice(-4)}` : 'Not set';
+
+    const tools = [
+        { name: 'list_channels', desc: 'List all channels in the workspace' },
+        { name: 'list_users', desc: 'List all users in the workspace' },
+        { name: 'send_message', desc: 'Send a message to a channel' },
+        { name: 'get_channel_history', desc: 'Get message history from a channel' },
+        { name: 'get_user_info', desc: 'Get information about a user' },
+        { name: 'add_reaction', desc: 'Add an emoji reaction to a message' },
+        { name: 'upload_file', desc: 'Upload a file to a channel' },
+        { name: 'search_messages', desc: 'Search for messages in the workspace' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/slack.png" alt="Slack" class="w-10 h-10">
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Slack Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Slack.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Bot Token:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${maskedToken}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Channel:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${defaultChannel || 'Not set'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Send messages, list channels, and manage your Slack workspace.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-shield-alt mt-0.5 text-blue-500"></i>
+                                <span>Bot token is stored securely in the server configuration.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Make sure your Slack app has the required OAuth scopes.</span>
                             </div>
                         </div>
                     </div>
