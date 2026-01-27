@@ -24,6 +24,7 @@ export enum DataSourceType {
   Docker = 'docker',
   Kubernetes = 'kubernetes',
   Elasticsearch = 'elasticsearch',
+  OpenShift = 'openshift',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -44,6 +45,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Docker,
     DataSourceType.Kubernetes,
     DataSourceType.Elasticsearch,
+    DataSourceType.OpenShift,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -324,6 +326,13 @@ export interface ElasticsearchGeneratorConfig extends BaseGeneratorConfig {
   index?: string;
 }
 
+export interface OpenShiftGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.OpenShift;
+  ocPath?: string; // default: 'oc'
+  kubeconfig?: string;
+  namespace?: string;
+}
+
 export type GeneratorConfig =
   | RestGeneratorConfig
   | WebpageGeneratorConfig
@@ -340,6 +349,7 @@ export type GeneratorConfig =
   | DockerGeneratorConfig
   | KubernetesGeneratorConfig
   | ElasticsearchGeneratorConfig
+  | OpenShiftGeneratorConfig
   | DatabaseConnection
   | GitHubConnection;
 
@@ -518,5 +528,18 @@ export function createElasticsearchGeneratorConfig(
     username,
     password,
     index
+  };
+}
+
+export function createOpenShiftGeneratorConfig(
+  ocPath?: string,
+  kubeconfig?: string,
+  namespace?: string
+): OpenShiftGeneratorConfig {
+  return {
+    type: DataSourceType.OpenShift,
+    ocPath: ocPath || 'oc',
+    kubeconfig,
+    namespace
   };
 }

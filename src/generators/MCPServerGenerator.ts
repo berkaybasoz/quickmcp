@@ -81,6 +81,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForKubernetes(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Elasticsearch) {
         tools = this.generateToolsForElasticsearch(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.OpenShift) {
+        tools = this.generateToolsForOpenShift(serverId, dbConfig);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
@@ -1977,6 +1979,113 @@ export class MCPServerGenerator {
         required: ['id']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deleteDocument' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForOpenShift(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { ocPath, kubeconfig, namespace } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.OpenShift,
+      ocPath: ocPath || 'oc',
+      kubeconfig,
+      namespace
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_projects',
+      description: 'List OpenShift projects',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listProjects' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_current_project',
+      description: 'Get current OpenShift project',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getCurrentProject' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_pods',
+      description: 'List pods in a project/namespace',
+      inputSchema: {
+        type: 'object',
+        properties: { namespace: { type: 'string', description: 'Namespace override' } },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listPods' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_pod',
+      description: 'Get a pod by name',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Pod name' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getPod' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_deployments',
+      description: 'List deployments in a project/namespace',
+      inputSchema: {
+        type: 'object',
+        properties: { namespace: { type: 'string', description: 'Namespace override' } },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listDeployments' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'scale_deployment',
+      description: 'Scale a deployment to a replica count',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Deployment name' },
+          replicas: { type: 'number', description: 'Desired replica count' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name', 'replicas']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'scaleDeployment' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_pod',
+      description: 'Delete a pod',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Pod name' },
+          namespace: { type: 'string', description: 'Namespace override' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'deletePod' }),
       operation: 'DELETE'
     });
 

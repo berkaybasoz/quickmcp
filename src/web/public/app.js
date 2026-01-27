@@ -3382,6 +3382,39 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For OpenShift, show info in preview and go to step 3
+    if (selectedType === DataSourceType.OpenShift) {
+        const ocPath = document.getElementById('ocPath')?.value?.trim();
+        const kubeconfig = document.getElementById('ocKubeconfigPath')?.value?.trim();
+        const namespace = document.getElementById('openshiftNamespace')?.value?.trim();
+
+        currentDataSource = {
+            type: DataSourceType.OpenShift,
+            name: 'OpenShift',
+            ocPath: ocPath || 'oc',
+            kubeconfig: kubeconfig || '',
+            namespace: namespace || ''
+        };
+        currentParsedData = [{
+            tableName: 'openshift_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects in the cluster'],
+                ['get_current_project', 'Get current project'],
+                ['list_pods', 'List pods in a project'],
+                ['get_pod', 'Get a pod by name'],
+                ['list_deployments', 'List deployments in a project'],
+                ['scale_deployment', 'Scale a deployment to a replica count'],
+                ['delete_pod', 'Delete a pod']
+            ],
+            metadata: { rowCount: 7, columnCount: 2, dataTypes: { tool: 'string', description: 'string' } }
+        }];
+
+        displayOpenShiftPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Elasticsearch, show info in preview and go to step 3
     if (selectedType === DataSourceType.Elasticsearch) {
         const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
@@ -3519,6 +3552,8 @@ async function handleNextToStep3() {
                 displayLocalFSPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.OpenShift) {
+                displayOpenShiftPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Elasticsearch) {
                 displayElasticsearchPreview(currentDataSource);
             } else {
@@ -3746,6 +3781,8 @@ function updateWizardNavigation() {
         canProceed = true;
     } else if (selectedType === DataSourceType.Kubernetes) {
         canProceed = true;
+    } else if (selectedType === DataSourceType.OpenShift) {
+        canProceed = true;
     } else if (selectedType === DataSourceType.Elasticsearch) {
         const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
         canProceed = !!baseUrl;
@@ -3779,6 +3816,7 @@ function toggleDataSourceFields() {
     const discordSection = document.getElementById('discord-section');
     const dockerSection = document.getElementById('docker-section');
     const kubernetesSection = document.getElementById('kubernetes-section');
+    const openshiftSection = document.getElementById('openshift-section');
     const elasticsearchSection = document.getElementById('elasticsearch-section');
 
     // Hide all sections first
@@ -3798,6 +3836,7 @@ function toggleDataSourceFields() {
     discordSection?.classList.add('hidden');
     dockerSection?.classList.add('hidden');
     kubernetesSection?.classList.add('hidden');
+    openshiftSection?.classList.add('hidden');
     elasticsearchSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
@@ -3963,6 +4002,8 @@ function toggleDataSourceFields() {
         dockerSection?.classList.remove('hidden');
     } else if (selectedType === DataSourceType.Kubernetes) {
         kubernetesSection?.classList.remove('hidden');
+    } else if (selectedType === DataSourceType.OpenShift) {
+        openshiftSection?.classList.remove('hidden');
     } else if (selectedType === DataSourceType.Elasticsearch) {
         elasticsearchSection?.classList.remove('hidden');
         const esBaseUrlInput = document.getElementById('esBaseUrl');
@@ -5095,6 +5136,85 @@ function displayKubernetesPreview(kubeConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Ensure kubectl can access the cluster.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayOpenShiftPreview(osConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const ocPath = osConfig?.ocPath || 'oc';
+    const kubeconfig = osConfig?.kubeconfig || 'Default';
+    const namespace = osConfig?.namespace || 'Default';
+    const tools = [
+        { name: 'list_projects', desc: 'List projects in the cluster' },
+        { name: 'get_current_project', desc: 'Get current project' },
+        { name: 'list_pods', desc: 'List pods in a project' },
+        { name: 'get_pod', desc: 'Get a pod by name' },
+        { name: 'list_deployments', desc: 'List deployments in a project' },
+        { name: 'scale_deployment', desc: 'Scale a deployment to a replica count' },
+        { name: 'delete_pod', desc: 'Delete a pod' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/openshift.png" alt="OpenShift" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">OpenShift Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with OpenShift via oc.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">oc Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${ocPath}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Kubeconfig:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${kubeconfig}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Project:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${namespace}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Uses your current oc login/context.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
+                                <span>Ensure oc can access your cluster.</span>
                             </div>
                         </div>
                     </div>

@@ -95,6 +95,10 @@ export class DynamicMCPExecutor {
         return await this.executeElasticsearchCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.OpenShift) {
+        return await this.executeOpenShiftCall(queryConfig, args);
+      }
+
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
 
     } catch (error) {
@@ -717,6 +721,142 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Elasticsearch error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private async executeOpenShiftCall(queryConfig: any, args: any): Promise<any> {
+    const { ocPath = 'oc', kubeconfig, namespace: defaultNamespace, operation } = queryConfig;
+    console.error(`🟥 OpenShift operation: ${operation}`);
+
+    const run = async (cmd: string, cmdArgs: string[], parse: 'json' | 'lines' | 'text' = 'json') => {
+      const { execFile } = await import('child_process');
+      return new Promise<any[]>((resolve, reject) => {
+        console.error(`🟥 oc exec: ${cmd} ${cmdArgs.join(' ')}`);
+        execFile(cmd, cmdArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 8000 }, (err, stdout, stderr) => {
+          if (err) {
+            const msg = (stderr && stderr.trim()) || err.message || 'oc command failed';
+            console.error(`🟥 oc error: ${msg}`);
+            return reject(new Error(`${msg}`));
+          }
+          try {
+            if (parse === 'json') {
+              const parsed = JSON.parse(stdout);
+              resolve(Array.isArray(parsed) ? parsed : [parsed]);
+            } else if (parse === 'lines') {
+              const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+              resolve(lines.map(l => ({ line: l })));
+            } else {
+              resolve([{ output: stdout }]);
+            }
+          } catch (e) {
+            resolve([{ output: stdout }]);
+          }
+        });
+      });
+    };
+
+    const resolveOcBin = async (): Promise<string> => {
+      const isWin = process.platform === 'win32';
+      const pf = process.env['ProgramFiles'] || 'C:\\\\Program Files';
+
+      const candidates = [
+        ocPath,
+        process.env.OC_PATH,
+        '/opt/homebrew/bin/oc',
+        '/usr/local/bin/oc',
+        '/usr/bin/oc',
+        '/bin/oc',
+        isWin ? `${pf}\\OpenShift\\oc.exe` : undefined,
+      ].filter((p): p is string => !!p);
+
+      for (const bin of candidates) {
+        try {
+          await run(bin, ['version'], 'text');
+          return bin;
+        } catch (e: any) {
+          if (typeof e?.message === 'string' && e.message.includes('ENOENT')) {
+            continue;
+          }
+          if (typeof e?.message === 'string' && e.message.toLowerCase().includes('openshift')) {
+            return bin;
+          }
+        }
+      }
+      return ocPath;
+    };
+
+    const bin = await resolveOcBin();
+    console.error(`🟥 oc bin selected: ${bin}`);
+
+    const baseArgs: string[] = [];
+    if (kubeconfig) {
+      baseArgs.push('--kubeconfig', String(kubeconfig));
+    }
+
+    const withNamespace = (ns?: string) => {
+      const finalNs = ns || defaultNamespace;
+      return finalNs ? ['-n', String(finalNs)] : [];
+    };
+
+    try {
+      let result: any[] = [];
+      switch (operation) {
+        case 'listProjects': {
+          result = await run(bin, [...baseArgs, 'get', 'projects', '-o', 'json'], 'json');
+          break;
+        }
+        case 'getCurrentProject': {
+          const lines = await run(bin, [...baseArgs, 'project', '-q'], 'lines');
+          result = lines.map(l => ({ project: l.line }));
+          break;
+        }
+        case 'listPods': {
+          const nsArgs = withNamespace(args.namespace);
+          result = await run(bin, [...baseArgs, 'get', 'pods', ...nsArgs, '-o', 'json'], 'json');
+          break;
+        }
+        case 'getPod': {
+          if (!args.name) throw new Error('name is required');
+          const nsArgs = withNamespace(args.namespace);
+          result = await run(bin, [...baseArgs, 'get', 'pod', String(args.name), ...nsArgs, '-o', 'json'], 'json');
+          break;
+        }
+        case 'listDeployments': {
+          const nsArgs = withNamespace(args.namespace);
+          result = await run(bin, [...baseArgs, 'get', 'deployments', ...nsArgs, '-o', 'json'], 'json');
+          break;
+        }
+        case 'scaleDeployment': {
+          if (!args.name || typeof args.replicas === 'undefined') throw new Error('name and replicas are required');
+          const nsArgs = withNamespace(args.namespace);
+          await run(bin, [...baseArgs, 'scale', 'deployment', String(args.name), ...nsArgs, `--replicas=${Number(args.replicas)}`], 'text');
+          result = [{ success: true }];
+          break;
+        }
+        case 'deletePod': {
+          if (!args.name) throw new Error('name is required');
+          const nsArgs = withNamespace(args.namespace);
+          await run(bin, [...baseArgs, 'delete', 'pod', String(args.name), ...nsArgs], 'text');
+          result = [{ success: true }];
+          break;
+        }
+        default:
+          throw new Error(`Unknown OpenShift operation: ${operation}`);
+      }
+
+      return {
+        success: true,
+        data: result,
+        rowCount: result.length
+      };
+    } catch (error) {
+      console.error('❌ OpenShift error:', error);
+      return {
+        success: false,
+        error: `OpenShift error: ${error instanceof Error ? error.message : String(error)}`,
         data: [{ error: error instanceof Error ? error.message : String(error) }],
         rowCount: 1
       };

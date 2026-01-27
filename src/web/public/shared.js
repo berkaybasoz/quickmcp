@@ -20,7 +20,8 @@ const DataSourceType = {
     Discord: 'discord',
     Docker: 'docker',
     Kubernetes: 'kubernetes',
-    Elasticsearch: 'elasticsearch'
+    Elasticsearch: 'elasticsearch',
+    OpenShift: 'openshift'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -40,7 +41,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Discord,
         DataSourceType.Docker,
         DataSourceType.Kubernetes,
-        DataSourceType.Elasticsearch
+        DataSourceType.Elasticsearch,
+        DataSourceType.OpenShift
     ];
     return noTableTypes.includes(type);
 }

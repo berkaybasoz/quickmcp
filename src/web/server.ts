@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -807,6 +807,46 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.OpenShift) {
+        const { ocPath, kubeconfig, namespace } = req.body as any;
+
+        const dataSource = {
+            type: DataSourceType.OpenShift,
+            name: 'OpenShift',
+            ocPath: ocPath || 'oc',
+            kubeconfig: kubeconfig || '',
+            namespace: namespace || ''
+        };
+
+        const parsedData = [{
+            tableName: 'openshift_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List OpenShift projects'],
+                ['get_current_project', 'Get current OpenShift project'],
+                ['list_pods', 'List pods in a project/namespace'],
+                ['get_pod', 'Get a pod by name'],
+                ['list_deployments', 'List deployments in a project/namespace'],
+                ['scale_deployment', 'Scale a deployment to a replica count'],
+                ['delete_pod', 'Delete a pod']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Elasticsearch) {
         const { baseUrl, apiKey, username, password, index } = req.body as any;
 
@@ -1011,6 +1051,13 @@ app.post('/api/generate', async (req, res) => {
         dataSource.username,
         dataSource.password,
         dataSource.index
+      );
+    } else if (dataSource?.type === DataSourceType.OpenShift) {
+      parsedForGen = {};
+      dbConfForGen = createOpenShiftGeneratorConfig(
+        dataSource.ocPath,
+        dataSource.kubeconfig,
+        dataSource.namespace
       );
     } else {
       // Use provided parsed data or re-parse if not available
