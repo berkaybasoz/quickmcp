@@ -16,6 +16,21 @@ const DataSourceType = {
     Email: 'email'
 };
 
+// Data source types that don't require table selection (runtime execution)
+// These types generate their own tools and don't need parsed table data
+function isNoTableDataSource(type) {
+    const noTableTypes = [
+        DataSourceType.Webpage,
+        DataSourceType.Curl,
+        DataSourceType.GitHub,
+        DataSourceType.Jira,
+        DataSourceType.Ftp,
+        DataSourceType.LocalFS,
+        DataSourceType.Email
+    ];
+    return noTableTypes.includes(type);
+}
+
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Close sidebar when overlay is clicked on mobile

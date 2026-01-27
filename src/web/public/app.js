@@ -976,10 +976,9 @@ async function generateServer() {
     // Get selected tables and their tool configurations
     let selectedTablesConfig = getSelectedTablesAndTools();
 
-    // For webpage, curl, GitHub, Jira, and FTP, we don't need table selection - runtime execution will happen
-    if (currentDataSource?.type === DataSourceType.Webpage || currentDataSource?.type === DataSourceType.Curl || currentDataSource?.type === DataSourceType.GitHub || currentDataSource?.type === DataSourceType.Jira || currentDataSource?.type === DataSourceType.Ftp || currentDataSource?.type === DataSourceType.LocalFS || currentDataSource?.type === DataSourceType.Email) {
-        selectedTablesConfig = []; // Empty is OK for webpage, curl, GitHub, Jira, and FTP
-        //console.log(`🌐 ${currentDataSource.type} server - execution will happen at runtime`);
+    // For data sources that don't need table selection (runtime execution)
+    if (isNoTableDataSource(currentDataSource?.type)) {
+        selectedTablesConfig = []; // Empty is OK - tools are generated based on config
     } else if (selectedTablesConfig.length === 0) {
         showError('generate-error', 'Please select at least one table to generate server for');
         return;
