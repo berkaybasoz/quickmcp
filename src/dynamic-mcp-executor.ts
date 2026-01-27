@@ -55,6 +55,10 @@ export class DynamicMCPExecutor {
         return await this.executeGitHubCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.X) {
+        return await this.executeXCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1099,6 +1103,108 @@ export class DynamicMCPExecutor {
     } else if (responseData.items) {
       // Search results have items array
       dataArray = responseData.items;
+    } else {
+      dataArray = [responseData];
+    }
+
+    return {
+      success: true,
+      data: dataArray,
+      rowCount: dataArray.length
+    };
+  }
+
+  private async executeXCall(queryConfig: any, args: any): Promise<any> {
+    const { token, endpoint, method, username: defaultUsername } = queryConfig;
+    const bearerToken = String(token || '').trim();
+    if (!bearerToken) {
+      return { success: false, error: 'Missing X API token', data: [], rowCount: 0 };
+    }
+    if (/[^\x00-\x7F]/.test(bearerToken)) {
+      return {
+        success: false,
+        error: 'X API token contains non-ASCII characters. Re-enter the token without quotes/ellipses.',
+        data: [],
+        rowCount: 0
+      };
+    }
+
+    let url = `https://api.x.com${endpoint}`;
+
+    const username = args.username || defaultUsername;
+    if (username) {
+      url = url.replace('{username}', encodeURIComponent(username));
+    }
+    if (args.user_id) {
+      url = url.replace('{user_id}', encodeURIComponent(args.user_id));
+    }
+    if (args.tweet_id) {
+      url = url.replace('{tweet_id}', encodeURIComponent(args.tweet_id));
+    }
+
+    const queryParams: string[] = [];
+    const bodyParams: any = {};
+
+    for (const [key, value] of Object.entries(args)) {
+      if (value === undefined || value === null) continue;
+      if (['username', 'user_id', 'tweet_id'].includes(key)) continue;
+
+      if ((method || 'GET') === 'GET') {
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      } else {
+        bodyParams[key] = value;
+      }
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`X API call: ${method} ${url}`);
+
+    const fetchOptions: RequestInit = {
+      method: method || 'GET',
+      headers: {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'QuickMCP'
+      }
+    };
+
+    if ((method || 'GET') !== 'GET' && Object.keys(bodyParams).length > 0) {
+      fetchOptions.body = JSON.stringify(bodyParams);
+    }
+
+    const response = await fetch(url, fetchOptions);
+    const contentType = response.headers.get('content-type');
+
+    let responseData: any;
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      responseData = await response.text();
+    }
+
+    console.error(`✅ X API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ X API error:', responseData);
+      return {
+        success: false,
+        error: `X API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.title || responseData?.error || responseData?.detail || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    let dataArray: any[];
+    if (responseData?.data) {
+      dataArray = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
+    } else if (Array.isArray(responseData)) {
+      dataArray = responseData;
     } else {
       dataArray = [responseData];
     }

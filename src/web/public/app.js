@@ -2860,6 +2860,45 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For X, show info in preview and go to step 3
+    if (selectedType === DataSourceType.X) {
+        const xToken = document.getElementById('xToken')?.value?.trim();
+        const xUsername = document.getElementById('xUsername')?.value?.trim();
+
+        if (!xToken) {
+            showError('x-parse-error', 'Please enter an X API token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.X,
+            name: 'X',
+            token: xToken,
+            username: xUsername
+        };
+        currentParsedData = [{
+            tableName: 'x_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user_by_username', 'Get X user details by username'],
+                ['get_user', 'Get X user details by user ID'],
+                ['get_user_tweets', 'Get recent tweets from a user'],
+                ['search_recent_tweets', 'Search recent tweets by query'],
+                ['get_tweet', 'Get a tweet by ID'],
+                ['create_tweet', 'Create a new tweet']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayXPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3544,6 +3583,8 @@ async function handleNextToStep3() {
                 displayCurlPreview(currentDataSource.curlSetting);
             } else if (currentDataSource.type === DataSourceType.GitHub) {
                 displayGitHubPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.X) {
+                displayXPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -3724,6 +3765,9 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.GitHub) {
         const githubToken = document.getElementById('githubToken')?.value?.trim();
         canProceed = !!githubToken;
+    } else if (selectedType === DataSourceType.X) {
+        const xToken = document.getElementById('xToken')?.value?.trim();
+        canProceed = !!xToken;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -3806,6 +3850,7 @@ function toggleDataSourceFields() {
     const webSection = document.getElementById('web-section');
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
+    const xSection = document.getElementById('x-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -3826,6 +3871,7 @@ function toggleDataSourceFields() {
     webSection?.classList.add('hidden');
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
+    xSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -3870,6 +3916,13 @@ function toggleDataSourceFields() {
         if (githubTokenInput && !githubTokenInput.dataset.listenerAttached) {
             githubTokenInput.addEventListener('input', updateWizardNavigation);
             githubTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.X) {
+        xSection?.classList.remove('hidden');
+        const xTokenInput = document.getElementById('xToken');
+        if (xTokenInput && !xTokenInput.dataset.listenerAttached) {
+            xTokenInput.addEventListener('input', updateWizardNavigation);
+            xTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
@@ -5288,6 +5341,70 @@ function displayElasticsearchPreview(esConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Provide API key or username/password if required.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayXPreview(xConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const username = xConfig?.username || 'Not set';
+    const tools = [
+        { name: 'get_user_by_username', desc: 'Get X user details by username' },
+        { name: 'get_user', desc: 'Get X user details by user ID' },
+        { name: 'get_user_tweets', desc: 'Get recent tweets from a user (max_results 10-100)' },
+        { name: 'search_recent_tweets', desc: 'Search recent tweets by query (max_results 10-100)' },
+        { name: 'get_tweet', desc: 'Get a tweet by ID' },
+        { name: 'create_tweet', desc: 'Create a new tweet' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/x.png" alt="X" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">X API Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with X API (v2).</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Default Username:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${username}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Uses your X API Bearer token for authentication.</span>
                             </div>
                         </div>
                     </div>

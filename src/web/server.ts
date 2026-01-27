@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -373,6 +373,48 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 10,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.X) {
+        const { xToken, xUsername } = req.body as any;
+
+        if (!xToken) {
+            throw new Error('Missing X API token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.X,
+            name: 'X',
+            token: xToken,
+            username: xUsername
+        };
+
+        const parsedData = [{
+            tableName: 'x_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user_by_username', 'Get X user details by username'],
+                ['get_user', 'Get X user details by user ID'],
+                ['get_user_tweets', 'Get recent tweets from a user (max_results 10-100)'],
+                ['search_recent_tweets', 'Search recent tweets by query (max_results 10-100)'],
+                ['get_tweet', 'Get a tweet by ID'],
+                ['create_tweet', 'Create a new tweet']
+            ],
+            metadata: {
+                rowCount: 6,
                 columnCount: 2,
                 dataTypes: {
                     tool: 'string',
@@ -972,6 +1014,12 @@ app.post('/api/generate', async (req, res) => {
         dataSource.owner,
         dataSource.repo
       );
+    } else if (dataSource?.type === DataSourceType.X) {
+      parsedForGen = {};
+      dbConfForGen = createXGeneratorConfig(
+        dataSource.token,
+        dataSource.username
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1224,6 +1272,8 @@ function inferTypeFromTools(tools: any[]): string | null {
   const names = new Set((tools || []).map(t => t.name));
   if (names.has('list_indices') && names.has('get_cluster_health')) return DataSourceType.Elasticsearch;
   if (names.has('list_contexts') && names.has('list_pods')) return DataSourceType.Kubernetes;
+  if (names.has('list_projects') && names.has('get_current_project')) return DataSourceType.OpenShift;
+  if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
   return null;
 }
 
