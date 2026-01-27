@@ -8,6 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
+import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
 import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
@@ -1194,7 +1195,6 @@ app.get('/api/servers/:id/data', async (req, res) => {
     }
 
     // Use the DynamicMCPExecutor to get data from first available SELECT tool
-    const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
     const executor = new DynamicMCPExecutor();
 
     const tools = ensureGenerator().getToolsForServer(serverId);
@@ -1258,7 +1258,6 @@ app.post('/api/servers/:id/test', async (req, res) => {
     // For custom tool test
     if (testType === 'tools/call' && toolName) {
       try {
-        const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
         const executor = new DynamicMCPExecutor();
         
         // Find the specific tool
@@ -1312,7 +1311,6 @@ app.post('/api/servers/:id/test', async (req, res) => {
     for (const tool of toolsToTest) {
       try {
         // Use DynamicMCPExecutor to test the tool
-        const { DynamicMCPExecutor } = require('../dynamic-mcp-executor.js');
         const executor = new DynamicMCPExecutor();
         
         // Prepare test parameters based on tool schema
