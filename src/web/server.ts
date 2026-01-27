@@ -8,7 +8,7 @@ import os from 'os';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -424,6 +424,51 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 12,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Confluence) {
+        const { confluenceHost, confluenceEmail, confluenceApiToken, confluenceSpaceKey } = req.body as any;
+
+        if (!confluenceHost || !confluenceEmail || !confluenceApiToken) {
+            throw new Error('Missing Confluence host, email, or API token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Confluence,
+            name: 'Confluence',
+            host: confluenceHost,
+            email: confluenceEmail,
+            apiToken: confluenceApiToken,
+            spaceKey: confluenceSpaceKey
+        };
+
+        const parsedData = [{
+            tableName: 'confluence_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_spaces', 'List Confluence spaces'],
+                ['get_space', 'Get details of a space'],
+                ['list_pages', 'List pages in a space'],
+                ['get_page', 'Get a page by ID'],
+                ['search_pages', 'Search pages using CQL'],
+                ['create_page', 'Create a new page'],
+                ['update_page', 'Update an existing page']
+            ],
+            metadata: {
+                rowCount: 7,
                 columnCount: 2,
                 dataTypes: {
                     tool: 'string',
@@ -894,6 +939,14 @@ app.post('/api/generate', async (req, res) => {
         dataSource.apiToken,
         dataSource.projectKey,
         dataSource.apiVersion
+      );
+    } else if (dataSource?.type === DataSourceType.Confluence) {
+      parsedForGen = {};
+      dbConfForGen = createConfluenceGeneratorConfig(
+        dataSource.host,
+        dataSource.email,
+        dataSource.apiToken,
+        dataSource.spaceKey
       );
     } else if (dataSource?.type === DataSourceType.Ftp) {
       parsedForGen = {};

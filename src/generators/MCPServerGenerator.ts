@@ -63,6 +63,8 @@ export class MCPServerGenerator {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
         //console.log('✅ Generated Jira tools:', tools.length);
+      } else if (dbConfig?.type === DataSourceType.Confluence) {
+        tools = this.generateToolsForConfluence(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Ftp) {
         tools = this.generateToolsForFtp(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.LocalFS) {
@@ -995,6 +997,139 @@ export class MCPServerGenerator {
         operation: 'INSERT'
       });
     }
+
+    return tools;
+  }
+
+  private generateToolsForConfluence(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { host, email, apiToken, spaceKey } = dbConfig;
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = {
+      type: DataSourceType.Confluence,
+      host,
+      email,
+      apiToken,
+      spaceKey
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_spaces',
+      description: 'List Confluence spaces',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          start: { type: 'number', description: 'Start index (default: 0)', default: 0 },
+          limit: { type: 'number', description: 'Max results (default: 25)', default: 25 }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/space', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_space',
+      description: 'Get details of a space',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spaceKey: { type: 'string', description: 'Space key (e.g., DOCS)' }
+        },
+        required: ['spaceKey']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/space/{spaceKey}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_pages',
+      description: 'List pages in a space',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spaceKey: { type: 'string', description: 'Space key (optional, defaults to config)' },
+          start: { type: 'number', description: 'Start index (default: 0)', default: 0 },
+          limit: { type: 'number', description: 'Max results (default: 25)', default: 25 },
+          expand: { type: 'string', description: 'Expand fields (e.g., body.storage)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/content', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_page',
+      description: 'Get a page by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pageId: { type: 'string', description: 'Page ID' },
+          expand: { type: 'string', description: 'Expand fields (default: body.storage,version,space)' }
+        },
+        required: ['pageId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/content/{pageId}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_pages',
+      description: 'Search pages using CQL',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          cql: { type: 'string', description: 'CQL query string' },
+          start: { type: 'number', description: 'Start index (default: 0)', default: 0 },
+          limit: { type: 'number', description: 'Max results (default: 25)', default: 25 }
+        },
+        required: ['cql']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/content/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_page',
+      description: 'Create a new page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spaceKey: { type: 'string', description: 'Space key (optional, defaults to config)' },
+          parentId: { type: 'string', description: 'Parent page ID (optional)' },
+          title: { type: 'string', description: 'Page title' },
+          body: { type: 'string', description: 'Page body (storage format)' }
+        },
+        required: ['title', 'body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/content', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_page',
+      description: 'Update an existing page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pageId: { type: 'string', description: 'Page ID' },
+          spaceKey: { type: 'string', description: 'Space key (optional, defaults to config)' },
+          parentId: { type: 'string', description: 'Parent page ID (optional)' },
+          title: { type: 'string', description: 'Page title' },
+          body: { type: 'string', description: 'Page body (storage format)' },
+          version: { type: 'number', description: 'Next version number' }
+        },
+        required: ['pageId', 'title', 'body', 'version']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/wiki/rest/api/content/{pageId}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
 
     return tools;
   }

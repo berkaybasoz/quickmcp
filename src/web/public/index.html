@@ -478,6 +478,16 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="confluence" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-teal-500 hover:shadow-md hover:shadow-teal-500/20 peer-checked:border-teal-500 peer-checked:shadow-lg peer-checked:shadow-teal-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/confluence.png" alt="Confluence" class="w-10 h-10">
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Confluence</h4>
+                                                <p class="text-xs text-slate-500">Connect to Confluence API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="ftp" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -812,6 +822,50 @@
                                             </p>
                                         </div>
                                         <div id="jira-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Confluence Config -->
+                                    <div id="confluence-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-teal-500 mt-0.5"></i>
+                                                <div class="text-sm text-slate-600">
+                                                    <p class="font-medium text-slate-700 mb-1">Confluence API Token</p>
+                                                    <p>Create an API token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" class="text-blue-600 hover:underline">id.atlassian.com/manage-profile/security/api-tokens</a>. Use your Atlassian account email and the API token for authentication.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Confluence Host</label>
+                                                <input type="text" id="confluenceHost" placeholder="https://your-domain.atlassian.net" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Confluence domain (with or without https://).</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Account Email</label>
+                                                <input type="text" id="confluenceEmail" placeholder="you@example.com" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Atlassian account email.</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Token</label>
+                                                <input type="password" id="confluenceApiToken" placeholder="Your API token" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Confluence API token.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Space Key (Optional)</label>
+                                                <input type="text" id="confluenceSpaceKey" placeholder="e.g., DOCS" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used as default for page operations.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>7 tools</strong> will be created: list_spaces, get_space, list_pages, get_page, search_pages, create_page, update_page
+                                            </p>
+                                        </div>
+                                        <div id="confluence-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- FTP Config -->

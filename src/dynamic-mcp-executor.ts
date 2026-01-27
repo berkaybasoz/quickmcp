@@ -59,6 +59,10 @@ export class DynamicMCPExecutor {
         return await this.executeJiraCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Confluence) {
+        return await this.executeConfluenceCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Ftp) {
         return await this.executeFtpCall(queryConfig, args);
       }
@@ -1207,6 +1211,143 @@ export class DynamicMCPExecutor {
       } else {
         delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       }
+    }
+  }
+
+  private async executeConfluenceCall(queryConfig: any, args: any): Promise<any> {
+    const { host, email, apiToken, endpoint, method, spaceKey: defaultSpaceKey } = queryConfig;
+
+    const authString = Buffer.from(`${email}:${apiToken}`).toString('base64');
+    const authHeader = `Basic ${authString}`;
+
+    const baseUrl = host.startsWith('http://') || host.startsWith('https://') ? host : `https://${host}`;
+    let url = `${baseUrl}${endpoint}`;
+
+    const resolvedSpaceKey = args.spaceKey || defaultSpaceKey;
+
+    if (args.pageId) {
+      url = url.replace('{pageId}', args.pageId);
+    }
+    if (args.spaceKey) {
+      url = url.replace('{spaceKey}', args.spaceKey);
+    }
+
+    const queryParams: string[] = [];
+    const bodyParams: any = {};
+
+    for (const [key, value] of Object.entries(args)) {
+      if (value === undefined || value === null) continue;
+
+      if (['pageId', 'spaceKey', 'parentId', 'title', 'body', 'version'].includes(key)) continue;
+
+      if (method === 'GET') {
+        if (Array.isArray(value)) {
+          queryParams.push(`${key}=${encodeURIComponent(value.join(','))}`);
+        } else {
+          queryParams.push(`${key}=${encodeURIComponent(String(value))}`);
+        }
+      } else {
+        bodyParams[key] = value;
+      }
+    }
+
+    if (method === 'GET') {
+      if (endpoint === '/wiki/rest/api/content' && !('type' in args)) {
+        queryParams.push('type=page');
+      }
+      if (endpoint === '/wiki/rest/api/content/{pageId}' && !('expand' in args)) {
+        queryParams.push('expand=body.storage,version,space');
+      }
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    let requestBody: any = bodyParams;
+    if (method !== 'GET' && endpoint.startsWith('/wiki/rest/api/content')) {
+      if (!resolvedSpaceKey) {
+        return {
+          success: false,
+          error: 'Confluence spaceKey is required for page operations',
+          data: [],
+          rowCount: 0
+        };
+      }
+      requestBody = {
+        type: 'page',
+        title: args.title,
+        space: { key: resolvedSpaceKey },
+        body: {
+          storage: {
+            value: args.body || '',
+            representation: 'storage'
+          }
+        }
+      };
+      if (args.parentId) {
+        requestBody.ancestors = [{ id: String(args.parentId) }];
+      }
+      if (method === 'PUT') {
+        requestBody.version = { number: Number(args.version) };
+      }
+    }
+
+    console.error(`📚 Confluence API call: ${method} ${url}`);
+
+    const fetchOptions: RequestInit = {
+      method: method || 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    };
+
+    if (method !== 'GET') {
+      fetchOptions.body = JSON.stringify(requestBody);
+    }
+
+    let responseData: any;
+    try {
+      const response = await fetch(url, fetchOptions);
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        responseData = await response.text();
+      }
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Confluence API error: ${response.status}`,
+          data: [{ status: response.status, message: responseData.message || responseData }],
+          rowCount: 1
+        };
+      }
+
+      let dataArray: any[];
+      if (Array.isArray(responseData)) {
+        dataArray = responseData;
+      } else if (responseData.results) {
+        dataArray = responseData.results;
+      } else {
+        dataArray = [responseData];
+      }
+
+      return {
+        success: true,
+        data: dataArray,
+        rowCount: dataArray.length
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Confluence API error: ${error?.message || error}`,
+        data: [],
+        rowCount: 0
+      };
     }
   }
 

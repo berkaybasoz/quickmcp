@@ -15,6 +15,7 @@ export enum DataSourceType {
   Rest = 'rest',
   GitHub = 'github',
   Jira = 'jira',
+  Confluence = 'confluence',
   Ftp = 'ftp',
   LocalFS = 'localfs',
   Email = 'email',
@@ -34,6 +35,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Curl,
     DataSourceType.GitHub,
     DataSourceType.Jira,
+    DataSourceType.Confluence,
     DataSourceType.Ftp,
     DataSourceType.LocalFS,
     DataSourceType.Email,
@@ -251,6 +253,14 @@ export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   apiVersion?: 'v2' | 'v3'; // v2 for Jira Server, v3 for Jira Cloud
 }
 
+export interface ConfluenceGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Confluence;
+  host: string;
+  email: string;
+  apiToken: string;
+  spaceKey?: string;
+}
+
 export interface FtpGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Ftp;
   host: string;
@@ -321,6 +331,7 @@ export type GeneratorConfig =
   | FileGeneratorConfig
   | GitHubGeneratorConfig
   | JiraGeneratorConfig
+  | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
   | LocalFSGeneratorConfig
   | EmailGeneratorConfig
@@ -390,6 +401,16 @@ export function createJiraGeneratorConfig(host: string, email: string, apiToken:
     apiToken,
     projectKey,
     apiVersion: apiVersion || 'v2' // Default to v2 for Jira Server compatibility
+  };
+}
+
+export function createConfluenceGeneratorConfig(host: string, email: string, apiToken: string, spaceKey?: string): ConfluenceGeneratorConfig {
+  return {
+    type: DataSourceType.Confluence,
+    host,
+    email,
+    apiToken,
+    spaceKey
   };
 }
 

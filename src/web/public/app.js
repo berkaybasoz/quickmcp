@@ -2776,6 +2776,52 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Confluence, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Confluence) {
+        const confluenceHost = document.getElementById('confluenceHost')?.value?.trim();
+        const confluenceEmail = document.getElementById('confluenceEmail')?.value?.trim();
+        const confluenceApiToken = document.getElementById('confluenceApiToken')?.value?.trim();
+        const confluenceSpaceKey = document.getElementById('confluenceSpaceKey')?.value?.trim();
+
+        if (!confluenceHost || !confluenceEmail || !confluenceApiToken) {
+            showError('confluence-parse-error', 'Please enter Confluence host, email, and API token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Confluence,
+            name: 'Confluence',
+            host: confluenceHost,
+            email: confluenceEmail,
+            apiToken: confluenceApiToken,
+            spaceKey: confluenceSpaceKey
+        };
+        currentParsedData = [{
+            tableName: 'confluence_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_spaces', 'List Confluence spaces'],
+                ['get_space', 'Get details of a space'],
+                ['list_pages', 'List pages in a space'],
+                ['get_page', 'Get a page by ID'],
+                ['search_pages', 'Search pages using CQL'],
+                ['create_page', 'Create a new page'],
+                ['update_page', 'Update an existing page']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        console.log('📚 Confluence config saved, showing preview info');
+
+        displayConfluencePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For FTP, show info in preview and go to step 3
     if (selectedType === DataSourceType.Ftp) {
         const ftpHost = document.getElementById('ftpHost')?.value?.trim();
@@ -3507,6 +3553,11 @@ function updateWizardNavigation() {
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
         const jiraApiToken = document.getElementById('jiraApiToken')?.value?.trim();
         canProceed = !!jiraHost && !!jiraEmail && !!jiraApiToken;
+    } else if (selectedType === DataSourceType.Confluence) {
+        const confluenceHost = document.getElementById('confluenceHost')?.value?.trim();
+        const confluenceEmail = document.getElementById('confluenceEmail')?.value?.trim();
+        const confluenceApiToken = document.getElementById('confluenceApiToken')?.value?.trim();
+        canProceed = !!confluenceHost && !!confluenceEmail && !!confluenceApiToken;
     } else if (selectedType === DataSourceType.Ftp) {
         const ftpHost = document.getElementById('ftpHost')?.value?.trim();
         const ftpUsername = document.getElementById('ftpUsername')?.value?.trim();
@@ -3578,6 +3629,7 @@ function toggleDataSourceFields() {
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
     const jiraSection = document.getElementById('jira-section');
+    const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
     const localfsSection = document.getElementById('localfs-section');
     const emailSection = document.getElementById('email-section');
@@ -3596,6 +3648,7 @@ function toggleDataSourceFields() {
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
+    confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
     localfsSection?.classList.add('hidden');
     emailSection?.classList.add('hidden');
@@ -3655,6 +3708,23 @@ function toggleDataSourceFields() {
         if (jiraApiTokenInput && !jiraApiTokenInput.dataset.listenerAttached) {
             jiraApiTokenInput.addEventListener('input', updateWizardNavigation);
             jiraApiTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Confluence) {
+        confluenceSection?.classList.remove('hidden');
+        const confluenceHostInput = document.getElementById('confluenceHost');
+        const confluenceEmailInput = document.getElementById('confluenceEmail');
+        const confluenceApiTokenInput = document.getElementById('confluenceApiToken');
+        if (confluenceHostInput && !confluenceHostInput.dataset.listenerAttached) {
+            confluenceHostInput.addEventListener('input', updateWizardNavigation);
+            confluenceHostInput.dataset.listenerAttached = 'true';
+        }
+        if (confluenceEmailInput && !confluenceEmailInput.dataset.listenerAttached) {
+            confluenceEmailInput.addEventListener('input', updateWizardNavigation);
+            confluenceEmailInput.dataset.listenerAttached = 'true';
+        }
+        if (confluenceApiTokenInput && !confluenceApiTokenInput.dataset.listenerAttached) {
+            confluenceApiTokenInput.addEventListener('input', updateWizardNavigation);
+            confluenceApiTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Ftp) {
         ftpSection?.classList.remove('hidden');
@@ -5040,6 +5110,84 @@ function displayJiraPreview(jiraConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
                                 <span>Default project key can be overridden when calling tools.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayConfluencePreview(confluenceConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const { host, email, spaceKey } = confluenceConfig || {};
+
+    const tools = [
+        { name: 'list_spaces', desc: 'List Confluence spaces' },
+        { name: 'get_space', desc: 'Get details of a space' },
+        { name: 'list_pages', desc: 'List pages in a space' },
+        { name: 'get_page', desc: 'Get a page by ID' },
+        { name: 'search_pages', desc: 'Search pages using CQL' },
+        { name: 'create_page', desc: 'Create a new page' },
+        { name: 'update_page', desc: 'Update an existing page' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-teal-600 text-white flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-book-open text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Confluence API Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Confluence API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Host:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${host || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Email:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${email || 'Not set'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Space:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${spaceKey || 'Not set'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>All Confluence API tools will use your email and API token for authentication.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
+                                <span>Default space key can be overridden when calling tools.</span>
                             </div>
                         </div>
                     </div>
