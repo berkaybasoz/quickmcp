@@ -24,7 +24,8 @@ const DataSourceType = {
     OpenShift: 'openshift',
     X: 'x',
     Prometheus: 'prometheus',
-    Grafana: 'grafana'
+    Grafana: 'grafana',
+    MongoDB: 'mongodb'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -48,7 +49,8 @@ function isNoTableDataSource(type) {
         DataSourceType.OpenShift,
         DataSourceType.X,
         DataSourceType.Prometheus,
-        DataSourceType.Grafana
+        DataSourceType.Grafana,
+        DataSourceType.MongoDB
     ];
     return noTableTypes.includes(type);
 }

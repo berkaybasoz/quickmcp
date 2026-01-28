@@ -2986,6 +2986,54 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For MongoDB, show info in preview and go to step 3
+    if (selectedType === DataSourceType.MongoDB) {
+        const host = document.getElementById('mongoHost')?.value?.trim();
+        const port = document.getElementById('mongoPort')?.value?.trim();
+        const database = document.getElementById('mongoDatabase')?.value?.trim();
+        const username = document.getElementById('mongoUsername')?.value?.trim();
+        const password = document.getElementById('mongoPassword')?.value?.trim();
+        const authSource = document.getElementById('mongoAuthSource')?.value?.trim();
+
+        if (!host || !database) {
+            showError('mongodb-parse-error', 'Please enter MongoDB host and database');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.MongoDB,
+            name: 'MongoDB',
+            host,
+            port: port ? parseInt(port, 10) : 27017,
+            database,
+            username,
+            password,
+            authSource
+        };
+        currentParsedData = [{
+            tableName: 'mongodb_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_databases', 'List databases on the MongoDB server'],
+                ['list_collections', 'List collections in a database'],
+                ['find', 'Find documents in a collection'],
+                ['insert_one', 'Insert a document into a collection'],
+                ['update_one', 'Update a single document in a collection'],
+                ['delete_one', 'Delete a single document in a collection'],
+                ['aggregate', 'Run an aggregation pipeline']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayMongoDBPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3676,6 +3724,8 @@ async function handleNextToStep3() {
                 displayPrometheusPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Grafana) {
                 displayGrafanaPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.MongoDB) {
+                displayMongoDBPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -3875,6 +3925,10 @@ function updateWizardNavigation() {
         } else {
             canProceed = !!username && !!password;
         }
+    } else if (selectedType === DataSourceType.MongoDB) {
+        const host = document.getElementById('mongoHost')?.value?.trim();
+        const database = document.getElementById('mongoDatabase')?.value?.trim();
+        canProceed = !!host && !!database;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -3960,6 +4014,7 @@ function toggleDataSourceFields() {
     const xSection = document.getElementById('x-section');
     const prometheusSection = document.getElementById('prometheus-section');
     const grafanaSection = document.getElementById('grafana-section');
+    const mongodbSection = document.getElementById('mongodb-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -3983,6 +4038,7 @@ function toggleDataSourceFields() {
     xSection?.classList.add('hidden');
     prometheusSection?.classList.add('hidden');
     grafanaSection?.classList.add('hidden');
+    mongodbSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -4070,6 +4126,18 @@ function toggleDataSourceFields() {
             grafanaPasswordInput.dataset.listenerAttached = 'true';
         }
         handleGrafanaAuthChange();
+    } else if (selectedType === DataSourceType.MongoDB) {
+        mongodbSection?.classList.remove('hidden');
+        const mongoHostInput = document.getElementById('mongoHost');
+        const mongoDatabaseInput = document.getElementById('mongoDatabase');
+        if (mongoHostInput && !mongoHostInput.dataset.listenerAttached) {
+            mongoHostInput.addEventListener('input', updateWizardNavigation);
+            mongoHostInput.dataset.listenerAttached = 'true';
+        }
+        if (mongoDatabaseInput && !mongoDatabaseInput.dataset.listenerAttached) {
+            mongoDatabaseInput.addEventListener('input', updateWizardNavigation);
+            mongoDatabaseInput.dataset.listenerAttached = 'true';
+        }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
         // Add listeners for Jira inputs
@@ -5668,6 +5736,70 @@ function displayGrafanaPreview(grafConfig) {
                                 <div>
                                     <span class="text-slate-500">Auth:</span>
                                     <span class="ml-2 font-mono text-slate-700">${authType}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayMongoDBPreview(mongoConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const host = mongoConfig?.host || 'Not set';
+    const port = mongoConfig?.port || 27017;
+    const database = mongoConfig?.database || 'Not set';
+    const tools = [
+        { name: 'list_databases', desc: 'List databases on the MongoDB server' },
+        { name: 'list_collections', desc: 'List collections in a database' },
+        { name: 'find', desc: 'Find documents in a collection' },
+        { name: 'insert_one', desc: 'Insert a document into a collection' },
+        { name: 'update_one', desc: 'Update a single document in a collection' },
+        { name: 'delete_one', desc: 'Delete a single document in a collection' },
+        { name: 'aggregate', desc: 'Run an aggregation pipeline' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-leaf text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">MongoDB Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with MongoDB.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Host:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${host}:${port}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Database:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${database}</span>
                                 </div>
                             </div>
                         </div>

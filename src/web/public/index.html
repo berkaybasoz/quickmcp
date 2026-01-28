@@ -376,6 +376,16 @@
                                                 <p class="text-xs text-slate-500">Connect to SQLite</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
+                                            <input type="radio" name="dataSourceType" value="mongodb" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-green-500 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-leaf text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">MongoDB</h4>
+                                                <p class="text-xs text-slate-500">Connect to MongoDB</p>
+                                            </div>
+                                        </label>
 
                                         <!-- Additional Templates: Oracle, Redis, Hazelcast, Kafka, DB2/zOS -->
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
@@ -915,6 +925,52 @@
                                             </p>
                                         </div>
                                         <div id="grafana-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- MongoDB Config -->
+                                    <div id="mongodb-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-green-600 mt-0.5"></i>
+                                                <div class="text-sm text-green-700">
+                                                    <p class="font-medium text-green-800 mb-1">MongoDB Connection</p>
+                                                    <p>Connect to a MongoDB server and run collection operations.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Host</label>
+                                                <input type="text" id="mongoHost" placeholder="localhost" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Port</label>
+                                                <input type="number" id="mongoPort" placeholder="27017" value="27017" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Database</label>
+                                                <input type="text" id="mongoDatabase" placeholder="mydb" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Auth Source (Optional)</label>
+                                                <input type="text" id="mongoAuthSource" placeholder="admin" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username (Optional)</label>
+                                                <input type="text" id="mongoUsername" placeholder="username" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Password (Optional)</label>
+                                                <input type="password" id="mongoPassword" placeholder="password" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>7 tools</strong> will be created: list_databases, list_collections, find, insert_one, update_one, delete_one, aggregate
+                                            </p>
+                                        </div>
+                                        <div id="mongodb-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->

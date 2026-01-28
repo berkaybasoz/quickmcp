@@ -87,4 +87,15 @@ smtp port: 587
 mail: archdrawcontact@gmail.com
 pwd: jxxl ufwl klup ckrk
 NAME: GMAIL-BERKAY
+
 ********************************************************************************************************************
+
+MONGODB 
+Port: 27017
+User: root
+Password: password
+DB: quickmcp
+NAME: MONGODB
+
+********************************************************************************************************************
+

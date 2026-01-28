@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -502,6 +502,50 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 dataTypes: { tool: 'string', description: 'string' }
             }
         }];
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.MongoDB) {
+        const { mongoHost, mongoPort, mongoDatabase, mongoUsername, mongoPassword, mongoAuthSource } = req.body as any;
+
+        if (!mongoHost || !mongoDatabase) {
+            throw new Error('Missing MongoDB host or database');
+        }
+
+        const dataSource = {
+            type: DataSourceType.MongoDB,
+            name: 'MongoDB',
+            host: mongoHost,
+            port: mongoPort ? parseInt(mongoPort, 10) : undefined,
+            database: mongoDatabase,
+            username: mongoUsername,
+            password: mongoPassword,
+            authSource: mongoAuthSource
+        };
+
+        const parsedData = [{
+            tableName: 'mongodb_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_databases', 'List databases on the MongoDB server'],
+                ['list_collections', 'List collections in a database'],
+                ['find', 'Find documents in a collection'],
+                ['insert_one', 'Insert a document into a collection'],
+                ['update_one', 'Update a single document in a collection'],
+                ['delete_one', 'Delete a single document in a collection'],
+                ['aggregate', 'Run an aggregation pipeline']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
         return res.json({
             success: true,
             data: {
@@ -1113,6 +1157,16 @@ app.post('/api/generate', async (req, res) => {
         dataSource.username,
         dataSource.password
       );
+    } else if (dataSource?.type === DataSourceType.MongoDB) {
+      parsedForGen = {};
+      dbConfForGen = createMongoDBGeneratorConfig(
+        dataSource.host,
+        dataSource.database,
+        dataSource.port,
+        dataSource.username,
+        dataSource.password,
+        dataSource.authSource
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1369,6 +1423,7 @@ function inferTypeFromTools(tools: any[]): string | null {
   if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
   if (names.has('query') && names.has('query_range') && names.has('targets')) return DataSourceType.Prometheus;
   if (names.has('search_dashboards') && names.has('get_dashboard')) return DataSourceType.Grafana;
+  if (names.has('list_databases') && names.has('list_collections') && names.has('find')) return DataSourceType.MongoDB;
   return null;
 }
 

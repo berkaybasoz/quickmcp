@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_NAME = process.env.EMAIL_SERVER_NAME;
-const IMAP_HOST = process.env.EMAIL_IMAP_HOST;
-const IMAP_PORT = process.env.EMAIL_IMAP_PORT;
-const SMTP_HOST = process.env.EMAIL_SMTP_HOST;
-const SMTP_PORT = process.env.EMAIL_SMTP_PORT;
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PWD = process.env.EMAIL_PWD;
+const SERVER_NAME = process.env.MONGODB_SERVER_NAME;
+const MONGO_HOST = process.env.MONGODB_HOST;
+const MONGO_PORT = process.env.MONGODB_PORT;
+const MONGO_DB = process.env.MONGODB_DB;
+const MONGO_USER = process.env.MONGODB_USER;
+const MONGO_PWD = process.env.MONGODB_PWD;
 
-test.describe('Email template', () => {
+test.describe('MongoDB template', () => {
   test.beforeEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
@@ -27,25 +26,24 @@ test.describe('Email template', () => {
     }
   });
 
-  test('generate Email server via UI', async ({ page }) => {
-    if (!SERVER_NAME || !IMAP_HOST || !IMAP_PORT || !SMTP_HOST || !SMTP_PORT || !EMAIL_USER || !EMAIL_PWD) {
-      throw new Error('Missing EMAIL_* env vars in .env.test');
+  test('generate MongoDB server via UI', async ({ page }) => {
+    if (!SERVER_NAME || !MONGO_HOST || !MONGO_PORT || !MONGO_DB || !MONGO_USER || !MONGO_PWD) {
+      throw new Error('Missing MONGODB_* env vars in .env.test');
     }
 
     await page.goto('/');
 
-    await page.locator('input[name="dataSourceType"][value="email"]').check({ force: true });
+    await page.locator('input[name="dataSourceType"][value="mongodb"]').check({ force: true });
 
     await page.locator('#next-to-step-2:not([disabled])').click();
     await expect(page.locator('#wizard-step-2')).toBeVisible();
-    await expect(page.locator('#email-section')).toBeVisible();
+    await expect(page.locator('#mongodb-section')).toBeVisible();
 
-    await page.fill('#emailImapHost', IMAP_HOST);
-    await page.fill('#emailImapPort', IMAP_PORT);
-    await page.fill('#emailSmtpHost', SMTP_HOST);
-    await page.fill('#emailSmtpPort', SMTP_PORT);
-    await page.fill('#emailUsername', EMAIL_USER);
-    await page.fill('#emailPassword', EMAIL_PWD);
+    await page.fill('#mongoHost', MONGO_HOST);
+    await page.fill('#mongoPort', MONGO_PORT);
+    await page.fill('#mongoDatabase', MONGO_DB);
+    await page.fill('#mongoUsername', MONGO_USER);
+    await page.fill('#mongoPassword', MONGO_PWD);
 
     await page.locator('#next-to-step-3:not([disabled])').click();
     await expect(page.locator('#wizard-step-3')).toBeVisible();
@@ -53,7 +51,7 @@ test.describe('Email template', () => {
     await page.locator('#next-to-step-4:not([disabled])').click();
 
     await page.fill('#serverName', SERVER_NAME);
-    await page.fill('#serverDescription', 'Email template test');
+    await page.fill('#serverDescription', 'MongoDB test');
 
     const generateBtn = page.locator('#generateBtn');
     await expect(generateBtn).toBeEnabled();

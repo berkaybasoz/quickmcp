@@ -65,6 +65,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForPrometheus(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Grafana) {
         tools = this.generateToolsForGrafana(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.MongoDB) {
+        tools = this.generateToolsForMongoDB(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -710,6 +712,128 @@ export class MCPServerGenerator {
         required: ['queries', 'from', 'to', 'datasourceId']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/ds/query', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForMongoDB(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { host, port, database, username, password, authSource } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.MongoDB, host, port, database, username, password, authSource };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_databases',
+      description: 'List databases on the MongoDB server',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'list_databases' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_collections',
+      description: 'List collections in a database',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'list_collections' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'find',
+      description: 'Find documents in a collection',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' },
+          collection: { type: 'string', description: 'Collection name' },
+          filter: { type: 'object', description: 'MongoDB filter object' },
+          limit: { type: 'number', description: 'Max documents to return', default: 50 },
+          skip: { type: 'number', description: 'Skip documents', default: 0 }
+        },
+        required: ['collection']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'find' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'insert_one',
+      description: 'Insert a document into a collection',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' },
+          collection: { type: 'string', description: 'Collection name' },
+          document: { type: 'object', description: 'Document to insert' }
+        },
+        required: ['collection', 'document']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'insert_one' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_one',
+      description: 'Update a single document in a collection',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' },
+          collection: { type: 'string', description: 'Collection name' },
+          filter: { type: 'object', description: 'Filter to match document' },
+          update: { type: 'object', description: 'Update document (e.g., {$set:{...}})' },
+          upsert: { type: 'boolean', description: 'Insert if not found', default: false }
+        },
+        required: ['collection', 'filter', 'update']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'update_one' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_one',
+      description: 'Delete a single document in a collection',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' },
+          collection: { type: 'string', description: 'Collection name' },
+          filter: { type: 'object', description: 'Filter to match document' }
+        },
+        required: ['collection', 'filter']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'delete_one' }),
+      operation: 'DELETE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'aggregate',
+      description: 'Run an aggregation pipeline',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Database name (optional, default from config)' },
+          collection: { type: 'string', description: 'Collection name' },
+          pipeline: { type: 'array', items: { type: 'object' }, description: 'Aggregation pipeline' },
+          allowDiskUse: { type: 'boolean', description: 'Allow disk use', default: false }
+        },
+        required: ['collection', 'pipeline']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'aggregate' }),
       operation: 'SELECT'
     });
 

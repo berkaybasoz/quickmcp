@@ -3,6 +3,7 @@ import { ActiveDatabaseConnection, DataSourceType } from './types';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
+import { MongoClient } from 'mongodb';
 
 export class DynamicMCPExecutor {
   private sqliteManager: SQLiteManager;
@@ -65,6 +66,10 @@ export class DynamicMCPExecutor {
 
       if (queryConfig?.type === DataSourceType.Grafana) {
         return await this.executeGrafanaCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.MongoDB) {
+        return await this.executeMongoDBCall(queryConfig, args);
       }
 
       if (queryConfig?.type === DataSourceType.Jira) {
@@ -1244,7 +1249,7 @@ export class DynamicMCPExecutor {
     console.error(`📈 Prometheus API call: ${method || 'GET'} ${url}`);
 
     const response = await fetch(url, { method: method || 'GET' });
-    const responseData = await response.json().catch(() => null);
+    const responseData: any = await response.json().catch(() => null);
 
     console.error(`✅ Prometheus API response: ${response.status}`);
 
@@ -1311,7 +1316,7 @@ export class DynamicMCPExecutor {
       headers,
       body: body ? JSON.stringify(body) : undefined
     });
-    const responseData = await response.json().catch(() => null);
+    const responseData: any = await response.json().catch(() => null);
 
     console.error(`✅ Grafana API response: ${response.status}`);
 
@@ -1334,6 +1339,100 @@ export class DynamicMCPExecutor {
       data: dataArray,
       rowCount: dataArray.length
     };
+  }
+
+  private async executeMongoDBCall(queryConfig: any, args: any): Promise<any> {
+    const { host, port, database: defaultDb, username, password, authSource, op } = queryConfig;
+    const dbName = args.database || defaultDb;
+    const mongoPort = port || 27017;
+
+    if (!host || !dbName) {
+      return { success: false, error: 'Missing MongoDB host or database', data: [], rowCount: 0 };
+    }
+
+    const credentials = username ? `${encodeURIComponent(username)}:${encodeURIComponent(password || '')}@` : '';
+    const uri = `mongodb://${credentials}${host}:${mongoPort}`;
+    const client = new MongoClient(uri, {
+      authSource: authSource || (username ? 'admin' : undefined)
+    } as any);
+
+    try {
+      await client.connect();
+      const db = client.db(dbName);
+
+      if (op === 'list_databases') {
+        const admin = client.db().admin();
+        const res = await admin.listDatabases();
+        const data = res?.databases || [];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (op === 'list_collections') {
+        const cols = await db.listCollections().toArray();
+        return { success: true, data: cols, rowCount: cols.length };
+      }
+
+      const collectionName = args.collection;
+      if (!collectionName) {
+        return { success: false, error: 'Missing collection', data: [], rowCount: 0 };
+      }
+      const collection = db.collection(collectionName);
+
+      if (op === 'find') {
+        const filter = args.filter || {};
+        const limit = Number.isFinite(Number(args.limit)) ? Number(args.limit) : 50;
+        const skip = Number.isFinite(Number(args.skip)) ? Number(args.skip) : 0;
+        const data = await collection.find(filter).skip(skip).limit(limit).toArray();
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (op === 'insert_one') {
+        const document = args.document;
+        if (!document || typeof document !== 'object') {
+          return { success: false, error: 'Missing document', data: [], rowCount: 0 };
+        }
+        const res = await collection.insertOne(document);
+        return { success: true, data: [{ insertedId: res.insertedId }], rowCount: 1 };
+      }
+
+      if (op === 'update_one') {
+        const filter = args.filter || {};
+        const update = args.update;
+        const upsert = !!args.upsert;
+        if (!update || typeof update !== 'object') {
+          return { success: false, error: 'Missing update document', data: [], rowCount: 0 };
+        }
+        const res = await collection.updateOne(filter, update, { upsert });
+        return {
+          success: true,
+          data: [{
+            matchedCount: res.matchedCount,
+            modifiedCount: res.modifiedCount,
+            upsertedId: res.upsertedId
+          }],
+          rowCount: 1
+        };
+      }
+
+      if (op === 'delete_one') {
+        const filter = args.filter || {};
+        const res = await collection.deleteOne(filter);
+        return { success: true, data: [{ deletedCount: res.deletedCount }], rowCount: 1 };
+      }
+
+      if (op === 'aggregate') {
+        const pipeline = Array.isArray(args.pipeline) ? args.pipeline : [];
+        const allowDiskUse = !!args.allowDiskUse;
+        const data = await collection.aggregate(pipeline, { allowDiskUse }).toArray();
+        return { success: true, data, rowCount: data.length };
+      }
+
+      return { success: false, error: `Unsupported MongoDB op: ${op}`, data: [], rowCount: 0 };
+    } catch (error: any) {
+      return { success: false, error: error?.message || 'MongoDB error', data: [], rowCount: 0 };
+    } finally {
+      try { await client.close(); } catch {}
+    }
   }
 
   private async executeJiraCall(queryConfig: any, args: any): Promise<any> {

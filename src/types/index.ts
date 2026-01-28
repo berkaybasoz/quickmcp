@@ -28,6 +28,7 @@ export enum DataSourceType {
   X = 'x',
   Prometheus = 'prometheus',
   Grafana = 'grafana',
+  MongoDB = 'mongodb',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -52,6 +53,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.X,
     DataSourceType.Prometheus,
     DataSourceType.Grafana,
+    DataSourceType.MongoDB,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -174,6 +176,16 @@ export interface GrafanaConnection {
   type: 'grafana';
 }
 
+export interface MongoDBConnection {
+  host: string;
+  port?: number;
+  database: string;
+  username?: string;
+  password?: string;
+  authSource?: string;
+  type: 'mongodb';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -292,6 +304,16 @@ export interface GrafanaGeneratorConfig extends BaseGeneratorConfig {
   password?: string;
 }
 
+export interface MongoDBGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.MongoDB;
+  host: string;
+  port?: number;
+  database: string;
+  username?: string;
+  password?: string;
+  authSource?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -388,6 +410,7 @@ export type GeneratorConfig =
   | XGeneratorConfig
   | PrometheusGeneratorConfig
   | GrafanaGeneratorConfig
+  | MongoDBGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -403,7 +426,8 @@ export type GeneratorConfig =
   | GitHubConnection
   | XConnection
   | PrometheusConnection
-  | GrafanaConnection;
+  | GrafanaConnection
+  | MongoDBConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -484,6 +508,25 @@ export function createGrafanaGeneratorConfig(
     apiKey,
     username,
     password
+  };
+}
+
+export function createMongoDBGeneratorConfig(
+  host: string,
+  database: string,
+  port?: number,
+  username?: string,
+  password?: string,
+  authSource?: string
+): MongoDBGeneratorConfig {
+  return {
+    type: DataSourceType.MongoDB,
+    host,
+    port,
+    database,
+    username,
+    password,
+    authSource
   };
 }
 
