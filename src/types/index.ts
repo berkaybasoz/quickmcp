@@ -33,6 +33,8 @@ export enum DataSourceType {
   Facebook = 'facebook',
   Dropbox = 'dropbox',
   Trello = 'trello',
+  Instagram = 'instagram',
+  TikTok = 'tiktok',
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
@@ -68,6 +70,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Facebook,
     DataSourceType.Dropbox,
     DataSourceType.Trello,
+    DataSourceType.Instagram,
+    DataSourceType.TikTok,
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
@@ -213,6 +217,20 @@ export interface FacebookConnection {
   userId?: string;
   pageId?: string;
   type: 'facebook';
+}
+
+export interface InstagramConnection {
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+  type: 'instagram';
+}
+
+export interface TikTokConnection {
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+  type: 'tiktok';
 }
 
 export interface DropboxConnection {
@@ -413,6 +431,20 @@ export interface FacebookGeneratorConfig extends BaseGeneratorConfig {
   pageId?: string;
 }
 
+export interface InstagramGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Instagram;
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+}
+
+export interface TikTokGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.TikTok;
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+}
+
 export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Dropbox;
   baseUrl: string;
@@ -581,6 +613,8 @@ export type GeneratorConfig =
   | GrafanaGeneratorConfig
   | MongoDBGeneratorConfig
   | FacebookGeneratorConfig
+  | InstagramGeneratorConfig
+  | TikTokGeneratorConfig
   | DropboxGeneratorConfig
   | TrelloGeneratorConfig
   | GitLabGeneratorConfig
@@ -608,6 +642,8 @@ export type GeneratorConfig =
   | GrafanaConnection
   | MongoDBConnection
   | FacebookConnection
+  | InstagramConnection
+  | TikTokConnection
   | DropboxConnection
   | TrelloConnection
   | GitLabConnection
@@ -732,6 +768,32 @@ export function createFacebookGeneratorConfig(
     accessToken,
     userId,
     pageId
+  };
+}
+
+export function createInstagramGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  userId?: string
+): InstagramGeneratorConfig {
+  return {
+    type: DataSourceType.Instagram,
+    baseUrl,
+    accessToken,
+    userId
+  };
+}
+
+export function createTikTokGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  userId?: string
+): TikTokGeneratorConfig {
+  return {
+    type: DataSourceType.TikTok,
+    baseUrl,
+    accessToken,
+    userId
   };
 }
 

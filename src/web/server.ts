@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -583,6 +583,82 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Instagram) {
+        const { instagramBaseUrl, instagramAccessToken, instagramUserId } = req.body as any;
+
+        if (!instagramBaseUrl || !instagramAccessToken) {
+            throw new Error('Missing Instagram base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Instagram,
+            name: 'Instagram',
+            baseUrl: instagramBaseUrl,
+            accessToken: instagramAccessToken,
+            userId: instagramUserId
+        };
+
+        const parsedData = [{
+            tableName: 'instagram_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get user profile'],
+                ['get_user_media', 'List media for a user'],
+                ['get_media', 'Get media by ID'],
+                ['get_media_comments', 'List comments for a media item']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.TikTok) {
+        const { tiktokBaseUrl, tiktokAccessToken, tiktokUserId } = req.body as any;
+
+        if (!tiktokBaseUrl || !tiktokAccessToken) {
+            throw new Error('Missing TikTok base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.TikTok,
+            name: 'TikTok',
+            baseUrl: tiktokBaseUrl,
+            accessToken: tiktokAccessToken,
+            userId: tiktokUserId
+        };
+
+        const parsedData = [{
+            tableName: 'tiktok_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user_info', 'Get user profile'],
+                ['list_videos', 'List videos for a user'],
+                ['get_video', 'Get video by ID'],
+                ['search_videos', 'Search videos']
+            ],
+            metadata: {
+                rowCount: 4,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1581,6 +1657,20 @@ app.post('/api/generate', async (req, res) => {
         dataSource.accessToken,
         dataSource.userId,
         dataSource.pageId
+      );
+    } else if (dataSource?.type === DataSourceType.Instagram) {
+      parsedForGen = {};
+      dbConfForGen = createInstagramGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.userId
+      );
+    } else if (dataSource?.type === DataSourceType.TikTok) {
+      parsedForGen = {};
+      dbConfForGen = createTikTokGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.userId
       );
     } else if (dataSource?.type === DataSourceType.Dropbox) {
       parsedForGen = {};

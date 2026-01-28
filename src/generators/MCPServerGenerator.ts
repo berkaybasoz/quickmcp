@@ -69,6 +69,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForMongoDB(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Facebook) {
         tools = this.generateToolsForFacebook(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Instagram) {
+        tools = this.generateToolsForInstagram(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.TikTok) {
+        tools = this.generateToolsForTikTok(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
@@ -962,6 +966,155 @@ export class MCPServerGenerator {
         required: ['metric']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{page_id}/insights', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForInstagram(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = { type: DataSourceType.Instagram, baseUrl, accessToken, userId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get user profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_media',
+      description: 'List media for a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}/media', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_media',
+      description: 'Get media by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          media_id: { type: 'string', description: 'Media ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: ['media_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{media_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_media_comments',
+      description: 'List comments for a media item',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          media_id: { type: 'string', description: 'Media ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: ['media_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{media_id}/comments', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForTikTok(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = { type: DataSourceType.TikTok, baseUrl, accessToken, userId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user_info',
+      description: 'Get user profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/user/info/', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_videos',
+      description: 'List videos for a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/video/list/', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_video',
+      description: 'Get video by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          video_id: { type: 'string', description: 'Video ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: ['video_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/video/query/', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_videos',
+      description: 'Search videos',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/video/search/', method: 'GET' }),
       operation: 'SELECT'
     });
 

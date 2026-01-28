@@ -76,6 +76,14 @@ export class DynamicMCPExecutor {
         return await this.executeFacebookCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Instagram) {
+        return await this.executeInstagramCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.TikTok) {
+        return await this.executeTikTokCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Dropbox) {
         return await this.executeDropboxCall(queryConfig, args);
       }
@@ -1522,6 +1530,111 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Facebook API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeInstagramCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, userId: defaultUserId } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Instagram baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const userId = args.user_id || defaultUserId || 'me';
+
+    if (url.includes('{user_id}')) {
+      url = url.replace('{user_id}', encodeURIComponent(String(userId)));
+    }
+    if (url.includes('{media_id}')) {
+      if (!args.media_id) return { success: false, error: 'Missing media_id', data: [], rowCount: 0 };
+      url = url.replace('{media_id}', encodeURIComponent(String(args.media_id)));
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (['user_id', 'media_id'].includes(key)) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    queryParams.push(`access_token=${encodeURIComponent(token)}`);
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`📸 Instagram API call: ${method || 'GET'} ${url}`);
+    const response = await fetch(url, { method: method || 'GET' });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Instagram API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Instagram API error:', responseData);
+      return {
+        success: false,
+        error: `Instagram API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeTikTokCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, userId: defaultUserId } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing TikTok baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const userId = args.user_id || defaultUserId;
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (key === 'user_id') continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (userId) {
+      queryParams.push(`user_id=${encodeURIComponent(String(userId))}`);
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🎵 TikTok API call: ${method || 'GET'} ${url}`);
+    const response = await fetch(url, {
+      method: method || 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ TikTok API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ TikTok API error:', responseData);
+      return {
+        success: false,
+        error: `TikTok API error: ${response.status}`,
         data: [{
           status: response.status,
           message: responseData?.error?.message || responseData?.message || responseData

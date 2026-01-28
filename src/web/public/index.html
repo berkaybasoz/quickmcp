@@ -499,6 +499,26 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="instagram" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-pink-500 hover:shadow-md hover:shadow-pink-500/20 peer-checked:border-pink-500 peer-checked:shadow-lg peer-checked:shadow-pink-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/instagram.png" alt="Instagram" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Instagram</h4>
+                                                <p class="text-xs text-slate-500">Connect to Instagram API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="tiktok" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-800 hover:shadow-md hover:shadow-slate-800/20 peer-checked:border-slate-800 peer-checked:shadow-lg peer-checked:shadow-slate-800/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/tiktok.png" alt="TikTok" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">TikTok</h4>
+                                                <p class="text-xs text-slate-500">Connect to TikTok API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="dropbox" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -1113,6 +1133,74 @@
                                             </p>
                                         </div>
                                         <div id="facebook-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Instagram Config -->
+                                    <div id="instagram-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-pink-50 rounded-lg border border-pink-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-pink-600 mt-0.5"></i>
+                                                <div class="text-sm text-pink-700">
+                                                    <p class="font-medium text-pink-800 mb-1">Instagram API</p>
+                                                    <p>Access Instagram API with an access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="instagramBaseUrl" value="https://graph.instagram.com" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="instagramAccessToken" placeholder="IGQ..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default User ID (Optional)</label>
+                                                <input type="text" id="instagramUserId" placeholder="me or user id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: get_user, get_user_media, get_media, get_media_comments
+                                            </p>
+                                        </div>
+                                        <div id="instagram-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- TikTok Config -->
+                                    <div id="tiktok-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-700 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-900 mb-1">TikTok API</p>
+                                                    <p>Access TikTok API with an access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="tiktokBaseUrl" value="https://open.tiktokapis.com/v2" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="tiktokAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default User ID (Optional)</label>
+                                                <input type="text" id="tiktokUserId" placeholder="user id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: get_user_info, list_videos, get_video, search_videos
+                                            </p>
+                                        </div>
+                                        <div id="tiktok-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Dropbox Config -->
