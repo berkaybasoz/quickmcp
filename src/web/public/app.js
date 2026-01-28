@@ -4421,7 +4421,7 @@ function applySidebarCollapsedState() {
         const headerMain = document.getElementById('sidebarHeaderMain');
         const collapseBtn = document.getElementById('sidebarCollapseBtn');
         headerMain?.classList.add('hidden');
-        headerRow?.classList.remove('justify-between');
+        headerRow?.classList.remove('justify-between', 'mb-2');
         headerRow?.classList.add('justify-center');
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-right';
@@ -4449,7 +4449,7 @@ function applySidebarCollapsedState() {
         const collapseBtn = document.getElementById('sidebarCollapseBtn');
         headerMain?.classList.remove('hidden');
         headerRow?.classList.remove('justify-center');
-        headerRow?.classList.add('justify-between');
+        headerRow?.classList.add('justify-between', 'mb-2');
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-left';
 
