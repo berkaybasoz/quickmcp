@@ -301,7 +301,9 @@
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="file">Files</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="database">Database</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="web">Web</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="ai">AI</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="social">Social</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="infra">Infra</button>
                                         <div class="ml-auto w-full md:w-64 relative">
                                             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -439,7 +441,7 @@
                                                 <p class="text-xs text-slate-500">Connect to DB2</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
                                             <input type="radio" name="dataSourceType" value="rest" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-500/20 peer-checked:border-cyan-500 peer-checked:shadow-lg peer-checked:shadow-cyan-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -449,7 +451,7 @@
                                                 <p class="text-xs text-slate-500">OpenAPI/Swagger endpoint (e.g. petstore).</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
                                             <input type="radio" name="dataSourceType" value="webpage" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-400 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -459,7 +461,7 @@
                                                 <p class="text-xs text-slate-500">Fetch content from a URL.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
                                             <input type="radio" name="dataSourceType" value="curl" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-400 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -479,7 +481,7 @@
                                                 <p class="text-xs text-slate-500">Connect to GitHub API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="x" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -489,7 +491,7 @@
                                                 <p class="text-xs text-slate-500">Connect to X API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="facebook" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-600 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-600 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -499,7 +501,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Facebook Graph API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="instagram" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-pink-500 hover:shadow-md hover:shadow-pink-500/20 peer-checked:border-pink-500 peer-checked:shadow-lg peer-checked:shadow-pink-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -509,7 +511,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Instagram API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="tiktok" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-800 hover:shadow-md hover:shadow-slate-800/20 peer-checked:border-slate-800 peer-checked:shadow-lg peer-checked:shadow-slate-800/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -519,7 +521,7 @@
                                                 <p class="text-xs text-slate-500">Connect to TikTok API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="notion" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -529,7 +531,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Notion API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="telegram" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -539,7 +541,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Telegram Bot API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="openai" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -549,7 +551,7 @@
                                                 <p class="text-xs text-slate-500">Chat, embeddings, images, audio.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="claude" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -559,7 +561,7 @@
                                                 <p class="text-xs text-slate-500">Anthropic Messages API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="gemini" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -569,7 +571,7 @@
                                                 <p class="text-xs text-slate-500">Google GenAI APIs.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="grok" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-800 hover:shadow-md hover:shadow-slate-800/20 peer-checked:border-slate-800 peer-checked:shadow-lg peer-checked:shadow-slate-800/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -579,7 +581,7 @@
                                                 <p class="text-xs text-slate-500">xAI OpenAI-compatible API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="llama" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -589,7 +591,7 @@
                                                 <p class="text-xs text-slate-500">Ollama-compatible API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="deepseek" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-600 hover:shadow-md hover:shadow-indigo-600/20 peer-checked:border-indigo-600 peer-checked:shadow-lg peer-checked:shadow-indigo-600/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -759,7 +761,7 @@
                                                 <p class="text-xs text-slate-500">Gmail IMAP/SMTP (preset).</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="slack" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-purple-500 hover:shadow-md hover:shadow-purple-500/20 peer-checked:border-purple-500 peer-checked:shadow-lg peer-checked:shadow-purple-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -819,7 +821,7 @@
                                                 <p class="text-xs text-slate-500">OpenSearch REST APIs.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
                                             <input type="radio" name="dataSourceType" value="discord" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
