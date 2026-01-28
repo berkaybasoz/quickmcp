@@ -84,6 +84,14 @@ export class DynamicMCPExecutor {
         return await this.executeTikTokCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Notion) {
+        return await this.executeNotionCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Telegram) {
+        return await this.executeTelegramCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Dropbox) {
         return await this.executeDropboxCall(queryConfig, args);
       }
@@ -1644,6 +1652,132 @@ export class DynamicMCPExecutor {
     }
 
     const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeNotionCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, notionVersion, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Notion baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+
+    if (url.includes('{page_id}')) {
+      if (!bodyArgs.page_id) return { success: false, error: 'Missing page_id', data: [], rowCount: 0 };
+      url = url.replace('{page_id}', encodeURIComponent(String(bodyArgs.page_id)));
+      delete bodyArgs.page_id;
+    }
+    if (url.includes('{database_id}')) {
+      if (!bodyArgs.database_id) return { success: false, error: 'Missing database_id', data: [], rowCount: 0 };
+      url = url.replace('{database_id}', encodeURIComponent(String(bodyArgs.database_id)));
+      delete bodyArgs.database_id;
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      'Notion-Version': String(notionVersion || '2022-06-28')
+    };
+
+    let response: Response;
+    if (methodUpper === 'GET') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join('&')}`;
+      }
+      console.error(`📓 Notion API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`📓 Notion API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ Notion API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Notion API error:', responseData);
+      return {
+        success: false,
+        error: `Notion API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.message || responseData?.error || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeTelegramCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, botToken, defaultChatId, endpoint, method } = queryConfig;
+    const token = String(botToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Telegram baseUrl/botToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}/bot${encodeURIComponent(token)}${endpoint}`;
+    const methodUpper = (method || 'GET').toUpperCase();
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+
+    if (endpoint === '/sendMessage' && !bodyArgs.chat_id && defaultChatId) {
+      bodyArgs.chat_id = defaultChatId;
+    }
+
+    let response: Response;
+    if (methodUpper === 'GET') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join('&')}`;
+      }
+      console.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper });
+    } else {
+      console.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ Telegram API response: ${response.status}`);
+
+    if (!response.ok || responseData?.ok === false) {
+      console.error('❌ Telegram API error:', responseData);
+      return {
+        success: false,
+        error: `Telegram API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.description || responseData?.error || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const resultPayload = responseData?.result ?? responseData;
+    const dataArray = Array.isArray(resultPayload) ? resultPayload : (resultPayload ? [resultPayload] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }
 

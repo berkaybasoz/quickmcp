@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -659,6 +659,83 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Notion) {
+        const { notionBaseUrl, notionAccessToken, notionVersion } = req.body as any;
+
+        if (!notionBaseUrl || !notionAccessToken) {
+            throw new Error('Missing Notion base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Notion,
+            name: 'Notion',
+            baseUrl: notionBaseUrl,
+            accessToken: notionAccessToken,
+            notionVersion: notionVersion || '2022-06-28'
+        };
+
+        const parsedData = [{
+            tableName: 'notion_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search pages and databases'],
+                ['get_page', 'Get a page by ID'],
+                ['get_database', 'Get a database by ID'],
+                ['query_database', 'Query a database'],
+                ['create_page', 'Create a new page'],
+                ['update_page', 'Update a page']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Telegram) {
+        const { telegramBaseUrl, telegramBotToken, telegramChatId } = req.body as any;
+
+        if (!telegramBaseUrl || !telegramBotToken) {
+            throw new Error('Missing Telegram base URL or bot token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Telegram,
+            name: 'Telegram',
+            baseUrl: telegramBaseUrl,
+            botToken: telegramBotToken,
+            defaultChatId: telegramChatId || ''
+        };
+
+        const parsedData = [{
+            tableName: 'telegram_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_me', 'Get bot information'],
+                ['get_updates', 'Get updates'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 3,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1671,6 +1748,20 @@ app.post('/api/generate', async (req, res) => {
         dataSource.baseUrl,
         dataSource.accessToken,
         dataSource.userId
+      );
+    } else if (dataSource?.type === DataSourceType.Notion) {
+      parsedForGen = {};
+      dbConfForGen = createNotionGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.notionVersion
+      );
+    } else if (dataSource?.type === DataSourceType.Telegram) {
+      parsedForGen = {};
+      dbConfForGen = createTelegramGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.botToken,
+        dataSource.defaultChatId
       );
     } else if (dataSource?.type === DataSourceType.Dropbox) {
       parsedForGen = {};

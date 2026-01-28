@@ -519,6 +519,26 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="notion" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/notion.png" alt="Notion" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Notion</h4>
+                                                <p class="text-xs text-slate-500">Connect to Notion API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="telegram" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/telegram.png" alt="Telegram" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Telegram</h4>
+                                                <p class="text-xs text-slate-500">Connect to Telegram Bot API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="dropbox" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -1201,6 +1221,74 @@
                                             </p>
                                         </div>
                                         <div id="tiktok-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Notion Config -->
+                                    <div id="notion-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-700 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-900 mb-1">Notion API</p>
+                                                    <p>Use an integration token and Notion API version.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="notionBaseUrl" value="https://api.notion.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Version</label>
+                                                <input type="text" id="notionVersion" value="2022-06-28" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="notionAccessToken" placeholder="secret_..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: search, get_page, get_database, query_database, create_page, update_page
+                                            </p>
+                                        </div>
+                                        <div id="notion-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Telegram Config -->
+                                    <div id="telegram-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-sky-600 mt-0.5"></i>
+                                                <div class="text-sm text-sky-700">
+                                                    <p class="font-medium text-sky-800 mb-1">Telegram Bot API</p>
+                                                    <p>Use a bot token from BotFather.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="telegramBaseUrl" value="https://api.telegram.org" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Bot Token</label>
+                                                <input type="password" id="telegramBotToken" placeholder="123456:ABC..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Chat ID (Optional)</label>
+                                                <input type="text" id="telegramChatId" placeholder="12345678" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: get_me, get_updates, send_message
+                                            </p>
+                                        </div>
+                                        <div id="telegram-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Dropbox Config -->

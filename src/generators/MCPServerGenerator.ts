@@ -73,6 +73,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForInstagram(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.TikTok) {
         tools = this.generateToolsForTikTok(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Notion) {
+        tools = this.generateToolsForNotion(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Telegram) {
+        tools = this.generateToolsForTelegram(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
@@ -1116,6 +1120,169 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/video/search/', method: 'GET' }),
       operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForNotion(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, notionVersion } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = { type: DataSourceType.Notion, baseUrl, accessToken, notionVersion };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search pages and databases',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query (optional)' },
+          filter: { type: 'object', description: 'Filter object (optional)' },
+          sort: { type: 'object', description: 'Sort object (optional)' },
+          page_size: { type: 'number', description: 'Page size (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_page',
+      description: 'Get a page by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Page ID' }
+        },
+        required: ['page_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/pages/{page_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_database',
+      description: 'Get a database by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database_id: { type: 'string', description: 'Database ID' }
+        },
+        required: ['database_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/databases/{database_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'query_database',
+      description: 'Query a database',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          database_id: { type: 'string', description: 'Database ID' },
+          filter: { type: 'object', description: 'Filter object (optional)' },
+          sorts: { type: 'array', items: { type: 'object' }, description: 'Sorts (optional)' },
+          page_size: { type: 'number', description: 'Page size (optional)' },
+          start_cursor: { type: 'string', description: 'Pagination cursor (optional)' }
+        },
+        required: ['database_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/databases/{database_id}/query', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_page',
+      description: 'Create a new page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          parent: { type: 'object', description: 'Parent object' },
+          properties: { type: 'object', description: 'Properties object' },
+          children: { type: 'array', items: { type: 'object' }, description: 'Children blocks (optional)' }
+        },
+        required: ['parent', 'properties']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/pages', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_page',
+      description: 'Update a page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Page ID' },
+          properties: { type: 'object', description: 'Properties object (optional)' },
+          archived: { type: 'boolean', description: 'Archive page (optional)' }
+        },
+        required: ['page_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/pages/{page_id}', method: 'PATCH' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForTelegram(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, botToken, defaultChatId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+
+    const baseConfig = { type: DataSourceType.Telegram, baseUrl, botToken, defaultChatId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_me',
+      description: 'Get bot information',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/getMe', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_updates',
+      description: 'Get updates',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          offset: { type: 'number', description: 'Update offset (optional)' },
+          limit: { type: 'number', description: 'Limit (optional)' },
+          timeout: { type: 'number', description: 'Timeout in seconds (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/getUpdates', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          chat_id: { type: 'string', description: 'Chat ID (optional, default from config)' },
+          text: { type: 'string', description: 'Message text' },
+          parse_mode: { type: 'string', description: 'Parse mode (optional)' },
+          disable_notification: { type: 'boolean', description: 'Disable notification (optional)' }
+        },
+        required: ['text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/sendMessage', method: 'POST' }),
+      operation: 'INSERT'
     });
 
     return tools;

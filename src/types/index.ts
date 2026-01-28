@@ -35,6 +35,8 @@ export enum DataSourceType {
   Trello = 'trello',
   Instagram = 'instagram',
   TikTok = 'tiktok',
+  Notion = 'notion',
+  Telegram = 'telegram',
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
@@ -72,6 +74,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Trello,
     DataSourceType.Instagram,
     DataSourceType.TikTok,
+    DataSourceType.Notion,
+    DataSourceType.Telegram,
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
@@ -231,6 +235,20 @@ export interface TikTokConnection {
   accessToken: string;
   userId?: string;
   type: 'tiktok';
+}
+
+export interface NotionConnection {
+  baseUrl: string;
+  accessToken: string;
+  notionVersion?: string;
+  type: 'notion';
+}
+
+export interface TelegramConnection {
+  baseUrl: string;
+  botToken: string;
+  defaultChatId?: string;
+  type: 'telegram';
 }
 
 export interface DropboxConnection {
@@ -445,6 +463,20 @@ export interface TikTokGeneratorConfig extends BaseGeneratorConfig {
   userId?: string;
 }
 
+export interface NotionGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Notion;
+  baseUrl: string;
+  accessToken: string;
+  notionVersion?: string;
+}
+
+export interface TelegramGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Telegram;
+  baseUrl: string;
+  botToken: string;
+  defaultChatId?: string;
+}
+
 export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Dropbox;
   baseUrl: string;
@@ -615,6 +647,8 @@ export type GeneratorConfig =
   | FacebookGeneratorConfig
   | InstagramGeneratorConfig
   | TikTokGeneratorConfig
+  | NotionGeneratorConfig
+  | TelegramGeneratorConfig
   | DropboxGeneratorConfig
   | TrelloGeneratorConfig
   | GitLabGeneratorConfig
@@ -644,6 +678,8 @@ export type GeneratorConfig =
   | FacebookConnection
   | InstagramConnection
   | TikTokConnection
+  | NotionConnection
+  | TelegramConnection
   | DropboxConnection
   | TrelloConnection
   | GitLabConnection
@@ -794,6 +830,32 @@ export function createTikTokGeneratorConfig(
     baseUrl,
     accessToken,
     userId
+  };
+}
+
+export function createNotionGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  notionVersion?: string
+): NotionGeneratorConfig {
+  return {
+    type: DataSourceType.Notion,
+    baseUrl,
+    accessToken,
+    notionVersion
+  };
+}
+
+export function createTelegramGeneratorConfig(
+  baseUrl: string,
+  botToken: string,
+  defaultChatId?: string
+): TelegramGeneratorConfig {
+  return {
+    type: DataSourceType.Telegram,
+    baseUrl,
+    botToken,
+    defaultChatId
   };
 }
 

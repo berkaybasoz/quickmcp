@@ -3157,6 +3157,85 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Notion, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Notion) {
+        const baseUrl = document.getElementById('notionBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('notionAccessToken')?.value?.trim();
+        const notionVersion = document.getElementById('notionVersion')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('notion-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Notion,
+            name: 'Notion',
+            baseUrl,
+            accessToken,
+            notionVersion: notionVersion || '2022-06-28'
+        };
+        currentParsedData = [{
+            tableName: 'notion_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search pages and databases'],
+                ['get_page', 'Get a page by ID'],
+                ['get_database', 'Get a database by ID'],
+                ['query_database', 'Query a database'],
+                ['create_page', 'Create a new page'],
+                ['update_page', 'Update a page']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayNotionPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Telegram, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Telegram) {
+        const baseUrl = document.getElementById('telegramBaseUrl')?.value?.trim();
+        const botToken = document.getElementById('telegramBotToken')?.value?.trim();
+        const chatId = document.getElementById('telegramChatId')?.value?.trim();
+
+        if (!baseUrl || !botToken) {
+            showError('telegram-parse-error', 'Please enter base URL and bot token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Telegram,
+            name: 'Telegram',
+            baseUrl,
+            botToken,
+            defaultChatId: chatId
+        };
+        currentParsedData = [{
+            tableName: 'telegram_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_me', 'Get bot information'],
+                ['get_updates', 'Get updates'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayTelegramPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Dropbox, show info in preview and go to step 3
     if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
@@ -4228,6 +4307,10 @@ async function handleNextToStep3() {
                 displayInstagramPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.TikTok) {
                 displayTikTokPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Notion) {
+                displayNotionPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Telegram) {
+                displayTelegramPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Dropbox) {
                 displayDropboxPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Trello) {
@@ -4462,6 +4545,14 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('tiktokBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('tiktokAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Notion) {
+        const baseUrl = document.getElementById('notionBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('notionAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Telegram) {
+        const baseUrl = document.getElementById('telegramBaseUrl')?.value?.trim();
+        const botToken = document.getElementById('telegramBotToken')?.value?.trim();
+        canProceed = !!baseUrl && !!botToken;
     } else if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('dropboxAccessToken')?.value?.trim();
@@ -4588,6 +4679,8 @@ function toggleDataSourceFields() {
     const facebookSection = document.getElementById('facebook-section');
     const instagramSection = document.getElementById('instagram-section');
     const tiktokSection = document.getElementById('tiktok-section');
+    const notionSection = document.getElementById('notion-section');
+    const telegramSection = document.getElementById('telegram-section');
     const dropboxSection = document.getElementById('dropbox-section');
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
@@ -4624,6 +4717,8 @@ function toggleDataSourceFields() {
     facebookSection?.classList.add('hidden');
     instagramSection?.classList.add('hidden');
     tiktokSection?.classList.add('hidden');
+    notionSection?.classList.add('hidden');
+    telegramSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
@@ -4772,6 +4867,30 @@ function toggleDataSourceFields() {
         if (tiktokAccessTokenInput && !tiktokAccessTokenInput.dataset.listenerAttached) {
             tiktokAccessTokenInput.addEventListener('input', updateWizardNavigation);
             tiktokAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Notion) {
+        notionSection?.classList.remove('hidden');
+        const notionBaseUrlInput = document.getElementById('notionBaseUrl');
+        const notionAccessTokenInput = document.getElementById('notionAccessToken');
+        if (notionBaseUrlInput && !notionBaseUrlInput.dataset.listenerAttached) {
+            notionBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            notionBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (notionAccessTokenInput && !notionAccessTokenInput.dataset.listenerAttached) {
+            notionAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            notionAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Telegram) {
+        telegramSection?.classList.remove('hidden');
+        const telegramBaseUrlInput = document.getElementById('telegramBaseUrl');
+        const telegramBotTokenInput = document.getElementById('telegramBotToken');
+        if (telegramBaseUrlInput && !telegramBaseUrlInput.dataset.listenerAttached) {
+            telegramBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            telegramBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (telegramBotTokenInput && !telegramBotTokenInput.dataset.listenerAttached) {
+            telegramBotTokenInput.addEventListener('input', updateWizardNavigation);
+            telegramBotTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Dropbox) {
         dropboxSection?.classList.remove('hidden');
@@ -6771,6 +6890,117 @@ function displayTikTokPreview(ttConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">TikTok Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with TikTok API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayNotionPreview(notionConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = notionConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search pages and databases' },
+        { name: 'get_page', desc: 'Get a page by ID' },
+        { name: 'get_database', desc: 'Get a database by ID' },
+        { name: 'query_database', desc: 'Query a database' },
+        { name: 'create_page', desc: 'Create a new page' },
+        { name: 'update_page', desc: 'Update a page' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/notion.png" alt="Notion" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Notion Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Notion API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayTelegramPreview(telegramConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = telegramConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'get_me', desc: 'Get bot information' },
+        { name: 'get_updates', desc: 'Get updates' },
+        { name: 'send_message', desc: 'Send a message' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/telegram.png" alt="Telegram" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Telegram Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Telegram Bot API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">
