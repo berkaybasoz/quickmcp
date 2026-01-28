@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1418,6 +1418,51 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.OpenSearch) {
+        const { baseUrl, apiKey, username, password, index } = req.body as any;
+
+        if (!baseUrl) {
+            throw new Error('Missing OpenSearch baseUrl');
+        }
+
+        const dataSource = {
+            type: DataSourceType.OpenSearch,
+            name: 'OpenSearch',
+            baseUrl,
+            apiKey: apiKey || '',
+            username: username || '',
+            password: password || '',
+            index: index || ''
+        };
+
+        const parsedData = [{
+            tableName: 'opensearch_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_indices', 'List indices in the cluster'],
+                ['get_cluster_health', 'Get cluster health'],
+                ['search', 'Search documents in an index'],
+                ['get_document', 'Get a document by ID'],
+                ['index_document', 'Index (create/update) a document'],
+                ['delete_document', 'Delete a document by ID']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: {
+                    tool: 'string',
+                    description: 'string'
+                }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (file) {
       if (type === DataSourceType.CSV) {
         dataSource = createCsvDataSource(file.originalname, file.path);
@@ -1672,6 +1717,15 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.Elasticsearch) {
       parsedForGen = {};
       dbConfForGen = createElasticsearchGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.username,
+        dataSource.password,
+        dataSource.index
+      );
+    } else if (dataSource?.type === DataSourceType.OpenSearch) {
+      parsedForGen = {};
+      dbConfForGen = createOpenSearchGeneratorConfig(
         dataSource.baseUrl,
         dataSource.apiKey,
         dataSource.username,

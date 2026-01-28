@@ -4007,6 +4007,47 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For OpenSearch, show info in preview and go to step 3
+    if (selectedType === DataSourceType.OpenSearch) {
+        const baseUrl = document.getElementById('opensearchBaseUrl')?.value?.trim();
+        const index = document.getElementById('opensearchIndex')?.value?.trim();
+        const apiKey = document.getElementById('opensearchApiKey')?.value?.trim();
+        const username = document.getElementById('opensearchUsername')?.value?.trim();
+        const password = document.getElementById('opensearchPassword')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('opensearch-parse-error', 'Please enter OpenSearch base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.OpenSearch,
+            name: 'OpenSearch',
+            baseUrl,
+            index: index || '',
+            apiKey: apiKey || '',
+            username: username || '',
+            password: password || ''
+        };
+        currentParsedData = [{
+            tableName: 'opensearch_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_indices', 'List indices in the cluster'],
+                ['get_cluster_health', 'Get cluster health'],
+                ['search', 'Search documents in an index'],
+                ['get_document', 'Get a document by ID'],
+                ['index_document', 'Index (create/update) a document'],
+                ['delete_document', 'Delete a document by ID']
+            ],
+            metadata: { rowCount: 6, columnCount: 2, dataTypes: { tool: 'string', description: 'string' } }
+        }];
+
+        displayOpenSearchPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // If we already have parsed data, just go to step 3
     if (currentParsedData) {
         goToWizardStep(3);
@@ -4133,6 +4174,8 @@ async function handleNextToStep3() {
                 displayOpenShiftPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Elasticsearch) {
                 displayElasticsearchPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.OpenSearch) {
+                displayOpenSearchPreview(currentDataSource);
             } else {
                 displayDataPreview(result.data.parsedData);
             }
@@ -4425,6 +4468,9 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.Elasticsearch) {
         const baseUrl = document.getElementById('esBaseUrl')?.value?.trim();
         canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.OpenSearch) {
+        const baseUrl = document.getElementById('opensearchBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
     }
 
     if (nextToStep3) {
@@ -4470,6 +4516,7 @@ function toggleDataSourceFields() {
     const kubernetesSection = document.getElementById('kubernetes-section');
     const openshiftSection = document.getElementById('openshift-section');
     const elasticsearchSection = document.getElementById('elasticsearch-section');
+    const opensearchSection = document.getElementById('opensearch-section');
 
     // Hide all sections first
     fileSection?.classList.add('hidden');
@@ -4503,6 +4550,7 @@ function toggleDataSourceFields() {
     kubernetesSection?.classList.add('hidden');
     openshiftSection?.classList.add('hidden');
     elasticsearchSection?.classList.add('hidden');
+    opensearchSection?.classList.add('hidden');
 
     const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
@@ -4852,6 +4900,13 @@ function toggleDataSourceFields() {
         if (esBaseUrlInput && !esBaseUrlInput.dataset.listenerAttached) {
             esBaseUrlInput.addEventListener('input', updateWizardNavigation);
             esBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.OpenSearch) {
+        opensearchSection?.classList.remove('hidden');
+        const opensearchBaseUrlInput = document.getElementById('opensearchBaseUrl');
+        if (opensearchBaseUrlInput && !opensearchBaseUrlInput.dataset.listenerAttached) {
+            opensearchBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            opensearchBaseUrlInput.dataset.listenerAttached = 'true';
         }
     }
 
@@ -6146,6 +6201,63 @@ function displayElasticsearchPreview(esConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-info-circle mt-0.5 text-yellow-500"></i>
                                 <span>Provide API key or username/password if required.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayOpenSearchPreview(osConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = osConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_indices', desc: 'List indices in the cluster' },
+        { name: 'get_cluster_health', desc: 'Get cluster health' },
+        { name: 'search', desc: 'Search documents in an index' },
+        { name: 'get_document', desc: 'Get a document by ID' },
+        { name: 'index_document', desc: 'Index (create/update) a document' },
+        { name: 'delete_document', desc: 'Delete a document by ID' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/opensearch.png" alt="OpenSearch" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">OpenSearch Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with OpenSearch API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>

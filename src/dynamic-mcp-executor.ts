@@ -148,6 +148,10 @@ export class DynamicMCPExecutor {
         return await this.executeElasticsearchCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.OpenSearch) {
+        return await this.executeElasticsearchCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.OpenShift) {
         return await this.executeOpenShiftCall(queryConfig, args);
       }

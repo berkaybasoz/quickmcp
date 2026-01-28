@@ -107,6 +107,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForKubernetes(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Elasticsearch) {
         tools = this.generateToolsForElasticsearch(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.OpenSearch) {
+        tools = this.generateToolsForElasticsearch(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.OpenShift) {
         tools = this.generateToolsForOpenShift(serverId, dbConfig);
       } else {
@@ -3196,7 +3198,7 @@ export class MCPServerGenerator {
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
-      type: DataSourceType.Elasticsearch,
+      type: dbConfig?.type || DataSourceType.Elasticsearch,
       baseUrl,
       apiKey,
       username,

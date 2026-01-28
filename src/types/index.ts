@@ -24,6 +24,7 @@ export enum DataSourceType {
   Docker = 'docker',
   Kubernetes = 'kubernetes',
   Elasticsearch = 'elasticsearch',
+  OpenSearch = 'opensearch',
   OpenShift = 'openshift',
   X = 'x',
   Prometheus = 'prometheus',
@@ -58,6 +59,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Docker,
     DataSourceType.Kubernetes,
     DataSourceType.Elasticsearch,
+    DataSourceType.OpenSearch,
     DataSourceType.OpenShift,
     DataSourceType.X,
     DataSourceType.Prometheus,
@@ -552,6 +554,15 @@ export interface ElasticsearchGeneratorConfig extends BaseGeneratorConfig {
   index?: string;
 }
 
+export interface OpenSearchGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.OpenSearch;
+  baseUrl: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  index?: string;
+}
+
 export interface OpenShiftGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.OpenShift;
   ocPath?: string; // default: 'oc'
@@ -588,6 +599,7 @@ export type GeneratorConfig =
   | DockerGeneratorConfig
   | KubernetesGeneratorConfig
   | ElasticsearchGeneratorConfig
+  | OpenSearchGeneratorConfig
   | OpenShiftGeneratorConfig
   | DatabaseConnection
   | GitHubConnection
@@ -957,6 +969,23 @@ export function createElasticsearchGeneratorConfig(
 ): ElasticsearchGeneratorConfig {
   return {
     type: DataSourceType.Elasticsearch,
+    baseUrl,
+    apiKey,
+    username,
+    password,
+    index
+  };
+}
+
+export function createOpenSearchGeneratorConfig(
+  baseUrl: string,
+  apiKey?: string,
+  username?: string,
+  password?: string,
+  index?: string
+): OpenSearchGeneratorConfig {
+  return {
+    type: DataSourceType.OpenSearch,
     baseUrl,
     apiKey,
     username,

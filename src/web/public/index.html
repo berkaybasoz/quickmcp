@@ -708,6 +708,16 @@
                                                 <p class="text-xs text-slate-500">Search, index, and health checks.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="opensearch" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/opensearch.png" alt="OpenSearch" class="w-12 h-12 object-contain rounded-lg" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">OpenSearch</h4>
+                                                <p class="text-xs text-slate-500">OpenSearch REST APIs.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="discord" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
@@ -1965,6 +1975,45 @@
                                             </p>
                                         </div>
                                         <div id="elasticsearch-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- OpenSearch Section -->
+                                    <div id="opensearch-section" class="hidden space-y-6 animate-fadeIn">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <p class="text-sm text-slate-700">
+                                                <i class="fas fa-info-circle mr-2"></i>
+                                                Connect to an OpenSearch cluster via REST API.
+                                            </p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL <span class="text-red-500">*</span></label>
+                                                <input type="text" id="opensearchBaseUrl" placeholder="http://localhost:9200" class="input">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Index (Optional)</label>
+                                                <input type="text" id="opensearchIndex" placeholder="my-index" class="input">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key (Optional)</label>
+                                                <input type="password" id="opensearchApiKey" placeholder="base64apikey" class="input">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username (Optional)</label>
+                                                <input type="text" id="opensearchUsername" placeholder="admin" class="input">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Password (Optional)</label>
+                                                <input type="password" id="opensearchPassword" placeholder="••••••••" class="input">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: list_indices, get_cluster_health, search, get_document, index_document, delete_document
+                                            </p>
+                                        </div>
+                                        <div id="opensearch-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Discord Section -->
