@@ -3119,6 +3119,54 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Trello, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Trello) {
+        const baseUrl = document.getElementById('trelloBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('trelloApiKey')?.value?.trim();
+        const apiToken = document.getElementById('trelloApiToken')?.value?.trim();
+        const memberId = document.getElementById('trelloMemberId')?.value?.trim();
+        const boardId = document.getElementById('trelloBoardId')?.value?.trim();
+        const listId = document.getElementById('trelloListId')?.value?.trim();
+
+        if (!baseUrl || !apiKey || !apiToken) {
+            showError('trello-parse-error', 'Please enter base URL, API key, and token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Trello,
+            name: 'Trello',
+            baseUrl,
+            apiKey,
+            apiToken,
+            memberId,
+            boardId,
+            listId
+        };
+        currentParsedData = [{
+            tableName: 'trello_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_member', 'Get member details'],
+                ['list_boards', 'List boards for a member'],
+                ['get_board', 'Get board by ID'],
+                ['list_lists', 'List lists on a board'],
+                ['list_cards', 'List cards on a list'],
+                ['get_card', 'Get card by ID'],
+                ['create_card', 'Create a card in a list']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayTrelloPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3815,6 +3863,8 @@ async function handleNextToStep3() {
                 displayFacebookPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Dropbox) {
                 displayDropboxPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Trello) {
+                displayTrelloPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -4027,6 +4077,11 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('dropboxAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Trello) {
+        const baseUrl = document.getElementById('trelloBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('trelloApiKey')?.value?.trim();
+        const apiToken = document.getElementById('trelloApiToken')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey && !!apiToken;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -4115,6 +4170,7 @@ function toggleDataSourceFields() {
     const mongodbSection = document.getElementById('mongodb-section');
     const facebookSection = document.getElementById('facebook-section');
     const dropboxSection = document.getElementById('dropbox-section');
+    const trelloSection = document.getElementById('trello-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -4141,6 +4197,7 @@ function toggleDataSourceFields() {
     mongodbSection?.classList.add('hidden');
     facebookSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
+    trelloSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -4268,6 +4325,23 @@ function toggleDataSourceFields() {
         if (dropboxAccessTokenInput && !dropboxAccessTokenInput.dataset.listenerAttached) {
             dropboxAccessTokenInput.addEventListener('input', updateWizardNavigation);
             dropboxAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Trello) {
+        trelloSection?.classList.remove('hidden');
+        const trelloBaseUrlInput = document.getElementById('trelloBaseUrl');
+        const trelloApiKeyInput = document.getElementById('trelloApiKey');
+        const trelloApiTokenInput = document.getElementById('trelloApiToken');
+        if (trelloBaseUrlInput && !trelloBaseUrlInput.dataset.listenerAttached) {
+            trelloBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            trelloBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (trelloApiKeyInput && !trelloApiKeyInput.dataset.listenerAttached) {
+            trelloApiKeyInput.addEventListener('input', updateWizardNavigation);
+            trelloApiKeyInput.dataset.listenerAttached = 'true';
+        }
+        if (trelloApiTokenInput && !trelloApiTokenInput.dataset.listenerAttached) {
+            trelloApiTokenInput.addEventListener('input', updateWizardNavigation);
+            trelloApiTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
@@ -6043,6 +6117,64 @@ function displayDropboxPreview(dbxConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Dropbox Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Dropbox API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayTrelloPreview(trelloConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = trelloConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'get_member', desc: 'Get member details' },
+        { name: 'list_boards', desc: 'List boards for a member' },
+        { name: 'get_board', desc: 'Get board by ID' },
+        { name: 'list_lists', desc: 'List lists on a board' },
+        { name: 'list_cards', desc: 'List cards on a list' },
+        { name: 'get_card', desc: 'Get card by ID' },
+        { name: 'create_card', desc: 'Create a card in a list' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/trello.png" alt="Trello" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Trello Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Trello API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">

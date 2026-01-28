@@ -27,7 +27,8 @@ const DataSourceType = {
     Grafana: 'grafana',
     MongoDB: 'mongodb',
     Facebook: 'facebook',
-    Dropbox: 'dropbox'
+    Dropbox: 'dropbox',
+    Trello: 'trello'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -54,7 +55,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Grafana,
         DataSourceType.MongoDB,
         DataSourceType.Facebook,
-        DataSourceType.Dropbox
+        DataSourceType.Dropbox,
+        DataSourceType.Trello
     ];
     return noTableTypes.includes(type);
 }

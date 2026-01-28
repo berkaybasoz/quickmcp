@@ -71,6 +71,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForFacebook(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Trello) {
+        tools = this.generateToolsForTrello(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -1045,6 +1047,128 @@ export class MCPServerGenerator {
         required: ['path', 'contents']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/upload', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForTrello(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiToken, memberId, boardId, listId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Trello, baseUrl, apiKey, apiToken, memberId, boardId, listId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_member',
+      description: 'Get member details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          member_id: { type: 'string', description: 'Member ID or username (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/members/{member_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_boards',
+      description: 'List boards for a member',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          member_id: { type: 'string', description: 'Member ID or username (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/members/{member_id}/boards', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_board',
+      description: 'Get board by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          board_id: { type: 'string', description: 'Board ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/boards/{board_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_lists',
+      description: 'List lists on a board',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          board_id: { type: 'string', description: 'Board ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/boards/{board_id}/lists', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_cards',
+      description: 'List cards on a list',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          list_id: { type: 'string', description: 'List ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/lists/{list_id}/cards', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_card',
+      description: 'Get card by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          card_id: { type: 'string', description: 'Card ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: ['card_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/cards/{card_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_card',
+      description: 'Create a card in a list',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          list_id: { type: 'string', description: 'List ID (optional, default from config)' },
+          name: { type: 'string', description: 'Card name' },
+          desc: { type: 'string', description: 'Card description (optional)' },
+          pos: { type: 'string', description: 'Card position (top, bottom, or number)' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/cards', method: 'POST' }),
       operation: 'INSERT'
     });
 

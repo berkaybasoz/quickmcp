@@ -80,6 +80,10 @@ export class DynamicMCPExecutor {
         return await this.executeDropboxCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Trello) {
+        return await this.executeTrelloCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1563,6 +1567,86 @@ export class DynamicMCPExecutor {
         success: false,
         error: `Dropbox API error: ${response.status}`,
         data: [{ status: response.status, message: responseData?.error_summary || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeTrelloCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, apiToken, endpoint, method, memberId: defaultMemberId, boardId: defaultBoardId, listId: defaultListId } = queryConfig;
+    if (!baseUrl || !apiKey || !apiToken) {
+      return { success: false, error: 'Missing Trello baseUrl/apiKey/apiToken', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+
+    const memberId = args.member_id || defaultMemberId;
+    const boardId = args.board_id || defaultBoardId;
+    const listId = args.list_id || defaultListId;
+
+    if (url.includes('{member_id}')) {
+      if (!memberId) return { success: false, error: 'Missing member_id', data: [], rowCount: 0 };
+      url = url.replace('{member_id}', encodeURIComponent(String(memberId)));
+    }
+    if (url.includes('{board_id}')) {
+      if (!boardId) return { success: false, error: 'Missing board_id', data: [], rowCount: 0 };
+      url = url.replace('{board_id}', encodeURIComponent(String(boardId)));
+    }
+    if (url.includes('{list_id}')) {
+      if (!listId) return { success: false, error: 'Missing list_id', data: [], rowCount: 0 };
+      url = url.replace('{list_id}', encodeURIComponent(String(listId)));
+    }
+    if (args.card_id && url.includes('{card_id}')) {
+      url = url.replace('{card_id}', encodeURIComponent(String(args.card_id)));
+    }
+
+    const queryParams: string[] = [];
+    queryParams.push(`key=${encodeURIComponent(String(apiKey))}`);
+    queryParams.push(`token=${encodeURIComponent(String(apiToken))}`);
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    let body: any = undefined;
+
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['member_id', 'board_id', 'list_id', 'card_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['member_id', 'board_id', 'list_id', 'card_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`📝 Trello API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers: { 'Content-Type': 'application/json' },
+      body
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Trello API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Trello API error:', responseData);
+      return {
+        success: false,
+        error: `Trello API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.message || responseData }],
         rowCount: 1
       };
     }

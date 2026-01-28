@@ -31,6 +31,7 @@ export enum DataSourceType {
   MongoDB = 'mongodb',
   Facebook = 'facebook',
   Dropbox = 'dropbox',
+  Trello = 'trello',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -58,6 +59,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.MongoDB,
     DataSourceType.Facebook,
     DataSourceType.Dropbox,
+    DataSourceType.Trello,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -206,6 +208,16 @@ export interface DropboxConnection {
   type: 'dropbox';
 }
 
+export interface TrelloConnection {
+  baseUrl: string;
+  apiKey: string;
+  apiToken: string;
+  memberId?: string;
+  boardId?: string;
+  listId?: string;
+  type: 'trello';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -350,6 +362,16 @@ export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
   accessToken: string;
 }
 
+export interface TrelloGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Trello;
+  baseUrl: string;
+  apiKey: string;
+  apiToken: string;
+  memberId?: string;
+  boardId?: string;
+  listId?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -449,6 +471,7 @@ export type GeneratorConfig =
   | MongoDBGeneratorConfig
   | FacebookGeneratorConfig
   | DropboxGeneratorConfig
+  | TrelloGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -467,7 +490,8 @@ export type GeneratorConfig =
   | GrafanaConnection
   | MongoDBConnection
   | FacebookConnection
-  | DropboxConnection;
+  | DropboxConnection
+  | TrelloConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -597,6 +621,25 @@ export function createDropboxGeneratorConfig(
     baseUrl,
     contentBaseUrl,
     accessToken
+  };
+}
+
+export function createTrelloGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  apiToken: string,
+  memberId?: string,
+  boardId?: string,
+  listId?: string
+): TrelloGeneratorConfig {
+  return {
+    type: DataSourceType.Trello,
+    baseUrl,
+    apiKey,
+    apiToken,
+    memberId,
+    boardId,
+    listId
   };
 }
 

@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -622,6 +622,50 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Trello) {
+        const { trelloBaseUrl, trelloApiKey, trelloApiToken, trelloMemberId, trelloBoardId, trelloListId } = req.body as any;
+
+        if (!trelloBaseUrl || !trelloApiKey || !trelloApiToken) {
+            throw new Error('Missing Trello base URL, API key, or token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Trello,
+            name: 'Trello',
+            baseUrl: trelloBaseUrl,
+            apiKey: trelloApiKey,
+            apiToken: trelloApiToken,
+            memberId: trelloMemberId,
+            boardId: trelloBoardId,
+            listId: trelloListId
+        };
+
+        const parsedData = [{
+            tableName: 'trello_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_member', 'Get member details'],
+                ['list_boards', 'List boards for a member'],
+                ['get_board', 'Get board by ID'],
+                ['list_lists', 'List lists on a board'],
+                ['list_cards', 'List cards on a list'],
+                ['get_card', 'Get card by ID'],
+                ['create_card', 'Create a card in a list']
+            ],
+            metadata: {
+                rowCount: 7,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1264,6 +1308,16 @@ app.post('/api/generate', async (req, res) => {
         dataSource.accessToken,
         dataSource.contentBaseUrl
       );
+    } else if (dataSource?.type === DataSourceType.Trello) {
+      parsedForGen = {};
+      dbConfForGen = createTrelloGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.apiToken,
+        dataSource.memberId,
+        dataSource.boardId,
+        dataSource.listId
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1483,8 +1537,7 @@ app.get('/api/servers/:id', (req, res) => {
   const tools = generator.getToolsForServer(server.id);
   const resources = generator.getResourcesForServer(server.id);
   const rawType = (server.dbConfig as any)?.type || 'unknown';
-  const inferredType = inferTypeFromTools(tools);
-  const finalType = inferredType || (typeof rawType === 'string' ? rawType : 'unknown');
+  const finalType = typeof rawType === 'string' ? rawType : 'unknown';
 
   res.json({
     success: true,
