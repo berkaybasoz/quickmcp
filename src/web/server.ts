@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -736,6 +736,221 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.OpenAI) {
+        const { openaiBaseUrl, openaiApiKey, openaiModel } = req.body as any;
+        if (!openaiBaseUrl || !openaiApiKey) {
+            throw new Error('Missing OpenAI base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.OpenAI,
+            name: 'OpenAI',
+            baseUrl: openaiBaseUrl,
+            apiKey: openaiApiKey,
+            defaultModel: openaiModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'openai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings'],
+                ['moderations', 'Moderate text'],
+                ['images', 'Generate images'],
+                ['audio_speech', 'Text to speech'],
+                ['audio_transcriptions', 'Transcribe audio'],
+                ['audio_translations', 'Translate audio']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Claude) {
+        const { claudeBaseUrl, claudeApiKey, claudeApiVersion, claudeModel } = req.body as any;
+        if (!claudeBaseUrl || !claudeApiKey) {
+            throw new Error('Missing Claude base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Claude,
+            name: 'Claude',
+            baseUrl: claudeBaseUrl,
+            apiKey: claudeApiKey,
+            apiVersion: claudeApiVersion || '2023-06-01',
+            defaultModel: claudeModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'claude_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create messages']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Gemini) {
+        const { geminiBaseUrl, geminiApiKey, geminiModel } = req.body as any;
+        if (!geminiBaseUrl || !geminiApiKey) {
+            throw new Error('Missing Gemini base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Gemini,
+            name: 'Gemini',
+            baseUrl: geminiBaseUrl,
+            apiKey: geminiApiKey,
+            defaultModel: geminiModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'gemini_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Generate content'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Grok) {
+        const { grokBaseUrl, grokApiKey, grokModel } = req.body as any;
+        if (!grokBaseUrl || !grokApiKey) {
+            throw new Error('Missing Grok base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Grok,
+            name: 'Grok',
+            baseUrl: grokBaseUrl,
+            apiKey: grokApiKey,
+            defaultModel: grokModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'grok_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['images', 'Generate images']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Llama) {
+        const { llamaBaseUrl, llamaModel } = req.body as any;
+        if (!llamaBaseUrl) {
+            throw new Error('Missing Llama base URL');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Llama,
+            name: 'Llama',
+            baseUrl: llamaBaseUrl,
+            defaultModel: llamaModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'llama_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Chat with model'],
+                ['generate', 'Generate text'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.DeepSeek) {
+        const { deepseekBaseUrl, deepseekApiKey, deepseekModel } = req.body as any;
+        if (!deepseekBaseUrl || !deepseekApiKey) {
+            throw new Error('Missing DeepSeek base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.DeepSeek,
+            name: 'DeepSeek',
+            baseUrl: deepseekBaseUrl,
+            apiKey: deepseekApiKey,
+            defaultModel: deepseekModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'deepseek_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1762,6 +1977,48 @@ app.post('/api/generate', async (req, res) => {
         dataSource.baseUrl,
         dataSource.botToken,
         dataSource.defaultChatId
+      );
+    } else if (dataSource?.type === DataSourceType.OpenAI) {
+      parsedForGen = {};
+      dbConfForGen = createOpenAIGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Claude) {
+      parsedForGen = {};
+      dbConfForGen = createClaudeGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.apiVersion,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Gemini) {
+      parsedForGen = {};
+      dbConfForGen = createGeminiGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Grok) {
+      parsedForGen = {};
+      dbConfForGen = createGrokGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Llama) {
+      parsedForGen = {};
+      dbConfForGen = createLlamaGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.DeepSeek) {
+      parsedForGen = {};
+      dbConfForGen = createDeepSeekGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
       );
     } else if (dataSource?.type === DataSourceType.Dropbox) {
       parsedForGen = {};

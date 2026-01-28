@@ -92,6 +92,30 @@ export class DynamicMCPExecutor {
         return await this.executeTelegramCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.OpenAI) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Claude) {
+        return await this.executeClaudeCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Gemini) {
+        return await this.executeGeminiCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Grok) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Llama) {
+        return await this.executeOllamaCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.DeepSeek) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Dropbox) {
         return await this.executeDropboxCall(queryConfig, args);
       }
@@ -1778,6 +1802,230 @@ export class DynamicMCPExecutor {
 
     const resultPayload = responseData?.result ?? responseData;
     const dataArray = Array.isArray(resultPayload) ? resultPayload : (resultPayload ? [resultPayload] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeOpenAICompatibleCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method, defaultModel, multipart } = queryConfig;
+    const token = String(apiKey || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const methodUpper = (method || 'POST').toUpperCase();
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    if (defaultModel && !bodyArgs.model) {
+      bodyArgs.model = defaultModel;
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+
+    let response: Response;
+    if (multipart) {
+      const { file_path, ...rest } = bodyArgs;
+      if (!file_path) {
+        return { success: false, error: 'Missing file_path', data: [], rowCount: 0 };
+      }
+      const { readFile } = await import('fs/promises');
+      const path = await import('path');
+      const fileBuffer = await readFile(file_path);
+      const form = new FormData();
+      for (const [key, value] of Object.entries(rest)) {
+        if (value === undefined || value === null) continue;
+        form.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+      }
+      const filename = path.basename(file_path);
+      form.append('file', new Blob([fileBuffer]), filename);
+      console.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers, body: form as any });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    console.error(`✅ OpenAI-compatible API response: ${response.status}`);
+
+    if (contentType && !contentType.includes('application/json')) {
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `API error: ${response.status}`,
+          data: [{
+            status: response.status,
+            message: buffer.toString('utf8')
+          }],
+          rowCount: 1
+        };
+      }
+      return {
+        success: true,
+        data: [{
+          contentType,
+          base64: buffer.toString('base64')
+        }],
+        rowCount: 1
+      };
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      console.error('❌ OpenAI-compatible API error:', responseData);
+      return {
+        success: false,
+        error: `API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeClaudeCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, apiVersion, endpoint, method, defaultModel } = queryConfig;
+    const token = String(apiKey || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Claude baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const methodUpper = (method || 'POST').toUpperCase();
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    if (defaultModel && !bodyArgs.model) {
+      bodyArgs.model = defaultModel;
+    }
+
+    const headers: Record<string, string> = {
+      'x-api-key': token,
+      'anthropic-version': String(apiVersion || '2023-06-01'),
+      'Content-Type': 'application/json'
+    };
+
+    console.error(`🧠 Claude API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers,
+      body: JSON.stringify(bodyArgs)
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Claude API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Claude API error:', responseData);
+      return {
+        success: false,
+        error: `Claude API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGeminiCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method, defaultModel } = queryConfig;
+    const key = String(apiKey || '').trim();
+    if (!baseUrl || !key || !endpoint) {
+      return { success: false, error: 'Missing Gemini baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let endpointResolved = endpoint;
+    const model = args.model || defaultModel || 'gemini-1.5-flash';
+    endpointResolved = endpointResolved.replace('{model}', encodeURIComponent(String(model)));
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpointResolved}`;
+    url += url.includes('?') ? `&key=${encodeURIComponent(key)}` : `?key=${encodeURIComponent(key)}`;
+
+    const methodUpper = (method || 'POST').toUpperCase();
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.model;
+
+    console.error(`💠 Gemini API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyArgs)
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Gemini API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Gemini API error:', responseData);
+      return {
+        success: false,
+        error: `Gemini API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeOllamaCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method, defaultModel } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing Llama baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const methodUpper = (method || 'POST').toUpperCase();
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    if (defaultModel && !bodyArgs.model) {
+      bodyArgs.model = defaultModel;
+    }
+
+    console.error(`🦙 Ollama API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyArgs)
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Ollama API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Ollama API error:', responseData);
+      return {
+        success: false,
+        error: `Ollama API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }
 

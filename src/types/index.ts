@@ -37,6 +37,12 @@ export enum DataSourceType {
   TikTok = 'tiktok',
   Notion = 'notion',
   Telegram = 'telegram',
+  OpenAI = 'openai',
+  Claude = 'claude',
+  Gemini = 'gemini',
+  Grok = 'grok',
+  Llama = 'llama',
+  DeepSeek = 'deepseek',
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
@@ -76,6 +82,12 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.TikTok,
     DataSourceType.Notion,
     DataSourceType.Telegram,
+    DataSourceType.OpenAI,
+    DataSourceType.Claude,
+    DataSourceType.Gemini,
+    DataSourceType.Grok,
+    DataSourceType.Llama,
+    DataSourceType.DeepSeek,
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
@@ -249,6 +261,48 @@ export interface TelegramConnection {
   botToken: string;
   defaultChatId?: string;
   type: 'telegram';
+}
+
+export interface OpenAIConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'openai';
+}
+
+export interface ClaudeConnection {
+  baseUrl: string;
+  apiKey: string;
+  apiVersion?: string;
+  defaultModel?: string;
+  type: 'claude';
+}
+
+export interface GeminiConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'gemini';
+}
+
+export interface GrokConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'grok';
+}
+
+export interface LlamaConnection {
+  baseUrl: string;
+  defaultModel?: string;
+  type: 'llama';
+}
+
+export interface DeepSeekConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'deepseek';
 }
 
 export interface DropboxConnection {
@@ -477,6 +531,48 @@ export interface TelegramGeneratorConfig extends BaseGeneratorConfig {
   defaultChatId?: string;
 }
 
+export interface OpenAIGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.OpenAI;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface ClaudeGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Claude;
+  baseUrl: string;
+  apiKey: string;
+  apiVersion?: string;
+  defaultModel?: string;
+}
+
+export interface GeminiGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Gemini;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface GrokGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Grok;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface LlamaGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Llama;
+  baseUrl: string;
+  defaultModel?: string;
+}
+
+export interface DeepSeekGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.DeepSeek;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
 export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Dropbox;
   baseUrl: string;
@@ -649,6 +745,12 @@ export type GeneratorConfig =
   | TikTokGeneratorConfig
   | NotionGeneratorConfig
   | TelegramGeneratorConfig
+  | OpenAIGeneratorConfig
+  | ClaudeGeneratorConfig
+  | GeminiGeneratorConfig
+  | GrokGeneratorConfig
+  | LlamaGeneratorConfig
+  | DeepSeekGeneratorConfig
   | DropboxGeneratorConfig
   | TrelloGeneratorConfig
   | GitLabGeneratorConfig
@@ -680,6 +782,12 @@ export type GeneratorConfig =
   | TikTokConnection
   | NotionConnection
   | TelegramConnection
+  | OpenAIConnection
+  | ClaudeConnection
+  | GeminiConnection
+  | GrokConnection
+  | LlamaConnection
+  | DeepSeekConnection
   | DropboxConnection
   | TrelloConnection
   | GitLabConnection
@@ -856,6 +964,84 @@ export function createTelegramGeneratorConfig(
     baseUrl,
     botToken,
     defaultChatId
+  };
+}
+
+export function createOpenAIGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): OpenAIGeneratorConfig {
+  return {
+    type: DataSourceType.OpenAI,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createClaudeGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  apiVersion?: string,
+  defaultModel?: string
+): ClaudeGeneratorConfig {
+  return {
+    type: DataSourceType.Claude,
+    baseUrl,
+    apiKey,
+    apiVersion,
+    defaultModel
+  };
+}
+
+export function createGeminiGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): GeminiGeneratorConfig {
+  return {
+    type: DataSourceType.Gemini,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createGrokGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): GrokGeneratorConfig {
+  return {
+    type: DataSourceType.Grok,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createLlamaGeneratorConfig(
+  baseUrl: string,
+  defaultModel?: string
+): LlamaGeneratorConfig {
+  return {
+    type: DataSourceType.Llama,
+    baseUrl,
+    defaultModel
+  };
+}
+
+export function createDeepSeekGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): DeepSeekGeneratorConfig {
+  return {
+    type: DataSourceType.DeepSeek,
+    baseUrl,
+    apiKey,
+    defaultModel
   };
 }
 

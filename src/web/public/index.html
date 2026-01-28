@@ -301,6 +301,7 @@
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="file">Files</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="database">Database</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="ai">AI</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="infra">Infra</button>
                                         <div class="ml-auto w-full md:w-64 relative">
                                             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -536,6 +537,66 @@
                                                 </div>
                                                 <h4 class="font-bold text-slate-900 mb-1">Telegram</h4>
                                                 <p class="text-xs text-slate-500">Connect to Telegram Bot API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                            <input type="radio" name="dataSourceType" value="openai" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/openai.png" alt="OpenAI" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">OpenAI</h4>
+                                                <p class="text-xs text-slate-500">Chat, embeddings, images, audio.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                            <input type="radio" name="dataSourceType" value="claude" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/claude.png" alt="Claude" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Claude</h4>
+                                                <p class="text-xs text-slate-500">Anthropic Messages API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="gemini" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/gemini.png" alt="Gemini" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Gemini</h4>
+                                                <p class="text-xs text-slate-500">Google GenAI APIs.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                            <input type="radio" name="dataSourceType" value="grok" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-800 hover:shadow-md hover:shadow-slate-800/20 peer-checked:border-slate-800 peer-checked:shadow-lg peer-checked:shadow-slate-800/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/grok.png" alt="Grok" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Grok</h4>
+                                                <p class="text-xs text-slate-500">xAI OpenAI-compatible API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                            <input type="radio" name="dataSourceType" value="llama" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/llama.png" alt="Llama" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Llama</h4>
+                                                <p class="text-xs text-slate-500">Ollama-compatible API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api ai">
+                                            <input type="radio" name="dataSourceType" value="deepseek" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-600 hover:shadow-md hover:shadow-indigo-600/20 peer-checked:border-indigo-600 peer-checked:shadow-lg peer-checked:shadow-indigo-600/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/deepseek.png" alt="DeepSeek" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">DeepSeek</h4>
+                                                <p class="text-xs text-slate-500">OpenAI-compatible API.</p>
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
@@ -1289,6 +1350,210 @@
                                             </p>
                                         </div>
                                         <div id="telegram-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- OpenAI Config -->
+                                    <div id="openai-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-700 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-900 mb-1">OpenAI API</p>
+                                                    <p>Use an API key and optional default model.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="openaiBaseUrl" value="https://api.openai.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="openaiModel" placeholder="gpt-4o-mini" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="openaiApiKey" placeholder="sk-..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>7 tools</strong> will be created: chat, embeddings, moderations, images, audio_speech, audio_transcriptions, audio_translations
+                                            </p>
+                                        </div>
+                                        <div id="openai-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Claude Config -->
+                                    <div id="claude-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">Anthropic (Claude) API</p>
+                                                    <p>Use an API key and optional default model.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="claudeBaseUrl" value="https://api.anthropic.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Version</label>
+                                                <input type="text" id="claudeApiVersion" value="2023-06-01" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="claudeModel" placeholder="claude-3-5-sonnet-20240620" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="claudeApiKey" placeholder="sk-ant-..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>1 tool</strong> will be created: chat
+                                            </p>
+                                        </div>
+                                        <div id="claude-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Gemini Config -->
+                                    <div id="gemini-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                                                <div class="text-sm text-blue-700">
+                                                    <p class="font-medium text-blue-800 mb-1">Gemini API</p>
+                                                    <p>Use a Google AI Studio API key.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="geminiBaseUrl" value="https://generativelanguage.googleapis.com/v1beta" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="geminiModel" placeholder="gemini-1.5-flash" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="geminiApiKey" placeholder="AIza..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: chat, embeddings
+                                            </p>
+                                        </div>
+                                        <div id="gemini-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Grok Config -->
+                                    <div id="grok-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-700 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-900 mb-1">xAI (Grok) API</p>
+                                                    <p>OpenAI-compatible endpoints.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="grokBaseUrl" value="https://api.x.ai/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="grokModel" placeholder="grok-2-latest" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="grokApiKey" placeholder="xai-..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: chat, images
+                                            </p>
+                                        </div>
+                                        <div id="grok-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Llama Config -->
+                                    <div id="llama-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">Ollama-compatible API</p>
+                                                    <p>Local Llama models via Ollama or compatible server.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="llamaBaseUrl" value="http://localhost:11434" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="llamaModel" placeholder="llama3" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: chat, generate, embeddings
+                                            </p>
+                                        </div>
+                                        <div id="llama-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- DeepSeek Config -->
+                                    <div id="deepseek-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">DeepSeek API</p>
+                                                    <p>OpenAI-compatible endpoints.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="deepseekBaseUrl" value="https://api.deepseek.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="deepseekModel" placeholder="deepseek-chat" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="deepseekApiKey" placeholder="sk-..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: chat, embeddings
+                                            </p>
+                                        </div>
+                                        <div id="deepseek-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Dropbox Config -->

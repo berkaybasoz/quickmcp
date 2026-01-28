@@ -590,8 +590,10 @@ function setupTemplateFilters() {
         currentFilter = filter;
         currentQuery = query;
         cards.forEach(card => {
-            const cat = card.getAttribute('data-category');
-            const visible = (filter === 'all' || cat === filter) && matchesQuery(card, currentQuery);
+            const cat = card.getAttribute('data-category') || '';
+            const categories = cat.split(/\s+/).filter(Boolean);
+            const matchesFilter = filter === 'all' || categories.includes(filter);
+            const visible = matchesFilter && matchesQuery(card, currentQuery);
             card.classList.toggle('hidden', !visible);
         });
     };
@@ -3236,6 +3238,233 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For OpenAI, show info in preview and go to step 3
+    if (selectedType === DataSourceType.OpenAI) {
+        const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
+        const model = document.getElementById('openaiModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('openai-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.OpenAI,
+            name: 'OpenAI',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'openai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings'],
+                ['moderations', 'Moderate text'],
+                ['images', 'Generate images'],
+                ['audio_speech', 'Text to speech'],
+                ['audio_transcriptions', 'Transcribe audio'],
+                ['audio_translations', 'Translate audio']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayOpenAIPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Claude, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Claude) {
+        const baseUrl = document.getElementById('claudeBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('claudeApiKey')?.value?.trim();
+        const apiVersion = document.getElementById('claudeApiVersion')?.value?.trim();
+        const model = document.getElementById('claudeModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('claude-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Claude,
+            name: 'Claude',
+            baseUrl,
+            apiKey,
+            apiVersion: apiVersion || '2023-06-01',
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'claude_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create messages']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayClaudePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Gemini, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Gemini) {
+        const baseUrl = document.getElementById('geminiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('geminiApiKey')?.value?.trim();
+        const model = document.getElementById('geminiModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('gemini-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Gemini,
+            name: 'Gemini',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'gemini_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Generate content'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGeminiPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Grok, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Grok) {
+        const baseUrl = document.getElementById('grokBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('grokApiKey')?.value?.trim();
+        const model = document.getElementById('grokModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('grok-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Grok,
+            name: 'Grok',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'grok_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['images', 'Generate images']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGrokPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Llama, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Llama) {
+        const baseUrl = document.getElementById('llamaBaseUrl')?.value?.trim();
+        const model = document.getElementById('llamaModel')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('llama-parse-error', 'Please enter base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Llama,
+            name: 'Llama',
+            baseUrl,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'llama_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Chat with model'],
+                ['generate', 'Generate text'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayLlamaPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For DeepSeek, show info in preview and go to step 3
+    if (selectedType === DataSourceType.DeepSeek) {
+        const baseUrl = document.getElementById('deepseekBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('deepseekApiKey')?.value?.trim();
+        const model = document.getElementById('deepseekModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('deepseek-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.DeepSeek,
+            name: 'DeepSeek',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'deepseek_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayDeepSeekPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Dropbox, show info in preview and go to step 3
     if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
@@ -4311,6 +4540,18 @@ async function handleNextToStep3() {
                 displayNotionPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Telegram) {
                 displayTelegramPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.OpenAI) {
+                displayOpenAIPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Claude) {
+                displayClaudePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Gemini) {
+                displayGeminiPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Grok) {
+                displayGrokPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Llama) {
+                displayLlamaPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.DeepSeek) {
+                displayDeepSeekPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Dropbox) {
                 displayDropboxPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Trello) {
@@ -4553,6 +4794,29 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('telegramBaseUrl')?.value?.trim();
         const botToken = document.getElementById('telegramBotToken')?.value?.trim();
         canProceed = !!baseUrl && !!botToken;
+    } else if (selectedType === DataSourceType.OpenAI) {
+        const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Claude) {
+        const baseUrl = document.getElementById('claudeBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('claudeApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Gemini) {
+        const baseUrl = document.getElementById('geminiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('geminiApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Grok) {
+        const baseUrl = document.getElementById('grokBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('grokApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Llama) {
+        const baseUrl = document.getElementById('llamaBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.DeepSeek) {
+        const baseUrl = document.getElementById('deepseekBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('deepseekApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
     } else if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('dropboxAccessToken')?.value?.trim();
@@ -4681,6 +4945,12 @@ function toggleDataSourceFields() {
     const tiktokSection = document.getElementById('tiktok-section');
     const notionSection = document.getElementById('notion-section');
     const telegramSection = document.getElementById('telegram-section');
+    const openaiSection = document.getElementById('openai-section');
+    const claudeSection = document.getElementById('claude-section');
+    const geminiSection = document.getElementById('gemini-section');
+    const grokSection = document.getElementById('grok-section');
+    const llamaSection = document.getElementById('llama-section');
+    const deepseekSection = document.getElementById('deepseek-section');
     const dropboxSection = document.getElementById('dropbox-section');
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
@@ -4719,6 +4989,12 @@ function toggleDataSourceFields() {
     tiktokSection?.classList.add('hidden');
     notionSection?.classList.add('hidden');
     telegramSection?.classList.add('hidden');
+    openaiSection?.classList.add('hidden');
+    claudeSection?.classList.add('hidden');
+    geminiSection?.classList.add('hidden');
+    grokSection?.classList.add('hidden');
+    llamaSection?.classList.add('hidden');
+    deepseekSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
@@ -4891,6 +5167,73 @@ function toggleDataSourceFields() {
         if (telegramBotTokenInput && !telegramBotTokenInput.dataset.listenerAttached) {
             telegramBotTokenInput.addEventListener('input', updateWizardNavigation);
             telegramBotTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.OpenAI) {
+        openaiSection?.classList.remove('hidden');
+        const openaiBaseUrlInput = document.getElementById('openaiBaseUrl');
+        const openaiApiKeyInput = document.getElementById('openaiApiKey');
+        if (openaiBaseUrlInput && !openaiBaseUrlInput.dataset.listenerAttached) {
+            openaiBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            openaiBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (openaiApiKeyInput && !openaiApiKeyInput.dataset.listenerAttached) {
+            openaiApiKeyInput.addEventListener('input', updateWizardNavigation);
+            openaiApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Claude) {
+        claudeSection?.classList.remove('hidden');
+        const claudeBaseUrlInput = document.getElementById('claudeBaseUrl');
+        const claudeApiKeyInput = document.getElementById('claudeApiKey');
+        if (claudeBaseUrlInput && !claudeBaseUrlInput.dataset.listenerAttached) {
+            claudeBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            claudeBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (claudeApiKeyInput && !claudeApiKeyInput.dataset.listenerAttached) {
+            claudeApiKeyInput.addEventListener('input', updateWizardNavigation);
+            claudeApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Gemini) {
+        geminiSection?.classList.remove('hidden');
+        const geminiBaseUrlInput = document.getElementById('geminiBaseUrl');
+        const geminiApiKeyInput = document.getElementById('geminiApiKey');
+        if (geminiBaseUrlInput && !geminiBaseUrlInput.dataset.listenerAttached) {
+            geminiBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            geminiBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (geminiApiKeyInput && !geminiApiKeyInput.dataset.listenerAttached) {
+            geminiApiKeyInput.addEventListener('input', updateWizardNavigation);
+            geminiApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Grok) {
+        grokSection?.classList.remove('hidden');
+        const grokBaseUrlInput = document.getElementById('grokBaseUrl');
+        const grokApiKeyInput = document.getElementById('grokApiKey');
+        if (grokBaseUrlInput && !grokBaseUrlInput.dataset.listenerAttached) {
+            grokBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            grokBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (grokApiKeyInput && !grokApiKeyInput.dataset.listenerAttached) {
+            grokApiKeyInput.addEventListener('input', updateWizardNavigation);
+            grokApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Llama) {
+        llamaSection?.classList.remove('hidden');
+        const llamaBaseUrlInput = document.getElementById('llamaBaseUrl');
+        if (llamaBaseUrlInput && !llamaBaseUrlInput.dataset.listenerAttached) {
+            llamaBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            llamaBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.DeepSeek) {
+        deepseekSection?.classList.remove('hidden');
+        const deepseekBaseUrlInput = document.getElementById('deepseekBaseUrl');
+        const deepseekApiKeyInput = document.getElementById('deepseekApiKey');
+        if (deepseekBaseUrlInput && !deepseekBaseUrlInput.dataset.listenerAttached) {
+            deepseekBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            deepseekBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (deepseekApiKeyInput && !deepseekApiKeyInput.dataset.listenerAttached) {
+            deepseekApiKeyInput.addEventListener('input', updateWizardNavigation);
+            deepseekApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Dropbox) {
         dropboxSection?.classList.remove('hidden');
@@ -7001,6 +7344,329 @@ function displayTelegramPreview(telegramConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Telegram Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Telegram Bot API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayOpenAIPreview(openaiConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = openaiConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' },
+        { name: 'moderations', desc: 'Moderate text' },
+        { name: 'images', desc: 'Generate images' },
+        { name: 'audio_speech', desc: 'Text to speech' },
+        { name: 'audio_transcriptions', desc: 'Transcribe audio' },
+        { name: 'audio_translations', desc: 'Translate audio' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/openai.png" alt="OpenAI" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">OpenAI Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with OpenAI API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayClaudePreview(claudeConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = claudeConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create messages' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/claude.png" alt="Claude" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Claude Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Anthropic API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGeminiPreview(geminiConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = geminiConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Generate content' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/gemini.png" alt="Gemini" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Gemini Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Gemini API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGrokPreview(grokConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = grokConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'images', desc: 'Generate images' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/grok.png" alt="Grok" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Grok Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with xAI API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayLlamaPreview(llamaConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = llamaConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Chat with model' },
+        { name: 'generate', desc: 'Generate text' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/llama.png" alt="Llama" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Llama Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Ollama-compatible API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayDeepSeekPreview(deepseekConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = deepseekConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/deepseek.png" alt="DeepSeek" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">DeepSeek Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with DeepSeek API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">

@@ -77,6 +77,18 @@ export class MCPServerGenerator {
         tools = this.generateToolsForNotion(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Telegram) {
         tools = this.generateToolsForTelegram(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.OpenAI) {
+        tools = this.generateToolsForOpenAI(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Claude) {
+        tools = this.generateToolsForClaude(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Gemini) {
+        tools = this.generateToolsForGemini(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Grok) {
+        tools = this.generateToolsForGrok(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Llama) {
+        tools = this.generateToolsForLlama(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.DeepSeek) {
+        tools = this.generateToolsForDeepSeek(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
@@ -1283,6 +1295,347 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/sendMessage', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForOpenAI(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.OpenAI, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'moderations',
+      description: 'Moderate text',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/moderations', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'images',
+      description: 'Generate images',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          prompt: { type: 'string', description: 'Image prompt' },
+          n: { type: 'number', description: 'Number of images (optional)' },
+          size: { type: 'string', description: 'Image size (optional)' }
+        },
+        required: ['prompt']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/images/generations', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'audio_speech',
+      description: 'Text to speech',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          input: { type: 'string', description: 'Text to speak' },
+          voice: { type: 'string', description: 'Voice name (optional)' },
+          format: { type: 'string', description: 'Audio format (optional)' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/audio/speech', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'audio_transcriptions',
+      description: 'Transcribe audio',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          file_path: { type: 'string', description: 'Path to audio file' },
+          language: { type: 'string', description: 'Language (optional)' },
+          prompt: { type: 'string', description: 'Prompt (optional)' }
+        },
+        required: ['file_path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/audio/transcriptions', method: 'POST', multipart: true }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'audio_translations',
+      description: 'Translate audio',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          file_path: { type: 'string', description: 'Path to audio file' },
+          prompt: { type: 'string', description: 'Prompt (optional)' }
+        },
+        required: ['file_path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/audio/translations', method: 'POST', multipart: true }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForClaude(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiVersion, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Claude, baseUrl, apiKey, apiVersion, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create messages',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Messages array' },
+          max_tokens: { type: 'number', description: 'Max tokens' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' }
+        },
+        required: ['messages', 'max_tokens']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/messages', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGemini(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Gemini, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Generate content',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          contents: { type: 'array', items: { type: 'object' }, description: 'Contents array' },
+          generationConfig: { type: 'object', description: 'Generation config (optional)' },
+          safetySettings: { type: 'array', items: { type: 'object' }, description: 'Safety settings (optional)' }
+        },
+        required: ['contents']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/models/{model}:generateContent', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          content: { type: 'object', description: 'Content object' }
+        },
+        required: ['content']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/models/{model}:embedContent', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGrok(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Grok, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'images',
+      description: 'Generate images',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional)' },
+          prompt: { type: 'string', description: 'Image prompt' },
+          n: { type: 'number', description: 'Number of images (optional)' },
+          size: { type: 'string', description: 'Image size (optional)' }
+        },
+        required: ['prompt']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/images/generations', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForLlama(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Llama, baseUrl, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Chat with model',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          stream: { type: 'boolean', description: 'Stream response (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/chat', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'generate',
+      description: 'Generate text',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          prompt: { type: 'string', description: 'Prompt' },
+          stream: { type: 'boolean', description: 'Stream response (optional)' }
+        },
+        required: ['prompt']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/generate', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          prompt: { type: 'string', description: 'Input text' }
+        },
+        required: ['prompt']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForDeepSeek(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.DeepSeek, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
     });
 
     return tools;
