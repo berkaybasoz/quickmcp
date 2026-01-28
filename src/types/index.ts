@@ -34,6 +34,8 @@ export enum DataSourceType {
   Trello = 'trello',
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
+  GDrive = 'gdrive',
+  GoogleSheets = 'googlesheets',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -64,6 +66,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Trello,
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
+    DataSourceType.GDrive,
+    DataSourceType.GoogleSheets,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -238,6 +242,20 @@ export interface BitbucketConnection {
   type: 'bitbucket';
 }
 
+export interface GDriveConnection {
+  baseUrl: string;
+  accessToken: string;
+  rootFolderId?: string;
+  type: 'gdrive';
+}
+
+export interface GoogleSheetsConnection {
+  baseUrl: string;
+  accessToken: string;
+  spreadsheetId?: string;
+  type: 'googlesheets';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -408,6 +426,20 @@ export interface BitbucketGeneratorConfig extends BaseGeneratorConfig {
   repoSlug?: string;
 }
 
+export interface GDriveGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GDrive;
+  baseUrl: string;
+  accessToken: string;
+  rootFolderId?: string;
+}
+
+export interface GoogleSheetsGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GoogleSheets;
+  baseUrl: string;
+  accessToken: string;
+  spreadsheetId?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -510,6 +542,8 @@ export type GeneratorConfig =
   | TrelloGeneratorConfig
   | GitLabGeneratorConfig
   | BitbucketGeneratorConfig
+  | GDriveGeneratorConfig
+  | GoogleSheetsGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -531,7 +565,9 @@ export type GeneratorConfig =
   | DropboxConnection
   | TrelloConnection
   | GitLabConnection
-  | BitbucketConnection;
+  | BitbucketConnection
+  | GDriveConnection
+  | GoogleSheetsConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -710,6 +746,32 @@ export function createBitbucketGeneratorConfig(
     appPassword,
     workspace,
     repoSlug
+  };
+}
+
+export function createGDriveGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  rootFolderId?: string
+): GDriveGeneratorConfig {
+  return {
+    type: DataSourceType.GDrive,
+    baseUrl,
+    accessToken,
+    rootFolderId
+  };
+}
+
+export function createGoogleSheetsGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  spreadsheetId?: string
+): GoogleSheetsGeneratorConfig {
+  return {
+    type: DataSourceType.GoogleSheets,
+    baseUrl,
+    accessToken,
+    spreadsheetId
   };
 }
 

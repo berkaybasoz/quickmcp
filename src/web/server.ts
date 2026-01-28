@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -760,6 +760,84 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.GDrive) {
+        const { gdriveBaseUrl, gdriveAccessToken, gdriveRootFolderId } = req.body as any;
+
+        if (!gdriveBaseUrl || !gdriveAccessToken) {
+            throw new Error('Missing Google Drive base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GDrive,
+            name: 'Google Drive',
+            baseUrl: gdriveBaseUrl,
+            accessToken: gdriveAccessToken,
+            rootFolderId: gdriveRootFolderId
+        };
+
+        const parsedData = [{
+            tableName: 'gdrive_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files in a folder'],
+                ['get_file', 'Get file metadata by ID'],
+                ['download_file', 'Download file content'],
+                ['upload_file', 'Upload a file'],
+                ['create_folder', 'Create a folder']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.GoogleSheets) {
+        const { sheetsBaseUrl, sheetsAccessToken, sheetsSpreadsheetId } = req.body as any;
+
+        if (!sheetsBaseUrl || !sheetsAccessToken) {
+            throw new Error('Missing Google Sheets base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GoogleSheets,
+            name: 'Google Sheets',
+            baseUrl: sheetsBaseUrl,
+            accessToken: sheetsAccessToken,
+            spreadsheetId: sheetsSpreadsheetId
+        };
+
+        const parsedData = [{
+            tableName: 'googlesheets_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_spreadsheet', 'Get spreadsheet metadata'],
+                ['get_values', 'Get values from a range'],
+                ['update_values', 'Update values in a range'],
+                ['append_values', 'Append values to a range'],
+                ['create_spreadsheet', 'Create a new spreadsheet']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Jira) {
         const { jiraHost, jiraEmail, jiraApiToken, jiraProjectKey, jiraApiVersion } = req.body as any;
 
@@ -1415,6 +1493,20 @@ app.post('/api/generate', async (req, res) => {
         dataSource.appPassword,
         dataSource.workspace,
         dataSource.repoSlug
+      );
+    } else if (dataSource?.type === DataSourceType.GDrive) {
+      parsedForGen = {};
+      dbConfForGen = createGDriveGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.rootFolderId
+      );
+    } else if (dataSource?.type === DataSourceType.GoogleSheets) {
+      parsedForGen = {};
+      dbConfForGen = createGoogleSheetsGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.spreadsheetId
       );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};

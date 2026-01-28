@@ -30,7 +30,9 @@ const DataSourceType = {
     Dropbox: 'dropbox',
     Trello: 'trello',
     GitLab: 'gitlab',
-    Bitbucket: 'bitbucket'
+    Bitbucket: 'bitbucket',
+    GDrive: 'gdrive',
+    GoogleSheets: 'googlesheets'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -60,7 +62,9 @@ function isNoTableDataSource(type) {
         DataSourceType.Dropbox,
         DataSourceType.Trello,
         DataSourceType.GitLab,
-        DataSourceType.Bitbucket
+        DataSourceType.Bitbucket,
+        DataSourceType.GDrive,
+        DataSourceType.GoogleSheets
     ];
     return noTableTypes.includes(type);
 }

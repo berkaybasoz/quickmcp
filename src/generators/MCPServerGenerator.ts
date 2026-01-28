@@ -77,6 +77,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGitLab(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Bitbucket) {
         tools = this.generateToolsForBitbucket(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GDrive) {
+        tools = this.generateToolsForGDrive(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GoogleSheets) {
+        tools = this.generateToolsForGoogleSheets(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -1393,6 +1397,189 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}/src/{ref}/{path}', method: 'GET' }),
       operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGDrive(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, rootFolderId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GDrive, baseUrl, accessToken, rootFolderId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_files',
+      description: 'List files in a folder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder_id: { type: 'string', description: 'Folder ID (optional, default from config)' },
+          q: { type: 'string', description: 'Search query (optional)' },
+          pageSize: { type: 'number', description: 'Page size', default: 20 },
+          pageToken: { type: 'string', description: 'Page token (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_file',
+      description: 'Get file metadata by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          file_id: { type: 'string', description: 'File ID' },
+          fields: { type: 'string', description: 'Fields to include (optional)' }
+        },
+        required: ['file_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/{file_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'download_file',
+      description: 'Download file content',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          file_id: { type: 'string', description: 'File ID' }
+        },
+        required: ['file_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/{file_id}?alt=media', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'upload_file',
+      description: 'Upload a file (simple upload)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'File name' },
+          mimeType: { type: 'string', description: 'MIME type (optional)' },
+          contents: { type: 'string', description: 'File contents (UTF-8 text)' },
+          folder_id: { type: 'string', description: 'Parent folder ID (optional)' }
+        },
+        required: ['name', 'contents']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_folder',
+      description: 'Create a folder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Folder name' },
+          parent_id: { type: 'string', description: 'Parent folder ID (optional)' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGoogleSheets(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, spreadsheetId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GoogleSheets, baseUrl, accessToken, spreadsheetId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_spreadsheet',
+      description: 'Get spreadsheet metadata',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spreadsheet_id: { type: 'string', description: 'Spreadsheet ID (optional, default from config)' },
+          includeGridData: { type: 'boolean', description: 'Include grid data', default: false }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets/{spreadsheet_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_values',
+      description: 'Get values from a range',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spreadsheet_id: { type: 'string', description: 'Spreadsheet ID (optional, default from config)' },
+          range: { type: 'string', description: 'A1 notation range (e.g., Sheet1!A1:C10)' },
+          majorDimension: { type: 'string', description: 'ROWS or COLUMNS (optional)' }
+        },
+        required: ['range']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets/{spreadsheet_id}/values/{range}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_values',
+      description: 'Update values in a range',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spreadsheet_id: { type: 'string', description: 'Spreadsheet ID (optional, default from config)' },
+          range: { type: 'string', description: 'A1 notation range' },
+          values: { type: 'array', items: { type: 'array', items: { type: 'string' } }, description: '2D array of values' },
+          valueInputOption: { type: 'string', description: 'RAW or USER_ENTERED', default: 'RAW' }
+        },
+        required: ['range', 'values']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets/{spreadsheet_id}/values/{range}:update', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'append_values',
+      description: 'Append values to a range',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spreadsheet_id: { type: 'string', description: 'Spreadsheet ID (optional, default from config)' },
+          range: { type: 'string', description: 'A1 notation range' },
+          values: { type: 'array', items: { type: 'array', items: { type: 'string' } }, description: '2D array of values' },
+          valueInputOption: { type: 'string', description: 'RAW or USER_ENTERED', default: 'RAW' }
+        },
+        required: ['range', 'values']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets/{spreadsheet_id}/values/{range}:append', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_spreadsheet',
+      description: 'Create a new spreadsheet',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Spreadsheet title' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets', method: 'POST' }),
+      operation: 'INSERT'
     });
 
     return tools;

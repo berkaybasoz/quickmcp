@@ -3253,6 +3253,86 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Google Drive, show info in preview and go to step 3
+    if (selectedType === DataSourceType.GDrive) {
+        const baseUrl = document.getElementById('gdriveBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gdriveAccessToken')?.value?.trim();
+        const rootFolderId = document.getElementById('gdriveRootFolderId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('gdrive-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.GDrive,
+            name: 'Google Drive',
+            baseUrl,
+            accessToken,
+            rootFolderId
+        };
+        currentParsedData = [{
+            tableName: 'gdrive_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files in a folder'],
+                ['get_file', 'Get file metadata by ID'],
+                ['download_file', 'Download file content'],
+                ['upload_file', 'Upload a file'],
+                ['create_folder', 'Create a folder']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGDrivePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Google Sheets, show info in preview and go to step 3
+    if (selectedType === DataSourceType.GoogleSheets) {
+        const baseUrl = document.getElementById('sheetsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('sheetsAccessToken')?.value?.trim();
+        const spreadsheetId = document.getElementById('sheetsSpreadsheetId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('sheets-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.GoogleSheets,
+            name: 'Google Sheets',
+            baseUrl,
+            accessToken,
+            spreadsheetId
+        };
+        currentParsedData = [{
+            tableName: 'googlesheets_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_spreadsheet', 'Get spreadsheet metadata'],
+                ['get_values', 'Get values from a range'],
+                ['update_values', 'Update values in a range'],
+                ['append_values', 'Append values to a range'],
+                ['create_spreadsheet', 'Create a new spreadsheet']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGoogleSheetsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3955,6 +4035,10 @@ async function handleNextToStep3() {
                 displayGitLabPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Bitbucket) {
                 displayBitbucketPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.GDrive) {
+                displayGDrivePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.GoogleSheets) {
+                displayGoogleSheetsPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -4181,6 +4265,14 @@ function updateWizardNavigation() {
         const username = document.getElementById('bitbucketUsername')?.value?.trim();
         const appPassword = document.getElementById('bitbucketAppPassword')?.value?.trim();
         canProceed = !!baseUrl && !!username && !!appPassword;
+    } else if (selectedType === DataSourceType.GDrive) {
+        const baseUrl = document.getElementById('gdriveBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gdriveAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.GoogleSheets) {
+        const baseUrl = document.getElementById('sheetsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('sheetsAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -4272,6 +4364,8 @@ function toggleDataSourceFields() {
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
     const bitbucketSection = document.getElementById('bitbucket-section');
+    const gdriveSection = document.getElementById('gdrive-section');
+    const sheetsSection = document.getElementById('googlesheets-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -4301,6 +4395,8 @@ function toggleDataSourceFields() {
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
     bitbucketSection?.classList.add('hidden');
+    gdriveSection?.classList.add('hidden');
+    sheetsSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -4474,6 +4570,30 @@ function toggleDataSourceFields() {
         if (bitbucketAppPasswordInput && !bitbucketAppPasswordInput.dataset.listenerAttached) {
             bitbucketAppPasswordInput.addEventListener('input', updateWizardNavigation);
             bitbucketAppPasswordInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.GDrive) {
+        gdriveSection?.classList.remove('hidden');
+        const gdriveBaseUrlInput = document.getElementById('gdriveBaseUrl');
+        const gdriveAccessTokenInput = document.getElementById('gdriveAccessToken');
+        if (gdriveBaseUrlInput && !gdriveBaseUrlInput.dataset.listenerAttached) {
+            gdriveBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            gdriveBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (gdriveAccessTokenInput && !gdriveAccessTokenInput.dataset.listenerAttached) {
+            gdriveAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            gdriveAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.GoogleSheets) {
+        sheetsSection?.classList.remove('hidden');
+        const sheetsBaseUrlInput = document.getElementById('sheetsBaseUrl');
+        const sheetsAccessTokenInput = document.getElementById('sheetsAccessToken');
+        if (sheetsBaseUrlInput && !sheetsBaseUrlInput.dataset.listenerAttached) {
+            sheetsBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            sheetsBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (sheetsAccessTokenInput && !sheetsAccessTokenInput.dataset.listenerAttached) {
+            sheetsAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            sheetsAccessTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
@@ -6421,6 +6541,118 @@ function displayBitbucketPreview(bbConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Bitbucket Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Bitbucket API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGDrivePreview(gdConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = gdConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_files', desc: 'List files in a folder' },
+        { name: 'get_file', desc: 'Get file metadata by ID' },
+        { name: 'download_file', desc: 'Download file content' },
+        { name: 'upload_file', desc: 'Upload a file' },
+        { name: 'create_folder', desc: 'Create a folder' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/gdrive.png" alt="Google Drive" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Google Drive Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Google Drive API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGoogleSheetsPreview(sheetsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = sheetsConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'get_spreadsheet', desc: 'Get spreadsheet metadata' },
+        { name: 'get_values', desc: 'Get values from a range' },
+        { name: 'update_values', desc: 'Update values in a range' },
+        { name: 'append_values', desc: 'Append values to a range' },
+        { name: 'create_spreadsheet', desc: 'Create a new spreadsheet' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/googlesheets.png" alt="Google Sheets" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Google Sheets Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Google Sheets API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">

@@ -92,6 +92,14 @@ export class DynamicMCPExecutor {
         return await this.executeBitbucketCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.GDrive) {
+        return await this.executeGDriveCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.GoogleSheets) {
+        return await this.executeGoogleSheetsCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1791,6 +1799,167 @@ export class DynamicMCPExecutor {
       return {
         success: false,
         error: `Bitbucket API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGDriveCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, rootFolderId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Google Drive baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    const token = String(accessToken).trim();
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+
+    if (args.file_id && url.includes('{file_id}')) {
+      url = url.replace('{file_id}', encodeURIComponent(String(args.file_id)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const queryParams: string[] = [];
+    let body: any = undefined;
+
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['file_id', 'folder_id', 'parent_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+
+      const folderId = args.folder_id || rootFolderId;
+      if (endpoint === '/files' && folderId) {
+        queryParams.push(`q=${encodeURIComponent(`'${folderId}' in parents`)}`);
+      }
+    } else {
+      headers['Content-Type'] = 'application/json';
+      if (endpoint === '/files') {
+        const isFolder = methodUpper === 'POST' && args && !args.contents;
+        const parents = [];
+        const parentId = args.parent_id || args.folder_id || rootFolderId;
+        if (parentId) parents.push(parentId);
+        const metadata: any = {
+          name: args.name,
+          mimeType: isFolder ? 'application/vnd.google-apps.folder' : (args.mimeType || 'application/octet-stream')
+        };
+        if (parents.length > 0) metadata.parents = parents;
+
+        if (args.contents) {
+          body = JSON.stringify({
+            metadata,
+            contents: args.contents
+          });
+        } else {
+          body = JSON.stringify(metadata);
+        }
+      } else {
+        body = JSON.stringify(args || {});
+      }
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📁 Google Drive API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+
+    if (endpoint.includes('?alt=media')) {
+      const content = await response.text();
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Google Drive API error: ${response.status}`,
+          data: [{ status: response.status, message: content }],
+          rowCount: 1
+        };
+      }
+      return { success: true, data: [{ content }], rowCount: 1 };
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Google Drive API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGoogleSheetsCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, spreadsheetId: defaultSpreadsheetId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Google Sheets baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    const token = String(accessToken).trim();
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+
+    const spreadsheetId = args.spreadsheet_id || defaultSpreadsheetId;
+    if (url.includes('{spreadsheet_id}')) {
+      if (!spreadsheetId) return { success: false, error: 'Missing spreadsheet_id', data: [], rowCount: 0 };
+      url = url.replace('{spreadsheet_id}', encodeURIComponent(String(spreadsheetId)));
+    }
+    if (args.range && url.includes('{range}')) {
+      url = url.replace('{range}', encodeURIComponent(String(args.range)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    const queryParams: string[] = [];
+    let body: any = undefined;
+
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['spreadsheet_id', 'range', 'values'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['spreadsheet_id', 'range'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📄 Google Sheets API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Google Sheets API error: ${response.status}`,
         data: [{ status: response.status, message: responseData?.error?.message || responseData }],
         rowCount: 1
       };

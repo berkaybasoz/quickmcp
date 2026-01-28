@@ -538,6 +538,26 @@
                                                 <p class="text-xs text-slate-500">Connect to Bitbucket API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="gdrive" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-400 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/gdrive.png" alt="Google Drive" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Google Drive</h4>
+                                                <p class="text-xs text-slate-500">Connect to Google Drive API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="googlesheets" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-green-500 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/googlesheets.png" alt="Google Sheets" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Google Sheets</h4>
+                                                <p class="text-xs text-slate-500">Connect to Google Sheets API.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="prometheus" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
@@ -1219,6 +1239,74 @@
                                             </p>
                                         </div>
                                         <div id="bitbucket-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Google Drive Config -->
+                                    <div id="gdrive-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                                                <div class="text-sm text-blue-700">
+                                                    <p class="font-medium text-blue-800 mb-1">Google Drive API</p>
+                                                    <p>Use an OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="gdriveBaseUrl" value="https://www.googleapis.com/drive/v3" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="gdriveAccessToken" placeholder="ya29..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Root Folder ID (Optional)</label>
+                                                <input type="text" id="gdriveRootFolderId" placeholder="root or folder id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_files, get_file, download_file, upload_file, create_folder
+                                            </p>
+                                        </div>
+                                        <div id="gdrive-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Google Sheets Config -->
+                                    <div id="googlesheets-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-green-600 mt-0.5"></i>
+                                                <div class="text-sm text-green-700">
+                                                    <p class="font-medium text-green-800 mb-1">Google Sheets API</p>
+                                                    <p>Use an OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="sheetsBaseUrl" value="https://sheets.googleapis.com/v4" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="sheetsAccessToken" placeholder="ya29..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Spreadsheet ID (Optional)</label>
+                                                <input type="text" id="sheetsSpreadsheetId" placeholder="Spreadsheet ID" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: get_spreadsheet, get_values, update_values, append_values, create_spreadsheet
+                                            </p>
+                                        </div>
+                                        <div id="sheets-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->
