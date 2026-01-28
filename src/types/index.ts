@@ -32,6 +32,8 @@ export enum DataSourceType {
   Facebook = 'facebook',
   Dropbox = 'dropbox',
   Trello = 'trello',
+  GitLab = 'gitlab',
+  Bitbucket = 'bitbucket',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -60,6 +62,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Facebook,
     DataSourceType.Dropbox,
     DataSourceType.Trello,
+    DataSourceType.GitLab,
+    DataSourceType.Bitbucket,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -218,6 +222,22 @@ export interface TrelloConnection {
   type: 'trello';
 }
 
+export interface GitLabConnection {
+  baseUrl: string;
+  token: string;
+  projectId?: string;
+  type: 'gitlab';
+}
+
+export interface BitbucketConnection {
+  baseUrl: string;
+  username: string;
+  appPassword: string;
+  workspace?: string;
+  repoSlug?: string;
+  type: 'bitbucket';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -372,6 +392,22 @@ export interface TrelloGeneratorConfig extends BaseGeneratorConfig {
   listId?: string;
 }
 
+export interface GitLabGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GitLab;
+  baseUrl: string;
+  token: string;
+  projectId?: string;
+}
+
+export interface BitbucketGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Bitbucket;
+  baseUrl: string;
+  username: string;
+  appPassword: string;
+  workspace?: string;
+  repoSlug?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -472,6 +508,8 @@ export type GeneratorConfig =
   | FacebookGeneratorConfig
   | DropboxGeneratorConfig
   | TrelloGeneratorConfig
+  | GitLabGeneratorConfig
+  | BitbucketGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -491,7 +529,9 @@ export type GeneratorConfig =
   | MongoDBConnection
   | FacebookConnection
   | DropboxConnection
-  | TrelloConnection;
+  | TrelloConnection
+  | GitLabConnection
+  | BitbucketConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -640,6 +680,36 @@ export function createTrelloGeneratorConfig(
     memberId,
     boardId,
     listId
+  };
+}
+
+export function createGitLabGeneratorConfig(
+  baseUrl: string,
+  token: string,
+  projectId?: string
+): GitLabGeneratorConfig {
+  return {
+    type: DataSourceType.GitLab,
+    baseUrl,
+    token,
+    projectId
+  };
+}
+
+export function createBitbucketGeneratorConfig(
+  baseUrl: string,
+  username: string,
+  appPassword: string,
+  workspace?: string,
+  repoSlug?: string
+): BitbucketGeneratorConfig {
+  return {
+    type: DataSourceType.Bitbucket,
+    baseUrl,
+    username,
+    appPassword,
+    workspace,
+    repoSlug
   };
 }
 

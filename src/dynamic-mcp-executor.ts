@@ -84,6 +84,14 @@ export class DynamicMCPExecutor {
         return await this.executeTrelloCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.GitLab) {
+        return await this.executeGitLabCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Bitbucket) {
+        return await this.executeBitbucketCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1647,6 +1655,143 @@ export class DynamicMCPExecutor {
         success: false,
         error: `Trello API error: ${response.status}`,
         data: [{ status: response.status, message: responseData?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGitLabCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, token, endpoint, method, projectId: defaultProjectId } = queryConfig;
+    if (!baseUrl || !token) {
+      return { success: false, error: 'Missing GitLab baseUrl/token', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const projectId = args.project_id || defaultProjectId;
+    if (url.includes('{project_id}')) {
+      if (!projectId) return { success: false, error: 'Missing project_id', data: [], rowCount: 0 };
+      url = url.replace('{project_id}', encodeURIComponent(String(projectId)));
+    }
+    if (args.file_path && url.includes('{file_path}')) {
+      url = url.replace('{file_path}', encodeURIComponent(String(args.file_path)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'PRIVATE-TOKEN': String(token)
+    };
+
+    const queryParams: string[] = [];
+    let body: any = undefined;
+
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['project_id', 'file_path'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['project_id', 'file_path'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🦊 GitLab API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `GitLab API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeBitbucketCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, username, appPassword, endpoint, method, workspace: defaultWorkspace, repoSlug: defaultRepoSlug } = queryConfig;
+    if (!baseUrl || !username || !appPassword) {
+      return { success: false, error: 'Missing Bitbucket baseUrl/username/appPassword', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const workspace = args.workspace || defaultWorkspace;
+    const repoSlug = args.repo_slug || defaultRepoSlug;
+    const ref = args.ref || 'main';
+
+    if (url.includes('{workspace}')) {
+      if (!workspace) return { success: false, error: 'Missing workspace', data: [], rowCount: 0 };
+      url = url.replace('{workspace}', encodeURIComponent(String(workspace)));
+    }
+    if (url.includes('{repo_slug}')) {
+      if (!repoSlug) return { success: false, error: 'Missing repo_slug', data: [], rowCount: 0 };
+      url = url.replace('{repo_slug}', encodeURIComponent(String(repoSlug)));
+    }
+    if (url.includes('{ref}')) {
+      url = url.replace('{ref}', encodeURIComponent(String(ref)));
+    }
+    if (args.path && url.includes('{path}')) {
+      url = url.replace('{path}', encodeURIComponent(String(args.path)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const authString = Buffer.from(`${username}:${appPassword}`).toString('base64');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${authString}`
+    };
+
+    const queryParams: string[] = [];
+    let body: any = undefined;
+
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['workspace', 'repo_slug', 'path', 'ref'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['workspace', 'repo_slug', 'path', 'ref'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🧩 Bitbucket API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Bitbucket API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
         rowCount: 1
       };
     }

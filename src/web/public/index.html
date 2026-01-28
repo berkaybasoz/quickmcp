@@ -518,6 +518,26 @@
                                                 <p class="text-xs text-slate-500">Connect to Trello API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="gitlab" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/gitlab.png" alt="GitLab" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">GitLab</h4>
+                                                <p class="text-xs text-slate-500">Connect to GitLab API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="bitbucket" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/bitbucket.png" alt="Bitbucket" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Bitbucket</h4>
+                                                <p class="text-xs text-slate-500">Connect to Bitbucket API.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="prometheus" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
@@ -1123,6 +1143,82 @@
                                             </p>
                                         </div>
                                         <div id="trello-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- GitLab Config -->
+                                    <div id="gitlab-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-red-600 mt-0.5"></i>
+                                                <div class="text-sm text-red-700">
+                                                    <p class="font-medium text-red-800 mb-1">GitLab API</p>
+                                                    <p>Use a Personal Access Token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="gitlabBaseUrl" value="https://gitlab.com/api/v4" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="gitlabToken" placeholder="glpat-..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Project ID/Path (Optional)</label>
+                                                <input type="text" id="gitlabProjectId" placeholder="123 or group/project" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: list_projects, get_project, list_issues, create_issue, list_merge_requests, get_file
+                                            </p>
+                                        </div>
+                                        <div id="gitlab-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Bitbucket Config -->
+                                    <div id="bitbucket-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                                                <div class="text-sm text-blue-700">
+                                                    <p class="font-medium text-blue-800 mb-1">Bitbucket API</p>
+                                                    <p>Use username and app password.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="bitbucketBaseUrl" value="https://api.bitbucket.org/2.0" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
+                                                <input type="text" id="bitbucketUsername" placeholder="username" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">App Password</label>
+                                                <input type="password" id="bitbucketAppPassword" placeholder="app password" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Workspace (Optional)</label>
+                                                <input type="text" id="bitbucketWorkspace" placeholder="workspace" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Repo Slug (Optional)</label>
+                                                <input type="text" id="bitbucketRepoSlug" placeholder="repo" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: list_repos, get_repo, list_issues, create_issue, list_pull_requests, get_file
+                                            </p>
+                                        </div>
+                                        <div id="bitbucket-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->

@@ -28,7 +28,9 @@ const DataSourceType = {
     MongoDB: 'mongodb',
     Facebook: 'facebook',
     Dropbox: 'dropbox',
-    Trello: 'trello'
+    Trello: 'trello',
+    GitLab: 'gitlab',
+    Bitbucket: 'bitbucket'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -56,7 +58,9 @@ function isNoTableDataSource(type) {
         DataSourceType.MongoDB,
         DataSourceType.Facebook,
         DataSourceType.Dropbox,
-        DataSourceType.Trello
+        DataSourceType.Trello,
+        DataSourceType.GitLab,
+        DataSourceType.Bitbucket
     ];
     return noTableTypes.includes(type);
 }

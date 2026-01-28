@@ -73,6 +73,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
         tools = this.generateToolsForTrello(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GitLab) {
+        tools = this.generateToolsForGitLab(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Bitbucket) {
+        tools = this.generateToolsForBitbucket(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -1170,6 +1174,225 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/cards', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGitLab(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, token, projectId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GitLab, baseUrl, token, projectId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_projects',
+      description: 'List projects for the authenticated user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          membership: { type: 'boolean', description: 'Only projects where user is a member', default: true },
+          owned: { type: 'boolean', description: 'Only owned projects', default: false },
+          search: { type: 'string', description: 'Search query (optional)' },
+          per_page: { type: 'number', description: 'Results per page', default: 20 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_project',
+      description: 'Get a project by ID or URL-encoded path',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID or path (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects/{project_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_issues',
+      description: 'List issues for a project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID or path (optional, default from config)' },
+          state: { type: 'string', description: 'Issue state (opened, closed, all)', default: 'opened' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects/{project_id}/issues', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_issue',
+      description: 'Create an issue in a project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID or path (optional, default from config)' },
+          title: { type: 'string', description: 'Issue title' },
+          description: { type: 'string', description: 'Issue description (optional)' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects/{project_id}/issues', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_merge_requests',
+      description: 'List merge requests for a project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID or path (optional, default from config)' },
+          state: { type: 'string', description: 'MR state (opened, closed, merged, all)', default: 'opened' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects/{project_id}/merge_requests', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_file',
+      description: 'Get file contents from repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID or path (optional, default from config)' },
+          file_path: { type: 'string', description: 'File path' },
+          ref: { type: 'string', description: 'Branch/tag/commit (default: main)' }
+        },
+        required: ['file_path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects/{project_id}/repository/files/{file_path}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForBitbucket(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, username, appPassword, workspace, repoSlug } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Bitbucket, baseUrl, username, appPassword, workspace, repoSlug };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_repos',
+      description: 'List repositories in a workspace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          pagelen: { type: 'number', description: 'Page length', default: 20 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_repo',
+      description: 'Get repository details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          repo_slug: { type: 'string', description: 'Repository slug (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_issues',
+      description: 'List issues for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          repo_slug: { type: 'string', description: 'Repository slug (optional, default from config)' },
+          state: { type: 'string', description: 'Issue state (new, open, resolved, closed)', default: 'open' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}/issues', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_issue',
+      description: 'Create an issue in a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          repo_slug: { type: 'string', description: 'Repository slug (optional, default from config)' },
+          title: { type: 'string', description: 'Issue title' },
+          content: { type: 'string', description: 'Issue content (optional)' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}/issues', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_pull_requests',
+      description: 'List pull requests for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          repo_slug: { type: 'string', description: 'Repository slug (optional, default from config)' },
+          state: { type: 'string', description: 'PR state (OPEN, MERGED, DECLINED)', default: 'OPEN' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}/pullrequests', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_file',
+      description: 'Get file contents from repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace: { type: 'string', description: 'Workspace (optional, default from config)' },
+          repo_slug: { type: 'string', description: 'Repository slug (optional, default from config)' },
+          path: { type: 'string', description: 'File path' },
+          ref: { type: 'string', description: 'Branch/commit (default: main)' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{workspace}/{repo_slug}/src/{ref}/{path}', method: 'GET' }),
+      operation: 'SELECT'
     });
 
     return tools;

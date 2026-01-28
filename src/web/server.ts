@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -678,6 +678,88 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.GitLab) {
+        const { gitlabBaseUrl, gitlabToken, gitlabProjectId } = req.body as any;
+
+        if (!gitlabBaseUrl || !gitlabToken) {
+            throw new Error('Missing GitLab base URL or token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GitLab,
+            name: 'GitLab',
+            baseUrl: gitlabBaseUrl,
+            token: gitlabToken,
+            projectId: gitlabProjectId
+        };
+
+        const parsedData = [{
+            tableName: 'gitlab_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects for the authenticated user'],
+                ['get_project', 'Get a project by ID or path'],
+                ['list_issues', 'List issues for a project'],
+                ['create_issue', 'Create an issue in a project'],
+                ['list_merge_requests', 'List merge requests for a project'],
+                ['get_file', 'Get file contents from repository']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Bitbucket) {
+        const { bitbucketBaseUrl, bitbucketUsername, bitbucketAppPassword, bitbucketWorkspace, bitbucketRepoSlug } = req.body as any;
+
+        if (!bitbucketBaseUrl || !bitbucketUsername || !bitbucketAppPassword) {
+            throw new Error('Missing Bitbucket base URL, username, or app password');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Bitbucket,
+            name: 'Bitbucket',
+            baseUrl: bitbucketBaseUrl,
+            username: bitbucketUsername,
+            appPassword: bitbucketAppPassword,
+            workspace: bitbucketWorkspace,
+            repoSlug: bitbucketRepoSlug
+        };
+
+        const parsedData = [{
+            tableName: 'bitbucket_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repos', 'List repositories in a workspace'],
+                ['get_repo', 'Get repository details'],
+                ['list_issues', 'List issues for a repository'],
+                ['create_issue', 'Create an issue in a repository'],
+                ['list_pull_requests', 'List pull requests for a repository'],
+                ['get_file', 'Get file contents from repository']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Jira) {
         const { jiraHost, jiraEmail, jiraApiToken, jiraProjectKey, jiraApiVersion } = req.body as any;
 
@@ -1317,6 +1399,22 @@ app.post('/api/generate', async (req, res) => {
         dataSource.memberId,
         dataSource.boardId,
         dataSource.listId
+      );
+    } else if (dataSource?.type === DataSourceType.GitLab) {
+      parsedForGen = {};
+      dbConfForGen = createGitLabGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.token,
+        dataSource.projectId
+      );
+    } else if (dataSource?.type === DataSourceType.Bitbucket) {
+      parsedForGen = {};
+      dbConfForGen = createBitbucketGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.username,
+        dataSource.appPassword,
+        dataSource.workspace,
+        dataSource.repoSlug
       );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
