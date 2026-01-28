@@ -301,6 +301,7 @@
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="file">Files</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="database">Database</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="infra">Infra</button>
                                         <div class="ml-auto w-full md:w-64 relative">
                                             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                                             <input type="search" id="dataSourceSearch" placeholder="Search templates..." class="input pl-9 py-2" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="search" role="searchbox" aria-label="Search templates" data-lpignore="true" data-1p-ignore="true" />
@@ -477,7 +478,7 @@
                                                 <p class="text-xs text-slate-500">Connect to X API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="prometheus" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -487,7 +488,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Prometheus API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="grafana" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -517,7 +518,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Confluence API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="file">
                                             <input type="radio" name="dataSourceType" value="ftp" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -567,7 +568,7 @@
                                                 <p class="text-xs text-slate-500">Messaging & channels.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="docker" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-cyan-600 hover:shadow-md hover:shadow-cyan-500/20 peer-checked:border-cyan-600 peer-checked:shadow-lg peer-checked:shadow-cyan-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -577,7 +578,7 @@
                                                 <p class="text-xs text-slate-500">Local images & containers.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="kubernetes" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -587,7 +588,7 @@
                                                 <p class="text-xs text-slate-500">kubectl contexts, pods, deployments.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="openshift" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -597,7 +598,7 @@
                                                 <p class="text-xs text-slate-500">oc projects, pods, deployments.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="elasticsearch" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
