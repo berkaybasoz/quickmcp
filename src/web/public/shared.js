@@ -32,7 +32,9 @@ const DataSourceType = {
     GitLab: 'gitlab',
     Bitbucket: 'bitbucket',
     GDrive: 'gdrive',
-    GoogleSheets: 'googlesheets'
+    GoogleSheets: 'googlesheets',
+    Jenkins: 'jenkins',
+    DockerHub: 'dockerhub'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -64,7 +66,9 @@ function isNoTableDataSource(type) {
         DataSourceType.GitLab,
         DataSourceType.Bitbucket,
         DataSourceType.GDrive,
-        DataSourceType.GoogleSheets
+        DataSourceType.GoogleSheets,
+        DataSourceType.Jenkins,
+        DataSourceType.DockerHub
     ];
     return noTableTypes.includes(type);
 }

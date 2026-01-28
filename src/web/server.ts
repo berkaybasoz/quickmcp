@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -838,6 +838,82 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Jenkins) {
+        const { jenkinsBaseUrl, jenkinsUsername, jenkinsApiToken } = req.body as any;
+
+        if (!jenkinsBaseUrl || !jenkinsUsername || !jenkinsApiToken) {
+            throw new Error('Missing Jenkins base URL, username, or API token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Jenkins,
+            name: 'Jenkins',
+            baseUrl: jenkinsBaseUrl,
+            username: jenkinsUsername,
+            apiToken: jenkinsApiToken
+        };
+
+        const parsedData = [{
+            tableName: 'jenkins_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_jobs', 'List jobs on Jenkins'],
+                ['get_job', 'Get job details'],
+                ['trigger_build', 'Trigger a build for a job'],
+                ['get_build', 'Get build details']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.DockerHub) {
+        const { dockerhubBaseUrl, dockerhubAccessToken, dockerhubNamespace } = req.body as any;
+
+        if (!dockerhubBaseUrl) {
+            throw new Error('Missing Docker Hub base URL');
+        }
+
+        const dataSource = {
+            type: DataSourceType.DockerHub,
+            name: 'Docker Hub',
+            baseUrl: dockerhubBaseUrl,
+            accessToken: dockerhubAccessToken || '',
+            namespace: dockerhubNamespace || ''
+        };
+
+        const parsedData = [{
+            tableName: 'dockerhub_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repos', 'List repositories for a namespace'],
+                ['get_repo', 'Get repository details'],
+                ['list_tags', 'List tags for a repository'],
+                ['search_repos', 'Search repositories']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Jira) {
         const { jiraHost, jiraEmail, jiraApiToken, jiraProjectKey, jiraApiVersion } = req.body as any;
 
@@ -1507,6 +1583,20 @@ app.post('/api/generate', async (req, res) => {
         dataSource.baseUrl,
         dataSource.accessToken,
         dataSource.spreadsheetId
+      );
+    } else if (dataSource?.type === DataSourceType.Jenkins) {
+      parsedForGen = {};
+      dbConfForGen = createJenkinsGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.username,
+        dataSource.apiToken
+      );
+    } else if (dataSource?.type === DataSourceType.DockerHub) {
+      parsedForGen = {};
+      dbConfForGen = createDockerHubGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.namespace
       );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};

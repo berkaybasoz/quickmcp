@@ -36,6 +36,8 @@ export enum DataSourceType {
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
   GoogleSheets = 'googlesheets',
+  Jenkins = 'jenkins',
+  DockerHub = 'dockerhub',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -68,6 +70,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
     DataSourceType.GoogleSheets,
+    DataSourceType.Jenkins,
+    DataSourceType.DockerHub,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -256,6 +260,20 @@ export interface GoogleSheetsConnection {
   type: 'googlesheets';
 }
 
+export interface JenkinsConnection {
+  baseUrl: string;
+  username: string;
+  apiToken: string;
+  type: 'jenkins';
+}
+
+export interface DockerHubConnection {
+  baseUrl: string;
+  accessToken?: string;
+  namespace?: string;
+  type: 'dockerhub';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -440,6 +458,20 @@ export interface GoogleSheetsGeneratorConfig extends BaseGeneratorConfig {
   spreadsheetId?: string;
 }
 
+export interface JenkinsGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Jenkins;
+  baseUrl: string;
+  username: string;
+  apiToken: string;
+}
+
+export interface DockerHubGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.DockerHub;
+  baseUrl: string;
+  accessToken?: string;
+  namespace?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -544,6 +576,8 @@ export type GeneratorConfig =
   | BitbucketGeneratorConfig
   | GDriveGeneratorConfig
   | GoogleSheetsGeneratorConfig
+  | JenkinsGeneratorConfig
+  | DockerHubGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -567,7 +601,9 @@ export type GeneratorConfig =
   | GitLabConnection
   | BitbucketConnection
   | GDriveConnection
-  | GoogleSheetsConnection;
+  | GoogleSheetsConnection
+  | JenkinsConnection
+  | DockerHubConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -772,6 +808,32 @@ export function createGoogleSheetsGeneratorConfig(
     baseUrl,
     accessToken,
     spreadsheetId
+  };
+}
+
+export function createJenkinsGeneratorConfig(
+  baseUrl: string,
+  username: string,
+  apiToken: string
+): JenkinsGeneratorConfig {
+  return {
+    type: DataSourceType.Jenkins,
+    baseUrl,
+    username,
+    apiToken
+  };
+}
+
+export function createDockerHubGeneratorConfig(
+  baseUrl: string,
+  accessToken?: string,
+  namespace?: string
+): DockerHubGeneratorConfig {
+  return {
+    type: DataSourceType.DockerHub,
+    baseUrl,
+    accessToken,
+    namespace
   };
 }
 

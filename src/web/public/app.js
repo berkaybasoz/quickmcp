@@ -3333,6 +3333,84 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Jenkins, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Jenkins) {
+        const baseUrl = document.getElementById('jenkinsBaseUrl')?.value?.trim();
+        const username = document.getElementById('jenkinsUsername')?.value?.trim();
+        const apiToken = document.getElementById('jenkinsApiToken')?.value?.trim();
+
+        if (!baseUrl || !username || !apiToken) {
+            showError('jenkins-parse-error', 'Please enter base URL, username, and API token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Jenkins,
+            name: 'Jenkins',
+            baseUrl,
+            username,
+            apiToken
+        };
+        currentParsedData = [{
+            tableName: 'jenkins_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_jobs', 'List jobs on Jenkins'],
+                ['get_job', 'Get job details'],
+                ['trigger_build', 'Trigger a build for a job'],
+                ['get_build', 'Get build details']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayJenkinsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Docker Hub, show info in preview and go to step 3
+    if (selectedType === DataSourceType.DockerHub) {
+        const baseUrl = document.getElementById('dockerhubBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('dockerhubAccessToken')?.value?.trim();
+        const namespace = document.getElementById('dockerhubNamespace')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('dockerhub-parse-error', 'Please enter base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.DockerHub,
+            name: 'Docker Hub',
+            baseUrl,
+            accessToken,
+            namespace
+        };
+        currentParsedData = [{
+            tableName: 'dockerhub_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repos', 'List repositories for a namespace'],
+                ['get_repo', 'Get repository details'],
+                ['list_tags', 'List tags for a repository'],
+                ['search_repos', 'Search repositories']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayDockerHubPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -4039,6 +4117,10 @@ async function handleNextToStep3() {
                 displayGDrivePreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.GoogleSheets) {
                 displayGoogleSheetsPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Jenkins) {
+                displayJenkinsPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.DockerHub) {
+                displayDockerHubPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -4273,6 +4355,14 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('sheetsBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('sheetsAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Jenkins) {
+        const baseUrl = document.getElementById('jenkinsBaseUrl')?.value?.trim();
+        const username = document.getElementById('jenkinsUsername')?.value?.trim();
+        const apiToken = document.getElementById('jenkinsApiToken')?.value?.trim();
+        canProceed = !!baseUrl && !!username && !!apiToken;
+    } else if (selectedType === DataSourceType.DockerHub) {
+        const baseUrl = document.getElementById('dockerhubBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -4366,6 +4456,8 @@ function toggleDataSourceFields() {
     const bitbucketSection = document.getElementById('bitbucket-section');
     const gdriveSection = document.getElementById('gdrive-section');
     const sheetsSection = document.getElementById('googlesheets-section');
+    const jenkinsSection = document.getElementById('jenkins-section');
+    const dockerhubSection = document.getElementById('dockerhub-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -4397,6 +4489,8 @@ function toggleDataSourceFields() {
     bitbucketSection?.classList.add('hidden');
     gdriveSection?.classList.add('hidden');
     sheetsSection?.classList.add('hidden');
+    jenkinsSection?.classList.add('hidden');
+    dockerhubSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -4594,6 +4688,30 @@ function toggleDataSourceFields() {
         if (sheetsAccessTokenInput && !sheetsAccessTokenInput.dataset.listenerAttached) {
             sheetsAccessTokenInput.addEventListener('input', updateWizardNavigation);
             sheetsAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Jenkins) {
+        jenkinsSection?.classList.remove('hidden');
+        const jenkinsBaseUrlInput = document.getElementById('jenkinsBaseUrl');
+        const jenkinsUsernameInput = document.getElementById('jenkinsUsername');
+        const jenkinsApiTokenInput = document.getElementById('jenkinsApiToken');
+        if (jenkinsBaseUrlInput && !jenkinsBaseUrlInput.dataset.listenerAttached) {
+            jenkinsBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            jenkinsBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (jenkinsUsernameInput && !jenkinsUsernameInput.dataset.listenerAttached) {
+            jenkinsUsernameInput.addEventListener('input', updateWizardNavigation);
+            jenkinsUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (jenkinsApiTokenInput && !jenkinsApiTokenInput.dataset.listenerAttached) {
+            jenkinsApiTokenInput.addEventListener('input', updateWizardNavigation);
+            jenkinsApiTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.DockerHub) {
+        dockerhubSection?.classList.remove('hidden');
+        const dockerhubBaseUrlInput = document.getElementById('dockerhubBaseUrl');
+        if (dockerhubBaseUrlInput && !dockerhubBaseUrlInput.dataset.listenerAttached) {
+            dockerhubBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            dockerhubBaseUrlInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
@@ -6659,6 +6777,121 @@ function displayGoogleSheetsPreview(sheetsConfig) {
                                 <div>
                                     <span class="text-slate-500">Base URL:</span>
                                     <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayJenkinsPreview(jenkinsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = jenkinsConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_jobs', desc: 'List jobs on Jenkins' },
+        { name: 'get_job', desc: 'Get job details' },
+        { name: 'trigger_build', desc: 'Trigger a build for a job' },
+        { name: 'get_build', desc: 'Get build details' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/jenkins.png" alt="Jenkins" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Jenkins Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Jenkins API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayDockerHubPreview(dockerHubConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = dockerHubConfig?.baseUrl || 'Not set';
+    const namespace = dockerHubConfig?.namespace || 'Not set';
+    const tools = [
+        { name: 'list_repos', desc: 'List repositories for a namespace' },
+        { name: 'get_repo', desc: 'Get repository details' },
+        { name: 'list_tags', desc: 'List tags for a repository' },
+        { name: 'search_repos', desc: 'Search repositories' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/dockerhub.png" alt="Docker Hub" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Docker Hub Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Docker Hub API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Namespace:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${namespace}</span>
                                 </div>
                             </div>
                         </div>

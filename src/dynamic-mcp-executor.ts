@@ -100,6 +100,14 @@ export class DynamicMCPExecutor {
         return await this.executeGoogleSheetsCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Jenkins) {
+        return await this.executeJenkinsCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.DockerHub) {
+        return await this.executeDockerHubCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1961,6 +1969,104 @@ export class DynamicMCPExecutor {
         success: false,
         error: `Google Sheets API error: ${response.status}`,
         data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeJenkinsCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, username, apiToken, endpoint, method } = queryConfig;
+    if (!baseUrl || !username || !apiToken || !endpoint) {
+      return { success: false, error: 'Missing Jenkins baseUrl/username/apiToken', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (args.job_name && url.includes('{job_name}')) {
+      url = url.replace('{job_name}', encodeURIComponent(String(args.job_name)));
+    }
+    if (args.build_number && url.includes('{build_number}')) {
+      url = url.replace('{build_number}', encodeURIComponent(String(args.build_number)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const authString = Buffer.from(`${username}:${apiToken}`).toString('base64');
+    const headers: Record<string, string> = {
+      'Authorization': `Basic ${authString}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    if (methodUpper !== 'GET') {
+      const payload = args.parameters || {};
+      body = JSON.stringify(payload);
+    }
+
+    console.error(`🏗️ Jenkins API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const contentType = response.headers.get('content-type') || '';
+    const responseData: any = contentType.includes('application/json')
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Jenkins API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeDockerHubCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, namespace: defaultNamespace } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing Docker Hub baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const namespace = args.namespace || defaultNamespace;
+    if (url.includes('{namespace}')) {
+      if (!namespace) return { success: false, error: 'Missing namespace', data: [], rowCount: 0 };
+      url = url.replace('{namespace}', encodeURIComponent(String(namespace)));
+    }
+    if (args.repo && url.includes('{repo}')) {
+      url = url.replace('{repo}', encodeURIComponent(String(args.repo)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['namespace', 'repo'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    }
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`🐳 Docker Hub API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Docker Hub API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.detail || responseData }],
         rowCount: 1
       };
     }

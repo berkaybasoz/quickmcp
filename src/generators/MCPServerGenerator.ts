@@ -81,6 +81,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGDrive(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GoogleSheets) {
         tools = this.generateToolsForGoogleSheets(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Jenkins) {
+        tools = this.generateToolsForJenkins(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.DockerHub) {
+        tools = this.generateToolsForDockerHub(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -1580,6 +1584,144 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForJenkins(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, username, apiToken } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Jenkins, baseUrl, username, apiToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_jobs',
+      description: 'List Jenkins jobs',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/json', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_job',
+      description: 'Get job details',
+      inputSchema: {
+        type: 'object',
+        properties: { job_name: { type: 'string', description: 'Job name' } },
+        required: ['job_name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/job/{job_name}/api/json', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'trigger_build',
+      description: 'Trigger a build',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          job_name: { type: 'string', description: 'Job name' },
+          parameters: { type: 'object', description: 'Build parameters (optional)' }
+        },
+        required: ['job_name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/job/{job_name}/build', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_build',
+      description: 'Get build details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          job_name: { type: 'string', description: 'Job name' },
+          build_number: { type: 'number', description: 'Build number' }
+        },
+        required: ['job_name', 'build_number']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/job/{job_name}/{build_number}/api/json', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForDockerHub(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, namespace } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.DockerHub, baseUrl, accessToken, namespace };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_repos',
+      description: 'List repositories in a namespace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          namespace: { type: 'string', description: 'Namespace (optional, default from config)' },
+          page_size: { type: 'number', description: 'Page size', default: 25 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{namespace}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_repo',
+      description: 'Get repository details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          namespace: { type: 'string', description: 'Namespace (optional, default from config)' },
+          repo: { type: 'string', description: 'Repository name' }
+        },
+        required: ['repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{namespace}/{repo}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_tags',
+      description: 'List tags for a repository',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          namespace: { type: 'string', description: 'Namespace (optional, default from config)' },
+          repo: { type: 'string', description: 'Repository name' },
+          page_size: { type: 'number', description: 'Page size', default: 25 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['repo']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories/{namespace}/{repo}/tags', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_repos',
+      description: 'Search public repositories',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          page_size: { type: 'number', description: 'Page size', default: 25 },
+          page: { type: 'number', description: 'Page number', default: 1 }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search/repositories', method: 'GET' }),
+      operation: 'SELECT'
     });
 
     return tools;

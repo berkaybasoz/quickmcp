@@ -578,6 +578,26 @@
                                                 <p class="text-xs text-slate-500">Connect to Grafana API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="jenkins" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/jenkins.png" alt="Jenkins" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Jenkins</h4>
+                                                <p class="text-xs text-slate-500">Connect to Jenkins API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="dockerhub" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/dockerhub.png" alt="Docker Hub" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Docker Hub</h4>
+                                                <p class="text-xs text-slate-500">Browse Docker Hub repositories.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="jira" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
@@ -1307,6 +1327,74 @@
                                             </p>
                                         </div>
                                         <div id="sheets-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Jenkins Config -->
+                                    <div id="jenkins-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                                <div class="text-sm text-amber-700">
+                                                    <p class="font-medium text-amber-800 mb-1">Jenkins API</p>
+                                                    <p>Use a username and API token for authentication.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="jenkinsBaseUrl" value="http://localhost:8080" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
+                                                <input type="text" id="jenkinsUsername" placeholder="username" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Token</label>
+                                                <input type="password" id="jenkinsApiToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: list_jobs, get_job, trigger_build, get_build
+                                            </p>
+                                        </div>
+                                        <div id="jenkins-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Docker Hub Config -->
+                                    <div id="dockerhub-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-sky-600 mt-0.5"></i>
+                                                <div class="text-sm text-sky-700">
+                                                    <p class="font-medium text-sky-800 mb-1">Docker Hub API</p>
+                                                    <p>Access token is optional for public repositories.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="dockerhubBaseUrl" value="https://hub.docker.com/v2" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token (Optional)</label>
+                                                <input type="password" id="dockerhubAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Namespace (Optional)</label>
+                                                <input type="text" id="dockerhubNamespace" placeholder="library or username" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: list_repos, get_repo, list_tags, search_repos
+                                            </p>
+                                        </div>
+                                        <div id="dockerhub-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->
