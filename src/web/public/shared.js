@@ -26,7 +26,8 @@ const DataSourceType = {
     Prometheus: 'prometheus',
     Grafana: 'grafana',
     MongoDB: 'mongodb',
-    Facebook: 'facebook'
+    Facebook: 'facebook',
+    Dropbox: 'dropbox'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -52,7 +53,8 @@ function isNoTableDataSource(type) {
         DataSourceType.Prometheus,
         DataSourceType.Grafana,
         DataSourceType.MongoDB,
-        DataSourceType.Facebook
+        DataSourceType.Facebook,
+        DataSourceType.Dropbox
     ];
     return noTableTypes.includes(type);
 }

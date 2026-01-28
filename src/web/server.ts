@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createDropboxGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -583,6 +583,45 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Dropbox) {
+        const { dropboxBaseUrl, dropboxContentBaseUrl, dropboxAccessToken } = req.body as any;
+
+        if (!dropboxBaseUrl || !dropboxAccessToken) {
+            throw new Error('Missing Dropbox base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Dropbox,
+            name: 'Dropbox',
+            baseUrl: dropboxBaseUrl,
+            contentBaseUrl: dropboxContentBaseUrl,
+            accessToken: dropboxAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'dropbox_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_folder', 'List files/folders at a path'],
+                ['get_metadata', 'Get metadata for a file or folder'],
+                ['search', 'Search for files and folders'],
+                ['download', 'Download a file'],
+                ['upload', 'Upload a file']
+            ],
+            metadata: {
+                rowCount: 5,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1217,6 +1256,13 @@ app.post('/api/generate', async (req, res) => {
         dataSource.accessToken,
         dataSource.userId,
         dataSource.pageId
+      );
+    } else if (dataSource?.type === DataSourceType.Dropbox) {
+      parsedForGen = {};
+      dbConfForGen = createDropboxGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.contentBaseUrl
       );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};

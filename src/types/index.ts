@@ -30,6 +30,7 @@ export enum DataSourceType {
   Grafana = 'grafana',
   MongoDB = 'mongodb',
   Facebook = 'facebook',
+  Dropbox = 'dropbox',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -56,6 +57,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Grafana,
     DataSourceType.MongoDB,
     DataSourceType.Facebook,
+    DataSourceType.Dropbox,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -197,6 +199,13 @@ export interface FacebookConnection {
   type: 'facebook';
 }
 
+export interface DropboxConnection {
+  baseUrl: string;
+  contentBaseUrl?: string;
+  accessToken: string;
+  type: 'dropbox';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -334,6 +343,13 @@ export interface FacebookGeneratorConfig extends BaseGeneratorConfig {
   pageId?: string;
 }
 
+export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Dropbox;
+  baseUrl: string;
+  contentBaseUrl?: string;
+  accessToken: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -432,6 +448,7 @@ export type GeneratorConfig =
   | GrafanaGeneratorConfig
   | MongoDBGeneratorConfig
   | FacebookGeneratorConfig
+  | DropboxGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -449,7 +466,8 @@ export type GeneratorConfig =
   | PrometheusConnection
   | GrafanaConnection
   | MongoDBConnection
-  | FacebookConnection;
+  | FacebookConnection
+  | DropboxConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -566,6 +584,19 @@ export function createFacebookGeneratorConfig(
     accessToken,
     userId,
     pageId
+  };
+}
+
+export function createDropboxGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  contentBaseUrl?: string
+): DropboxGeneratorConfig {
+  return {
+    type: DataSourceType.Dropbox,
+    baseUrl,
+    contentBaseUrl,
+    accessToken
   };
 }
 

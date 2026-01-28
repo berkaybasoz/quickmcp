@@ -69,6 +69,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForMongoDB(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Facebook) {
         tools = this.generateToolsForFacebook(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Dropbox) {
+        tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -945,6 +947,105 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{page_id}/insights', method: 'GET' }),
       operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForDropbox(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, contentBaseUrl, accessToken } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Dropbox, baseUrl, contentBaseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_folder',
+      description: 'List files/folders at a path',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Folder path (empty for root)', default: '' },
+          recursive: { type: 'boolean', description: 'List recursively', default: false },
+          include_media_info: { type: 'boolean', description: 'Include media info', default: false },
+          include_deleted: { type: 'boolean', description: 'Include deleted entries', default: false },
+          include_has_explicit_shared_members: { type: 'boolean', description: 'Include shared members', default: false },
+          include_mounted_folders: { type: 'boolean', description: 'Include mounted folders', default: true },
+          limit: { type: 'number', description: 'Max entries', default: 2000 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/list_folder', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_metadata',
+      description: 'Get metadata for a file or folder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to file or folder' },
+          include_media_info: { type: 'boolean', description: 'Include media info', default: false },
+          include_deleted: { type: 'boolean', description: 'Include deleted entries', default: false },
+          include_has_explicit_shared_members: { type: 'boolean', description: 'Include shared members', default: false }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/get_metadata', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search for files and folders',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          path: { type: 'string', description: 'Folder path (optional)' },
+          max_results: { type: 'number', description: 'Max results', default: 100 }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/search_v2', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'download',
+      description: 'Download a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path' }
+        },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/download', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'upload',
+      description: 'Upload a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Destination file path' },
+          contents: { type: 'string', description: 'File contents (UTF-8 text)' },
+          mode: { type: 'string', description: 'Write mode (add, overwrite)', default: 'add' },
+          autorename: { type: 'boolean', description: 'Auto-rename on conflict', default: true },
+          mute: { type: 'boolean', description: 'Mute notifications', default: false },
+          strict_conflict: { type: 'boolean', description: 'Strict conflict handling', default: false }
+        },
+        required: ['path', 'contents']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/upload', method: 'POST' }),
+      operation: 'INSERT'
     });
 
     return tools;

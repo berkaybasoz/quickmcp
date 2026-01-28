@@ -76,6 +76,10 @@ export class DynamicMCPExecutor {
         return await this.executeFacebookCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Dropbox) {
+        return await this.executeDropboxCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1490,6 +1494,75 @@ export class DynamicMCPExecutor {
           status: response.status,
           message: responseData?.error?.message || responseData?.message || responseData
         }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeDropboxCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, contentBaseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Dropbox baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    const isContent = endpoint.startsWith('/files/download') || endpoint.startsWith('/files/upload');
+    const rootUrl = isContent
+      ? (contentBaseUrl || 'https://content.dropboxapi.com/2')
+      : baseUrl;
+    const url = `${String(rootUrl).replace(/\/$/, '')}${endpoint}`;
+
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    let body: any = undefined;
+    if (endpoint === '/files/download') {
+      headers['Dropbox-API-Arg'] = JSON.stringify({ path: args.path || '' });
+    } else if (endpoint === '/files/upload') {
+      headers['Content-Type'] = 'application/octet-stream';
+      headers['Dropbox-API-Arg'] = JSON.stringify({
+        path: args.path,
+        mode: args.mode || 'add',
+        autorename: args.autorename !== false,
+        mute: !!args.mute,
+        strict_conflict: !!args.strict_conflict
+      });
+      body = Buffer.from(String(args.contents || ''), 'utf8');
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(args || {});
+    }
+
+    console.error(`📦 Dropbox API call: ${method || 'POST'} ${url}`);
+
+    const response = await fetch(url, { method: method || 'POST', headers, body });
+
+    if (endpoint === '/files/download') {
+      const content = await response.text();
+      const metaHeader = response.headers.get('dropbox-api-result');
+      const metadata = metaHeader ? JSON.parse(metaHeader) : null;
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Dropbox API error: ${response.status}`,
+          data: [{ status: response.status, message: content || metadata }],
+          rowCount: 1
+        };
+      }
+      return { success: true, data: [{ metadata, content }], rowCount: 1 };
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Dropbox API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error_summary || responseData }],
         rowCount: 1
       };
     }

@@ -498,6 +498,16 @@
                                                 <p class="text-xs text-slate-500">Connect to Facebook Graph API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="dropbox" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/dropbox.png" alt="Dropbox" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Dropbox</h4>
+                                                <p class="text-xs text-slate-500">Connect to Dropbox API.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="prometheus" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
@@ -1023,6 +1033,40 @@
                                             </p>
                                         </div>
                                         <div id="facebook-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Dropbox Config -->
+                                    <div id="dropbox-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">Dropbox API</p>
+                                                    <p>Access Dropbox files using an access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="dropboxBaseUrl" value="https://api.dropboxapi.com/2" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Content Base URL</label>
+                                                <input type="text" id="dropboxContentBaseUrl" value="https://content.dropboxapi.com/2" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="dropboxAccessToken" placeholder="sl.B..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_folder, get_metadata, search, download, upload
+                                            </p>
+                                        </div>
+                                        <div id="dropbox-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->
