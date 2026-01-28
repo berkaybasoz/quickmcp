@@ -59,6 +59,14 @@ export class DynamicMCPExecutor {
         return await this.executeXCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Prometheus) {
+        return await this.executePrometheusCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Grafana) {
+        return await this.executeGrafanaCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1209,6 +1217,118 @@ export class DynamicMCPExecutor {
       dataArray = [responseData];
     }
 
+    return {
+      success: true,
+      data: dataArray,
+      rowCount: dataArray.length
+    };
+  }
+
+  private async executePrometheusCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method } = queryConfig;
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (Array.isArray(value)) {
+        value.forEach(v => queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`));
+      } else {
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    }
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`📈 Prometheus API call: ${method || 'GET'} ${url}`);
+
+    const response = await fetch(url, { method: method || 'GET' });
+    const responseData = await response.json().catch(() => null);
+
+    console.error(`✅ Prometheus API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Prometheus API error:', responseData);
+      return {
+        success: false,
+        error: `Prometheus API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = responseData ? [responseData] : [];
+    return {
+      success: true,
+      data: dataArray,
+      rowCount: dataArray.length
+    };
+  }
+
+  private async executeGrafanaCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method, authType, apiKey, username, password } = queryConfig;
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+
+    if (args?.uid) url = url.replace('{uid}', encodeURIComponent(String(args.uid)));
+    if (args?.id !== undefined) url = url.replace('{id}', encodeURIComponent(String(args.id)));
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authType === 'apiKey' && apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else if (authType === 'basic' && username !== undefined && password !== undefined) {
+      const authString = Buffer.from(`${username}:${password}`).toString('base64');
+      headers['Authorization'] = `Basic ${authString}`;
+    }
+
+    let body: any = null;
+    const queryParams: string[] = [];
+
+    if ((method || 'GET').toUpperCase() === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['uid', 'id'].includes(key)) continue;
+        if (Array.isArray(value)) {
+          value.forEach(v => queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`));
+        } else {
+          queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+        }
+      }
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join('&')}`;
+      }
+    } else {
+      body = args || {};
+    }
+
+    console.error(`📊 Grafana API call: ${method || 'GET'} ${url}`);
+
+    const response = await fetch(url, {
+      method: method || 'GET',
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const responseData = await response.json().catch(() => null);
+
+    console.error(`✅ Grafana API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Grafana API error:', responseData);
+      return {
+        success: false,
+        error: `Grafana API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.message || responseData?.error || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return {
       success: true,
       data: dataArray,

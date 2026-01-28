@@ -61,6 +61,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGitHub(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.X) {
         tools = this.generateToolsForX(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Prometheus) {
+        tools = this.generateToolsForPrometheus(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Grafana) {
+        tools = this.generateToolsForGrafana(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -531,6 +535,182 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/2/tweets', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForPrometheus(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Prometheus, baseUrl };
+
+    tools.push({
+      server_id: serverId,
+      name: 'query',
+      description: 'Run an instant PromQL query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'PromQL query string' },
+          time: { type: 'string', description: 'Evaluation timestamp (RFC3339 or Unix, optional)' },
+          timeout: { type: 'string', description: 'Query timeout (e.g., 30s, optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/v1/query', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'query_range',
+      description: 'Run a range PromQL query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'PromQL query string' },
+          start: { type: 'string', description: 'Start timestamp (RFC3339 or Unix)' },
+          end: { type: 'string', description: 'End timestamp (RFC3339 or Unix)' },
+          step: { type: 'string', description: 'Query resolution step width (e.g., 15s)' },
+          timeout: { type: 'string', description: 'Query timeout (e.g., 30s, optional)' }
+        },
+        required: ['query', 'start', 'end', 'step']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/v1/query_range', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'labels',
+      description: 'List label names',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          start: { type: 'string', description: 'Start timestamp (optional)' },
+          end: { type: 'string', description: 'End timestamp (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/v1/labels', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'series',
+      description: 'Find series by label matchers',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          match: { type: 'array', items: { type: 'string' }, description: 'Label matchers (e.g., up{job=\"api\"})' },
+          start: { type: 'string', description: 'Start timestamp (optional)' },
+          end: { type: 'string', description: 'End timestamp (optional)' }
+        },
+        required: ['match']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/v1/series', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'targets',
+      description: 'List Prometheus targets',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/v1/targets', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGrafana(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, authType, apiKey, username, password } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Grafana, baseUrl, authType, apiKey, username, password };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_dashboards',
+      description: 'Search dashboards (by title/tag)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query (optional)' },
+          tag: { type: 'string', description: 'Tag filter (optional)' },
+          folderIds: { type: 'array', items: { type: 'number' }, description: 'Folder IDs (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_dashboard',
+      description: 'Get dashboard by UID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          uid: { type: 'string', description: 'Dashboard UID' }
+        },
+        required: ['uid']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/dashboards/uid/{uid}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_datasources',
+      description: 'List Grafana datasources',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/datasources', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_datasource',
+      description: 'Get datasource by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', description: 'Datasource ID' }
+        },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/datasources/{id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'query_datasource',
+      description: 'Query a datasource',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          queries: { type: 'array', items: { type: 'object' }, description: 'Grafana queries array' },
+          from: { type: 'string', description: 'From time (e.g., now-1h)' },
+          to: { type: 'string', description: 'To time (e.g., now)' },
+          datasourceId: { type: 'number', description: 'Datasource ID' }
+        },
+        required: ['queries', 'from', 'to', 'datasourceId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/ds/query', method: 'POST' }),
+      operation: 'SELECT'
     });
 
     return tools;

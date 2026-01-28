@@ -478,6 +478,26 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="prometheus" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/prometheus.png" alt="Prometheus" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Prometheus</h4>
+                                                <p class="text-xs text-slate-500">Connect to Prometheus API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="grafana" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/grafana.png" alt="Grafana" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Grafana</h4>
+                                                <p class="text-xs text-slate-500">Connect to Grafana API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="jira" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -820,6 +840,80 @@
                                             </p>
                                         </div>
                                         <div id="x-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Prometheus Config -->
+                                    <div id="prometheus-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">Prometheus API</p>
+                                                    <p>Connect to a Prometheus server and run PromQL queries.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                            <input type="text" id="prometheusBaseUrl" placeholder="http://localhost:9090" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">Your Prometheus HTTP endpoint.</p>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: query, query_range, labels, series, targets
+                                            </p>
+                                        </div>
+                                        <div id="prometheus-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Grafana Config -->
+                                    <div id="grafana-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">Grafana API</p>
+                                                    <p>Connect to Grafana with API key or basic auth.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="grafanaBaseUrl" placeholder="http://localhost:3000" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Your Grafana HTTP endpoint.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Auth Type</label>
+                                                <select id="grafanaAuthType" class="input">
+                                                    <option value="apiKey">API Key</option>
+                                                    <option value="basic">Basic Auth</option>
+                                                </select>
+                                                <p class="text-xs text-slate-500 mt-2">Choose authentication method.</p>
+                                            </div>
+                                        </div>
+                                        <div id="grafana-auth-api-key" class="space-y-2">
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                            <input type="password" id="grafanaApiKey" placeholder="Grafana API key" class="input" autocomplete="off">
+                                        </div>
+                                        <div id="grafana-auth-basic" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username</label>
+                                                <input type="text" id="grafanaUsername" placeholder="admin" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Password</label>
+                                                <input type="password" id="grafanaPassword" placeholder="password" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: search_dashboards, get_dashboard, list_datasources, get_datasource, query_datasource
+                                            </p>
+                                        </div>
+                                        <div id="grafana-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jira Config -->

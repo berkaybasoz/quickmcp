@@ -22,7 +22,9 @@ const DataSourceType = {
     Kubernetes: 'kubernetes',
     Elasticsearch: 'elasticsearch',
     OpenShift: 'openshift',
-    X: 'x'
+    X: 'x',
+    Prometheus: 'prometheus',
+    Grafana: 'grafana'
 };
 
 // Data source types that don't require table selection (runtime execution)
@@ -44,7 +46,9 @@ function isNoTableDataSource(type) {
         DataSourceType.Kubernetes,
         DataSourceType.Elasticsearch,
         DataSourceType.OpenShift,
-        DataSourceType.X
+        DataSourceType.X,
+        DataSourceType.Prometheus,
+        DataSourceType.Grafana
     ];
     return noTableTypes.includes(type);
 }

@@ -26,6 +26,8 @@ export enum DataSourceType {
   Elasticsearch = 'elasticsearch',
   OpenShift = 'openshift',
   X = 'x',
+  Prometheus = 'prometheus',
+  Grafana = 'grafana',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -48,6 +50,8 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Elasticsearch,
     DataSourceType.OpenShift,
     DataSourceType.X,
+    DataSourceType.Prometheus,
+    DataSourceType.Grafana,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -156,6 +160,20 @@ export interface XConnection {
   type: 'x';
 }
 
+export interface PrometheusConnection {
+  baseUrl: string;
+  type: 'prometheus';
+}
+
+export interface GrafanaConnection {
+  baseUrl: string;
+  authType: 'apiKey' | 'basic';
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  type: 'grafana';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -260,6 +278,20 @@ export interface XGeneratorConfig extends BaseGeneratorConfig {
   username?: string;
 }
 
+export interface PrometheusGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Prometheus;
+  baseUrl: string;
+}
+
+export interface GrafanaGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Grafana;
+  baseUrl: string;
+  authType: 'apiKey' | 'basic';
+  apiKey?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -354,6 +386,8 @@ export type GeneratorConfig =
   | FileGeneratorConfig
   | GitHubGeneratorConfig
   | XGeneratorConfig
+  | PrometheusGeneratorConfig
+  | GrafanaGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -367,7 +401,9 @@ export type GeneratorConfig =
   | OpenShiftGeneratorConfig
   | DatabaseConnection
   | GitHubConnection
-  | XConnection;
+  | XConnection
+  | PrometheusConnection
+  | GrafanaConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -424,6 +460,30 @@ export function createXGeneratorConfig(token: string, username?: string): XGener
     type: DataSourceType.X,
     token,
     username
+  };
+}
+
+export function createPrometheusGeneratorConfig(baseUrl: string): PrometheusGeneratorConfig {
+  return {
+    type: DataSourceType.Prometheus,
+    baseUrl
+  };
+}
+
+export function createGrafanaGeneratorConfig(
+  baseUrl: string,
+  authType: 'apiKey' | 'basic',
+  apiKey?: string,
+  username?: string,
+  password?: string
+): GrafanaGeneratorConfig {
+  return {
+    type: DataSourceType.Grafana,
+    baseUrl,
+    authType,
+    apiKey,
+    username,
+    password
   };
 }
 

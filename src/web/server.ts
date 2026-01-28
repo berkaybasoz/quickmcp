@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -423,6 +423,85 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         }];
 
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Prometheus) {
+        const { prometheusBaseUrl } = req.body as any;
+        if (!prometheusBaseUrl) {
+            throw new Error('Missing Prometheus base URL');
+        }
+        const dataSource = {
+            type: DataSourceType.Prometheus,
+            name: 'Prometheus',
+            baseUrl: prometheusBaseUrl
+        };
+        const parsedData = [{
+            tableName: 'prometheus_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run an instant PromQL query'],
+                ['query_range', 'Run a range PromQL query'],
+                ['labels', 'List label names'],
+                ['series', 'Find series by label matchers'],
+                ['targets', 'List Prometheus targets']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Grafana) {
+        const { grafanaBaseUrl, grafanaAuthType, grafanaApiKey, grafanaUsername, grafanaPassword } = req.body as any;
+        if (!grafanaBaseUrl) {
+            throw new Error('Missing Grafana base URL');
+        }
+        if (!grafanaAuthType || (grafanaAuthType !== 'apiKey' && grafanaAuthType !== 'basic')) {
+            throw new Error('Missing Grafana auth type');
+        }
+        if (grafanaAuthType === 'apiKey' && !grafanaApiKey) {
+            throw new Error('Missing Grafana API key');
+        }
+        if (grafanaAuthType === 'basic' && (!grafanaUsername || !grafanaPassword)) {
+            throw new Error('Missing Grafana username or password');
+        }
+        const dataSource = {
+            type: DataSourceType.Grafana,
+            name: 'Grafana',
+            baseUrl: grafanaBaseUrl,
+            authType: grafanaAuthType,
+            apiKey: grafanaApiKey,
+            username: grafanaUsername,
+            password: grafanaPassword
+        };
+        const parsedData = [{
+            tableName: 'grafana_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_dashboards', 'Search dashboards (by title/tag)'],
+                ['get_dashboard', 'Get dashboard by UID'],
+                ['list_datasources', 'List Grafana datasources'],
+                ['get_datasource', 'Get datasource by ID'],
+                ['query_datasource', 'Query a datasource']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
         return res.json({
             success: true,
             data: {
@@ -1020,6 +1099,20 @@ app.post('/api/generate', async (req, res) => {
         dataSource.token,
         dataSource.username
       );
+    } else if (dataSource?.type === DataSourceType.Prometheus) {
+      parsedForGen = {};
+      dbConfForGen = createPrometheusGeneratorConfig(
+        dataSource.baseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.Grafana) {
+      parsedForGen = {};
+      dbConfForGen = createGrafanaGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.authType,
+        dataSource.apiKey,
+        dataSource.username,
+        dataSource.password
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1274,6 +1367,8 @@ function inferTypeFromTools(tools: any[]): string | null {
   if (names.has('list_contexts') && names.has('list_pods')) return DataSourceType.Kubernetes;
   if (names.has('list_projects') && names.has('get_current_project')) return DataSourceType.OpenShift;
   if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
+  if (names.has('query') && names.has('query_range') && names.has('targets')) return DataSourceType.Prometheus;
+  if (names.has('search_dashboards') && names.has('get_dashboard')) return DataSourceType.Grafana;
   return null;
 }
 

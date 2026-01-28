@@ -2899,6 +2899,93 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Prometheus, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Prometheus) {
+        const baseUrl = document.getElementById('prometheusBaseUrl')?.value?.trim();
+        if (!baseUrl) {
+            showError('prometheus-parse-error', 'Please enter Prometheus base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Prometheus,
+            name: 'Prometheus',
+            baseUrl
+        };
+        currentParsedData = [{
+            tableName: 'prometheus_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run an instant PromQL query'],
+                ['query_range', 'Run a range PromQL query'],
+                ['labels', 'List label names'],
+                ['series', 'Find series by label matchers'],
+                ['targets', 'List Prometheus targets']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayPrometheusPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Grafana, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Grafana) {
+        const baseUrl = document.getElementById('grafanaBaseUrl')?.value?.trim();
+        const authType = document.getElementById('grafanaAuthType')?.value || 'apiKey';
+        const apiKey = document.getElementById('grafanaApiKey')?.value?.trim();
+        const username = document.getElementById('grafanaUsername')?.value?.trim();
+        const password = document.getElementById('grafanaPassword')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('grafana-parse-error', 'Please enter Grafana base URL');
+            return;
+        }
+        if (authType === 'apiKey' && !apiKey) {
+            showError('grafana-parse-error', 'Please enter Grafana API key');
+            return;
+        }
+        if (authType === 'basic' && (!username || !password)) {
+            showError('grafana-parse-error', 'Please enter Grafana username and password');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Grafana,
+            name: 'Grafana',
+            baseUrl,
+            authType,
+            apiKey: authType === 'apiKey' ? apiKey : '',
+            username: authType === 'basic' ? username : '',
+            password: authType === 'basic' ? password : ''
+        };
+        currentParsedData = [{
+            tableName: 'grafana_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_dashboards', 'Search dashboards (by title/tag)'],
+                ['get_dashboard', 'Get dashboard by UID'],
+                ['list_datasources', 'List Grafana datasources'],
+                ['get_datasource', 'Get datasource by ID'],
+                ['query_datasource', 'Query a datasource']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGrafanaPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3585,6 +3672,10 @@ async function handleNextToStep3() {
                 displayGitHubPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.X) {
                 displayXPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Prometheus) {
+                displayPrometheusPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Grafana) {
+                displayGrafanaPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -3768,6 +3859,22 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.X) {
         const xToken = document.getElementById('xToken')?.value?.trim();
         canProceed = !!xToken;
+    } else if (selectedType === DataSourceType.Prometheus) {
+        const baseUrl = document.getElementById('prometheusBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Grafana) {
+        const baseUrl = document.getElementById('grafanaBaseUrl')?.value?.trim();
+        const authType = document.getElementById('grafanaAuthType')?.value || 'apiKey';
+        const apiKey = document.getElementById('grafanaApiKey')?.value?.trim();
+        const username = document.getElementById('grafanaUsername')?.value?.trim();
+        const password = document.getElementById('grafanaPassword')?.value?.trim();
+        if (!baseUrl) {
+            canProceed = false;
+        } else if (authType === 'apiKey') {
+            canProceed = !!apiKey;
+        } else {
+            canProceed = !!username && !!password;
+        }
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -3851,6 +3958,8 @@ function toggleDataSourceFields() {
     const curlSection = document.getElementById('curl-section');
     const githubSection = document.getElementById('github-section');
     const xSection = document.getElementById('x-section');
+    const prometheusSection = document.getElementById('prometheus-section');
+    const grafanaSection = document.getElementById('grafana-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -3872,6 +3981,8 @@ function toggleDataSourceFields() {
     curlSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
     xSection?.classList.add('hidden');
+    prometheusSection?.classList.add('hidden');
+    grafanaSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -3924,6 +4035,41 @@ function toggleDataSourceFields() {
             xTokenInput.addEventListener('input', updateWizardNavigation);
             xTokenInput.dataset.listenerAttached = 'true';
         }
+    } else if (selectedType === DataSourceType.Prometheus) {
+        prometheusSection?.classList.remove('hidden');
+        const prometheusBaseUrlInput = document.getElementById('prometheusBaseUrl');
+        if (prometheusBaseUrlInput && !prometheusBaseUrlInput.dataset.listenerAttached) {
+            prometheusBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            prometheusBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Grafana) {
+        grafanaSection?.classList.remove('hidden');
+        const grafanaBaseUrlInput = document.getElementById('grafanaBaseUrl');
+        const grafanaAuthTypeInput = document.getElementById('grafanaAuthType');
+        const grafanaApiKeyInput = document.getElementById('grafanaApiKey');
+        const grafanaUsernameInput = document.getElementById('grafanaUsername');
+        const grafanaPasswordInput = document.getElementById('grafanaPassword');
+        if (grafanaBaseUrlInput && !grafanaBaseUrlInput.dataset.listenerAttached) {
+            grafanaBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            grafanaBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (grafanaAuthTypeInput && !grafanaAuthTypeInput.dataset.listenerAttached) {
+            grafanaAuthTypeInput.addEventListener('change', handleGrafanaAuthChange);
+            grafanaAuthTypeInput.dataset.listenerAttached = 'true';
+        }
+        if (grafanaApiKeyInput && !grafanaApiKeyInput.dataset.listenerAttached) {
+            grafanaApiKeyInput.addEventListener('input', updateWizardNavigation);
+            grafanaApiKeyInput.dataset.listenerAttached = 'true';
+        }
+        if (grafanaUsernameInput && !grafanaUsernameInput.dataset.listenerAttached) {
+            grafanaUsernameInput.addEventListener('input', updateWizardNavigation);
+            grafanaUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (grafanaPasswordInput && !grafanaPasswordInput.dataset.listenerAttached) {
+            grafanaPasswordInput.addEventListener('input', updateWizardNavigation);
+            grafanaPasswordInput.dataset.listenerAttached = 'true';
+        }
+        handleGrafanaAuthChange();
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
         // Add listeners for Jira inputs
@@ -4121,6 +4267,22 @@ function handleGmailModeChange() {
         const allTools = [...readTools, ...writeTools];
         if (toolsCount) toolsCount.textContent = `${allTools.length} tools`;
         if (toolsList) toolsList.textContent = allTools.join(', ');
+    }
+
+    updateWizardNavigation();
+}
+
+function handleGrafanaAuthChange() {
+    const authType = document.getElementById('grafanaAuthType')?.value || 'apiKey';
+    const apiKeySection = document.getElementById('grafana-auth-api-key');
+    const basicSection = document.getElementById('grafana-auth-basic');
+
+    if (authType === 'basic') {
+        apiKeySection?.classList.add('hidden');
+        basicSection?.classList.remove('hidden');
+    } else {
+        apiKeySection?.classList.remove('hidden');
+        basicSection?.classList.add('hidden');
     }
 
     updateWizardNavigation();
@@ -5405,6 +5567,123 @@ function displayXPreview(xConfig) {
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-check-circle mt-0.5 text-green-500"></i>
                                 <span>Uses your X API Bearer token for authentication.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayPrometheusPreview(promConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = promConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'query', desc: 'Run an instant PromQL query' },
+        { name: 'query_range', desc: 'Run a range PromQL query' },
+        { name: 'labels', desc: 'List label names' },
+        { name: 'series', desc: 'Find series by label matchers' },
+        { name: 'targets', desc: 'List Prometheus targets' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/prometheus.png" alt="Prometheus" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Prometheus Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to query Prometheus.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGrafanaPreview(grafConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = grafConfig?.baseUrl || 'Not set';
+    const authType = grafConfig?.authType || 'apiKey';
+    const tools = [
+        { name: 'search_dashboards', desc: 'Search dashboards (by title/tag)' },
+        { name: 'get_dashboard', desc: 'Get dashboard by UID' },
+        { name: 'list_datasources', desc: 'List Grafana datasources' },
+        { name: 'get_datasource', desc: 'Get datasource by ID' },
+        { name: 'query_datasource', desc: 'Query a datasource' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/grafana.png" alt="Grafana" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Grafana Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Grafana.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Auth:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${authType}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
