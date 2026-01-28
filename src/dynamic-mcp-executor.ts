@@ -72,6 +72,10 @@ export class DynamicMCPExecutor {
         return await this.executeMongoDBCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Facebook) {
+        return await this.executeFacebookCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Jira) {
         return await this.executeJiraCall(queryConfig, args);
       }
@@ -1433,6 +1437,65 @@ export class DynamicMCPExecutor {
     } finally {
       try { await client.close(); } catch {}
     }
+  }
+
+  private async executeFacebookCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiVersion, accessToken, endpoint, method, userId: defaultUserId, pageId: defaultPageId } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !apiVersion || !token) {
+      return { success: false, error: 'Missing Facebook baseUrl/apiVersion/accessToken', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}/${String(apiVersion).replace(/^\//, '')}${endpoint}`;
+
+    const userId = args.user_id || defaultUserId;
+    const pageId = args.page_id || defaultPageId;
+    if (url.includes('{user_id}')) {
+      if (!userId) return { success: false, error: 'Missing user_id', data: [], rowCount: 0 };
+      url = url.replace('{user_id}', encodeURIComponent(String(userId)));
+    }
+    if (url.includes('{page_id}')) {
+      if (!pageId) return { success: false, error: 'Missing page_id', data: [], rowCount: 0 };
+      url = url.replace('{page_id}', encodeURIComponent(String(pageId)));
+    }
+    if (args.post_id && url.includes('{post_id}')) {
+      url = url.replace('{post_id}', encodeURIComponent(String(args.post_id)));
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (['user_id', 'page_id', 'post_id'].includes(key)) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    queryParams.push(`access_token=${encodeURIComponent(token)}`);
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    console.error(`📘 Facebook API call: ${method || 'GET'} ${url}`);
+
+    const response = await fetch(url, { method: method || 'GET' });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Facebook API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Facebook API error:', responseData);
+      return {
+        success: false,
+        error: `Facebook API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
   }
 
   private async executeJiraCall(queryConfig: any, args: any): Promise<any> {

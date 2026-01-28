@@ -67,6 +67,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGrafana(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.MongoDB) {
         tools = this.generateToolsForMongoDB(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Facebook) {
+        tools = this.generateToolsForFacebook(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
         tools = this.generateToolsForJira(serverId, dbConfig);
@@ -834,6 +836,114 @@ export class MCPServerGenerator {
         required: ['collection', 'pipeline']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, op: 'aggregate' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForFacebook(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiVersion, accessToken, userId, pageId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Facebook, baseUrl, apiVersion, accessToken, userId, pageId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get a Facebook user by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_pages',
+      description: 'List pages for a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}/accounts', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_page_posts',
+      description: 'List posts for a page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Page ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' },
+          limit: { type: 'number', description: 'Max posts', default: 25 }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{page_id}/posts', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_post',
+      description: 'Get a post by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          post_id: { type: 'string', description: 'Post ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: ['post_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{post_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search public content (limited by token permissions)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query' },
+          type: { type: 'string', description: 'Search type (e.g., page, user, place)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' },
+          limit: { type: 'number', description: 'Max results', default: 25 }
+        },
+        required: ['q', 'type']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_page_insights',
+      description: 'Get insights for a page',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page_id: { type: 'string', description: 'Page ID (optional, default from config)' },
+          metric: { type: 'string', description: 'Comma-separated metrics (e.g., page_impressions)' },
+          period: { type: 'string', description: 'Period (e.g., day, week, days_28)' }
+        },
+        required: ['metric']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{page_id}/insights', method: 'GET' }),
       operation: 'SELECT'
     });
 

@@ -3034,6 +3034,51 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Facebook, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Facebook) {
+        const baseUrl = document.getElementById('facebookBaseUrl')?.value?.trim();
+        const apiVersion = document.getElementById('facebookApiVersion')?.value?.trim();
+        const accessToken = document.getElementById('facebookAccessToken')?.value?.trim();
+        const userId = document.getElementById('facebookUserId')?.value?.trim();
+        const pageId = document.getElementById('facebookPageId')?.value?.trim();
+
+        if (!baseUrl || !apiVersion || !accessToken) {
+            showError('facebook-parse-error', 'Please enter base URL, API version, and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Facebook,
+            name: 'Facebook',
+            baseUrl,
+            apiVersion,
+            accessToken,
+            userId,
+            pageId
+        };
+        currentParsedData = [{
+            tableName: 'facebook_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get a Facebook user by ID'],
+                ['get_pages', 'List pages for a user'],
+                ['get_page_posts', 'List posts for a page'],
+                ['get_post', 'Get a post by ID'],
+                ['search', 'Search public content'],
+                ['get_page_insights', 'Get insights for a page']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayFacebookPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Jira, show info in preview and go to step 3
     if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
@@ -3726,6 +3771,8 @@ async function handleNextToStep3() {
                 displayGrafanaPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.MongoDB) {
                 displayMongoDBPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Facebook) {
+                displayFacebookPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jira) {
                 displayJiraPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Ftp) {
@@ -3929,6 +3976,11 @@ function updateWizardNavigation() {
         const host = document.getElementById('mongoHost')?.value?.trim();
         const database = document.getElementById('mongoDatabase')?.value?.trim();
         canProceed = !!host && !!database;
+    } else if (selectedType === DataSourceType.Facebook) {
+        const baseUrl = document.getElementById('facebookBaseUrl')?.value?.trim();
+        const apiVersion = document.getElementById('facebookApiVersion')?.value?.trim();
+        const accessToken = document.getElementById('facebookAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!apiVersion && !!accessToken;
     } else if (selectedType === DataSourceType.Jira) {
         const jiraHost = document.getElementById('jiraHost')?.value?.trim();
         const jiraEmail = document.getElementById('jiraEmail')?.value?.trim();
@@ -4015,6 +4067,7 @@ function toggleDataSourceFields() {
     const prometheusSection = document.getElementById('prometheus-section');
     const grafanaSection = document.getElementById('grafana-section');
     const mongodbSection = document.getElementById('mongodb-section');
+    const facebookSection = document.getElementById('facebook-section');
     const jiraSection = document.getElementById('jira-section');
     const confluenceSection = document.getElementById('confluence-section');
     const ftpSection = document.getElementById('ftp-section');
@@ -4039,6 +4092,7 @@ function toggleDataSourceFields() {
     prometheusSection?.classList.add('hidden');
     grafanaSection?.classList.add('hidden');
     mongodbSection?.classList.add('hidden');
+    facebookSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
     confluenceSection?.classList.add('hidden');
     ftpSection?.classList.add('hidden');
@@ -4137,6 +4191,23 @@ function toggleDataSourceFields() {
         if (mongoDatabaseInput && !mongoDatabaseInput.dataset.listenerAttached) {
             mongoDatabaseInput.addEventListener('input', updateWizardNavigation);
             mongoDatabaseInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Facebook) {
+        facebookSection?.classList.remove('hidden');
+        const facebookBaseUrlInput = document.getElementById('facebookBaseUrl');
+        const facebookApiVersionInput = document.getElementById('facebookApiVersion');
+        const facebookAccessTokenInput = document.getElementById('facebookAccessToken');
+        if (facebookBaseUrlInput && !facebookBaseUrlInput.dataset.listenerAttached) {
+            facebookBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            facebookBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (facebookApiVersionInput && !facebookApiVersionInput.dataset.listenerAttached) {
+            facebookApiVersionInput.addEventListener('input', updateWizardNavigation);
+            facebookApiVersionInput.dataset.listenerAttached = 'true';
+        }
+        if (facebookAccessTokenInput && !facebookAccessTokenInput.dataset.listenerAttached) {
+            facebookAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            facebookAccessTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jira) {
         jiraSection?.classList.remove('hidden');
@@ -5800,6 +5871,68 @@ function displayMongoDBPreview(mongoConfig) {
                                 <div>
                                     <span class="text-slate-500">Database:</span>
                                     <span class="ml-2 font-mono text-slate-700">${database}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayFacebookPreview(fbConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = fbConfig?.baseUrl || 'Not set';
+    const apiVersion = fbConfig?.apiVersion || 'Not set';
+    const tools = [
+        { name: 'get_user', desc: 'Get a Facebook user by ID' },
+        { name: 'get_pages', desc: 'List pages for a user' },
+        { name: 'get_page_posts', desc: 'List posts for a page' },
+        { name: 'get_post', desc: 'Get a post by ID' },
+        { name: 'search', desc: 'Search public content' },
+        { name: 'get_page_insights', desc: 'Get insights for a page' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/facebook.png" alt="Facebook" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Facebook Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Facebook Graph API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">API Version:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${apiVersion}</span>
                                 </div>
                             </div>
                         </div>

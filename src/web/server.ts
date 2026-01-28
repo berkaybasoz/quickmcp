@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -541,6 +541,48 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Facebook) {
+        const { facebookBaseUrl, facebookApiVersion, facebookAccessToken, facebookUserId, facebookPageId } = req.body as any;
+
+        if (!facebookBaseUrl || !facebookApiVersion || !facebookAccessToken) {
+            throw new Error('Missing Facebook base URL, API version, or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Facebook,
+            name: 'Facebook',
+            baseUrl: facebookBaseUrl,
+            apiVersion: facebookApiVersion,
+            accessToken: facebookAccessToken,
+            userId: facebookUserId,
+            pageId: facebookPageId
+        };
+
+        const parsedData = [{
+            tableName: 'facebook_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get a Facebook user by ID'],
+                ['get_pages', 'List pages for a user'],
+                ['get_page_posts', 'List posts for a page'],
+                ['get_post', 'Get a post by ID'],
+                ['search', 'Search public content'],
+                ['get_page_insights', 'Get insights for a page']
+            ],
+            metadata: {
+                rowCount: 6,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -1167,6 +1209,15 @@ app.post('/api/generate', async (req, res) => {
         dataSource.password,
         dataSource.authSource
       );
+    } else if (dataSource?.type === DataSourceType.Facebook) {
+      parsedForGen = {};
+      dbConfForGen = createFacebookGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiVersion,
+        dataSource.accessToken,
+        dataSource.userId,
+        dataSource.pageId
+      );
     } else if (dataSource?.type === DataSourceType.Jira) {
       parsedForGen = {};
       dbConfForGen = createJiraGeneratorConfig(
@@ -1325,8 +1376,7 @@ app.get('/api/servers', (req, res) => {
     const type = typeof rawType === 'string' ? rawType : 'unknown';
     const tools = gen.getToolsForServer(server.id);
     const resources = gen.getResourcesForServer(server.id);
-    const inferredType = inferTypeFromTools(tools);
-    const finalType = inferredType || type;
+    const finalType = type;
     return {
       id: server.id,
       name: server.name,
@@ -1415,17 +1465,7 @@ app.get('/api/servers/:id', (req, res) => {
   });
 });
 
-function inferTypeFromTools(tools: any[]): string | null {
-  const names = new Set((tools || []).map(t => t.name));
-  if (names.has('list_indices') && names.has('get_cluster_health')) return DataSourceType.Elasticsearch;
-  if (names.has('list_contexts') && names.has('list_pods')) return DataSourceType.Kubernetes;
-  if (names.has('list_projects') && names.has('get_current_project')) return DataSourceType.OpenShift;
-  if (names.has('search_recent_tweets') && names.has('get_tweet')) return DataSourceType.X;
-  if (names.has('query') && names.has('query_range') && names.has('targets')) return DataSourceType.Prometheus;
-  if (names.has('search_dashboards') && names.has('get_dashboard')) return DataSourceType.Grafana;
-  if (names.has('list_databases') && names.has('list_collections') && names.has('find')) return DataSourceType.MongoDB;
-  return null;
-}
+// inferTypeFromTools removed by request
 
 // Get server data endpoint - provides sample data from database
 app.get('/api/servers/:id/data', async (req, res) => {

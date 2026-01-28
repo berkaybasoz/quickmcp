@@ -29,6 +29,7 @@ export enum DataSourceType {
   Prometheus = 'prometheus',
   Grafana = 'grafana',
   MongoDB = 'mongodb',
+  Facebook = 'facebook',
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -54,6 +55,7 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Prometheus,
     DataSourceType.Grafana,
     DataSourceType.MongoDB,
+    DataSourceType.Facebook,
   ]);
 
   return !(Array.isArray(parsedData) || (type && nonResourceTypes.has(type)));
@@ -186,6 +188,15 @@ export interface MongoDBConnection {
   type: 'mongodb';
 }
 
+export interface FacebookConnection {
+  baseUrl: string;
+  apiVersion: string;
+  accessToken: string;
+  userId?: string;
+  pageId?: string;
+  type: 'facebook';
+}
+
 export interface MCPServerConfig {
   name: string;
   description: string;
@@ -314,6 +325,15 @@ export interface MongoDBGeneratorConfig extends BaseGeneratorConfig {
   authSource?: string;
 }
 
+export interface FacebookGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Facebook;
+  baseUrl: string;
+  apiVersion: string;
+  accessToken: string;
+  userId?: string;
+  pageId?: string;
+}
+
 export interface JiraGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Jira;
   host: string;
@@ -411,6 +431,7 @@ export type GeneratorConfig =
   | PrometheusGeneratorConfig
   | GrafanaGeneratorConfig
   | MongoDBGeneratorConfig
+  | FacebookGeneratorConfig
   | JiraGeneratorConfig
   | ConfluenceGeneratorConfig
   | FtpGeneratorConfig
@@ -427,7 +448,8 @@ export type GeneratorConfig =
   | XConnection
   | PrometheusConnection
   | GrafanaConnection
-  | MongoDBConnection;
+  | MongoDBConnection
+  | FacebookConnection;
 
 // Generator Config factory functions
 export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig {
@@ -527,6 +549,23 @@ export function createMongoDBGeneratorConfig(
     username,
     password,
     authSource
+  };
+}
+
+export function createFacebookGeneratorConfig(
+  baseUrl: string,
+  apiVersion: string,
+  accessToken: string,
+  userId?: string,
+  pageId?: string
+): FacebookGeneratorConfig {
+  return {
+    type: DataSourceType.Facebook,
+    baseUrl,
+    apiVersion,
+    accessToken,
+    userId,
+    pageId
   };
 }
 
