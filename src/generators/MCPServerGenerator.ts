@@ -55,6 +55,12 @@ export class MCPServerGenerator {
       } else if (dbConfig?.type === DataSourceType.Webpage) {
         tools = this.generateToolsForWebpage(serverId, dbConfig);
         //console.log('✅ Generated webpage tools:', tools.length);
+      } else if (dbConfig?.type === DataSourceType.GraphQL) {
+        tools = this.generateToolsForGraphQL(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Soap) {
+        tools = this.generateToolsForSoap(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Rss) {
+        tools = this.generateToolsForRss(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Curl) {
         tools = this.generateToolsForCurl(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GitHub) {
@@ -251,6 +257,108 @@ export class MCPServerGenerator {
 
     //console.log(`✅ Generated webpage fetch tool for: ${url}`);
     return [tool];
+  }
+
+  private generateToolsForGraphQL(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, headers } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GraphQL, baseUrl, headers };
+
+    tools.push({
+      server_id: serverId,
+      name: 'query',
+      description: 'Execute a GraphQL query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'GraphQL query string' },
+          variables: { type: 'object', description: 'Variables object (optional)' },
+          operationName: { type: 'string', description: 'Operation name (optional)' },
+          headers: { type: 'object', description: 'Additional headers (optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'introspect',
+      description: 'Run GraphQL schema introspection',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      sqlQuery: JSON.stringify({
+        ...baseConfig,
+        method: 'POST',
+        query: `query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } } } fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef } } fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue } fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } }`
+      }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForSoap(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, wsdlUrl, soapAction, headers } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Soap, baseUrl, wsdlUrl, soapAction, headers };
+
+    tools.push({
+      server_id: serverId,
+      name: 'call_operation',
+      description: 'Call a SOAP operation with raw XML body',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          xml_body: { type: 'string', description: 'SOAP XML envelope' },
+          soap_action: { type: 'string', description: 'SOAPAction header override (optional)' },
+          headers: { type: 'object', description: 'Additional headers (optional)' }
+        },
+        required: ['xml_body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForRss(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { feedUrl } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Rss, feedUrl };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_feed',
+      description: 'Fetch RSS/Atom feed and return metadata + items',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'get' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_entries',
+      description: 'List RSS/Atom feed entries',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, op: 'list' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
   }
 
   private generateToolsForCurl(serverId: string, dbConfig: any): ToolDefinition[] {

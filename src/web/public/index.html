@@ -471,6 +471,36 @@
                                                 <p class="text-xs text-slate-500">Make a raw HTTP request.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
+                                            <input type="radio" name="dataSourceType" value="graphql" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-project-diagram text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">GraphQL</h4>
+                                                <p class="text-xs text-slate-500">Execute queries & introspection.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
+                                            <input type="radio" name="dataSourceType" value="soap" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-cubes text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">SOAP</h4>
+                                                <p class="text-xs text-slate-500">Call SOAP operations via XML.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="web">
+                                            <input type="radio" name="dataSourceType" value="rss" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-rss text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">RSS/Atom</h4>
+                                                <p class="text-xs text-slate-500">Fetch and parse feed entries.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
                                             <input type="radio" name="dataSourceType" value="github" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-500/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-500/30 transition-all h-full">
@@ -1117,6 +1147,97 @@
                                                 <textarea id="curlBody" rows="4" class="input font-mono text-xs" placeholder='{ "key": "value" }'></textarea>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- GraphQL Config -->
+                                    <div id="graphql-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">GraphQL Endpoint</p>
+                                                    <p>Execute queries and introspection over HTTP.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Endpoint URL</label>
+                                            <input type="text" id="graphqlBaseUrl" placeholder="https://api.example.com/graphql" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">GraphQL HTTP endpoint.</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers (Optional)</label>
+                                            <textarea id="graphqlHeaders" rows="4" class="input font-mono text-xs" placeholder='{"Authorization":"Bearer ..."}'></textarea>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: query, introspect
+                                            </p>
+                                        </div>
+                                        <div id="graphql-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- SOAP Config -->
+                                    <div id="soap-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                                <div class="text-sm text-amber-700">
+                                                    <p class="font-medium text-amber-800 mb-1">SOAP Endpoint</p>
+                                                    <p>Send SOAP XML envelopes over HTTP.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Endpoint URL</label>
+                                                <input type="text" id="soapBaseUrl" placeholder="https://api.example.com/soap" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">WSDL URL (Optional)</label>
+                                                <input type="text" id="soapWsdlUrl" placeholder="https://api.example.com/service?wsdl" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">SOAPAction (Optional)</label>
+                                                <input type="text" id="soapAction" placeholder="urn:ActionName" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Headers (Optional)</label>
+                                                <textarea id="soapHeaders" rows="4" class="input font-mono text-xs" placeholder='{"Authorization":"Bearer ..."}'></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>1 tool</strong> will be created: call_operation
+                                            </p>
+                                        </div>
+                                        <div id="soap-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- RSS/Atom Config -->
+                                    <div id="rss-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">RSS/Atom Feed</p>
+                                                    <p>Fetch and parse RSS or Atom feeds.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Feed URL</label>
+                                            <input type="text" id="rssFeedUrl" placeholder="https://example.com/feed.xml" class="input" autocomplete="off">
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: get_feed, list_entries
+                                            </p>
+                                        </div>
+                                        <div id="rss-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- GitHub Config -->

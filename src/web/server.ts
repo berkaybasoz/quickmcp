@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -333,6 +333,111 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         }];
 
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.GraphQL) {
+        const { graphqlBaseUrl, graphqlHeaders } = req.body as any;
+        if (!graphqlBaseUrl) {
+            throw new Error('Missing GraphQL base URL');
+        }
+        let headers = {};
+        if (graphqlHeaders) {
+            try { headers = typeof graphqlHeaders === 'string' ? JSON.parse(graphqlHeaders) : graphqlHeaders; } catch {
+                throw new Error('Invalid GraphQL headers JSON');
+            }
+        }
+        const dataSource = {
+            type: DataSourceType.GraphQL,
+            name: 'GraphQL',
+            baseUrl: graphqlBaseUrl,
+            headers
+        };
+        const parsedData = [{
+            tableName: 'graphql_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Execute a GraphQL query'],
+                ['introspect', 'Run GraphQL schema introspection']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Soap) {
+        const { soapBaseUrl, soapWsdlUrl, soapAction, soapHeaders } = req.body as any;
+        if (!soapBaseUrl) {
+            throw new Error('Missing SOAP base URL');
+        }
+        let headers = {};
+        if (soapHeaders) {
+            try { headers = typeof soapHeaders === 'string' ? JSON.parse(soapHeaders) : soapHeaders; } catch {
+                throw new Error('Invalid SOAP headers JSON');
+            }
+        }
+        const dataSource = {
+            type: DataSourceType.Soap,
+            name: 'SOAP',
+            baseUrl: soapBaseUrl,
+            wsdlUrl: soapWsdlUrl,
+            soapAction,
+            headers
+        };
+        const parsedData = [{
+            tableName: 'soap_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['call_operation', 'Call a SOAP operation with XML body']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Rss) {
+        const { rssFeedUrl } = req.body as any;
+        if (!rssFeedUrl) {
+            throw new Error('Missing RSS feed URL');
+        }
+        const dataSource = {
+            type: DataSourceType.Rss,
+            name: 'RSS/Atom',
+            feedUrl: rssFeedUrl
+        };
+        const parsedData = [{
+            tableName: 'rss_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_feed', 'Fetch feed metadata and items'],
+                ['list_entries', 'List feed entries']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
         return res.json({
             success: true,
             data: {
@@ -2362,6 +2467,25 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.Webpage) {
       parsedForGen = {};
       dbConfForGen = createWebpageGeneratorConfig(dataSource.url || dataSource.name, dataSource.alias);
+    } else if (dataSource?.type === DataSourceType.GraphQL) {
+      parsedForGen = {};
+      dbConfForGen = createGraphQLGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.headers || {}
+      );
+    } else if (dataSource?.type === DataSourceType.Soap) {
+      parsedForGen = {};
+      dbConfForGen = createSoapGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.wsdlUrl,
+        dataSource.soapAction,
+        dataSource.headers || {}
+      );
+    } else if (dataSource?.type === DataSourceType.Rss) {
+      parsedForGen = {};
+      dbConfForGen = createRssGeneratorConfig(
+        dataSource.feedUrl
+      );
     } else if (dataSource?.type === DataSourceType.Curl) {
       parsedForGen = {};
       dbConfForGen = createCurlGeneratorConfig(

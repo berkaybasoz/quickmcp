@@ -8,6 +8,9 @@ const DataSourceType = {
     JSON: 'json',
     Curl: 'curl',
     Webpage: 'webpage',
+    GraphQL: 'graphql',
+    Soap: 'soap',
+    Rss: 'rss',
     Rest: 'rest',
     GitHub: 'github',
     Jira: 'jira',
@@ -66,6 +69,9 @@ const DataSourceType = {
 function isNoTableDataSource(type) {
     const noTableTypes = [
         DataSourceType.Webpage,
+        DataSourceType.GraphQL,
+        DataSourceType.Soap,
+        DataSourceType.Rss,
         DataSourceType.Curl,
         DataSourceType.GitHub,
         DataSourceType.Jira,

@@ -12,6 +12,9 @@ export enum DataSourceType {
   JSON = 'json',
   Curl = 'curl',
   Webpage = 'webpage',
+  GraphQL = 'graphql',
+  Soap = 'soap',
+  Rss = 'rss',
   Rest = 'rest',
   GitHub = 'github',
   Jira = 'jira',
@@ -70,6 +73,9 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
   const nonResourceTypes = new Set<string>([
     DataSourceType.Rest,
     DataSourceType.Webpage,
+    DataSourceType.GraphQL,
+    DataSourceType.Soap,
+    DataSourceType.Rss,
     DataSourceType.Curl,
     DataSourceType.GitHub,
     DataSourceType.Jira,
@@ -156,6 +162,18 @@ export interface CurlDataSource extends DataSource {
 
 export interface WebpageDataSource extends DataSource {
   type: DataSourceType.Webpage;
+}
+
+export interface GraphQLDataSource extends DataSource {
+  type: DataSourceType.GraphQL;
+}
+
+export interface SoapDataSource extends DataSource {
+  type: DataSourceType.Soap;
+}
+
+export interface RssDataSource extends DataSource {
+  type: DataSourceType.Rss;
 }
 
 export interface RestDataSource extends DataSource {
@@ -287,6 +305,25 @@ export interface TelegramConnection {
   botToken: string;
   defaultChatId?: string;
   type: 'telegram';
+}
+
+export interface GraphQLConnection {
+  baseUrl: string;
+  headers?: { [key: string]: string };
+  type: 'graphql';
+}
+
+export interface SoapConnection {
+  baseUrl: string;
+  wsdlUrl?: string;
+  soapAction?: string;
+  headers?: { [key: string]: string };
+  type: 'soap';
+}
+
+export interface RssConnection {
+  feedUrl: string;
+  type: 'rss';
 }
 
 export interface LinkedInConnection {
@@ -654,6 +691,25 @@ export interface TelegramGeneratorConfig extends BaseGeneratorConfig {
   defaultChatId?: string;
 }
 
+export interface GraphQLGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GraphQL;
+  baseUrl: string;
+  headers?: { [key: string]: string };
+}
+
+export interface SoapGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Soap;
+  baseUrl: string;
+  wsdlUrl?: string;
+  soapAction?: string;
+  headers?: { [key: string]: string };
+}
+
+export interface RssGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Rss;
+  feedUrl: string;
+}
+
 export interface LinkedInGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.LinkedIn;
   baseUrl: string;
@@ -965,6 +1021,9 @@ export type GeneratorConfig =
   | TikTokGeneratorConfig
   | NotionGeneratorConfig
   | TelegramGeneratorConfig
+  | GraphQLGeneratorConfig
+  | SoapGeneratorConfig
+  | RssGeneratorConfig
   | LinkedInGeneratorConfig
   | RedditGeneratorConfig
   | YouTubeGeneratorConfig
@@ -1015,6 +1074,9 @@ export type GeneratorConfig =
   | TikTokConnection
   | NotionConnection
   | TelegramConnection
+  | GraphQLConnection
+  | SoapConnection
+  | RssConnection
   | LinkedInConnection
   | RedditConnection
   | YouTubeConnection
@@ -1210,6 +1272,39 @@ export function createTelegramGeneratorConfig(
     baseUrl,
     botToken,
     defaultChatId
+  };
+}
+
+export function createGraphQLGeneratorConfig(
+  baseUrl: string,
+  headers: { [key: string]: string } = {}
+): GraphQLGeneratorConfig {
+  return {
+    type: DataSourceType.GraphQL,
+    baseUrl,
+    headers
+  };
+}
+
+export function createSoapGeneratorConfig(
+  baseUrl: string,
+  wsdlUrl?: string,
+  soapAction?: string,
+  headers: { [key: string]: string } = {}
+): SoapGeneratorConfig {
+  return {
+    type: DataSourceType.Soap,
+    baseUrl,
+    wsdlUrl,
+    soapAction,
+    headers
+  };
+}
+
+export function createRssGeneratorConfig(feedUrl: string): RssGeneratorConfig {
+  return {
+    type: DataSourceType.Rss,
+    feedUrl
   };
 }
 

@@ -2838,6 +2838,131 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For GraphQL, show info in preview and go to step 3
+    if (selectedType === DataSourceType.GraphQL) {
+        const baseUrl = document.getElementById('graphqlBaseUrl')?.value?.trim();
+        const headersRaw = document.getElementById('graphqlHeaders')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('graphql-parse-error', 'Please enter GraphQL endpoint URL');
+            return;
+        }
+
+        let headers = {};
+        if (headersRaw) {
+            try {
+                headers = JSON.parse(headersRaw);
+            } catch (e) {
+                showError('graphql-parse-error', 'Invalid JSON in Headers field');
+                return;
+            }
+        }
+
+        currentDataSource = {
+            type: DataSourceType.GraphQL,
+            name: 'GraphQL',
+            baseUrl,
+            headers
+        };
+        currentParsedData = [{
+            tableName: 'graphql_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Execute a GraphQL query'],
+                ['introspect', 'Run GraphQL schema introspection']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGraphQLPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For SOAP, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Soap) {
+        const baseUrl = document.getElementById('soapBaseUrl')?.value?.trim();
+        const wsdlUrl = document.getElementById('soapWsdlUrl')?.value?.trim();
+        const soapAction = document.getElementById('soapAction')?.value?.trim();
+        const headersRaw = document.getElementById('soapHeaders')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('soap-parse-error', 'Please enter SOAP endpoint URL');
+            return;
+        }
+
+        let headers = {};
+        if (headersRaw) {
+            try {
+                headers = JSON.parse(headersRaw);
+            } catch (e) {
+                showError('soap-parse-error', 'Invalid JSON in Headers field');
+                return;
+            }
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Soap,
+            name: 'SOAP',
+            baseUrl,
+            wsdlUrl,
+            soapAction,
+            headers
+        };
+        currentParsedData = [{
+            tableName: 'soap_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['call_operation', 'Call a SOAP operation with XML body']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displaySoapPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For RSS/Atom, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Rss) {
+        const feedUrl = document.getElementById('rssFeedUrl')?.value?.trim();
+        if (!feedUrl) {
+            showError('rss-parse-error', 'Please enter feed URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Rss,
+            name: 'RSS/Atom',
+            feedUrl
+        };
+        currentParsedData = [{
+            tableName: 'rss_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_feed', 'Fetch feed metadata and items'],
+                ['list_entries', 'List feed entries']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayRssPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For GitHub, show info in preview and go to step 3
     if (selectedType === DataSourceType.GitHub) {
         const githubToken = document.getElementById('githubToken')?.value?.trim();
@@ -5138,6 +5263,12 @@ async function handleNextToStep3() {
                 displayLocalFSPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Webpage) {
                 displayWebpagePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.GraphQL) {
+                displayGraphQLPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Soap) {
+                displaySoapPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Rss) {
+                displayRssPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenShift) {
                 displayOpenShiftPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Elasticsearch) {
@@ -5291,6 +5422,15 @@ function updateWizardNavigation() {
         const isAliasValid = alias && validationDiv && validationDiv.textContent.includes('is available');
         const webUrl = document.getElementById('webUrl')?.value?.trim();
         canProceed = isAliasValid && !!webUrl;
+    } else if (selectedType === DataSourceType.GraphQL) {
+        const baseUrl = document.getElementById('graphqlBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Soap) {
+        const baseUrl = document.getElementById('soapBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Rss) {
+        const feedUrl = document.getElementById('rssFeedUrl')?.value?.trim();
+        canProceed = !!feedUrl;
     } else if (selectedType === DataSourceType.Curl) {
         const aliasInput = document.getElementById('curlToolAlias');
         const alias = aliasInput?.value.trim();
@@ -5542,6 +5682,9 @@ function toggleDataSourceFields() {
     const restSection = document.getElementById('rest-section');
     const webSection = document.getElementById('web-section');
     const curlSection = document.getElementById('curl-section');
+    const graphqlSection = document.getElementById('graphql-section');
+    const soapSection = document.getElementById('soap-section');
+    const rssSection = document.getElementById('rss-section');
     const githubSection = document.getElementById('github-section');
     const xSection = document.getElementById('x-section');
     const prometheusSection = document.getElementById('prometheus-section');
@@ -5599,6 +5742,9 @@ function toggleDataSourceFields() {
     restSection?.classList.add('hidden');
     webSection?.classList.add('hidden');
     curlSection?.classList.add('hidden');
+    graphqlSection?.classList.add('hidden');
+    soapSection?.classList.add('hidden');
+    rssSection?.classList.add('hidden');
     githubSection?.classList.add('hidden');
     xSection?.classList.add('hidden');
     prometheusSection?.classList.add('hidden');
@@ -5660,6 +5806,27 @@ function toggleDataSourceFields() {
         restSection?.classList.remove('hidden');
     } else if (selectedType === DataSourceType.Webpage) {
         webSection?.classList.remove('hidden');
+    } else if (selectedType === DataSourceType.GraphQL) {
+        graphqlSection?.classList.remove('hidden');
+        const graphqlBaseUrlInput = document.getElementById('graphqlBaseUrl');
+        if (graphqlBaseUrlInput && !graphqlBaseUrlInput.dataset.listenerAttached) {
+            graphqlBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            graphqlBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Soap) {
+        soapSection?.classList.remove('hidden');
+        const soapBaseUrlInput = document.getElementById('soapBaseUrl');
+        if (soapBaseUrlInput && !soapBaseUrlInput.dataset.listenerAttached) {
+            soapBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            soapBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Rss) {
+        rssSection?.classList.remove('hidden');
+        const rssFeedUrlInput = document.getElementById('rssFeedUrl');
+        if (rssFeedUrlInput && !rssFeedUrlInput.dataset.listenerAttached) {
+            rssFeedUrlInput.addEventListener('input', updateWizardNavigation);
+            rssFeedUrlInput.dataset.listenerAttached = 'true';
+        }
     } else if (selectedType === DataSourceType.Curl) {
         curlSection?.classList.remove('hidden');
         // Add listener here to be robust
@@ -8104,6 +8271,169 @@ function displayTelegramPreview(telegramConfig) {
                                 <div>
                                     <span class="text-slate-500">Base URL:</span>
                                     <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGraphQLPreview(graphqlConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = graphqlConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'query', desc: 'Execute a GraphQL query' },
+        { name: 'introspect', desc: 'Run schema introspection' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-project-diagram text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">GraphQL Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with a GraphQL endpoint.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Endpoint:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySoapPreview(soapConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = soapConfig?.baseUrl || 'Not set';
+    const wsdlUrl = soapConfig?.wsdlUrl || 'Not set';
+    const tools = [
+        { name: 'call_operation', desc: 'Call a SOAP operation with XML body' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-cubes text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">SOAP Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate a tool to call SOAP operations.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Endpoint:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">WSDL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${wsdlUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayRssPreview(rssConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const feedUrl = rssConfig?.feedUrl || 'Not set';
+    const tools = [
+        { name: 'get_feed', desc: 'Fetch feed metadata and items' },
+        { name: 'list_entries', desc: 'List feed entries' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-rss text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">RSS/Atom Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to fetch and parse feed entries.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Feed URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${feedUrl}</span>
                                 </div>
                             </div>
                         </div>

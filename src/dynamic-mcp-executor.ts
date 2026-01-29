@@ -48,6 +48,18 @@ export class DynamicMCPExecutor {
         return await this.executeWebpageFetch(queryConfig);
       }
 
+      if (queryConfig?.type === DataSourceType.GraphQL) {
+        return await this.executeGraphQLCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Soap) {
+        return await this.executeSoapCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Rss) {
+        return await this.executeRssCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Curl) {
         return await this.executeCurlRequest(queryConfig, args);
       }
@@ -1091,6 +1103,183 @@ export class DynamicMCPExecutor {
         content_length: html.length,
         status: response.status,
         content_type: response.headers.get('content-type') || 'unknown'
+      }],
+      rowCount: 1
+    };
+  }
+
+  private async executeGraphQLCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, headers: baseHeaders, query } = queryConfig;
+    if (!baseUrl) {
+      return { success: false, error: 'Missing GraphQL baseUrl', data: [], rowCount: 0 };
+    }
+
+    const finalQuery = args.query || query;
+    if (!finalQuery) {
+      return { success: false, error: 'Missing GraphQL query', data: [], rowCount: 0 };
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(baseHeaders || {}),
+      ...(args.headers || {})
+    };
+
+    const body = {
+      query: finalQuery,
+      variables: args.variables || undefined,
+      operationName: args.operationName || undefined
+    };
+
+    console.error(`🧩 GraphQL API call: POST ${baseUrl}`);
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ GraphQL API response: ${response.status}`);
+
+    if (!response.ok || responseData?.errors) {
+      return {
+        success: false,
+        error: `GraphQL API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          errors: responseData?.errors || null,
+          data: responseData?.data || null
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeSoapCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, soapAction, headers: baseHeaders } = queryConfig;
+    if (!baseUrl) {
+      return { success: false, error: 'Missing SOAP baseUrl', data: [], rowCount: 0 };
+    }
+    const xmlBody = args.xml_body;
+    if (!xmlBody) {
+      return { success: false, error: 'Missing xml_body', data: [], rowCount: 0 };
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'text/xml; charset=utf-8',
+      ...(baseHeaders || {}),
+      ...(args.headers || {})
+    };
+    const action = args.soap_action || soapAction;
+    if (action) {
+      headers.SOAPAction = action;
+    }
+
+    console.error(`🧼 SOAP API call: POST ${baseUrl}`);
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers,
+      body: xmlBody
+    });
+
+    const responseText = await response.text();
+    console.error(`✅ SOAP API response: ${response.status}`);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `SOAP API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          response: responseText
+        }],
+        rowCount: 1
+      };
+    }
+
+    return {
+      success: true,
+      data: [{
+        status: response.status,
+        response: responseText
+      }],
+      rowCount: 1
+    };
+  }
+
+  private parseFeedItems(xml: string): { feed: any; items: any[] } {
+    const normalize = (value?: string | null) => (value || '').replace(/<!\\[CDATA\\[|\\]\\]>/g, '').trim();
+    const extractTag = (source: string, tag: string) => {
+      const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
+      const match = source.match(re);
+      return match ? normalize(match[1]) : '';
+    };
+
+    const feedTitle = extractTag(xml, 'title');
+    const feedLink = (() => {
+      const atomLinkMatch = xml.match(/<link[^>]*rel=["']?alternate["']?[^>]*href=["']([^"']+)["']/i)
+        || xml.match(/<link[^>]*href=["']([^"']+)["'][^>]*>/i);
+      if (atomLinkMatch?.[1]) return atomLinkMatch[1];
+      return extractTag(xml, 'link');
+    })();
+
+    const items: any[] = [];
+    const itemMatches = xml.match(/<item[\\s\\S]*?<\\/item>/gi) || [];
+    const entryMatches = xml.match(/<entry[\\s\\S]*?<\\/entry>/gi) || [];
+    const blocks = itemMatches.length ? itemMatches : entryMatches;
+
+    for (const block of blocks) {
+      const title = extractTag(block, 'title');
+      let link = extractTag(block, 'link');
+      if (!link) {
+        const linkMatch = block.match(/<link[^>]*href=["']([^"']+)["']/i);
+        if (linkMatch?.[1]) link = linkMatch[1];
+      }
+      const id = extractTag(block, 'guid') || extractTag(block, 'id') || link;
+      const published = extractTag(block, 'pubDate') || extractTag(block, 'published') || extractTag(block, 'updated');
+      const summary = extractTag(block, 'description') || extractTag(block, 'summary') || extractTag(block, 'content');
+
+      items.push({ id, title, link, published, summary });
+    }
+
+    return {
+      feed: {
+        title: feedTitle,
+        link: feedLink
+      },
+      items
+    };
+  }
+
+  private async executeRssCall(queryConfig: any, args: any): Promise<any> {
+    const { feedUrl, op } = queryConfig;
+    if (!feedUrl) {
+      return { success: false, error: 'Missing feedUrl', data: [], rowCount: 0 };
+    }
+
+    console.error(`📰 RSS/Atom fetch: ${feedUrl}`);
+    const response = await fetch(feedUrl);
+    const xml = await response.text();
+    if (!response.ok) {
+      return { success: false, error: `RSS fetch error: ${response.status}`, data: [], rowCount: 0 };
+    }
+
+    const parsed = this.parseFeedItems(xml);
+    const limit = Number(args?.limit) || 0;
+    const items = limit > 0 ? parsed.items.slice(0, limit) : parsed.items;
+
+    if (op === 'list') {
+      return { success: true, data: items, rowCount: items.length };
+    }
+
+    return {
+      success: true,
+      data: [{
+        feed: parsed.feed,
+        items
       }],
       rowCount: 1
     };
