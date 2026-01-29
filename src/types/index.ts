@@ -45,6 +45,17 @@ export enum DataSourceType {
   YouTube = 'youtube',
   WhatsAppBusiness = 'whatsappbusiness',
   Threads = 'threads',
+  Spotify = 'spotify',
+  Sonos = 'sonos',
+  Shazam = 'shazam',
+  PhilipsHue = 'philipshue',
+  EightSleep = 'eightsleep',
+  HomeAssistant = 'homeassistant',
+  AppleNotes = 'applenotes',
+  AppleReminders = 'applereminders',
+  Things3 = 'things3',
+  Obsidian = 'obsidian',
+  BearNotes = 'bearnotes',
   FalAI = 'falai',
   HuggingFace = 'huggingface',
   N8n = 'n8n',
@@ -122,6 +133,17 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.YouTube,
     DataSourceType.WhatsAppBusiness,
     DataSourceType.Threads,
+    DataSourceType.Spotify,
+    DataSourceType.Sonos,
+    DataSourceType.Shazam,
+    DataSourceType.PhilipsHue,
+    DataSourceType.EightSleep,
+    DataSourceType.HomeAssistant,
+    DataSourceType.AppleNotes,
+    DataSourceType.AppleReminders,
+    DataSourceType.Things3,
+    DataSourceType.Obsidian,
+    DataSourceType.BearNotes,
     DataSourceType.FalAI,
     DataSourceType.HuggingFace,
     DataSourceType.N8n,
@@ -396,6 +418,73 @@ export interface ThreadsConnection {
   accessToken: string;
   userId?: string;
   type: 'threads';
+}
+
+export interface SpotifyConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'spotify';
+}
+
+export interface SonosConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'sonos';
+}
+
+export interface ShazamConnection {
+  baseUrl: string;
+  apiKey: string;
+  apiHost?: string;
+  type: 'shazam';
+}
+
+export interface PhilipsHueConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'philipshue';
+}
+
+export interface EightSleepConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'eightsleep';
+}
+
+export interface HomeAssistantConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'homeassistant';
+}
+
+export interface AppleNotesConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'applenotes';
+}
+
+export interface AppleRemindersConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'applereminders';
+}
+
+export interface Things3Connection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'things3';
+}
+
+export interface ObsidianConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'obsidian';
+}
+
+export interface BearNotesConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'bearnotes';
 }
 
 export interface FalAIConnection {
@@ -883,6 +972,73 @@ export interface ThreadsGeneratorConfig extends BaseGeneratorConfig {
   userId?: string;
 }
 
+export interface SpotifyGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Spotify;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface SonosGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Sonos;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface ShazamGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Shazam;
+  baseUrl: string;
+  apiKey: string;
+  apiHost?: string;
+}
+
+export interface PhilipsHueGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.PhilipsHue;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface EightSleepGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.EightSleep;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface HomeAssistantGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.HomeAssistant;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface AppleNotesGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.AppleNotes;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface AppleRemindersGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.AppleReminders;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface Things3GeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Things3;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface ObsidianGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Obsidian;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface BearNotesGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.BearNotes;
+  baseUrl: string;
+  accessToken: string;
+}
+
 export interface FalAIGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.FalAI;
   baseUrl: string;
@@ -1263,6 +1419,17 @@ export type GeneratorConfig =
   | YouTubeGeneratorConfig
   | WhatsAppBusinessGeneratorConfig
   | ThreadsGeneratorConfig
+  | SpotifyGeneratorConfig
+  | SonosGeneratorConfig
+  | ShazamGeneratorConfig
+  | PhilipsHueGeneratorConfig
+  | EightSleepGeneratorConfig
+  | HomeAssistantGeneratorConfig
+  | AppleNotesGeneratorConfig
+  | AppleRemindersGeneratorConfig
+  | Things3GeneratorConfig
+  | ObsidianGeneratorConfig
+  | BearNotesGeneratorConfig
   | FalAIGeneratorConfig
   | HuggingFaceGeneratorConfig
   | N8nGeneratorConfig
@@ -1332,6 +1499,17 @@ export type GeneratorConfig =
   | YouTubeConnection
   | WhatsAppBusinessConnection
   | ThreadsConnection
+  | SpotifyConnection
+  | SonosConnection
+  | ShazamConnection
+  | PhilipsHueConnection
+  | EightSleepConnection
+  | HomeAssistantConnection
+  | AppleNotesConnection
+  | AppleRemindersConnection
+  | Things3Connection
+  | ObsidianConnection
+  | BearNotesConnection
   | FalAIConnection
   | HuggingFaceConnection
   | N8nConnection
@@ -1646,6 +1824,129 @@ export function createThreadsGeneratorConfig(
     baseUrl,
     accessToken,
     userId
+  };
+}
+
+export function createSpotifyGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): SpotifyGeneratorConfig {
+  return {
+    type: DataSourceType.Spotify,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createSonosGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): SonosGeneratorConfig {
+  return {
+    type: DataSourceType.Sonos,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createShazamGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  apiHost?: string
+): ShazamGeneratorConfig {
+  return {
+    type: DataSourceType.Shazam,
+    baseUrl,
+    apiKey,
+    apiHost
+  };
+}
+
+export function createPhilipsHueGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): PhilipsHueGeneratorConfig {
+  return {
+    type: DataSourceType.PhilipsHue,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createEightSleepGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): EightSleepGeneratorConfig {
+  return {
+    type: DataSourceType.EightSleep,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createHomeAssistantGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): HomeAssistantGeneratorConfig {
+  return {
+    type: DataSourceType.HomeAssistant,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createAppleNotesGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): AppleNotesGeneratorConfig {
+  return {
+    type: DataSourceType.AppleNotes,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createAppleRemindersGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): AppleRemindersGeneratorConfig {
+  return {
+    type: DataSourceType.AppleReminders,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createThings3GeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): Things3GeneratorConfig {
+  return {
+    type: DataSourceType.Things3,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createObsidianGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): ObsidianGeneratorConfig {
+  return {
+    type: DataSourceType.Obsidian,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createBearNotesGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): BearNotesGeneratorConfig {
+  return {
+    type: DataSourceType.BearNotes,
+    baseUrl,
+    accessToken
   };
 }
 

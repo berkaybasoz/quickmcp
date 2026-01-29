@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createFalAIGeneratorConfig, createHuggingFaceGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createN8nGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createSupabaseGeneratorConfig, createNpmGeneratorConfig, createNugetGeneratorConfig, createMavenGeneratorConfig, createGradleGeneratorConfig, createNexusGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createSpotifyGeneratorConfig, createSonosGeneratorConfig, createShazamGeneratorConfig, createPhilipsHueGeneratorConfig, createEightSleepGeneratorConfig, createHomeAssistantGeneratorConfig, createAppleNotesGeneratorConfig, createAppleRemindersGeneratorConfig, createThings3GeneratorConfig, createObsidianGeneratorConfig, createBearNotesGeneratorConfig, createFalAIGeneratorConfig, createHuggingFaceGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createN8nGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createSupabaseGeneratorConfig, createNpmGeneratorConfig, createNugetGeneratorConfig, createMavenGeneratorConfig, createGradleGeneratorConfig, createNexusGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1054,6 +1054,422 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Spotify) {
+        const { spotifyBaseUrl, spotifyAccessToken } = req.body as any;
+
+        if (!spotifyBaseUrl || !spotifyAccessToken) {
+            throw new Error('Missing Spotify base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Spotify,
+            name: 'Spotify',
+            baseUrl: spotifyBaseUrl,
+            accessToken: spotifyAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'spotify_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search tracks, artists, albums, playlists'],
+                ['get_track', 'Get track details'],
+                ['get_artist', 'Get artist details'],
+                ['get_album', 'Get album details'],
+                ['get_playlist', 'Get playlist details']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Sonos) {
+        const { sonosBaseUrl, sonosAccessToken } = req.body as any;
+
+        if (!sonosBaseUrl || !sonosAccessToken) {
+            throw new Error('Missing Sonos base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Sonos,
+            name: 'Sonos',
+            baseUrl: sonosBaseUrl,
+            accessToken: sonosAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'sonos_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_households', 'List households'],
+                ['list_groups', 'List groups'],
+                ['play', 'Start playback'],
+                ['pause', 'Pause playback'],
+                ['set_volume', 'Set group volume']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Shazam) {
+        const { shazamBaseUrl, shazamApiKey, shazamApiHost } = req.body as any;
+
+        if (!shazamBaseUrl || !shazamApiKey) {
+            throw new Error('Missing Shazam base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Shazam,
+            name: 'Shazam',
+            baseUrl: shazamBaseUrl,
+            apiKey: shazamApiKey,
+            apiHost: shazamApiHost
+        };
+
+        const parsedData = [{
+            tableName: 'shazam_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search tracks'],
+                ['get_track', 'Get track details'],
+                ['get_artist', 'Get artist details'],
+                ['get_charts', 'Get charts']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.PhilipsHue) {
+        const { philipshueBaseUrl, philipshueAccessToken } = req.body as any;
+
+        if (!philipshueBaseUrl || !philipshueAccessToken) {
+            throw new Error('Missing Philips Hue base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.PhilipsHue,
+            name: 'Philips Hue',
+            baseUrl: philipshueBaseUrl,
+            accessToken: philipshueAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'philipshue_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_lights', 'List lights'],
+                ['get_light', 'Get light details'],
+                ['set_light_state', 'Set light state'],
+                ['list_groups', 'List groups'],
+                ['set_group_state', 'Set group state']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.EightSleep) {
+        const { eightsleepBaseUrl, eightsleepAccessToken } = req.body as any;
+
+        if (!eightsleepBaseUrl || !eightsleepAccessToken) {
+            throw new Error('Missing 8Sleep base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.EightSleep,
+            name: '8Sleep',
+            baseUrl: eightsleepBaseUrl,
+            accessToken: eightsleepAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'eightsleep_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get current user'],
+                ['get_sessions', 'Get sleep sessions'],
+                ['get_trends', 'Get sleep trends'],
+                ['set_pod_temperature', 'Set pod temperature']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.HomeAssistant) {
+        const { homeassistantBaseUrl, homeassistantAccessToken } = req.body as any;
+
+        if (!homeassistantBaseUrl || !homeassistantAccessToken) {
+            throw new Error('Missing Home Assistant base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.HomeAssistant,
+            name: 'Home Assistant',
+            baseUrl: homeassistantBaseUrl,
+            accessToken: homeassistantAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'homeassistant_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_states', 'List entity states'],
+                ['get_services', 'List available services'],
+                ['call_service', 'Call a service'],
+                ['get_config', 'Get configuration']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.AppleNotes) {
+        const { applenotesBaseUrl, applenotesAccessToken } = req.body as any;
+
+        if (!applenotesBaseUrl || !applenotesAccessToken) {
+            throw new Error('Missing Apple Notes base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.AppleNotes,
+            name: 'Apple Notes',
+            baseUrl: applenotesBaseUrl,
+            accessToken: applenotesAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'applenotes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_notes', 'List notes'],
+                ['get_note', 'Get a note'],
+                ['create_note', 'Create a note'],
+                ['update_note', 'Update a note'],
+                ['delete_note', 'Delete a note']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.AppleReminders) {
+        const { appleremindersBaseUrl, appleremindersAccessToken } = req.body as any;
+
+        if (!appleremindersBaseUrl || !appleremindersAccessToken) {
+            throw new Error('Missing Apple Reminders base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.AppleReminders,
+            name: 'Apple Reminders',
+            baseUrl: appleremindersBaseUrl,
+            accessToken: appleremindersAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'applereminders_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_lists', 'List reminder lists'],
+                ['list_reminders', 'List reminders'],
+                ['create_reminder', 'Create a reminder'],
+                ['complete_reminder', 'Complete a reminder'],
+                ['delete_reminder', 'Delete a reminder']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Things3) {
+        const { things3BaseUrl, things3AccessToken } = req.body as any;
+
+        if (!things3BaseUrl || !things3AccessToken) {
+            throw new Error('Missing Things 3 base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Things3,
+            name: 'Things 3',
+            baseUrl: things3BaseUrl,
+            accessToken: things3AccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'things3_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects'],
+                ['list_areas', 'List areas'],
+                ['list_todos', 'List todos'],
+                ['create_todo', 'Create a todo'],
+                ['complete_todo', 'Complete a todo']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Obsidian) {
+        const { obsidianBaseUrl, obsidianAccessToken } = req.body as any;
+
+        if (!obsidianBaseUrl || !obsidianAccessToken) {
+            throw new Error('Missing Obsidian base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Obsidian,
+            name: 'Obsidian',
+            baseUrl: obsidianBaseUrl,
+            accessToken: obsidianAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'obsidian_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files'],
+                ['get_file', 'Get a file'],
+                ['create_file', 'Create a file'],
+                ['update_file', 'Update a file'],
+                ['search', 'Search files']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.BearNotes) {
+        const { bearnotesBaseUrl, bearnotesAccessToken } = req.body as any;
+
+        if (!bearnotesBaseUrl || !bearnotesAccessToken) {
+            throw new Error('Missing Bear Notes base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.BearNotes,
+            name: 'Bear Notes',
+            baseUrl: bearnotesBaseUrl,
+            accessToken: bearnotesAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'bearnotes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_notes', 'List notes'],
+                ['get_note', 'Get a note'],
+                ['create_note', 'Create a note'],
+                ['update_note', 'Update a note'],
+                ['archive_note', 'Archive a note']
+            ],
+            metadata: {
+                rowCount: 5,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -3154,6 +3570,73 @@ app.post('/api/generate', async (req, res) => {
         dataSource.baseUrl,
         dataSource.botToken,
         dataSource.defaultChatId
+      );
+    } else if (dataSource?.type === DataSourceType.Spotify) {
+      parsedForGen = {};
+      dbConfForGen = createSpotifyGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Sonos) {
+      parsedForGen = {};
+      dbConfForGen = createSonosGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Shazam) {
+      parsedForGen = {};
+      dbConfForGen = createShazamGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.apiHost
+      );
+    } else if (dataSource?.type === DataSourceType.PhilipsHue) {
+      parsedForGen = {};
+      dbConfForGen = createPhilipsHueGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.EightSleep) {
+      parsedForGen = {};
+      dbConfForGen = createEightSleepGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.HomeAssistant) {
+      parsedForGen = {};
+      dbConfForGen = createHomeAssistantGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.AppleNotes) {
+      parsedForGen = {};
+      dbConfForGen = createAppleNotesGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.AppleReminders) {
+      parsedForGen = {};
+      dbConfForGen = createAppleRemindersGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Things3) {
+      parsedForGen = {};
+      dbConfForGen = createThings3GeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Obsidian) {
+      parsedForGen = {};
+      dbConfForGen = createObsidianGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.BearNotes) {
+      parsedForGen = {};
+      dbConfForGen = createBearNotesGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
       );
     } else if (dataSource?.type === DataSourceType.OpenAI) {
       parsedForGen = {};

@@ -123,6 +123,39 @@ export class DynamicMCPExecutor {
       if (queryConfig?.type === DataSourceType.Threads) {
         return await this.executeThreadsCall(queryConfig, args);
       }
+      if (queryConfig?.type === DataSourceType.Spotify) {
+        return await this.executeSpotifyCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Sonos) {
+        return await this.executeSonosCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Shazam) {
+        return await this.executeShazamCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.PhilipsHue) {
+        return await this.executePhilipsHueCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.EightSleep) {
+        return await this.executeEightSleepCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.HomeAssistant) {
+        return await this.executeHomeAssistantCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.AppleNotes) {
+        return await this.executeAppleNotesCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.AppleReminders) {
+        return await this.executeAppleRemindersCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Things3) {
+        return await this.executeThings3Call(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Obsidian) {
+        return await this.executeObsidianCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.BearNotes) {
+        return await this.executeBearNotesCall(queryConfig, args);
+      }
 
       if (queryConfig?.type === DataSourceType.OpenAI) {
         return await this.executeOpenAICompatibleCall(queryConfig, args);
@@ -2544,6 +2577,468 @@ export class DynamicMCPExecutor {
       };
     }
 
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeSpotifyCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Spotify baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{id}')) {
+      if (!args?.id) return { success: false, error: 'Missing id', data: [], rowCount: 0 };
+      url = url.replace('{id}', encodeURIComponent(String(args.id)));
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    const methodUpper = String(method || 'GET').toUpperCase();
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (key === 'id') continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+    }
+
+    console.error(`🎵 Spotify API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, { method: methodUpper, headers });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Spotify API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeSonosCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Sonos baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{household_id}')) {
+      if (!args?.household_id) return { success: false, error: 'Missing household_id', data: [], rowCount: 0 };
+      url = url.replace('{household_id}', encodeURIComponent(String(args.household_id)));
+    }
+    if (url.includes('{group_id}')) {
+      if (!args?.group_id) return { success: false, error: 'Missing group_id', data: [], rowCount: 0 };
+      url = url.replace('{group_id}', encodeURIComponent(String(args.group_id)));
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    const methodUpper = String(method || 'GET').toUpperCase();
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.household_id;
+    delete bodyArgs.group_id;
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Sonos API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeShazamCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, apiHost, endpoint, method } = queryConfig;
+    const token = String(apiKey || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Shazam baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const headers: Record<string, string> = {
+      'X-RapidAPI-Key': token
+    };
+    if (apiHost) {
+      headers['X-RapidAPI-Host'] = String(apiHost);
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (key === 'track_id') {
+        queryParams.push(`key=${encodeURIComponent(String(value))}`);
+        continue;
+      }
+      if (key === 'artist_id') {
+        queryParams.push(`id=${encodeURIComponent(String(value))}`);
+        continue;
+      }
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+    }
+
+    const methodUpper = String(method || 'GET').toUpperCase();
+    console.error(`🎵 Shazam API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, { method: methodUpper, headers });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Shazam API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executePhilipsHueCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Philips Hue baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{light_id}')) {
+      if (!args?.light_id) return { success: false, error: 'Missing light_id', data: [], rowCount: 0 };
+      url = url.replace('{light_id}', encodeURIComponent(String(args.light_id)));
+    }
+    if (url.includes('{group_id}')) {
+      if (!args?.group_id) return { success: false, error: 'Missing group_id', data: [], rowCount: 0 };
+      url = url.replace('{group_id}', encodeURIComponent(String(args.group_id)));
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    const methodUpper = String(method || 'GET').toUpperCase();
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.light_id;
+    delete bodyArgs.group_id;
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`💡 Hue API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`💡 Hue API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Philips Hue API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeEightSleepCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing 8Sleep baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{pod_id}')) {
+      if (!args?.pod_id) return { success: false, error: 'Missing pod_id', data: [], rowCount: 0 };
+      url = url.replace('{pod_id}', encodeURIComponent(String(args.pod_id)));
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    const methodUpper = String(method || 'GET').toUpperCase();
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.pod_id;
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `8Sleep API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeHomeAssistantCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Home Assistant baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{domain}')) {
+      if (!args?.domain) return { success: false, error: 'Missing domain', data: [], rowCount: 0 };
+      url = url.replace('{domain}', encodeURIComponent(String(args.domain)));
+    }
+    if (url.includes('{service}')) {
+      if (!args?.service) return { success: false, error: 'Missing service', data: [], rowCount: 0 };
+      url = url.replace('{service}', encodeURIComponent(String(args.service)));
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+    const methodUpper = String(method || 'GET').toUpperCase();
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.domain;
+    delete bodyArgs.service;
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs.data ?? bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Home Assistant API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeAppleNotesCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Apple Notes baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{note_id}')) {
+      if (!args?.note_id) return { success: false, error: 'Missing note_id', data: [], rowCount: 0 };
+      url = url.replace('{note_id}', encodeURIComponent(String(args.note_id)));
+    }
+
+    return await this.executeBearerJsonRequest('📝 Apple Notes', url, method, token, args, ['note_id']);
+  }
+
+  private async executeAppleRemindersCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Apple Reminders baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{reminder_id}')) {
+      if (!args?.reminder_id) return { success: false, error: 'Missing reminder_id', data: [], rowCount: 0 };
+      url = url.replace('{reminder_id}', encodeURIComponent(String(args.reminder_id)));
+    }
+
+    return await this.executeBearerJsonRequest('✅ Reminders', url, method, token, args, ['reminder_id']);
+  }
+
+  private async executeThings3Call(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Things 3 baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{todo_id}')) {
+      if (!args?.todo_id) return { success: false, error: 'Missing todo_id', data: [], rowCount: 0 };
+      url = url.replace('{todo_id}', encodeURIComponent(String(args.todo_id)));
+    }
+
+    return await this.executeBearerJsonRequest('🧩 Things 3', url, method, token, args, ['todo_id']);
+  }
+
+  private async executeObsidianCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Obsidian baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{path}')) {
+      if (!args?.path) return { success: false, error: 'Missing path', data: [], rowCount: 0 };
+      const encodedPath = encodeURIComponent(String(args.path)).replace(/%2F/g, '/');
+      url = url.replace('{path}', encodedPath);
+    }
+
+    return await this.executeBearerJsonRequest('🪨 Obsidian', url, method, token, args, ['path']);
+  }
+
+  private async executeBearNotesCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Bear Notes baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{note_id}')) {
+      if (!args?.note_id) return { success: false, error: 'Missing note_id', data: [], rowCount: 0 };
+      url = url.replace('{note_id}', encodeURIComponent(String(args.note_id)));
+    }
+
+    return await this.executeBearerJsonRequest('🐻 Bear Notes', url, method, token, args, ['note_id']);
+  }
+
+  private async executeBearerJsonRequest(
+    label: string,
+    url: string,
+    method: string | undefined,
+    token: string,
+    args: any,
+    skipKeys: string[]
+  ): Promise<any> {
+    const methodUpper = String(method || 'GET').toUpperCase();
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    for (const key of skipKeys) {
+      delete bodyArgs[key];
+    }
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`${label} API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`${label} API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `${label} API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
     const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }

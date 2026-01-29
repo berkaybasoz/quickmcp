@@ -3608,6 +3608,423 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Spotify, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Spotify) {
+        const baseUrl = document.getElementById('spotifyBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('spotifyAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('spotify-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Spotify,
+            name: 'Spotify',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'spotify_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search tracks, artists, albums, playlists'],
+                ['get_track', 'Get track details'],
+                ['get_artist', 'Get artist details'],
+                ['get_album', 'Get album details'],
+                ['get_playlist', 'Get playlist details']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displaySpotifyPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Sonos, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Sonos) {
+        const baseUrl = document.getElementById('sonosBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('sonosAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('sonos-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Sonos,
+            name: 'Sonos',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'sonos_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_households', 'List households'],
+                ['list_groups', 'List groups'],
+                ['play', 'Start playback'],
+                ['pause', 'Pause playback'],
+                ['set_volume', 'Set group volume']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displaySonosPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Shazam, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Shazam) {
+        const baseUrl = document.getElementById('shazamBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('shazamApiKey')?.value?.trim();
+        const apiHost = document.getElementById('shazamApiHost')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('shazam-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Shazam,
+            name: 'Shazam',
+            baseUrl,
+            apiKey,
+            apiHost
+        };
+        currentParsedData = [{
+            tableName: 'shazam_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search tracks'],
+                ['get_track', 'Get track details'],
+                ['get_artist', 'Get artist details'],
+                ['get_charts', 'Get charts']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayShazamPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Philips Hue, show info in preview and go to step 3
+    if (selectedType === DataSourceType.PhilipsHue) {
+        const baseUrl = document.getElementById('philipshueBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('philipshueAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('philipshue-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.PhilipsHue,
+            name: 'Philips Hue',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'philipshue_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_lights', 'List lights'],
+                ['get_light', 'Get light details'],
+                ['set_light_state', 'Set light state'],
+                ['list_groups', 'List groups'],
+                ['set_group_state', 'Set group state']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayPhilipsHuePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For 8Sleep, show info in preview and go to step 3
+    if (selectedType === DataSourceType.EightSleep) {
+        const baseUrl = document.getElementById('eightsleepBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('eightsleepAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('eightsleep-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.EightSleep,
+            name: '8Sleep',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'eightsleep_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get current user'],
+                ['get_sessions', 'Get sleep sessions'],
+                ['get_trends', 'Get sleep trends'],
+                ['set_pod_temperature', 'Set pod temperature']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayEightSleepPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Home Assistant, show info in preview and go to step 3
+    if (selectedType === DataSourceType.HomeAssistant) {
+        const baseUrl = document.getElementById('homeassistantBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('homeassistantAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('homeassistant-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.HomeAssistant,
+            name: 'Home Assistant',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'homeassistant_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_states', 'List entity states'],
+                ['get_services', 'List available services'],
+                ['call_service', 'Call a service'],
+                ['get_config', 'Get configuration']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayHomeAssistantPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Apple Notes, show info in preview and go to step 3
+    if (selectedType === DataSourceType.AppleNotes) {
+        const baseUrl = document.getElementById('applenotesBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('applenotesAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('applenotes-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.AppleNotes,
+            name: 'Apple Notes',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'applenotes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_notes', 'List notes'],
+                ['get_note', 'Get a note'],
+                ['create_note', 'Create a note'],
+                ['update_note', 'Update a note'],
+                ['delete_note', 'Delete a note']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayAppleNotesPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Apple Reminders, show info in preview and go to step 3
+    if (selectedType === DataSourceType.AppleReminders) {
+        const baseUrl = document.getElementById('appleremindersBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('appleremindersAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('applereminders-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.AppleReminders,
+            name: 'Apple Reminders',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'applereminders_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_lists', 'List reminder lists'],
+                ['list_reminders', 'List reminders'],
+                ['create_reminder', 'Create a reminder'],
+                ['complete_reminder', 'Complete a reminder'],
+                ['delete_reminder', 'Delete a reminder']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayAppleRemindersPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Things 3, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Things3) {
+        const baseUrl = document.getElementById('things3BaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('things3AccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('things3-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Things3,
+            name: 'Things 3',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'things3_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects'],
+                ['list_areas', 'List areas'],
+                ['list_todos', 'List todos'],
+                ['create_todo', 'Create a todo'],
+                ['complete_todo', 'Complete a todo']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayThings3Preview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Obsidian, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Obsidian) {
+        const baseUrl = document.getElementById('obsidianBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('obsidianAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('obsidian-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Obsidian,
+            name: 'Obsidian',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'obsidian_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_files', 'List files'],
+                ['get_file', 'Get a file'],
+                ['create_file', 'Create a file'],
+                ['update_file', 'Update a file'],
+                ['search', 'Search files']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayObsidianPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Bear Notes, show info in preview and go to step 3
+    if (selectedType === DataSourceType.BearNotes) {
+        const baseUrl = document.getElementById('bearnotesBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('bearnotesAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('bearnotes-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.BearNotes,
+            name: 'Bear Notes',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'bearnotes_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_notes', 'List notes'],
+                ['get_note', 'Get a note'],
+                ['create_note', 'Create a note'],
+                ['update_note', 'Update a note'],
+                ['archive_note', 'Archive a note']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayBearNotesPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For OpenAI, show info in preview and go to step 3
     if (selectedType === DataSourceType.OpenAI) {
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
@@ -5805,6 +6222,28 @@ async function handleNextToStep3() {
                 displayWhatsAppBusinessPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Threads) {
                 displayThreadsPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Spotify) {
+                displaySpotifyPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Sonos) {
+                displaySonosPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Shazam) {
+                displayShazamPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.PhilipsHue) {
+                displayPhilipsHuePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.EightSleep) {
+                displayEightSleepPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.HomeAssistant) {
+                displayHomeAssistantPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.AppleNotes) {
+                displayAppleNotesPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.AppleReminders) {
+                displayAppleRemindersPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Things3) {
+                displayThings3Preview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Obsidian) {
+                displayObsidianPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.BearNotes) {
+                displayBearNotesPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenAI) {
                 displayOpenAIPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Claude) {
@@ -6138,6 +6577,50 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.Threads) {
         const accessToken = document.getElementById('threadsAccessToken')?.value?.trim();
         canProceed = !!accessToken;
+    } else if (selectedType === DataSourceType.Spotify) {
+        const baseUrl = document.getElementById('spotifyBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('spotifyAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Sonos) {
+        const baseUrl = document.getElementById('sonosBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('sonosAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Shazam) {
+        const baseUrl = document.getElementById('shazamBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('shazamApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.PhilipsHue) {
+        const baseUrl = document.getElementById('philipshueBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('philipshueAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.EightSleep) {
+        const baseUrl = document.getElementById('eightsleepBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('eightsleepAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.HomeAssistant) {
+        const baseUrl = document.getElementById('homeassistantBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('homeassistantAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.AppleNotes) {
+        const baseUrl = document.getElementById('applenotesBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('applenotesAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.AppleReminders) {
+        const baseUrl = document.getElementById('appleremindersBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('appleremindersAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Things3) {
+        const baseUrl = document.getElementById('things3BaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('things3AccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Obsidian) {
+        const baseUrl = document.getElementById('obsidianBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('obsidianAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.BearNotes) {
+        const baseUrl = document.getElementById('bearnotesBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('bearnotesAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
     } else if (selectedType === DataSourceType.OpenAI) {
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
         canProceed = !!apiKey;
@@ -6389,6 +6872,17 @@ function toggleDataSourceFields() {
     const youtubeSection = document.getElementById('youtube-section');
     const whatsappBusinessSection = document.getElementById('whatsappbusiness-section');
     const threadsSection = document.getElementById('threads-section');
+    const spotifySection = document.getElementById('spotify-section');
+    const sonosSection = document.getElementById('sonos-section');
+    const shazamSection = document.getElementById('shazam-section');
+    const philipshueSection = document.getElementById('philipshue-section');
+    const eightsleepSection = document.getElementById('eightsleep-section');
+    const homeassistantSection = document.getElementById('homeassistant-section');
+    const applenotesSection = document.getElementById('applenotes-section');
+    const appleremindersSection = document.getElementById('applereminders-section');
+    const things3Section = document.getElementById('things3-section');
+    const obsidianSection = document.getElementById('obsidian-section');
+    const bearnotesSection = document.getElementById('bearnotes-section');
     const openaiSection = document.getElementById('openai-section');
     const claudeSection = document.getElementById('claude-section');
     const geminiSection = document.getElementById('gemini-section');
@@ -6465,6 +6959,17 @@ function toggleDataSourceFields() {
     youtubeSection?.classList.add('hidden');
     whatsappBusinessSection?.classList.add('hidden');
     threadsSection?.classList.add('hidden');
+    spotifySection?.classList.add('hidden');
+    sonosSection?.classList.add('hidden');
+    shazamSection?.classList.add('hidden');
+    philipshueSection?.classList.add('hidden');
+    eightsleepSection?.classList.add('hidden');
+    homeassistantSection?.classList.add('hidden');
+    applenotesSection?.classList.add('hidden');
+    appleremindersSection?.classList.add('hidden');
+    things3Section?.classList.add('hidden');
+    obsidianSection?.classList.add('hidden');
+    bearnotesSection?.classList.add('hidden');
     openaiSection?.classList.add('hidden');
     claudeSection?.classList.add('hidden');
     geminiSection?.classList.add('hidden');
@@ -6728,6 +7233,138 @@ function toggleDataSourceFields() {
         if (threadsTokenInput && !threadsTokenInput.dataset.listenerAttached) {
             threadsTokenInput.addEventListener('input', updateWizardNavigation);
             threadsTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Spotify) {
+        spotifySection?.classList.remove('hidden');
+        const spotifyBaseUrlInput = document.getElementById('spotifyBaseUrl');
+        const spotifyTokenInput = document.getElementById('spotifyAccessToken');
+        if (spotifyBaseUrlInput && !spotifyBaseUrlInput.dataset.listenerAttached) {
+            spotifyBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            spotifyBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (spotifyTokenInput && !spotifyTokenInput.dataset.listenerAttached) {
+            spotifyTokenInput.addEventListener('input', updateWizardNavigation);
+            spotifyTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Sonos) {
+        sonosSection?.classList.remove('hidden');
+        const sonosBaseUrlInput = document.getElementById('sonosBaseUrl');
+        const sonosTokenInput = document.getElementById('sonosAccessToken');
+        if (sonosBaseUrlInput && !sonosBaseUrlInput.dataset.listenerAttached) {
+            sonosBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            sonosBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (sonosTokenInput && !sonosTokenInput.dataset.listenerAttached) {
+            sonosTokenInput.addEventListener('input', updateWizardNavigation);
+            sonosTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Shazam) {
+        shazamSection?.classList.remove('hidden');
+        const shazamBaseUrlInput = document.getElementById('shazamBaseUrl');
+        const shazamApiKeyInput = document.getElementById('shazamApiKey');
+        if (shazamBaseUrlInput && !shazamBaseUrlInput.dataset.listenerAttached) {
+            shazamBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            shazamBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (shazamApiKeyInput && !shazamApiKeyInput.dataset.listenerAttached) {
+            shazamApiKeyInput.addEventListener('input', updateWizardNavigation);
+            shazamApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.PhilipsHue) {
+        philipshueSection?.classList.remove('hidden');
+        const philipshueBaseUrlInput = document.getElementById('philipshueBaseUrl');
+        const philipshueTokenInput = document.getElementById('philipshueAccessToken');
+        if (philipshueBaseUrlInput && !philipshueBaseUrlInput.dataset.listenerAttached) {
+            philipshueBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            philipshueBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (philipshueTokenInput && !philipshueTokenInput.dataset.listenerAttached) {
+            philipshueTokenInput.addEventListener('input', updateWizardNavigation);
+            philipshueTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.EightSleep) {
+        eightsleepSection?.classList.remove('hidden');
+        const eightsleepBaseUrlInput = document.getElementById('eightsleepBaseUrl');
+        const eightsleepTokenInput = document.getElementById('eightsleepAccessToken');
+        if (eightsleepBaseUrlInput && !eightsleepBaseUrlInput.dataset.listenerAttached) {
+            eightsleepBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            eightsleepBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (eightsleepTokenInput && !eightsleepTokenInput.dataset.listenerAttached) {
+            eightsleepTokenInput.addEventListener('input', updateWizardNavigation);
+            eightsleepTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.HomeAssistant) {
+        homeassistantSection?.classList.remove('hidden');
+        const homeassistantBaseUrlInput = document.getElementById('homeassistantBaseUrl');
+        const homeassistantTokenInput = document.getElementById('homeassistantAccessToken');
+        if (homeassistantBaseUrlInput && !homeassistantBaseUrlInput.dataset.listenerAttached) {
+            homeassistantBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            homeassistantBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (homeassistantTokenInput && !homeassistantTokenInput.dataset.listenerAttached) {
+            homeassistantTokenInput.addEventListener('input', updateWizardNavigation);
+            homeassistantTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.AppleNotes) {
+        applenotesSection?.classList.remove('hidden');
+        const applenotesBaseUrlInput = document.getElementById('applenotesBaseUrl');
+        const applenotesTokenInput = document.getElementById('applenotesAccessToken');
+        if (applenotesBaseUrlInput && !applenotesBaseUrlInput.dataset.listenerAttached) {
+            applenotesBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            applenotesBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (applenotesTokenInput && !applenotesTokenInput.dataset.listenerAttached) {
+            applenotesTokenInput.addEventListener('input', updateWizardNavigation);
+            applenotesTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.AppleReminders) {
+        appleremindersSection?.classList.remove('hidden');
+        const appleremindersBaseUrlInput = document.getElementById('appleremindersBaseUrl');
+        const appleremindersTokenInput = document.getElementById('appleremindersAccessToken');
+        if (appleremindersBaseUrlInput && !appleremindersBaseUrlInput.dataset.listenerAttached) {
+            appleremindersBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            appleremindersBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (appleremindersTokenInput && !appleremindersTokenInput.dataset.listenerAttached) {
+            appleremindersTokenInput.addEventListener('input', updateWizardNavigation);
+            appleremindersTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Things3) {
+        things3Section?.classList.remove('hidden');
+        const things3BaseUrlInput = document.getElementById('things3BaseUrl');
+        const things3TokenInput = document.getElementById('things3AccessToken');
+        if (things3BaseUrlInput && !things3BaseUrlInput.dataset.listenerAttached) {
+            things3BaseUrlInput.addEventListener('input', updateWizardNavigation);
+            things3BaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (things3TokenInput && !things3TokenInput.dataset.listenerAttached) {
+            things3TokenInput.addEventListener('input', updateWizardNavigation);
+            things3TokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Obsidian) {
+        obsidianSection?.classList.remove('hidden');
+        const obsidianBaseUrlInput = document.getElementById('obsidianBaseUrl');
+        const obsidianTokenInput = document.getElementById('obsidianAccessToken');
+        if (obsidianBaseUrlInput && !obsidianBaseUrlInput.dataset.listenerAttached) {
+            obsidianBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            obsidianBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (obsidianTokenInput && !obsidianTokenInput.dataset.listenerAttached) {
+            obsidianTokenInput.addEventListener('input', updateWizardNavigation);
+            obsidianTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.BearNotes) {
+        bearnotesSection?.classList.remove('hidden');
+        const bearnotesBaseUrlInput = document.getElementById('bearnotesBaseUrl');
+        const bearnotesTokenInput = document.getElementById('bearnotesAccessToken');
+        if (bearnotesBaseUrlInput && !bearnotesBaseUrlInput.dataset.listenerAttached) {
+            bearnotesBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            bearnotesBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (bearnotesTokenInput && !bearnotesTokenInput.dataset.listenerAttached) {
+            bearnotesTokenInput.addEventListener('input', updateWizardNavigation);
+            bearnotesTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.OpenAI) {
         openaiSection?.classList.remove('hidden');
@@ -9675,6 +10312,619 @@ function displayThreadsPreview(threadsConfig) {
                                 <div>
                                     <span class="text-slate-500">Default User ID:</span>
                                     <span class="ml-2 font-mono text-slate-700">${userId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySpotifyPreview(spotifyConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = spotifyConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search tracks, artists, albums, playlists' },
+        { name: 'get_track', desc: 'Get track details' },
+        { name: 'get_artist', desc: 'Get artist details' },
+        { name: 'get_album', desc: 'Get album details' },
+        { name: 'get_playlist', desc: 'Get playlist details' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-spotify text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Spotify Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Spotify Web API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySonosPreview(sonosConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = sonosConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_households', desc: 'List households' },
+        { name: 'list_groups', desc: 'List groups' },
+        { name: 'play', desc: 'Start playback' },
+        { name: 'pause', desc: 'Pause playback' },
+        { name: 'set_volume', desc: 'Set group volume' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-volume-up text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Sonos Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Sonos Control API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayShazamPreview(shazamConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = shazamConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search tracks' },
+        { name: 'get_track', desc: 'Get track details' },
+        { name: 'get_artist', desc: 'Get artist details' },
+        { name: 'get_charts', desc: 'Get charts' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-wave-square text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Shazam Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Shazam endpoints.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayPhilipsHuePreview(hueConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = hueConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_lights', desc: 'List lights' },
+        { name: 'get_light', desc: 'Get light details' },
+        { name: 'set_light_state', desc: 'Set light state' },
+        { name: 'list_groups', desc: 'List groups' },
+        { name: 'set_group_state', desc: 'Set group state' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-lightbulb text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Philips Hue Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Philips Hue API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayEightSleepPreview(eightSleepConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = eightSleepConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'get_user', desc: 'Get current user' },
+        { name: 'get_sessions', desc: 'Get sleep sessions' },
+        { name: 'get_trends', desc: 'Get sleep trends' },
+        { name: 'set_pod_temperature', desc: 'Set pod temperature' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-bed text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">8Sleep Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with 8Sleep API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayHomeAssistantPreview(haConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = haConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'get_states', desc: 'List entity states' },
+        { name: 'get_services', desc: 'List available services' },
+        { name: 'call_service', desc: 'Call a service' },
+        { name: 'get_config', desc: 'Get configuration' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-house text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Home Assistant Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Home Assistant API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayAppleNotesPreview(notesConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = notesConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_notes', desc: 'List notes' },
+        { name: 'get_note', desc: 'Get a note' },
+        { name: 'create_note', desc: 'Create a note' },
+        { name: 'update_note', desc: 'Update a note' },
+        { name: 'delete_note', desc: 'Delete a note' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/applenotes.png" alt="Apple Notes" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Apple Notes Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Apple Notes.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayAppleRemindersPreview(remindersConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = remindersConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_lists', desc: 'List reminder lists' },
+        { name: 'list_reminders', desc: 'List reminders' },
+        { name: 'create_reminder', desc: 'Create a reminder' },
+        { name: 'complete_reminder', desc: 'Complete a reminder' },
+        { name: 'delete_reminder', desc: 'Delete a reminder' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/applereminders.png" alt="Apple Reminders" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Apple Reminders Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Apple Reminders.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayThings3Preview(thingsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = thingsConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_projects', desc: 'List projects' },
+        { name: 'list_areas', desc: 'List areas' },
+        { name: 'list_todos', desc: 'List todos' },
+        { name: 'create_todo', desc: 'Create a todo' },
+        { name: 'complete_todo', desc: 'Complete a todo' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/things3.png" alt="Things 3" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Things 3 Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Things 3.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayObsidianPreview(obsidianConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = obsidianConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_files', desc: 'List files' },
+        { name: 'get_file', desc: 'Get a file' },
+        { name: 'create_file', desc: 'Create a file' },
+        { name: 'update_file', desc: 'Update a file' },
+        { name: 'search', desc: 'Search files' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/obsidian.png" alt="Obsidian" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Obsidian Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Obsidian.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayBearNotesPreview(bearConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = bearConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_notes', desc: 'List notes' },
+        { name: 'get_note', desc: 'Get a note' },
+        { name: 'create_note', desc: 'Create a note' },
+        { name: 'update_note', desc: 'Update a note' },
+        { name: 'archive_note', desc: 'Archive a note' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/bearnotes.png" alt="Bear Notes" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Bear Notes Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Bear Notes.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
                                 </div>
                             </div>
                         </div>

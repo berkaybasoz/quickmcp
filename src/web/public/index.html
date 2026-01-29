@@ -502,7 +502,7 @@
                                                 <p class="text-xs text-slate-500">Fetch and parse feed entries.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="github" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-500/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -620,6 +620,66 @@
                                                 </div>
                                                 <h4 class="font-bold text-slate-900 mb-1">Threads</h4>
                                                 <p class="text-xs text-slate-500">Threads posts and insights.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="spotify" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-600 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fab fa-spotify text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Spotify</h4>
+                                                <p class="text-xs text-slate-500">Search, tracks, artists, playlists.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="sonos" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-600 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-600 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-volume-up text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Sonos</h4>
+                                                <p class="text-xs text-slate-500">Groups and playback control.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="shazam" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-600 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-600 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-wave-square text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Shazam</h4>
+                                                <p class="text-xs text-slate-500">Track discovery endpoints.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="philipshue" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-400/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-lightbulb text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Philips Hue</h4>
+                                                <p class="text-xs text-slate-500">Lights, groups, scenes.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="eightsleep" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-purple-500 hover:shadow-md hover:shadow-purple-500/20 peer-checked:border-purple-500 peer-checked:shadow-lg peer-checked:shadow-purple-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-bed text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">8Sleep</h4>
+                                                <p class="text-xs text-slate-500">Sleep data and controls.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="homeassistant" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-600/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-600/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-house text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Home Assistant</h4>
+                                                <p class="text-xs text-slate-500">Entities, services, automations.</p>
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
@@ -792,7 +852,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Dropbox API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="n8n" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -872,7 +932,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Trello API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="gitlab" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -882,7 +942,7 @@
                                                 <p class="text-xs text-slate-500">Connect to GitLab API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
                                             <input type="radio" name="dataSourceType" value="bitbucket" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -980,6 +1040,56 @@
                                                 </div>
                                                 <h4 class="font-bold text-slate-900 mb-1">Linear</h4>
                                                 <p class="text-xs text-slate-500">Connect to Linear GraphQL API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="applenotes" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-400/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/applenotes.png" alt="Apple Notes" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Apple Notes</h4>
+                                                <p class="text-xs text-slate-500">Notes and folders.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="applereminders" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-400/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/applereminders.png" alt="Apple Reminders" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Apple Reminders</h4>
+                                                <p class="text-xs text-slate-500">Lists and reminders.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="things3" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-400/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/things3.png" alt="Things 3" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Things 3</h4>
+                                                <p class="text-xs text-slate-500">Projects and todos.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="obsidian" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-purple-500 hover:shadow-md hover:shadow-purple-400/20 peer-checked:border-purple-500 peer-checked:shadow-lg peer-checked:shadow-purple-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/obsidian.png" alt="Obsidian" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Obsidian</h4>
+                                                <p class="text-xs text-slate-500">Vault notes and search.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="bearnotes" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-yellow-500 hover:shadow-md hover:shadow-yellow-400/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/bearnotes.png" alt="Bear Notes" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Bear Notes</h4>
+                                                <p class="text-xs text-slate-500">Notes and tags.</p>
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
@@ -1947,6 +2057,190 @@
                                             </p>
                                         </div>
                                         <div id="threads-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Spotify Config -->
+                                    <div id="spotify-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">Spotify Web API</p>
+                                                    <p>Use a Spotify OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="spotifyBaseUrl" value="https://api.spotify.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="spotifyAccessToken" placeholder="Spotify access token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: search, get_track, get_artist, get_album, get_playlist
+                                            </p>
+                                        </div>
+                                        <div id="spotify-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Sonos Config -->
+                                    <div id="sonos-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-sky-600 mt-0.5"></i>
+                                                <div class="text-sm text-sky-700">
+                                                    <p class="font-medium text-sky-800 mb-1">Sonos Control API</p>
+                                                    <p>Use a Sonos OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="sonosBaseUrl" value="https://api.ws.sonos.com/control/api/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="sonosAccessToken" placeholder="Sonos access token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_households, list_groups, play, pause, set_volume
+                                            </p>
+                                        </div>
+                                        <div id="sonos-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Shazam Config -->
+                                    <div id="shazam-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">Shazam (RapidAPI)</p>
+                                                    <p>Use RapidAPI credentials for Shazam endpoints.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="shazamBaseUrl" value="https://shazam.p.rapidapi.com" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="shazamApiKey" placeholder="RapidAPI key" class="input" autocomplete="off">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Host (Optional)</label>
+                                                <input type="text" id="shazamApiHost" value="shazam.p.rapidapi.com" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: search, get_track, get_artist, get_charts
+                                            </p>
+                                        </div>
+                                        <div id="shazam-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Philips Hue Config -->
+                                    <div id="philipshue-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                                <div class="text-sm text-amber-700">
+                                                    <p class="font-medium text-amber-800 mb-1">Philips Hue API</p>
+                                                    <p>Use a Hue OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="philipshueBaseUrl" value="https://api.meethue.com/bridge" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="philipshueAccessToken" placeholder="Hue access token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_lights, get_light, set_light_state, list_groups, set_group_state
+                                            </p>
+                                        </div>
+                                        <div id="philipshue-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- 8Sleep Config -->
+                                    <div id="eightsleep-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-purple-600 mt-0.5"></i>
+                                                <div class="text-sm text-purple-700">
+                                                    <p class="font-medium text-purple-800 mb-1">8Sleep API</p>
+                                                    <p>Use an 8Sleep access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="eightsleepBaseUrl" value="https://app.8slp.net/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="eightsleepAccessToken" placeholder="8Sleep access token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: get_user, get_sessions, get_trends, set_pod_temperature
+                                            </p>
+                                        </div>
+                                        <div id="eightsleep-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Home Assistant Config -->
+                                    <div id="homeassistant-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-600 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-800 mb-1">Home Assistant API</p>
+                                                    <p>Use a long-lived access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="homeassistantBaseUrl" value="http://homeassistant.local:8123/api" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="homeassistantAccessToken" placeholder="Home Assistant token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: get_states, get_services, call_service, get_config
+                                            </p>
+                                        </div>
+                                        <div id="homeassistant-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- OpenAI Config -->
@@ -3155,6 +3449,156 @@
                                             </p>
                                         </div>
                                         <div id="linear-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Apple Notes Config -->
+                                    <div id="applenotes-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                                <div class="text-sm text-amber-700">
+                                                    <p class="font-medium text-amber-800 mb-1">Apple Notes API</p>
+                                                    <p>Use your local or self-hosted Apple Notes bridge.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="applenotesBaseUrl" placeholder="http://localhost:3000/api" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="applenotesAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_notes, get_note, create_note, update_note, delete_note
+                                            </p>
+                                        </div>
+                                        <div id="applenotes-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Apple Reminders Config -->
+                                    <div id="applereminders-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                                                <div class="text-sm text-blue-700">
+                                                    <p class="font-medium text-blue-800 mb-1">Apple Reminders API</p>
+                                                    <p>Use your local or self-hosted Reminders bridge.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="appleremindersBaseUrl" placeholder="http://localhost:3000/api" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="appleremindersAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_lists, list_reminders, create_reminder, complete_reminder, delete_reminder
+                                            </p>
+                                        </div>
+                                        <div id="applereminders-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Things 3 Config -->
+                                    <div id="things3-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-red-600 mt-0.5"></i>
+                                                <div class="text-sm text-red-700">
+                                                    <p class="font-medium text-red-800 mb-1">Things 3 API</p>
+                                                    <p>Use your local or self-hosted Things bridge.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="things3BaseUrl" placeholder="http://localhost:3000/api" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="things3AccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_projects, list_areas, list_todos, create_todo, complete_todo
+                                            </p>
+                                        </div>
+                                        <div id="things3-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Obsidian Config -->
+                                    <div id="obsidian-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-purple-600 mt-0.5"></i>
+                                                <div class="text-sm text-purple-700">
+                                                    <p class="font-medium text-purple-800 mb-1">Obsidian REST API</p>
+                                                    <p>Use an Obsidian local REST API plugin token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="obsidianBaseUrl" value="http://localhost:27123" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="obsidianAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_files, get_file, create_file, update_file, search
+                                            </p>
+                                        </div>
+                                        <div id="obsidian-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Bear Notes Config -->
+                                    <div id="bearnotes-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
+                                                <div class="text-sm text-yellow-700">
+                                                    <p class="font-medium text-yellow-800 mb-1">Bear Notes API</p>
+                                                    <p>Use your local or self-hosted Bear bridge.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="bearnotesBaseUrl" placeholder="http://localhost:3000/api" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="bearnotesAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_notes, get_note, create_note, update_note, archive_note
+                                            </p>
+                                        </div>
+                                        <div id="bearnotes-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jenkins Config -->

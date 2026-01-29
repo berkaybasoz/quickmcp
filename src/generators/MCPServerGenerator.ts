@@ -93,6 +93,28 @@ export class MCPServerGenerator {
         tools = this.generateToolsForWhatsAppBusiness(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Threads) {
         tools = this.generateToolsForThreads(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Spotify) {
+        tools = this.generateToolsForSpotify(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Sonos) {
+        tools = this.generateToolsForSonos(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Shazam) {
+        tools = this.generateToolsForShazam(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.PhilipsHue) {
+        tools = this.generateToolsForPhilipsHue(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.EightSleep) {
+        tools = this.generateToolsForEightSleep(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.HomeAssistant) {
+        tools = this.generateToolsForHomeAssistant(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.AppleNotes) {
+        tools = this.generateToolsForAppleNotes(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.AppleReminders) {
+        tools = this.generateToolsForAppleReminders(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Things3) {
+        tools = this.generateToolsForThings3(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Obsidian) {
+        tools = this.generateToolsForObsidian(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.BearNotes) {
+        tools = this.generateToolsForBearNotes(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.OpenAI) {
         tools = this.generateToolsForOpenAI(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Claude) {
@@ -2133,6 +2155,794 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{thread_id}/insights', method: 'GET' }),
       operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForSpotify(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Spotify, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search tracks, artists, albums, or playlists',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query' },
+          type: { type: 'string', description: 'Comma-separated types (track,artist,album,playlist)' },
+          limit: { type: 'number', description: 'Limit (optional)' },
+          offset: { type: 'number', description: 'Offset (optional)' },
+          market: { type: 'string', description: 'Market code (optional)' }
+        },
+        required: ['q', 'type']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_track',
+      description: 'Get track details',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string', description: 'Track ID' } },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/tracks/{id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_artist',
+      description: 'Get artist details',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string', description: 'Artist ID' } },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/artists/{id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_album',
+      description: 'Get album details',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string', description: 'Album ID' } },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/albums/{id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_playlist',
+      description: 'Get playlist details',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string', description: 'Playlist ID' } },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/playlists/{id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForSonos(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Sonos, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_households',
+      description: 'List households',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/households', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_groups',
+      description: 'List groups in a household',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          household_id: { type: 'string', description: 'Household ID' }
+        },
+        required: ['household_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/households/{household_id}/groups', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'play',
+      description: 'Start playback for a group',
+      inputSchema: {
+        type: 'object',
+        properties: { group_id: { type: 'string', description: 'Group ID' } },
+        required: ['group_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups/{group_id}/playback/play', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'pause',
+      description: 'Pause playback for a group',
+      inputSchema: {
+        type: 'object',
+        properties: { group_id: { type: 'string', description: 'Group ID' } },
+        required: ['group_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups/{group_id}/playback/pause', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set_volume',
+      description: 'Set group volume',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          group_id: { type: 'string', description: 'Group ID' },
+          volume: { type: 'number', description: 'Volume (0-100)' }
+        },
+        required: ['group_id', 'volume']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups/{group_id}/groupVolume', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForShazam(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiHost } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Shazam, baseUrl, apiKey, apiHost };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search tracks',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          term: { type: 'string', description: 'Search term' },
+          locale: { type: 'string', description: 'Locale (optional)' },
+          offset: { type: 'number', description: 'Offset (optional)' },
+          limit: { type: 'number', description: 'Limit (optional)' }
+        },
+        required: ['term']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_track',
+      description: 'Get track details',
+      inputSchema: {
+        type: 'object',
+        properties: { track_id: { type: 'string', description: 'Track ID' } },
+        required: ['track_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/songs/get-details', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_artist',
+      description: 'Get artist details',
+      inputSchema: {
+        type: 'object',
+        properties: { artist_id: { type: 'string', description: 'Artist ID' } },
+        required: ['artist_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/artists/get-details', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_charts',
+      description: 'Get charts',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          locale: { type: 'string', description: 'Locale (optional)' },
+          listId: { type: 'string', description: 'List ID (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/charts/list', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForPhilipsHue(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.PhilipsHue, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_lights',
+      description: 'List lights',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/lights', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_light',
+      description: 'Get light details',
+      inputSchema: {
+        type: 'object',
+        properties: { light_id: { type: 'string', description: 'Light ID' } },
+        required: ['light_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/lights/{light_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set_light_state',
+      description: 'Set light state',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          light_id: { type: 'string', description: 'Light ID' },
+          on: { type: 'boolean', description: 'Power state (optional)' },
+          bri: { type: 'number', description: 'Brightness (optional)' },
+          hue: { type: 'number', description: 'Hue (optional)' },
+          sat: { type: 'number', description: 'Saturation (optional)' }
+        },
+        required: ['light_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/lights/{light_id}/state', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_groups',
+      description: 'List groups',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set_group_state',
+      description: 'Set group state',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          group_id: { type: 'string', description: 'Group ID' },
+          on: { type: 'boolean', description: 'Power state (optional)' },
+          bri: { type: 'number', description: 'Brightness (optional)' }
+        },
+        required: ['group_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups/{group_id}/action', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForEightSleep(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.EightSleep, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get current user',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/me', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_sessions',
+      description: 'Get sleep sessions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          start: { type: 'string', description: 'Start date (optional)' },
+          end: { type: 'string', description: 'End date (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/me/sessions', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_trends',
+      description: 'Get sleep trends',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          days: { type: 'number', description: 'Number of days (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/me/trends', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set_pod_temperature',
+      description: 'Set pod temperature',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pod_id: { type: 'string', description: 'Pod ID' },
+          temperature: { type: 'number', description: 'Target temperature' }
+        },
+        required: ['pod_id', 'temperature']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/pods/{pod_id}/temperature', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForHomeAssistant(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.HomeAssistant, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_states',
+      description: 'List entity states',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/states', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_services',
+      description: 'List available services',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/services', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'call_service',
+      description: 'Call a service',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          domain: { type: 'string', description: 'Service domain' },
+          service: { type: 'string', description: 'Service name' },
+          data: { type: 'object', description: 'Service data (optional)' }
+        },
+        required: ['domain', 'service']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/services/{domain}/{service}', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_config',
+      description: 'Get configuration',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/config', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForAppleNotes(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.AppleNotes, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_notes',
+      description: 'List notes',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_note',
+      description: 'Get a note',
+      inputSchema: {
+        type: 'object',
+        properties: { note_id: { type: 'string', description: 'Note ID' } },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_note',
+      description: 'Create a note',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Title (optional)' },
+          body: { type: 'string', description: 'Body' },
+          folder: { type: 'string', description: 'Folder (optional)' }
+        },
+        required: ['body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_note',
+      description: 'Update a note',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          note_id: { type: 'string', description: 'Note ID' },
+          title: { type: 'string', description: 'Title (optional)' },
+          body: { type: 'string', description: 'Body (optional)' },
+          folder: { type: 'string', description: 'Folder (optional)' }
+        },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_note',
+      description: 'Delete a note',
+      inputSchema: {
+        type: 'object',
+        properties: { note_id: { type: 'string', description: 'Note ID' } },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}', method: 'DELETE' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForAppleReminders(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.AppleReminders, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_lists',
+      description: 'List reminder lists',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/lists', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_reminders',
+      description: 'List reminders',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          list_id: { type: 'string', description: 'List ID (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/reminders', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_reminder',
+      description: 'Create a reminder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Title' },
+          notes: { type: 'string', description: 'Notes (optional)' },
+          list_id: { type: 'string', description: 'List ID (optional)' },
+          due_date: { type: 'string', description: 'Due date (optional)' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/reminders', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'complete_reminder',
+      description: 'Complete a reminder',
+      inputSchema: {
+        type: 'object',
+        properties: { reminder_id: { type: 'string', description: 'Reminder ID' } },
+        required: ['reminder_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/reminders/{reminder_id}/complete', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_reminder',
+      description: 'Delete a reminder',
+      inputSchema: {
+        type: 'object',
+        properties: { reminder_id: { type: 'string', description: 'Reminder ID' } },
+        required: ['reminder_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/reminders/{reminder_id}', method: 'DELETE' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForThings3(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Things3, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_projects',
+      description: 'List projects',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_areas',
+      description: 'List areas',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/areas', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_todos',
+      description: 'List todos',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID (optional)' },
+          area_id: { type: 'string', description: 'Area ID (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/todos', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_todo',
+      description: 'Create a todo',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Title' },
+          notes: { type: 'string', description: 'Notes (optional)' },
+          project_id: { type: 'string', description: 'Project ID (optional)' },
+          area_id: { type: 'string', description: 'Area ID (optional)' },
+          due_date: { type: 'string', description: 'Due date (optional)' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/todos', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'complete_todo',
+      description: 'Complete a todo',
+      inputSchema: {
+        type: 'object',
+        properties: { todo_id: { type: 'string', description: 'Todo ID' } },
+        required: ['todo_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/todos/{todo_id}/complete', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForObsidian(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Obsidian, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_files',
+      description: 'List files',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_file',
+      description: 'Get a file',
+      inputSchema: {
+        type: 'object',
+        properties: { path: { type: 'string', description: 'File path' } },
+        required: ['path']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/{path}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_file',
+      description: 'Create a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path' },
+          content: { type: 'string', description: 'File content' }
+        },
+        required: ['path', 'content']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/{path}', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_file',
+      description: 'Update a file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path' },
+          content: { type: 'string', description: 'File content' }
+        },
+        required: ['path', 'content']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/{path}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search files',
+      inputSchema: {
+        type: 'object',
+        properties: { q: { type: 'string', description: 'Search query' } },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForBearNotes(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.BearNotes, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_notes',
+      description: 'List notes',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_note',
+      description: 'Get a note',
+      inputSchema: {
+        type: 'object',
+        properties: { note_id: { type: 'string', description: 'Note ID' } },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_note',
+      description: 'Create a note',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Title (optional)' },
+          body: { type: 'string', description: 'Body' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Tags (optional)' }
+        },
+        required: ['body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_note',
+      description: 'Update a note',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          note_id: { type: 'string', description: 'Note ID' },
+          title: { type: 'string', description: 'Title (optional)' },
+          body: { type: 'string', description: 'Body (optional)' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Tags (optional)' }
+        },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'archive_note',
+      description: 'Archive a note',
+      inputSchema: {
+        type: 'object',
+        properties: { note_id: { type: 'string', description: 'Note ID' } },
+        required: ['note_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}/archive', method: 'POST' }),
+      operation: 'UPDATE'
     });
 
     return tools;
