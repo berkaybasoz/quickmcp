@@ -37,6 +37,11 @@ export enum DataSourceType {
   TikTok = 'tiktok',
   Notion = 'notion',
   Telegram = 'telegram',
+  LinkedIn = 'linkedin',
+  Reddit = 'reddit',
+  YouTube = 'youtube',
+  WhatsAppBusiness = 'whatsappbusiness',
+  Threads = 'threads',
   OpenAI = 'openai',
   Claude = 'claude',
   Gemini = 'gemini',
@@ -90,6 +95,11 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.TikTok,
     DataSourceType.Notion,
     DataSourceType.Telegram,
+    DataSourceType.LinkedIn,
+    DataSourceType.Reddit,
+    DataSourceType.YouTube,
+    DataSourceType.WhatsAppBusiness,
+    DataSourceType.Threads,
     DataSourceType.OpenAI,
     DataSourceType.Claude,
     DataSourceType.Gemini,
@@ -277,6 +287,46 @@ export interface TelegramConnection {
   botToken: string;
   defaultChatId?: string;
   type: 'telegram';
+}
+
+export interface LinkedInConnection {
+  baseUrl: string;
+  accessToken: string;
+  personId?: string;
+  organizationId?: string;
+  type: 'linkedin';
+}
+
+export interface RedditConnection {
+  baseUrl: string;
+  accessToken: string;
+  userAgent?: string;
+  subreddit?: string;
+  username?: string;
+  type: 'reddit';
+}
+
+export interface YouTubeConnection {
+  baseUrl: string;
+  apiKey: string;
+  accessToken?: string;
+  channelId?: string;
+  type: 'youtube';
+}
+
+export interface WhatsAppBusinessConnection {
+  baseUrl: string;
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId?: string;
+  type: 'whatsappbusiness';
+}
+
+export interface ThreadsConnection {
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+  type: 'threads';
 }
 
 export interface OpenAIConnection {
@@ -604,6 +654,46 @@ export interface TelegramGeneratorConfig extends BaseGeneratorConfig {
   defaultChatId?: string;
 }
 
+export interface LinkedInGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.LinkedIn;
+  baseUrl: string;
+  accessToken: string;
+  personId?: string;
+  organizationId?: string;
+}
+
+export interface RedditGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Reddit;
+  baseUrl: string;
+  accessToken: string;
+  userAgent?: string;
+  subreddit?: string;
+  username?: string;
+}
+
+export interface YouTubeGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.YouTube;
+  baseUrl: string;
+  apiKey: string;
+  accessToken?: string;
+  channelId?: string;
+}
+
+export interface WhatsAppBusinessGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.WhatsAppBusiness;
+  baseUrl: string;
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId?: string;
+}
+
+export interface ThreadsGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Threads;
+  baseUrl: string;
+  accessToken: string;
+  userId?: string;
+}
+
 export interface OpenAIGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.OpenAI;
   baseUrl: string;
@@ -875,6 +965,11 @@ export type GeneratorConfig =
   | TikTokGeneratorConfig
   | NotionGeneratorConfig
   | TelegramGeneratorConfig
+  | LinkedInGeneratorConfig
+  | RedditGeneratorConfig
+  | YouTubeGeneratorConfig
+  | WhatsAppBusinessGeneratorConfig
+  | ThreadsGeneratorConfig
   | OpenAIGeneratorConfig
   | ClaudeGeneratorConfig
   | GeminiGeneratorConfig
@@ -920,6 +1015,11 @@ export type GeneratorConfig =
   | TikTokConnection
   | NotionConnection
   | TelegramConnection
+  | LinkedInConnection
+  | RedditConnection
+  | YouTubeConnection
+  | WhatsAppBusinessConnection
+  | ThreadsConnection
   | OpenAIConnection
   | ClaudeConnection
   | GeminiConnection
@@ -1110,6 +1210,81 @@ export function createTelegramGeneratorConfig(
     baseUrl,
     botToken,
     defaultChatId
+  };
+}
+
+export function createLinkedInGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  personId?: string,
+  organizationId?: string
+): LinkedInGeneratorConfig {
+  return {
+    type: DataSourceType.LinkedIn,
+    baseUrl,
+    accessToken,
+    personId,
+    organizationId
+  };
+}
+
+export function createRedditGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  userAgent?: string,
+  subreddit?: string,
+  username?: string
+): RedditGeneratorConfig {
+  return {
+    type: DataSourceType.Reddit,
+    baseUrl,
+    accessToken,
+    userAgent,
+    subreddit,
+    username
+  };
+}
+
+export function createYouTubeGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  channelId?: string,
+  accessToken?: string
+): YouTubeGeneratorConfig {
+  return {
+    type: DataSourceType.YouTube,
+    baseUrl,
+    apiKey,
+    accessToken,
+    channelId
+  };
+}
+
+export function createWhatsAppBusinessGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  phoneNumberId: string,
+  businessAccountId?: string
+): WhatsAppBusinessGeneratorConfig {
+  return {
+    type: DataSourceType.WhatsAppBusiness,
+    baseUrl,
+    accessToken,
+    phoneNumberId,
+    businessAccountId
+  };
+}
+
+export function createThreadsGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  userId?: string
+): ThreadsGeneratorConfig {
+  return {
+    type: DataSourceType.Threads,
+    baseUrl,
+    accessToken,
+    userId
   };
 }
 

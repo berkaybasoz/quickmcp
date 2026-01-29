@@ -77,6 +77,16 @@ export class MCPServerGenerator {
         tools = this.generateToolsForNotion(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Telegram) {
         tools = this.generateToolsForTelegram(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.LinkedIn) {
+        tools = this.generateToolsForLinkedIn(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Reddit) {
+        tools = this.generateToolsForReddit(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.YouTube) {
+        tools = this.generateToolsForYouTube(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.WhatsAppBusiness) {
+        tools = this.generateToolsForWhatsAppBusiness(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Threads) {
+        tools = this.generateToolsForThreads(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.OpenAI) {
         tools = this.generateToolsForOpenAI(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Claude) {
@@ -1311,6 +1321,678 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/sendMessage', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForLinkedIn(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, personId, organizationId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.LinkedIn, baseUrl, accessToken, personId, organizationId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_profile',
+      description: 'Get profile by person ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          person_id: { type: 'string', description: 'Person ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/people/(id:{person_id})', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_organization',
+      description: 'Get organization by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          organization_id: { type: 'string', description: 'Organization ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/organizations/{organization_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_connections',
+      description: 'List connections (requires permissions)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          start: { type: 'number', description: 'Start offset (optional)' },
+          count: { type: 'number', description: 'Count (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/connections', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_posts',
+      description: 'List posts for a member or organization',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          author: { type: 'string', description: 'Author URN (optional)' },
+          q: { type: 'string', description: 'Query type (optional)' },
+          start: { type: 'number', description: 'Start offset (optional)' },
+          count: { type: 'number', description: 'Count (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/ugcPosts', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_post',
+      description: 'Create a post',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          author: { type: 'string', description: 'Author URN' },
+          text: { type: 'string', description: 'Post text' },
+          visibility: { type: 'string', description: 'Visibility (optional)' },
+          lifecycleState: { type: 'string', description: 'Lifecycle state (optional)' }
+        },
+        required: ['author', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/ugcPosts', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_post',
+      description: 'Get a post by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          post_id: { type: 'string', description: 'Post ID' }
+        },
+        required: ['post_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/ugcPosts/{post_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_people',
+      description: 'Search people',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          keywords: { type: 'string', description: 'Search keywords' },
+          start: { type: 'number', description: 'Start offset (optional)' },
+          count: { type: 'number', description: 'Count (optional)' }
+        },
+        required: ['keywords']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/people', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_companies',
+      description: 'Search companies',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          keywords: { type: 'string', description: 'Search keywords' },
+          start: { type: 'number', description: 'Start offset (optional)' },
+          count: { type: 'number', description: 'Count (optional)' }
+        },
+        required: ['keywords']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/organizations', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForReddit(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userAgent, subreddit, username } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Reddit, baseUrl, accessToken, userAgent, subreddit, username };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get user profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'Username (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/user/{username}/about', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_subreddit',
+      description: 'Get subreddit details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          subreddit: { type: 'string', description: 'Subreddit name (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/r/{subreddit}/about', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_hot',
+      description: 'List hot posts in a subreddit',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          subreddit: { type: 'string', description: 'Subreddit name (optional, default from config)' },
+          limit: { type: 'number', description: 'Max items (optional)' },
+          after: { type: 'string', description: 'Pagination after (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/r/{subreddit}/hot', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_new',
+      description: 'List new posts in a subreddit',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          subreddit: { type: 'string', description: 'Subreddit name (optional, default from config)' },
+          limit: { type: 'number', description: 'Max items (optional)' },
+          after: { type: 'string', description: 'Pagination after (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/r/{subreddit}/new', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_posts',
+      description: 'Search posts in a subreddit',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          subreddit: { type: 'string', description: 'Subreddit name (optional, default from config)' },
+          q: { type: 'string', description: 'Search query' },
+          sort: { type: 'string', description: 'Sort order (optional)' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/r/{subreddit}/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_post',
+      description: 'Get a post by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          post_id: { type: 'string', description: 'Post ID (e.g., t3_xxxxx)' }
+        },
+        required: ['post_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/comments/{post_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_post',
+      description: 'Create a post',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          subreddit: { type: 'string', description: 'Subreddit name (optional, default from config)' },
+          title: { type: 'string', description: 'Post title' },
+          kind: { type: 'string', description: 'Post kind (link or self)', default: 'self' },
+          text: { type: 'string', description: 'Post body (optional)' },
+          url: { type: 'string', description: 'Post URL (optional)' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/submit', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'add_comment',
+      description: 'Add a comment to a post',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          parent_id: { type: 'string', description: 'Parent fullname (e.g., t3_xxxxx or t1_xxxxx)' },
+          text: { type: 'string', description: 'Comment text' }
+        },
+        required: ['parent_id', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/api/comment', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForYouTube(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, accessToken, channelId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.YouTube, baseUrl, apiKey, accessToken, channelId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search videos, channels, or playlists',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet' },
+          type: { type: 'string', description: 'Result type (video, channel, playlist, optional)' },
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_channel',
+      description: 'Get channel details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel_id: { type: 'string', description: 'Channel ID (optional, default from config)' },
+          forUsername: { type: 'string', description: 'Channel username (optional)' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet,contentDetails,statistics' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/channels', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_channel_videos',
+      description: 'List recent channel videos',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel_id: { type: 'string', description: 'Channel ID (optional, default from config)' },
+          order: { type: 'string', description: 'Order (date, rating, viewCount, optional)' },
+          maxResults: { type: 'number', description: 'Max results (optional)' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search?type=video', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_playlists',
+      description: 'List channel playlists',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel_id: { type: 'string', description: 'Channel ID (optional, default from config)' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet,contentDetails' },
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/playlists', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_playlist_items',
+      description: 'List playlist items',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          playlistId: { type: 'string', description: 'Playlist ID' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet,contentDetails' },
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: ['playlistId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/playlistItems', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_video',
+      description: 'Get video details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Video ID' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet,contentDetails,statistics' }
+        },
+        required: ['id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/videos', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_comments',
+      description: 'List comments for a video',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          videoId: { type: 'string', description: 'Video ID' },
+          part: { type: 'string', description: 'Comma-separated parts', default: 'snippet' },
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: ['videoId']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/commentThreads', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'post_comment',
+      description: 'Post a comment on a video',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          videoId: { type: 'string', description: 'Video ID' },
+          text: { type: 'string', description: 'Comment text' }
+        },
+        required: ['videoId', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/commentThreads?part=snippet', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'rate_video',
+      description: 'Rate a video',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Video ID' },
+          rating: { type: 'string', description: 'Rating (like, dislike, none)' }
+        },
+        required: ['id', 'rating']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/videos/rate', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForWhatsAppBusiness(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, phoneNumberId, businessAccountId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.WhatsAppBusiness, baseUrl, accessToken, phoneNumberId, businessAccountId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_text_message',
+      description: 'Send a text message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          to: { type: 'string', description: 'Recipient phone number (E.164)' },
+          text: { type: 'string', description: 'Message text' },
+          preview_url: { type: 'boolean', description: 'Preview URLs (optional)' }
+        },
+        required: ['to', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{phone_number_id}/messages', method: 'POST', messageType: 'text' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_template_message',
+      description: 'Send a template message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          to: { type: 'string', description: 'Recipient phone number (E.164)' },
+          template_name: { type: 'string', description: 'Template name' },
+          language: { type: 'string', description: 'Language code (e.g., en_US)' },
+          components: { type: 'array', items: { type: 'object' }, description: 'Template components (optional)' }
+        },
+        required: ['to', 'template_name', 'language']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{phone_number_id}/messages', method: 'POST', messageType: 'template' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_media_message',
+      description: 'Send a media message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          to: { type: 'string', description: 'Recipient phone number (E.164)' },
+          media_type: { type: 'string', description: 'Media type (image, video, audio, document)' },
+          link: { type: 'string', description: 'Media URL' },
+          caption: { type: 'string', description: 'Caption (optional)' },
+          filename: { type: 'string', description: 'Filename (optional)' }
+        },
+        required: ['to', 'media_type', 'link']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{phone_number_id}/messages', method: 'POST', messageType: 'media' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_message_templates',
+      description: 'List message templates',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          business_account_id: { type: 'string', description: 'Business Account ID (optional, default from config)' },
+          limit: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{business_account_id}/message_templates', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_phone_numbers',
+      description: 'List phone numbers',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          business_account_id: { type: 'string', description: 'Business Account ID (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{business_account_id}/phone_numbers', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_business_profile',
+      description: 'Get business profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          phone_number_id: { type: 'string', description: 'Phone Number ID (optional, default from config)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{phone_number_id}/whatsapp_business_profile', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set_business_profile',
+      description: 'Update business profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          phone_number_id: { type: 'string', description: 'Phone Number ID (optional, default from config)' },
+          about: { type: 'string', description: 'About text (optional)' },
+          description: { type: 'string', description: 'Description (optional)' },
+          email: { type: 'string', description: 'Email (optional)' },
+          website: { type: 'array', items: { type: 'string' }, description: 'Website URLs (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{phone_number_id}/whatsapp_business_profile', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForThreads(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Threads, baseUrl, accessToken, userId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_user',
+      description: 'Get Threads user profile',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_threads',
+      description: 'List user threads',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          limit: { type: 'number', description: 'Max items (optional)' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}/threads', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_thread',
+      description: 'Get a thread by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread ID' },
+          fields: { type: 'string', description: 'Comma-separated fields (optional)' }
+        },
+        required: ['thread_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{thread_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_thread',
+      description: 'Create a thread',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (optional, default from config)' },
+          text: { type: 'string', description: 'Thread text' },
+          media_url: { type: 'string', description: 'Media URL (optional)' }
+        },
+        required: ['text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{user_id}/threads', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_thread',
+      description: 'Delete a thread',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread ID' }
+        },
+        required: ['thread_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{thread_id}', method: 'DELETE' }),
+      operation: 'DELETE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_thread_insights',
+      description: 'Get thread insights',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread ID' },
+          metric: { type: 'string', description: 'Comma-separated metrics (optional)' }
+        },
+        required: ['thread_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{thread_id}/insights', method: 'GET' }),
+      operation: 'SELECT'
     });
 
     return tools;

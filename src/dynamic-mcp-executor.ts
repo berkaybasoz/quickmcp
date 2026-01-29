@@ -92,6 +92,26 @@ export class DynamicMCPExecutor {
         return await this.executeTelegramCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.LinkedIn) {
+        return await this.executeLinkedInCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Reddit) {
+        return await this.executeRedditCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.YouTube) {
+        return await this.executeYouTubeCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.WhatsAppBusiness) {
+        return await this.executeWhatsAppBusinessCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Threads) {
+        return await this.executeThreadsCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.OpenAI) {
         return await this.executeOpenAICompatibleCall(queryConfig, args);
       }
@@ -1834,6 +1854,444 @@ export class DynamicMCPExecutor {
 
     const resultPayload = responseData?.result ?? responseData;
     const dataArray = Array.isArray(resultPayload) ? resultPayload : (resultPayload ? [resultPayload] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeLinkedInCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, personId: defaultPersonId, organizationId: defaultOrgId } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing LinkedIn baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const personId = args.person_id || defaultPersonId;
+    const organizationId = args.organization_id || defaultOrgId;
+
+    if (url.includes('{person_id}')) {
+      if (!personId) return { success: false, error: 'Missing person_id', data: [], rowCount: 0 };
+      url = url.replace('{person_id}', encodeURIComponent(String(personId)));
+    }
+    if (url.includes('{organization_id}')) {
+      if (!organizationId) return { success: false, error: 'Missing organization_id', data: [], rowCount: 0 };
+      url = url.replace('{organization_id}', encodeURIComponent(String(organizationId)));
+    }
+    if (url.includes('{post_id}')) {
+      if (!args.post_id) return { success: false, error: 'Missing post_id', data: [], rowCount: 0 };
+      url = url.replace('{post_id}', encodeURIComponent(String(args.post_id)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.person_id;
+    delete bodyArgs.organization_id;
+    delete bodyArgs.post_id;
+
+    let response: Response;
+    if (methodUpper === 'GET') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ LinkedIn API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ LinkedIn API error:', responseData);
+      return {
+        success: false,
+        error: `LinkedIn API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.message || responseData?.error || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeRedditCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, userAgent, subreddit: defaultSubreddit, username: defaultUsername } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Reddit baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const subreddit = args.subreddit || defaultSubreddit;
+    const username = args.username || defaultUsername;
+
+    if (url.includes('{subreddit}')) {
+      if (!subreddit) return { success: false, error: 'Missing subreddit', data: [], rowCount: 0 };
+      url = url.replace('{subreddit}', encodeURIComponent(String(subreddit)));
+    }
+    if (url.includes('{username}')) {
+      if (!username) return { success: false, error: 'Missing username', data: [], rowCount: 0 };
+      url = url.replace('{username}', encodeURIComponent(String(username)));
+    }
+    if (url.includes('{post_id}')) {
+      if (!args.post_id) return { success: false, error: 'Missing post_id', data: [], rowCount: 0 };
+      url = url.replace('{post_id}', encodeURIComponent(String(args.post_id)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': userAgent || 'quickmcp/1.0'
+    };
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.subreddit;
+    delete bodyArgs.username;
+    delete bodyArgs.post_id;
+
+    let response: Response;
+    if (methodUpper === 'GET') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      const formBody = new URLSearchParams();
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        formBody.append(String(key), String(value));
+      }
+      headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      console.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: formBody.toString()
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ Reddit API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Reddit API error:', responseData);
+      return {
+        success: false,
+        error: `Reddit API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.message || responseData?.error || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeYouTubeCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, accessToken, endpoint, method, channelId: defaultChannelId } = queryConfig;
+    const key = String(apiKey || '').trim();
+    if (!baseUrl || !key || !endpoint) {
+      return { success: false, error: 'Missing YouTube baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const token = String(accessToken || '').trim();
+
+    if (methodUpper !== 'GET' && !token) {
+      return { success: false, error: 'Missing YouTube OAuth access token for write operation', data: [], rowCount: 0 };
+    }
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const [path, existingQuery] = url.split('?');
+    url = path;
+
+    const queryParams: string[] = [];
+    if (existingQuery) {
+      queryParams.push(existingQuery);
+    }
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    if (!bodyArgs.channelId && defaultChannelId) {
+      bodyArgs.channelId = defaultChannelId;
+    }
+
+    // Always include API key for YouTube
+    queryParams.push(`key=${encodeURIComponent(key)}`);
+
+    if (methodUpper === 'GET' || endpoint.startsWith('/videos/rate')) {
+      for (const [keyName, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(keyName)}=${encodeURIComponent(String(value))}`);
+      }
+    }
+
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+
+    let response: Response;
+    if (methodUpper === 'GET' || endpoint.startsWith('/videos/rate')) {
+      console.error(`📺 YouTube API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+
+      let bodyPayload: Record<string, any> = bodyArgs;
+      if (endpoint.startsWith('/commentThreads')) {
+        const videoId = bodyArgs.videoId;
+        const text = bodyArgs.text;
+        if (!videoId || !text) {
+          return { success: false, error: 'Missing videoId or text', data: [], rowCount: 0 };
+        }
+        bodyPayload = {
+          snippet: {
+            videoId,
+            topLevelComment: {
+              snippet: { textOriginal: text }
+            }
+          }
+        };
+      }
+
+      console.error(`📺 YouTube API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyPayload)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ YouTube API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ YouTube API error:', responseData);
+      return {
+        success: false,
+        error: `YouTube API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeWhatsAppBusinessCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, phoneNumberId: defaultPhoneId, businessAccountId: defaultBusinessId, messageType } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing WhatsApp baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const phoneNumberId = args.phone_number_id || defaultPhoneId;
+    const businessAccountId = args.business_account_id || defaultBusinessId;
+
+    if (url.includes('{phone_number_id}')) {
+      if (!phoneNumberId) return { success: false, error: 'Missing phone_number_id', data: [], rowCount: 0 };
+      url = url.replace('{phone_number_id}', encodeURIComponent(String(phoneNumberId)));
+    }
+    if (url.includes('{business_account_id}')) {
+      if (!businessAccountId) return { success: false, error: 'Missing business_account_id', data: [], rowCount: 0 };
+      url = url.replace('{business_account_id}', encodeURIComponent(String(businessAccountId)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.phone_number_id;
+    delete bodyArgs.business_account_id;
+
+    let response: Response;
+    if (methodUpper === 'GET') {
+      const queryParams: string[] = [];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+
+      let payload = bodyArgs;
+      if (messageType === 'text') {
+        payload = {
+          messaging_product: 'whatsapp',
+          to: bodyArgs.to,
+          type: 'text',
+          text: {
+            body: bodyArgs.text,
+            preview_url: bodyArgs.preview_url
+          }
+        };
+      } else if (messageType === 'template') {
+        payload = {
+          messaging_product: 'whatsapp',
+          to: bodyArgs.to,
+          type: 'template',
+          template: {
+            name: bodyArgs.template_name,
+            language: { code: bodyArgs.language },
+            components: bodyArgs.components || []
+          }
+        };
+      } else if (messageType === 'media') {
+        const mediaType = bodyArgs.media_type;
+        if (!mediaType) {
+          return { success: false, error: 'Missing media_type', data: [], rowCount: 0 };
+        }
+        payload = {
+          messaging_product: 'whatsapp',
+          to: bodyArgs.to,
+          type: mediaType,
+          [mediaType]: {
+            link: bodyArgs.link,
+            caption: bodyArgs.caption,
+            filename: bodyArgs.filename
+          }
+        };
+      }
+
+      console.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(payload)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ WhatsApp API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ WhatsApp API error:', responseData);
+      return {
+        success: false,
+        error: `WhatsApp API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeThreadsCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, userId: defaultUserId } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Threads baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const userId = args.user_id || defaultUserId;
+
+    if (url.includes('{user_id}')) {
+      if (!userId) return { success: false, error: 'Missing user_id', data: [], rowCount: 0 };
+      url = url.replace('{user_id}', encodeURIComponent(String(userId)));
+    }
+    if (url.includes('{thread_id}')) {
+      if (!args.thread_id) return { success: false, error: 'Missing thread_id', data: [], rowCount: 0 };
+      url = url.replace('{thread_id}', encodeURIComponent(String(args.thread_id)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
+    };
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    delete bodyArgs.user_id;
+    delete bodyArgs.thread_id;
+
+    let response: Response;
+    if (methodUpper === 'GET' || methodUpper === 'DELETE') {
+      const queryParams: string[] = [`access_token=${encodeURIComponent(token)}`];
+      for (const [key, value] of Object.entries(bodyArgs)) {
+        if (value === undefined || value === null) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (queryParams.length > 0) {
+        url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
+      }
+      console.error(`🧵 Threads API call: ${methodUpper} ${url}`);
+      response = await fetch(url, { method: methodUpper, headers });
+    } else {
+      headers['Content-Type'] = 'application/json';
+      console.error(`🧵 Threads API call: ${methodUpper} ${url}`);
+      response = await fetch(url, {
+        method: methodUpper,
+        headers,
+        body: JSON.stringify(bodyArgs)
+      });
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    console.error(`✅ Threads API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Threads API error:', responseData);
+      return {
+        success: false,
+        error: `Threads API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }
 

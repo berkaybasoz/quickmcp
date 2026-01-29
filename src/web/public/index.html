@@ -541,6 +541,56 @@
                                                 <p class="text-xs text-slate-500">Connect to Telegram Bot API.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                            <input type="radio" name="dataSourceType" value="linkedin" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-700 hover:shadow-md hover:shadow-sky-600/20 peer-checked:border-sky-700 peer-checked:shadow-lg peer-checked:shadow-sky-600/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/linkedin.png" alt="LinkedIn" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">LinkedIn</h4>
+                                                <p class="text-xs text-slate-500">Profile, organizations, and posts.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                            <input type="radio" name="dataSourceType" value="reddit" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-400/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/reddit.png" alt="Reddit" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Reddit</h4>
+                                                <p class="text-xs text-slate-500">Subreddits, posts, comments.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                            <input type="radio" name="dataSourceType" value="youtube" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-400/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-400/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/youtube.png" alt="YouTube" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">YouTube</h4>
+                                                <p class="text-xs text-slate-500">Channels, videos, playlists.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                            <input type="radio" name="dataSourceType" value="whatsappbusiness" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-600 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/whatsappbusiness.png" alt="WhatsApp Business" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">WhatsApp Business</h4>
+                                                <p class="text-xs text-slate-500">Messages, templates, media.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                            <input type="radio" name="dataSourceType" value="threads" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-800 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-800 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/threads.png" alt="Threads" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Threads</h4>
+                                                <p class="text-xs text-slate-500">Threads posts and insights.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="openai" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
@@ -1432,6 +1482,189 @@
                                             </p>
                                         </div>
                                         <div id="telegram-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- LinkedIn Config -->
+                                    <div id="linkedin-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-sky-600 mt-0.5"></i>
+                                                <div class="text-sm text-sky-700">
+                                                    <p class="font-medium text-sky-800 mb-1">LinkedIn API</p>
+                                                    <p>Use an access token from your LinkedIn developer app.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                            <input type="password" id="linkedinAccessToken" placeholder="LinkedIn access token" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">OAuth access token with required scopes.</p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Person ID (Optional)</label>
+                                                <input type="text" id="linkedinPersonId" placeholder="urn:li:person:..." class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for profile and feed operations.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Organization ID (Optional)</label>
+                                                <input type="text" id="linkedinOrganizationId" placeholder="urn:li:organization:..." class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for organization posts and insights.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>8 tools</strong> will be created: get_profile, get_organization, list_connections, list_posts, create_post, get_post, search_people, search_companies
+                                            </p>
+                                        </div>
+                                        <div id="linkedin-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Reddit Config -->
+                                    <div id="reddit-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">Reddit API</p>
+                                                    <p>Use an OAuth access token and optional defaults.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="redditAccessToken" placeholder="Reddit access token" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">OAuth access token for Reddit.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">User Agent (Optional)</label>
+                                                <input type="text" id="redditUserAgent" placeholder="app:quickmcp:v1.0 (by u/yourname)" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Recommended by Reddit API rules.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Subreddit (Optional)</label>
+                                                <input type="text" id="redditSubreddit" placeholder="e.g., javascript" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for listing and posting.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Username (Optional)</label>
+                                                <input type="text" id="redditUsername" placeholder="e.g., spez" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for user profile lookups.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>8 tools</strong> will be created: get_user, get_subreddit, list_hot, list_new, search_posts, get_post, create_post, add_comment
+                                            </p>
+                                        </div>
+                                        <div id="reddit-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- YouTube Config -->
+                                    <div id="youtube-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-red-600 mt-0.5"></i>
+                                                <div class="text-sm text-red-700">
+                                                    <p class="font-medium text-red-800 mb-1">YouTube Data API</p>
+                                                    <p>API key for public data; OAuth token required for write operations.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="text" id="youtubeApiKey" placeholder="AIza..." class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Required for most read-only endpoints.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">OAuth Access Token (Optional)</label>
+                                                <input type="password" id="youtubeAccessToken" placeholder="OAuth access token" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Required for write actions.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Channel ID (Optional)</label>
+                                                <input type="text" id="youtubeChannelId" placeholder="UC..." class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for channel and playlist operations.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>9 tools</strong> will be created: search, get_channel, list_channel_videos, list_playlists, list_playlist_items, get_video, get_comments, post_comment, rate_video
+                                            </p>
+                                        </div>
+                                        <div id="youtube-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- WhatsApp Business Config -->
+                                    <div id="whatsappbusiness-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">WhatsApp Business Cloud API</p>
+                                                    <p>Send messages and manage templates via Meta Graph API.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="whatsappAccessToken" placeholder="EAAG..." class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">System user token with WhatsApp scopes.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Phone Number ID</label>
+                                                <input type="text" id="whatsappPhoneNumberId" placeholder="Phone number ID" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Required to send messages.</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Business Account ID (Optional)</label>
+                                                <input type="text" id="whatsappBusinessAccountId" placeholder="Business account ID" class="input" autocomplete="off">
+                                                <p class="text-xs text-slate-500 mt-2">Used for template listing.</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>7 tools</strong> will be created: send_text_message, send_template_message, send_media_message, get_message_templates, get_phone_numbers, get_business_profile, set_business_profile
+                                            </p>
+                                        </div>
+                                        <div id="whatsappbusiness-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Threads Config -->
+                                    <div id="threads-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-700 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-900 mb-1">Threads API</p>
+                                                    <p>Use a Threads access token from Meta.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                            <input type="password" id="threadsAccessToken" placeholder="Threads access token" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">OAuth access token for Threads.</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default User ID (Optional)</label>
+                                            <input type="text" id="threadsUserId" placeholder="User ID" class="input" autocomplete="off">
+                                            <p class="text-xs text-slate-500 mt-2">Used for profile and post operations.</p>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>6 tools</strong> will be created: get_user, list_threads, get_thread, create_thread, delete_thread, get_thread_insights
+                                            </p>
+                                        </div>
+                                        <div id="threads-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- OpenAI Config -->

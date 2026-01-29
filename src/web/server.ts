@@ -748,6 +748,219 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.LinkedIn) {
+        const { linkedinAccessToken, linkedinPersonId, linkedinOrganizationId } = req.body as any;
+
+        if (!linkedinAccessToken) {
+            throw new Error('Missing LinkedIn access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.LinkedIn,
+            name: 'LinkedIn',
+            baseUrl: 'https://api.linkedin.com/v2',
+            accessToken: linkedinAccessToken,
+            personId: linkedinPersonId,
+            organizationId: linkedinOrganizationId
+        };
+
+        const parsedData = [{
+            tableName: 'linkedin_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_profile', 'Get profile by person ID'],
+                ['get_organization', 'Get organization by ID'],
+                ['list_connections', 'List connections (requires permissions)'],
+                ['list_posts', 'List posts for a member or organization'],
+                ['create_post', 'Create a post'],
+                ['get_post', 'Get a post by ID'],
+                ['search_people', 'Search people'],
+                ['search_companies', 'Search companies']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Reddit) {
+        const { redditAccessToken, redditUserAgent, redditSubreddit, redditUsername } = req.body as any;
+
+        if (!redditAccessToken) {
+            throw new Error('Missing Reddit access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Reddit,
+            name: 'Reddit',
+            baseUrl: 'https://oauth.reddit.com',
+            accessToken: redditAccessToken,
+            userAgent: redditUserAgent,
+            subreddit: redditSubreddit,
+            username: redditUsername
+        };
+
+        const parsedData = [{
+            tableName: 'reddit_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get user profile'],
+                ['get_subreddit', 'Get subreddit details'],
+                ['list_hot', 'List hot posts in a subreddit'],
+                ['list_new', 'List new posts in a subreddit'],
+                ['search_posts', 'Search posts in a subreddit'],
+                ['get_post', 'Get a post by ID'],
+                ['create_post', 'Create a post'],
+                ['add_comment', 'Add a comment to a post']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.YouTube) {
+        const { youtubeApiKey, youtubeAccessToken, youtubeChannelId } = req.body as any;
+
+        if (!youtubeApiKey) {
+            throw new Error('Missing YouTube API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.YouTube,
+            name: 'YouTube',
+            baseUrl: 'https://www.googleapis.com/youtube/v3',
+            apiKey: youtubeApiKey,
+            accessToken: youtubeAccessToken,
+            channelId: youtubeChannelId
+        };
+
+        const parsedData = [{
+            tableName: 'youtube_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search videos, channels, or playlists'],
+                ['get_channel', 'Get channel details'],
+                ['list_channel_videos', 'List recent channel videos'],
+                ['list_playlists', 'List channel playlists'],
+                ['list_playlist_items', 'List playlist items'],
+                ['get_video', 'Get video details'],
+                ['get_comments', 'List comments for a video'],
+                ['post_comment', 'Post a comment on a video'],
+                ['rate_video', 'Rate a video']
+            ],
+            metadata: {
+                rowCount: 9,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.WhatsAppBusiness) {
+        const { whatsappAccessToken, whatsappPhoneNumberId, whatsappBusinessAccountId } = req.body as any;
+
+        if (!whatsappAccessToken || !whatsappPhoneNumberId) {
+            throw new Error('Missing WhatsApp access token or phone number ID');
+        }
+
+        const dataSource = {
+            type: DataSourceType.WhatsAppBusiness,
+            name: 'WhatsApp Business',
+            baseUrl: 'https://graph.facebook.com/v19.0',
+            accessToken: whatsappAccessToken,
+            phoneNumberId: whatsappPhoneNumberId,
+            businessAccountId: whatsappBusinessAccountId
+        };
+
+        const parsedData = [{
+            tableName: 'whatsappbusiness_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['send_text_message', 'Send a text message'],
+                ['send_template_message', 'Send a template message'],
+                ['send_media_message', 'Send a media message'],
+                ['get_message_templates', 'List message templates'],
+                ['get_phone_numbers', 'List phone numbers'],
+                ['get_business_profile', 'Get business profile'],
+                ['set_business_profile', 'Update business profile']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Threads) {
+        const { threadsAccessToken, threadsUserId } = req.body as any;
+
+        if (!threadsAccessToken) {
+            throw new Error('Missing Threads access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Threads,
+            name: 'Threads',
+            baseUrl: 'https://graph.facebook.com/v19.0',
+            accessToken: threadsAccessToken,
+            userId: threadsUserId
+        };
+
+        const parsedData = [{
+            tableName: 'threads_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get Threads user profile'],
+                ['list_threads', 'List user threads'],
+                ['get_thread', 'Get a thread by ID'],
+                ['create_thread', 'Create a thread'],
+                ['delete_thread', 'Delete a thread'],
+                ['get_thread_insights', 'Get thread insights']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.OpenAI) {
         const { openaiBaseUrl, openaiApiKey, openaiModel } = req.body as any;
         if (!openaiBaseUrl || !openaiApiKey) {

@@ -3265,6 +3265,224 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For LinkedIn, show info in preview and go to step 3
+    if (selectedType === DataSourceType.LinkedIn) {
+        const accessToken = document.getElementById('linkedinAccessToken')?.value?.trim();
+        const personId = document.getElementById('linkedinPersonId')?.value?.trim();
+        const organizationId = document.getElementById('linkedinOrganizationId')?.value?.trim();
+
+        if (!accessToken) {
+            showError('linkedin-parse-error', 'Please enter LinkedIn access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.LinkedIn,
+            name: 'LinkedIn',
+            baseUrl: 'https://api.linkedin.com/v2',
+            accessToken,
+            personId,
+            organizationId
+        };
+        currentParsedData = [{
+            tableName: 'linkedin_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_profile', 'Get profile by person ID'],
+                ['get_organization', 'Get organization by ID'],
+                ['list_connections', 'List connections (requires permissions)'],
+                ['list_posts', 'List posts for a member or organization'],
+                ['create_post', 'Create a post'],
+                ['get_post', 'Get a post by ID'],
+                ['search_people', 'Search people'],
+                ['search_companies', 'Search companies']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayLinkedInPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Reddit, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Reddit) {
+        const accessToken = document.getElementById('redditAccessToken')?.value?.trim();
+        const userAgent = document.getElementById('redditUserAgent')?.value?.trim();
+        const subreddit = document.getElementById('redditSubreddit')?.value?.trim();
+        const username = document.getElementById('redditUsername')?.value?.trim();
+
+        if (!accessToken) {
+            showError('reddit-parse-error', 'Please enter Reddit access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Reddit,
+            name: 'Reddit',
+            baseUrl: 'https://oauth.reddit.com',
+            accessToken,
+            userAgent,
+            subreddit,
+            username
+        };
+        currentParsedData = [{
+            tableName: 'reddit_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get user profile'],
+                ['get_subreddit', 'Get subreddit details'],
+                ['list_hot', 'List hot posts in a subreddit'],
+                ['list_new', 'List new posts in a subreddit'],
+                ['search_posts', 'Search posts in a subreddit'],
+                ['get_post', 'Get a post by ID'],
+                ['create_post', 'Create a post'],
+                ['add_comment', 'Add a comment to a post']
+            ],
+            metadata: {
+                rowCount: 8,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayRedditPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For YouTube, show info in preview and go to step 3
+    if (selectedType === DataSourceType.YouTube) {
+        const apiKey = document.getElementById('youtubeApiKey')?.value?.trim();
+        const accessToken = document.getElementById('youtubeAccessToken')?.value?.trim();
+        const channelId = document.getElementById('youtubeChannelId')?.value?.trim();
+
+        if (!apiKey) {
+            showError('youtube-parse-error', 'Please enter YouTube API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.YouTube,
+            name: 'YouTube',
+            baseUrl: 'https://www.googleapis.com/youtube/v3',
+            apiKey,
+            accessToken,
+            channelId
+        };
+        currentParsedData = [{
+            tableName: 'youtube_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search videos, channels, or playlists'],
+                ['get_channel', 'Get channel details'],
+                ['list_channel_videos', 'List recent channel videos'],
+                ['list_playlists', 'List channel playlists'],
+                ['list_playlist_items', 'List playlist items'],
+                ['get_video', 'Get video details'],
+                ['get_comments', 'List comments for a video'],
+                ['post_comment', 'Post a comment on a video'],
+                ['rate_video', 'Rate a video']
+            ],
+            metadata: {
+                rowCount: 9,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayYouTubePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For WhatsApp Business, show info in preview and go to step 3
+    if (selectedType === DataSourceType.WhatsAppBusiness) {
+        const accessToken = document.getElementById('whatsappAccessToken')?.value?.trim();
+        const phoneNumberId = document.getElementById('whatsappPhoneNumberId')?.value?.trim();
+        const businessAccountId = document.getElementById('whatsappBusinessAccountId')?.value?.trim();
+
+        if (!accessToken || !phoneNumberId) {
+            showError('whatsappbusiness-parse-error', 'Please enter access token and phone number ID');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.WhatsAppBusiness,
+            name: 'WhatsApp Business',
+            baseUrl: 'https://graph.facebook.com/v19.0',
+            accessToken,
+            phoneNumberId,
+            businessAccountId
+        };
+        currentParsedData = [{
+            tableName: 'whatsappbusiness_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['send_text_message', 'Send a text message'],
+                ['send_template_message', 'Send a template message'],
+                ['send_media_message', 'Send a media message'],
+                ['get_message_templates', 'List message templates'],
+                ['get_phone_numbers', 'List phone numbers'],
+                ['get_business_profile', 'Get business profile'],
+                ['set_business_profile', 'Update business profile']
+            ],
+            metadata: {
+                rowCount: 7,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayWhatsAppBusinessPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Threads, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Threads) {
+        const accessToken = document.getElementById('threadsAccessToken')?.value?.trim();
+        const userId = document.getElementById('threadsUserId')?.value?.trim();
+
+        if (!accessToken) {
+            showError('threads-parse-error', 'Please enter Threads access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Threads,
+            name: 'Threads',
+            baseUrl: 'https://graph.facebook.com/v19.0',
+            accessToken,
+            userId
+        };
+        currentParsedData = [{
+            tableName: 'threads_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_user', 'Get Threads user profile'],
+                ['list_threads', 'List user threads'],
+                ['get_thread', 'Get a thread by ID'],
+                ['create_thread', 'Create a thread'],
+                ['delete_thread', 'Delete a thread'],
+                ['get_thread_insights', 'Get thread insights']
+            ],
+            metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayThreadsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For OpenAI, show info in preview and go to step 3
     if (selectedType === DataSourceType.OpenAI) {
         const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
@@ -4862,6 +5080,16 @@ async function handleNextToStep3() {
                 displayNotionPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Telegram) {
                 displayTelegramPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.LinkedIn) {
+                displayLinkedInPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Reddit) {
+                displayRedditPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.YouTube) {
+                displayYouTubePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.WhatsAppBusiness) {
+                displayWhatsAppBusinessPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Threads) {
+                displayThreadsPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenAI) {
                 displayOpenAIPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Claude) {
@@ -5132,6 +5360,22 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('telegramBaseUrl')?.value?.trim();
         const botToken = document.getElementById('telegramBotToken')?.value?.trim();
         canProceed = !!baseUrl && !!botToken;
+    } else if (selectedType === DataSourceType.LinkedIn) {
+        const accessToken = document.getElementById('linkedinAccessToken')?.value?.trim();
+        canProceed = !!accessToken;
+    } else if (selectedType === DataSourceType.Reddit) {
+        const accessToken = document.getElementById('redditAccessToken')?.value?.trim();
+        canProceed = !!accessToken;
+    } else if (selectedType === DataSourceType.YouTube) {
+        const apiKey = document.getElementById('youtubeApiKey')?.value?.trim();
+        canProceed = !!apiKey;
+    } else if (selectedType === DataSourceType.WhatsAppBusiness) {
+        const accessToken = document.getElementById('whatsappAccessToken')?.value?.trim();
+        const phoneNumberId = document.getElementById('whatsappPhoneNumberId')?.value?.trim();
+        canProceed = !!accessToken && !!phoneNumberId;
+    } else if (selectedType === DataSourceType.Threads) {
+        const accessToken = document.getElementById('threadsAccessToken')?.value?.trim();
+        canProceed = !!accessToken;
     } else if (selectedType === DataSourceType.OpenAI) {
         const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
@@ -5316,6 +5560,11 @@ function toggleDataSourceFields() {
     const tiktokSection = document.getElementById('tiktok-section');
     const notionSection = document.getElementById('notion-section');
     const telegramSection = document.getElementById('telegram-section');
+    const linkedinSection = document.getElementById('linkedin-section');
+    const redditSection = document.getElementById('reddit-section');
+    const youtubeSection = document.getElementById('youtube-section');
+    const whatsappBusinessSection = document.getElementById('whatsappbusiness-section');
+    const threadsSection = document.getElementById('threads-section');
     const openaiSection = document.getElementById('openai-section');
     const claudeSection = document.getElementById('claude-section');
     const geminiSection = document.getElementById('gemini-section');
@@ -5368,6 +5617,11 @@ function toggleDataSourceFields() {
     tiktokSection?.classList.add('hidden');
     notionSection?.classList.add('hidden');
     telegramSection?.classList.add('hidden');
+    linkedinSection?.classList.add('hidden');
+    redditSection?.classList.add('hidden');
+    youtubeSection?.classList.add('hidden');
+    whatsappBusinessSection?.classList.add('hidden');
+    threadsSection?.classList.add('hidden');
     openaiSection?.classList.add('hidden');
     claudeSection?.classList.add('hidden');
     geminiSection?.classList.add('hidden');
@@ -5554,6 +5808,46 @@ function toggleDataSourceFields() {
         if (telegramBotTokenInput && !telegramBotTokenInput.dataset.listenerAttached) {
             telegramBotTokenInput.addEventListener('input', updateWizardNavigation);
             telegramBotTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.LinkedIn) {
+        linkedinSection?.classList.remove('hidden');
+        const linkedinTokenInput = document.getElementById('linkedinAccessToken');
+        if (linkedinTokenInput && !linkedinTokenInput.dataset.listenerAttached) {
+            linkedinTokenInput.addEventListener('input', updateWizardNavigation);
+            linkedinTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Reddit) {
+        redditSection?.classList.remove('hidden');
+        const redditTokenInput = document.getElementById('redditAccessToken');
+        if (redditTokenInput && !redditTokenInput.dataset.listenerAttached) {
+            redditTokenInput.addEventListener('input', updateWizardNavigation);
+            redditTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.YouTube) {
+        youtubeSection?.classList.remove('hidden');
+        const youtubeApiKeyInput = document.getElementById('youtubeApiKey');
+        if (youtubeApiKeyInput && !youtubeApiKeyInput.dataset.listenerAttached) {
+            youtubeApiKeyInput.addEventListener('input', updateWizardNavigation);
+            youtubeApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.WhatsAppBusiness) {
+        whatsappBusinessSection?.classList.remove('hidden');
+        const whatsappTokenInput = document.getElementById('whatsappAccessToken');
+        const whatsappPhoneInput = document.getElementById('whatsappPhoneNumberId');
+        if (whatsappTokenInput && !whatsappTokenInput.dataset.listenerAttached) {
+            whatsappTokenInput.addEventListener('input', updateWizardNavigation);
+            whatsappTokenInput.dataset.listenerAttached = 'true';
+        }
+        if (whatsappPhoneInput && !whatsappPhoneInput.dataset.listenerAttached) {
+            whatsappPhoneInput.addEventListener('input', updateWizardNavigation);
+            whatsappPhoneInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Threads) {
+        threadsSection?.classList.remove('hidden');
+        const threadsTokenInput = document.getElementById('threadsAccessToken');
+        if (threadsTokenInput && !threadsTokenInput.dataset.listenerAttached) {
+            threadsTokenInput.addEventListener('input', updateWizardNavigation);
+            threadsTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.OpenAI) {
         openaiSection?.classList.remove('hidden');
@@ -7838,6 +8132,339 @@ function displayTelegramPreview(telegramConfig) {
                                 <div>
                                     <span class="text-slate-500">Base URL:</span>
                                     <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayLinkedInPreview(liConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = liConfig?.baseUrl || 'Not set';
+    const personId = liConfig?.personId || 'Not set';
+    const organizationId = liConfig?.organizationId || 'Not set';
+    const tools = [
+        { name: 'get_profile', desc: 'Get profile by person ID' },
+        { name: 'get_organization', desc: 'Get organization by ID' },
+        { name: 'list_connections', desc: 'List connections (requires permissions)' },
+        { name: 'list_posts', desc: 'List posts for a member or organization' },
+        { name: 'create_post', desc: 'Create a post' },
+        { name: 'get_post', desc: 'Get a post by ID' },
+        { name: 'search_people', desc: 'Search people' },
+        { name: 'search_companies', desc: 'Search companies' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/linkedin.png" alt="LinkedIn" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">LinkedIn Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with LinkedIn API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Person ID:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${personId}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Organization ID:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${organizationId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayRedditPreview(redditConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = redditConfig?.baseUrl || 'Not set';
+    const subreddit = redditConfig?.subreddit || 'Not set';
+    const username = redditConfig?.username || 'Not set';
+    const tools = [
+        { name: 'get_user', desc: 'Get user profile' },
+        { name: 'get_subreddit', desc: 'Get subreddit details' },
+        { name: 'list_hot', desc: 'List hot posts in a subreddit' },
+        { name: 'list_new', desc: 'List new posts in a subreddit' },
+        { name: 'search_posts', desc: 'Search posts in a subreddit' },
+        { name: 'get_post', desc: 'Get a post by ID' },
+        { name: 'create_post', desc: 'Create a post' },
+        { name: 'add_comment', desc: 'Add a comment to a post' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/reddit.png" alt="Reddit" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Reddit Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Reddit API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Subreddit:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${subreddit}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Username:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${username}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayYouTubePreview(ytConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = ytConfig?.baseUrl || 'Not set';
+    const channelId = ytConfig?.channelId || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search videos, channels, or playlists' },
+        { name: 'get_channel', desc: 'Get channel details' },
+        { name: 'list_channel_videos', desc: 'List recent channel videos' },
+        { name: 'list_playlists', desc: 'List channel playlists' },
+        { name: 'list_playlist_items', desc: 'List playlist items' },
+        { name: 'get_video', desc: 'Get video details' },
+        { name: 'get_comments', desc: 'List comments for a video' },
+        { name: 'post_comment', desc: 'Post a comment on a video' },
+        { name: 'rate_video', desc: 'Rate a video' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/youtube.png" alt="YouTube" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">YouTube Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with YouTube Data API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Channel:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${channelId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayWhatsAppBusinessPreview(waConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = waConfig?.baseUrl || 'Not set';
+    const phoneNumberId = waConfig?.phoneNumberId || 'Not set';
+    const businessAccountId = waConfig?.businessAccountId || 'Not set';
+    const tools = [
+        { name: 'send_text_message', desc: 'Send a text message' },
+        { name: 'send_template_message', desc: 'Send a template message' },
+        { name: 'send_media_message', desc: 'Send a media message' },
+        { name: 'get_message_templates', desc: 'List message templates' },
+        { name: 'get_phone_numbers', desc: 'List phone numbers' },
+        { name: 'get_business_profile', desc: 'Get business profile' },
+        { name: 'set_business_profile', desc: 'Update business profile' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/whatsappbusiness.png" alt="WhatsApp Business" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">WhatsApp Business Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with WhatsApp Business Cloud API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Phone Number ID:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${phoneNumberId}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Business Account ID:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${businessAccountId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayThreadsPreview(threadsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = threadsConfig?.baseUrl || 'Not set';
+    const userId = threadsConfig?.userId || 'Not set';
+    const tools = [
+        { name: 'get_user', desc: 'Get Threads user profile' },
+        { name: 'list_threads', desc: 'List user threads' },
+        { name: 'get_thread', desc: 'Get a thread by ID' },
+        { name: 'create_thread', desc: 'Create a thread' },
+        { name: 'delete_thread', desc: 'Delete a thread' },
+        { name: 'get_thread_insights', desc: 'Get thread insights' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/threads.png" alt="Threads" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Threads Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Threads API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default User ID:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${userId}</span>
                                 </div>
                             </div>
                         </div>
