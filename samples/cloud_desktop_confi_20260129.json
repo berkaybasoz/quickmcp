@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "quickmcp-local": {
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"
+      ]
+    }
+  },
+  "preferences": {
+    "chromeExtensionEnabled": false
+  }
+}

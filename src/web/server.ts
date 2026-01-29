@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -962,6 +962,260 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 dataSource,
                 parsedData
             }
+        });
+    } else if (type === DataSourceType.AzureOpenAI) {
+        const { azureOpenAIBaseUrl, azureOpenAIApiKey, azureOpenAIApiVersion, azureOpenAIDeployment } = req.body as any;
+        if (!azureOpenAIBaseUrl || !azureOpenAIApiKey || !azureOpenAIDeployment) {
+            throw new Error('Missing Azure OpenAI base URL, API key, or deployment');
+        }
+
+        const dataSource = {
+            type: DataSourceType.AzureOpenAI,
+            name: 'Azure OpenAI',
+            baseUrl: azureOpenAIBaseUrl,
+            apiKey: azureOpenAIApiKey,
+            apiVersion: azureOpenAIApiVersion || '2024-02-15-preview',
+            deployment: azureOpenAIDeployment
+        };
+
+        const parsedData = [{
+            tableName: 'azure_openai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Mistral) {
+        const { mistralBaseUrl, mistralApiKey, mistralModel } = req.body as any;
+        if (!mistralBaseUrl || !mistralApiKey) {
+            throw new Error('Missing Mistral base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Mistral,
+            name: 'Mistral',
+            baseUrl: mistralBaseUrl,
+            apiKey: mistralApiKey,
+            defaultModel: mistralModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'mistral_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Cohere) {
+        const { cohereBaseUrl, cohereApiKey, cohereModel } = req.body as any;
+        if (!cohereBaseUrl || !cohereApiKey) {
+            throw new Error('Missing Cohere base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Cohere,
+            name: 'Cohere',
+            baseUrl: cohereBaseUrl,
+            apiKey: cohereApiKey,
+            defaultModel: cohereModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'cohere_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Chat with Cohere'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Perplexity) {
+        const { perplexityBaseUrl, perplexityApiKey, perplexityModel } = req.body as any;
+        if (!perplexityBaseUrl || !perplexityApiKey) {
+            throw new Error('Missing Perplexity base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Perplexity,
+            name: 'Perplexity',
+            baseUrl: perplexityBaseUrl,
+            apiKey: perplexityApiKey,
+            defaultModel: perplexityModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'perplexity_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Together) {
+        const { togetherBaseUrl, togetherApiKey, togetherModel } = req.body as any;
+        if (!togetherBaseUrl || !togetherApiKey) {
+            throw new Error('Missing Together base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Together,
+            name: 'Together',
+            baseUrl: togetherBaseUrl,
+            apiKey: togetherApiKey,
+            defaultModel: togetherModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'together_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Fireworks) {
+        const { fireworksBaseUrl, fireworksApiKey, fireworksModel } = req.body as any;
+        if (!fireworksBaseUrl || !fireworksApiKey) {
+            throw new Error('Missing Fireworks base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Fireworks,
+            name: 'Fireworks',
+            baseUrl: fireworksBaseUrl,
+            apiKey: fireworksApiKey,
+            defaultModel: fireworksModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'fireworks_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.Groq) {
+        const { groqBaseUrl, groqApiKey, groqModel } = req.body as any;
+        if (!groqBaseUrl || !groqApiKey) {
+            throw new Error('Missing Groq base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Groq,
+            name: 'Groq',
+            baseUrl: groqBaseUrl,
+            apiKey: groqApiKey,
+            defaultModel: groqModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'groq_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
+        });
+    } else if (type === DataSourceType.OpenRouter) {
+        const { openrouterBaseUrl, openrouterApiKey, openrouterModel } = req.body as any;
+        if (!openrouterBaseUrl || !openrouterApiKey) {
+            throw new Error('Missing OpenRouter base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.OpenRouter,
+            name: 'OpenRouter',
+            baseUrl: openrouterBaseUrl,
+            apiKey: openrouterApiKey,
+            defaultModel: openrouterModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'openrouter_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: { dataSource, parsedData }
         });
     } else if (type === DataSourceType.Dropbox) {
         const { dropboxBaseUrl, dropboxContentBaseUrl, dropboxAccessToken } = req.body as any;
@@ -2016,6 +2270,63 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.DeepSeek) {
       parsedForGen = {};
       dbConfForGen = createDeepSeekGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.AzureOpenAI) {
+      parsedForGen = {};
+      dbConfForGen = createAzureOpenAIGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.deployment,
+        dataSource.apiVersion
+      );
+    } else if (dataSource?.type === DataSourceType.Mistral) {
+      parsedForGen = {};
+      dbConfForGen = createMistralGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Cohere) {
+      parsedForGen = {};
+      dbConfForGen = createCohereGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Perplexity) {
+      parsedForGen = {};
+      dbConfForGen = createPerplexityGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Together) {
+      parsedForGen = {};
+      dbConfForGen = createTogetherGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Fireworks) {
+      parsedForGen = {};
+      dbConfForGen = createFireworksGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.Groq) {
+      parsedForGen = {};
+      dbConfForGen = createGroqGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
+    } else if (dataSource?.type === DataSourceType.OpenRouter) {
+      parsedForGen = {};
+      dbConfForGen = createOpenRouterGeneratorConfig(
         dataSource.baseUrl,
         dataSource.apiKey,
         dataSource.defaultModel

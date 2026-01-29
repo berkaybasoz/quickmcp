@@ -43,6 +43,14 @@ export enum DataSourceType {
   Grok = 'grok',
   Llama = 'llama',
   DeepSeek = 'deepseek',
+  AzureOpenAI = 'azure_openai',
+  Mistral = 'mistral',
+  Cohere = 'cohere',
+  Perplexity = 'perplexity',
+  Together = 'together',
+  Fireworks = 'fireworks',
+  Groq = 'groq',
+  OpenRouter = 'openrouter',
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
@@ -88,6 +96,14 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Grok,
     DataSourceType.Llama,
     DataSourceType.DeepSeek,
+    DataSourceType.AzureOpenAI,
+    DataSourceType.Mistral,
+    DataSourceType.Cohere,
+    DataSourceType.Perplexity,
+    DataSourceType.Together,
+    DataSourceType.Fireworks,
+    DataSourceType.Groq,
+    DataSourceType.OpenRouter,
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
@@ -303,6 +319,63 @@ export interface DeepSeekConnection {
   apiKey: string;
   defaultModel?: string;
   type: 'deepseek';
+}
+
+export interface AzureOpenAIConnection {
+  baseUrl: string;
+  apiKey: string;
+  apiVersion?: string;
+  deployment: string;
+  type: 'azure_openai';
+}
+
+export interface MistralConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'mistral';
+}
+
+export interface CohereConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'cohere';
+}
+
+export interface PerplexityConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'perplexity';
+}
+
+export interface TogetherConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'together';
+}
+
+export interface FireworksConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'fireworks';
+}
+
+export interface GroqConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'groq';
+}
+
+export interface OpenRouterConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'openrouter';
 }
 
 export interface DropboxConnection {
@@ -573,6 +646,63 @@ export interface DeepSeekGeneratorConfig extends BaseGeneratorConfig {
   defaultModel?: string;
 }
 
+export interface AzureOpenAIGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.AzureOpenAI;
+  baseUrl: string;
+  apiKey: string;
+  apiVersion?: string;
+  deployment: string;
+}
+
+export interface MistralGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Mistral;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface CohereGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Cohere;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface PerplexityGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Perplexity;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface TogetherGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Together;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface FireworksGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Fireworks;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface GroqGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Groq;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface OpenRouterGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.OpenRouter;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
 export interface DropboxGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Dropbox;
   baseUrl: string;
@@ -751,6 +881,14 @@ export type GeneratorConfig =
   | GrokGeneratorConfig
   | LlamaGeneratorConfig
   | DeepSeekGeneratorConfig
+  | AzureOpenAIGeneratorConfig
+  | MistralGeneratorConfig
+  | CohereGeneratorConfig
+  | PerplexityGeneratorConfig
+  | TogetherGeneratorConfig
+  | FireworksGeneratorConfig
+  | GroqGeneratorConfig
+  | OpenRouterGeneratorConfig
   | DropboxGeneratorConfig
   | TrelloGeneratorConfig
   | GitLabGeneratorConfig
@@ -788,6 +926,14 @@ export type GeneratorConfig =
   | GrokConnection
   | LlamaConnection
   | DeepSeekConnection
+  | AzureOpenAIConnection
+  | MistralConnection
+  | CohereConnection
+  | PerplexityConnection
+  | TogetherConnection
+  | FireworksConnection
+  | GroqConnection
+  | OpenRouterConnection
   | DropboxConnection
   | TrelloConnection
   | GitLabConnection
@@ -1045,6 +1191,111 @@ export function createDeepSeekGeneratorConfig(
   };
 }
 
+export function createAzureOpenAIGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  deployment: string,
+  apiVersion?: string
+): AzureOpenAIGeneratorConfig {
+  return {
+    type: DataSourceType.AzureOpenAI,
+    baseUrl,
+    apiKey,
+    apiVersion,
+    deployment
+  };
+}
+
+export function createMistralGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): MistralGeneratorConfig {
+  return {
+    type: DataSourceType.Mistral,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createCohereGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): CohereGeneratorConfig {
+  return {
+    type: DataSourceType.Cohere,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createPerplexityGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): PerplexityGeneratorConfig {
+  return {
+    type: DataSourceType.Perplexity,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createTogetherGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): TogetherGeneratorConfig {
+  return {
+    type: DataSourceType.Together,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createFireworksGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): FireworksGeneratorConfig {
+  return {
+    type: DataSourceType.Fireworks,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createGroqGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): GroqGeneratorConfig {
+  return {
+    type: DataSourceType.Groq,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createOpenRouterGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): OpenRouterGeneratorConfig {
+  return {
+    type: DataSourceType.OpenRouter,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
 export function createDropboxGeneratorConfig(
   baseUrl: string,
   accessToken: string,

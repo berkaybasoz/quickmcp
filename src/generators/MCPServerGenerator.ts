@@ -89,6 +89,22 @@ export class MCPServerGenerator {
         tools = this.generateToolsForLlama(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.DeepSeek) {
         tools = this.generateToolsForDeepSeek(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.AzureOpenAI) {
+        tools = this.generateToolsForAzureOpenAI(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Mistral) {
+        tools = this.generateToolsForMistral(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Cohere) {
+        tools = this.generateToolsForCohere(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Perplexity) {
+        tools = this.generateToolsForPerplexity(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Together) {
+        tools = this.generateToolsForTogether(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Fireworks) {
+        tools = this.generateToolsForFireworks(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Groq) {
+        tools = this.generateToolsForGroq(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.OpenRouter) {
+        tools = this.generateToolsForOpenRouter(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
@@ -1635,6 +1651,296 @@ export class MCPServerGenerator {
         required: ['input']
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForAzureOpenAI(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiVersion, deployment } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.AzureOpenAI, baseUrl, apiKey, apiVersion, deployment };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          deployment: { type: 'string', description: 'Deployment name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/openai/deployments/{deployment}/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          deployment: { type: 'string', description: 'Deployment name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/openai/deployments/{deployment}/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForMistral(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Mistral, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForCohere(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Cohere, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Chat with Cohere',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          message: { type: 'string', description: 'User message' },
+          chat_history: { type: 'array', items: { type: 'object' }, description: 'Chat history (optional)' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['message']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          texts: { type: 'array', items: { type: 'string' }, description: 'Texts array' },
+          input_type: { type: 'string', description: 'Input type (optional)' }
+        },
+        required: ['texts']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embed', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForPerplexity(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Perplexity, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForTogether(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Together, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForFireworks(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Fireworks, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'embeddings',
+      description: 'Create embeddings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          input: { type: 'string', description: 'Input text' }
+        },
+        required: ['input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/embeddings', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGroq(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Groq, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForOpenRouter(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.OpenRouter, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
       operation: 'SELECT'
     });
 

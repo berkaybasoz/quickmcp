@@ -116,6 +116,38 @@ export class DynamicMCPExecutor {
         return await this.executeOpenAICompatibleCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.AzureOpenAI) {
+        return await this.executeAzureOpenAICall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Mistral) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Cohere) {
+        return await this.executeCohereCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Perplexity) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Together) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Fireworks) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Groq) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.OpenRouter) {
+        return await this.executeOpenAICompatibleCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Dropbox) {
         return await this.executeDropboxCall(queryConfig, args);
       }
@@ -1888,6 +1920,132 @@ export class DynamicMCPExecutor {
         data: [{
           status: response.status,
           message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeAzureOpenAICall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, apiVersion, endpoint, method, deployment } = queryConfig;
+    const token = String(apiKey || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Azure baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    const deploymentName = String(bodyArgs.deployment || deployment || '').trim();
+    if (!deploymentName && String(endpoint).includes('{deployment}')) {
+      return { success: false, error: 'Missing Azure deployment', data: [], rowCount: 0 };
+    }
+    delete bodyArgs.deployment;
+
+    let endpointResolved = String(endpoint);
+    if (deploymentName) {
+      endpointResolved = endpointResolved.replace('{deployment}', encodeURIComponent(deploymentName));
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpointResolved}`;
+    const apiVer = String(apiVersion || '2024-02-15-preview');
+    url += url.includes('?') ? `&api-version=${encodeURIComponent(apiVer)}` : `?api-version=${encodeURIComponent(apiVer)}`;
+
+    const methodUpper = (method || 'POST').toUpperCase();
+    const headers: Record<string, string> = {
+      'api-key': token,
+      'Content-Type': 'application/json'
+    };
+
+    console.error(`🟦 Azure OpenAI API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers,
+      body: JSON.stringify(bodyArgs)
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    console.error(`✅ Azure OpenAI API response: ${response.status}`);
+
+    if (contentType && !contentType.includes('application/json')) {
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Azure API error: ${response.status}`,
+          data: [{
+            status: response.status,
+            message: buffer.toString('utf8')
+          }],
+          rowCount: 1
+        };
+      }
+      return {
+        success: true,
+        data: [{
+          contentType,
+          base64: buffer.toString('base64')
+        }],
+        rowCount: 1
+      };
+    }
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      console.error('❌ Azure OpenAI API error:', responseData);
+      return {
+        success: false,
+        error: `Azure API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.error?.message || responseData?.message || responseData
+        }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeCohereCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method, defaultModel } = queryConfig;
+    const token = String(apiKey || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Cohere baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const methodUpper = (method || 'POST').toUpperCase();
+    const bodyArgs: Record<string, any> = { ...(args || {}) };
+    if (defaultModel && !bodyArgs.model) {
+      bodyArgs.model = defaultModel;
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    console.error(`🟣 Cohere API call: ${methodUpper} ${url}`);
+    const response = await fetch(url, {
+      method: methodUpper,
+      headers,
+      body: JSON.stringify(bodyArgs)
+    });
+    const responseData: any = await response.json().catch(() => null);
+
+    console.error(`✅ Cohere API response: ${response.status}`);
+
+    if (!response.ok) {
+      console.error('❌ Cohere API error:', responseData);
+      return {
+        success: false,
+        error: `Cohere API error: ${response.status}`,
+        data: [{
+          status: response.status,
+          message: responseData?.message || responseData?.error?.message || responseData
         }],
         rowCount: 1
       };

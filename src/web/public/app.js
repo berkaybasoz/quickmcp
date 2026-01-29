@@ -165,6 +165,33 @@ function setupEventListeners() {
     document.getElementById('curlToolAlias')?.addEventListener('input', () => checkAlias('curl'));
     document.getElementById('webToolAlias')?.addEventListener('input', () => checkAlias('web'));
 
+    // AI provider field changes
+    document.getElementById('azureOpenAIBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('azureOpenAIApiVersion')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('azureOpenAIDeployment')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('azureOpenAIApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('mistralBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('mistralApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('mistralModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('cohereBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('cohereApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('cohereModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('perplexityBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('perplexityApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('perplexityModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('togetherBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('togetherApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('togetherModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('fireworksBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('fireworksApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('fireworksModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('groqBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('groqApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('groqModel')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('openrouterBaseUrl')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('openrouterApiKey')?.addEventListener('input', updateWizardNavigation);
+    document.getElementById('openrouterModel')?.addEventListener('input', updateWizardNavigation);
+
     // Test buttons
     document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
     document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
@@ -3465,6 +3492,301 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Azure OpenAI, show info in preview and go to step 3
+    if (selectedType === DataSourceType.AzureOpenAI) {
+        const baseUrl = document.getElementById('azureOpenAIBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('azureOpenAIApiKey')?.value?.trim();
+        const apiVersion = document.getElementById('azureOpenAIApiVersion')?.value?.trim();
+        const deployment = document.getElementById('azureOpenAIDeployment')?.value?.trim();
+
+        if (!baseUrl || !apiKey || !deployment) {
+            showError('azure-openai-parse-error', 'Please enter base URL, deployment, and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.AzureOpenAI,
+            name: 'Azure OpenAI',
+            baseUrl,
+            apiKey,
+            apiVersion: apiVersion || '2024-02-15-preview',
+            deployment
+        };
+        currentParsedData = [{
+            tableName: 'azure_openai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayAzureOpenAIPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Mistral, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Mistral) {
+        const baseUrl = document.getElementById('mistralBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('mistralApiKey')?.value?.trim();
+        const model = document.getElementById('mistralModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('mistral-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Mistral,
+            name: 'Mistral',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'mistral_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayMistralPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Cohere, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Cohere) {
+        const baseUrl = document.getElementById('cohereBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('cohereApiKey')?.value?.trim();
+        const model = document.getElementById('cohereModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('cohere-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Cohere,
+            name: 'Cohere',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'cohere_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Chat with Cohere'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayCoherePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Perplexity, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Perplexity) {
+        const baseUrl = document.getElementById('perplexityBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('perplexityApiKey')?.value?.trim();
+        const model = document.getElementById('perplexityModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('perplexity-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Perplexity,
+            name: 'Perplexity',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'perplexity_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayPerplexityPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Together, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Together) {
+        const baseUrl = document.getElementById('togetherBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('togetherApiKey')?.value?.trim();
+        const model = document.getElementById('togetherModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('together-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Together,
+            name: 'Together',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'together_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayTogetherPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Fireworks, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Fireworks) {
+        const baseUrl = document.getElementById('fireworksBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('fireworksApiKey')?.value?.trim();
+        const model = document.getElementById('fireworksModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('fireworks-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Fireworks,
+            name: 'Fireworks',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'fireworks_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions'],
+                ['embeddings', 'Create embeddings']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayFireworksPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Groq, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Groq) {
+        const baseUrl = document.getElementById('groqBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('groqApiKey')?.value?.trim();
+        const model = document.getElementById('groqModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('groq-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Groq,
+            name: 'Groq',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'groq_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGroqPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For OpenRouter, show info in preview and go to step 3
+    if (selectedType === DataSourceType.OpenRouter) {
+        const baseUrl = document.getElementById('openrouterBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('openrouterApiKey')?.value?.trim();
+        const model = document.getElementById('openrouterModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('openrouter-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.OpenRouter,
+            name: 'OpenRouter',
+            baseUrl,
+            apiKey,
+            defaultModel: model
+        };
+        currentParsedData = [{
+            tableName: 'openrouter_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayOpenRouterPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Dropbox, show info in preview and go to step 3
     if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
@@ -4552,6 +4874,22 @@ async function handleNextToStep3() {
                 displayLlamaPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.DeepSeek) {
                 displayDeepSeekPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.AzureOpenAI) {
+                displayAzureOpenAIPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Mistral) {
+                displayMistralPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Cohere) {
+                displayCoherePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Perplexity) {
+                displayPerplexityPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Together) {
+                displayTogetherPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Fireworks) {
+                displayFireworksPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Groq) {
+                displayGroqPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.OpenRouter) {
+                displayOpenRouterPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Dropbox) {
                 displayDropboxPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Trello) {
@@ -4817,6 +5155,39 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('deepseekBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('deepseekApiKey')?.value?.trim();
         canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.AzureOpenAI) {
+        const baseUrl = document.getElementById('azureOpenAIBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('azureOpenAIApiKey')?.value?.trim();
+        const deployment = document.getElementById('azureOpenAIDeployment')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey && !!deployment;
+    } else if (selectedType === DataSourceType.Mistral) {
+        const baseUrl = document.getElementById('mistralBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('mistralApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Cohere) {
+        const baseUrl = document.getElementById('cohereBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('cohereApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Perplexity) {
+        const baseUrl = document.getElementById('perplexityBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('perplexityApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Together) {
+        const baseUrl = document.getElementById('togetherBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('togetherApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Fireworks) {
+        const baseUrl = document.getElementById('fireworksBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('fireworksApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Groq) {
+        const baseUrl = document.getElementById('groqBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('groqApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.OpenRouter) {
+        const baseUrl = document.getElementById('openrouterBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('openrouterApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
     } else if (selectedType === DataSourceType.Dropbox) {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('dropboxAccessToken')?.value?.trim();
@@ -4951,6 +5322,14 @@ function toggleDataSourceFields() {
     const grokSection = document.getElementById('grok-section');
     const llamaSection = document.getElementById('llama-section');
     const deepseekSection = document.getElementById('deepseek-section');
+    const azureOpenAISection = document.getElementById('azure-openai-section');
+    const mistralSection = document.getElementById('mistral-section');
+    const cohereSection = document.getElementById('cohere-section');
+    const perplexitySection = document.getElementById('perplexity-section');
+    const togetherSection = document.getElementById('together-section');
+    const fireworksSection = document.getElementById('fireworks-section');
+    const groqSection = document.getElementById('groq-section');
+    const openrouterSection = document.getElementById('openrouter-section');
     const dropboxSection = document.getElementById('dropbox-section');
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
@@ -4995,6 +5374,14 @@ function toggleDataSourceFields() {
     grokSection?.classList.add('hidden');
     llamaSection?.classList.add('hidden');
     deepseekSection?.classList.add('hidden');
+    azureOpenAISection?.classList.add('hidden');
+    mistralSection?.classList.add('hidden');
+    cohereSection?.classList.add('hidden');
+    perplexitySection?.classList.add('hidden');
+    togetherSection?.classList.add('hidden');
+    fireworksSection?.classList.add('hidden');
+    groqSection?.classList.add('hidden');
+    openrouterSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
@@ -5234,6 +5621,107 @@ function toggleDataSourceFields() {
         if (deepseekApiKeyInput && !deepseekApiKeyInput.dataset.listenerAttached) {
             deepseekApiKeyInput.addEventListener('input', updateWizardNavigation);
             deepseekApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.AzureOpenAI) {
+        azureOpenAISection?.classList.remove('hidden');
+        const azureBaseUrlInput = document.getElementById('azureOpenAIBaseUrl');
+        const azureApiKeyInput = document.getElementById('azureOpenAIApiKey');
+        const azureDeploymentInput = document.getElementById('azureOpenAIDeployment');
+        if (azureBaseUrlInput && !azureBaseUrlInput.dataset.listenerAttached) {
+            azureBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            azureBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (azureApiKeyInput && !azureApiKeyInput.dataset.listenerAttached) {
+            azureApiKeyInput.addEventListener('input', updateWizardNavigation);
+            azureApiKeyInput.dataset.listenerAttached = 'true';
+        }
+        if (azureDeploymentInput && !azureDeploymentInput.dataset.listenerAttached) {
+            azureDeploymentInput.addEventListener('input', updateWizardNavigation);
+            azureDeploymentInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Mistral) {
+        mistralSection?.classList.remove('hidden');
+        const mistralBaseUrlInput = document.getElementById('mistralBaseUrl');
+        const mistralApiKeyInput = document.getElementById('mistralApiKey');
+        if (mistralBaseUrlInput && !mistralBaseUrlInput.dataset.listenerAttached) {
+            mistralBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            mistralBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (mistralApiKeyInput && !mistralApiKeyInput.dataset.listenerAttached) {
+            mistralApiKeyInput.addEventListener('input', updateWizardNavigation);
+            mistralApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Cohere) {
+        cohereSection?.classList.remove('hidden');
+        const cohereBaseUrlInput = document.getElementById('cohereBaseUrl');
+        const cohereApiKeyInput = document.getElementById('cohereApiKey');
+        if (cohereBaseUrlInput && !cohereBaseUrlInput.dataset.listenerAttached) {
+            cohereBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            cohereBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (cohereApiKeyInput && !cohereApiKeyInput.dataset.listenerAttached) {
+            cohereApiKeyInput.addEventListener('input', updateWizardNavigation);
+            cohereApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Perplexity) {
+        perplexitySection?.classList.remove('hidden');
+        const perplexityBaseUrlInput = document.getElementById('perplexityBaseUrl');
+        const perplexityApiKeyInput = document.getElementById('perplexityApiKey');
+        if (perplexityBaseUrlInput && !perplexityBaseUrlInput.dataset.listenerAttached) {
+            perplexityBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            perplexityBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (perplexityApiKeyInput && !perplexityApiKeyInput.dataset.listenerAttached) {
+            perplexityApiKeyInput.addEventListener('input', updateWizardNavigation);
+            perplexityApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Together) {
+        togetherSection?.classList.remove('hidden');
+        const togetherBaseUrlInput = document.getElementById('togetherBaseUrl');
+        const togetherApiKeyInput = document.getElementById('togetherApiKey');
+        if (togetherBaseUrlInput && !togetherBaseUrlInput.dataset.listenerAttached) {
+            togetherBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            togetherBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (togetherApiKeyInput && !togetherApiKeyInput.dataset.listenerAttached) {
+            togetherApiKeyInput.addEventListener('input', updateWizardNavigation);
+            togetherApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Fireworks) {
+        fireworksSection?.classList.remove('hidden');
+        const fireworksBaseUrlInput = document.getElementById('fireworksBaseUrl');
+        const fireworksApiKeyInput = document.getElementById('fireworksApiKey');
+        if (fireworksBaseUrlInput && !fireworksBaseUrlInput.dataset.listenerAttached) {
+            fireworksBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            fireworksBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (fireworksApiKeyInput && !fireworksApiKeyInput.dataset.listenerAttached) {
+            fireworksApiKeyInput.addEventListener('input', updateWizardNavigation);
+            fireworksApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Groq) {
+        groqSection?.classList.remove('hidden');
+        const groqBaseUrlInput = document.getElementById('groqBaseUrl');
+        const groqApiKeyInput = document.getElementById('groqApiKey');
+        if (groqBaseUrlInput && !groqBaseUrlInput.dataset.listenerAttached) {
+            groqBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            groqBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (groqApiKeyInput && !groqApiKeyInput.dataset.listenerAttached) {
+            groqApiKeyInput.addEventListener('input', updateWizardNavigation);
+            groqApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.OpenRouter) {
+        openrouterSection?.classList.remove('hidden');
+        const openrouterBaseUrlInput = document.getElementById('openrouterBaseUrl');
+        const openrouterApiKeyInput = document.getElementById('openrouterApiKey');
+        if (openrouterBaseUrlInput && !openrouterBaseUrlInput.dataset.listenerAttached) {
+            openrouterBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            openrouterBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (openrouterApiKeyInput && !openrouterApiKeyInput.dataset.listenerAttached) {
+            openrouterApiKeyInput.addEventListener('input', updateWizardNavigation);
+            openrouterApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Dropbox) {
         dropboxSection?.classList.remove('hidden');
@@ -7667,6 +8155,432 @@ function displayDeepSeekPreview(deepseekConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">DeepSeek Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with DeepSeek API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayAzureOpenAIPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const deployment = config?.deployment || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/azureai.png" alt="Azure OpenAI" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Azure OpenAI Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Azure OpenAI.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Deployment:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${deployment}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayMistralPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/mistral.png" alt="Mistral" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Mistral Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Mistral API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayCoherePreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Chat with Cohere' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/cohere.png" alt="Cohere" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Cohere Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Cohere API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayPerplexityPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/perplexity.png" alt="Perplexity" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Perplexity Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Perplexity API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayTogetherPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/together.png" alt="Together" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Together Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Together AI.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayFireworksPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' },
+        { name: 'embeddings', desc: 'Create embeddings' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-fire text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Fireworks Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Fireworks AI.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGroqPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/groq.png" alt="Groq" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Groq Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Groq API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayOpenRouterPreview(config) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = config?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat', desc: 'Create chat completions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/openrouter.png" alt="OpenRouter" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">OpenRouter Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with OpenRouter API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">
