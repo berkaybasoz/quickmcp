@@ -1227,8 +1227,8 @@ export class DynamicMCPExecutor {
     })();
 
     const items: any[] = [];
-    const itemMatches = xml.match(/<item[\\s\\S]*?<\\/item>/gi) || [];
-    const entryMatches = xml.match(/<entry[\\s\\S]*?<\\/entry>/gi) || [];
+    const itemMatches = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+    const entryMatches = xml.match(/<entry[\s\S]*?<\/entry>/gi) || [];
     const blocks = itemMatches.length ? itemMatches : entryMatches;
 
     for (const block of blocks) {
