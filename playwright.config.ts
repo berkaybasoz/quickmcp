@@ -5,7 +5,6 @@ dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  workers: 10,
   timeout: 120000,
   expect: {
     timeout: 10000,
@@ -14,4 +13,17 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     headless: true,
   },
+  projects: [
+    {
+      name: 'e2e',
+      testMatch: '**/*.spec.ts',
+      testIgnore: ['**/mssql.spec.ts'],
+      workers: 10,
+    },
+    {
+      name: 'mssql',
+      testMatch: ['**/mssql.spec.ts'],
+      workers: 1,
+    },
+  ],
 });
