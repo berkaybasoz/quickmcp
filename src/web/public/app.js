@@ -3485,19 +3485,18 @@ async function handleNextToStep3() {
 
     // For OpenAI, show info in preview and go to step 3
     if (selectedType === DataSourceType.OpenAI) {
-        const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
         const model = document.getElementById('openaiModel')?.value?.trim();
 
-        if (!baseUrl || !apiKey) {
-            showError('openai-parse-error', 'Please enter base URL and API key');
+        if (!apiKey) {
+            showError('openai-parse-error', 'Please enter API key');
             return;
         }
 
         currentDataSource = {
             type: DataSourceType.OpenAI,
             name: 'OpenAI',
-            baseUrl,
+            baseUrl: 'https://api.openai.com/v1',
             apiKey,
             defaultModel: model
         };
@@ -3527,20 +3526,19 @@ async function handleNextToStep3() {
 
     // For Claude, show info in preview and go to step 3
     if (selectedType === DataSourceType.Claude) {
-        const baseUrl = document.getElementById('claudeBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('claudeApiKey')?.value?.trim();
         const apiVersion = document.getElementById('claudeApiVersion')?.value?.trim();
         const model = document.getElementById('claudeModel')?.value?.trim();
 
-        if (!baseUrl || !apiKey) {
-            showError('claude-parse-error', 'Please enter base URL and API key');
+        if (!apiKey) {
+            showError('claude-parse-error', 'Please enter API key');
             return;
         }
 
         currentDataSource = {
             type: DataSourceType.Claude,
             name: 'Claude',
-            baseUrl,
+            baseUrl: 'https://api.anthropic.com/v1',
             apiKey,
             apiVersion: apiVersion || '2023-06-01',
             defaultModel: model
@@ -3565,19 +3563,18 @@ async function handleNextToStep3() {
 
     // For Gemini, show info in preview and go to step 3
     if (selectedType === DataSourceType.Gemini) {
-        const baseUrl = document.getElementById('geminiBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('geminiApiKey')?.value?.trim();
         const model = document.getElementById('geminiModel')?.value?.trim();
 
-        if (!baseUrl || !apiKey) {
-            showError('gemini-parse-error', 'Please enter base URL and API key');
+        if (!apiKey) {
+            showError('gemini-parse-error', 'Please enter API key');
             return;
         }
 
         currentDataSource = {
             type: DataSourceType.Gemini,
             name: 'Gemini',
-            baseUrl,
+            baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
             apiKey,
             defaultModel: model
         };
@@ -3602,19 +3599,18 @@ async function handleNextToStep3() {
 
     // For Grok, show info in preview and go to step 3
     if (selectedType === DataSourceType.Grok) {
-        const baseUrl = document.getElementById('grokBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('grokApiKey')?.value?.trim();
         const model = document.getElementById('grokModel')?.value?.trim();
 
-        if (!baseUrl || !apiKey) {
-            showError('grok-parse-error', 'Please enter base URL and API key');
+        if (!apiKey) {
+            showError('grok-parse-error', 'Please enter API key');
             return;
         }
 
         currentDataSource = {
             type: DataSourceType.Grok,
             name: 'Grok',
-            baseUrl,
+            baseUrl: 'https://api.x.ai/v1',
             apiKey,
             defaultModel: model
         };
@@ -5377,21 +5373,17 @@ function updateWizardNavigation() {
         const accessToken = document.getElementById('threadsAccessToken')?.value?.trim();
         canProceed = !!accessToken;
     } else if (selectedType === DataSourceType.OpenAI) {
-        const baseUrl = document.getElementById('openaiBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
-        canProceed = !!baseUrl && !!apiKey;
+        canProceed = !!apiKey;
     } else if (selectedType === DataSourceType.Claude) {
-        const baseUrl = document.getElementById('claudeBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('claudeApiKey')?.value?.trim();
-        canProceed = !!baseUrl && !!apiKey;
+        canProceed = !!apiKey;
     } else if (selectedType === DataSourceType.Gemini) {
-        const baseUrl = document.getElementById('geminiBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('geminiApiKey')?.value?.trim();
-        canProceed = !!baseUrl && !!apiKey;
+        canProceed = !!apiKey;
     } else if (selectedType === DataSourceType.Grok) {
-        const baseUrl = document.getElementById('grokBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('grokApiKey')?.value?.trim();
-        canProceed = !!baseUrl && !!apiKey;
+        canProceed = !!apiKey;
     } else if (selectedType === DataSourceType.Llama) {
         const baseUrl = document.getElementById('llamaBaseUrl')?.value?.trim();
         canProceed = !!baseUrl;
@@ -5851,48 +5843,28 @@ function toggleDataSourceFields() {
         }
     } else if (selectedType === DataSourceType.OpenAI) {
         openaiSection?.classList.remove('hidden');
-        const openaiBaseUrlInput = document.getElementById('openaiBaseUrl');
         const openaiApiKeyInput = document.getElementById('openaiApiKey');
-        if (openaiBaseUrlInput && !openaiBaseUrlInput.dataset.listenerAttached) {
-            openaiBaseUrlInput.addEventListener('input', updateWizardNavigation);
-            openaiBaseUrlInput.dataset.listenerAttached = 'true';
-        }
         if (openaiApiKeyInput && !openaiApiKeyInput.dataset.listenerAttached) {
             openaiApiKeyInput.addEventListener('input', updateWizardNavigation);
             openaiApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Claude) {
         claudeSection?.classList.remove('hidden');
-        const claudeBaseUrlInput = document.getElementById('claudeBaseUrl');
         const claudeApiKeyInput = document.getElementById('claudeApiKey');
-        if (claudeBaseUrlInput && !claudeBaseUrlInput.dataset.listenerAttached) {
-            claudeBaseUrlInput.addEventListener('input', updateWizardNavigation);
-            claudeBaseUrlInput.dataset.listenerAttached = 'true';
-        }
         if (claudeApiKeyInput && !claudeApiKeyInput.dataset.listenerAttached) {
             claudeApiKeyInput.addEventListener('input', updateWizardNavigation);
             claudeApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Gemini) {
         geminiSection?.classList.remove('hidden');
-        const geminiBaseUrlInput = document.getElementById('geminiBaseUrl');
         const geminiApiKeyInput = document.getElementById('geminiApiKey');
-        if (geminiBaseUrlInput && !geminiBaseUrlInput.dataset.listenerAttached) {
-            geminiBaseUrlInput.addEventListener('input', updateWizardNavigation);
-            geminiBaseUrlInput.dataset.listenerAttached = 'true';
-        }
         if (geminiApiKeyInput && !geminiApiKeyInput.dataset.listenerAttached) {
             geminiApiKeyInput.addEventListener('input', updateWizardNavigation);
             geminiApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Grok) {
         grokSection?.classList.remove('hidden');
-        const grokBaseUrlInput = document.getElementById('grokBaseUrl');
         const grokApiKeyInput = document.getElementById('grokApiKey');
-        if (grokBaseUrlInput && !grokBaseUrlInput.dataset.listenerAttached) {
-            grokBaseUrlInput.addEventListener('input', updateWizardNavigation);
-            grokBaseUrlInput.dataset.listenerAttached = 'true';
-        }
         if (grokApiKeyInput && !grokApiKeyInput.dataset.listenerAttached) {
             grokApiKeyInput.addEventListener('input', updateWizardNavigation);
             grokApiKeyInput.dataset.listenerAttached = 'true';

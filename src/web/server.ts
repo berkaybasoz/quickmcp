@@ -962,15 +962,15 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         });
     } else if (type === DataSourceType.OpenAI) {
-        const { openaiBaseUrl, openaiApiKey, openaiModel } = req.body as any;
-        if (!openaiBaseUrl || !openaiApiKey) {
-            throw new Error('Missing OpenAI base URL or API key');
+        const { openaiApiKey, openaiModel } = req.body as any;
+        if (!openaiApiKey) {
+            throw new Error('Missing OpenAI API key');
         }
 
         const dataSource = {
             type: DataSourceType.OpenAI,
             name: 'OpenAI',
-            baseUrl: openaiBaseUrl,
+            baseUrl: 'https://api.openai.com/v1',
             apiKey: openaiApiKey,
             defaultModel: openaiModel || ''
         };
@@ -1002,15 +1002,15 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         });
     } else if (type === DataSourceType.Claude) {
-        const { claudeBaseUrl, claudeApiKey, claudeApiVersion, claudeModel } = req.body as any;
-        if (!claudeBaseUrl || !claudeApiKey) {
-            throw new Error('Missing Claude base URL or API key');
+        const { claudeApiKey, claudeApiVersion, claudeModel } = req.body as any;
+        if (!claudeApiKey) {
+            throw new Error('Missing Claude API key');
         }
 
         const dataSource = {
             type: DataSourceType.Claude,
             name: 'Claude',
-            baseUrl: claudeBaseUrl,
+            baseUrl: 'https://api.anthropic.com/v1',
             apiKey: claudeApiKey,
             apiVersion: claudeApiVersion || '2023-06-01',
             defaultModel: claudeModel || ''
@@ -1037,15 +1037,15 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         });
     } else if (type === DataSourceType.Gemini) {
-        const { geminiBaseUrl, geminiApiKey, geminiModel } = req.body as any;
-        if (!geminiBaseUrl || !geminiApiKey) {
-            throw new Error('Missing Gemini base URL or API key');
+        const { geminiApiKey, geminiModel } = req.body as any;
+        if (!geminiApiKey) {
+            throw new Error('Missing Gemini API key');
         }
 
         const dataSource = {
             type: DataSourceType.Gemini,
             name: 'Gemini',
-            baseUrl: geminiBaseUrl,
+            baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
             apiKey: geminiApiKey,
             defaultModel: geminiModel || ''
         };
@@ -1072,15 +1072,15 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             }
         });
     } else if (type === DataSourceType.Grok) {
-        const { grokBaseUrl, grokApiKey, grokModel } = req.body as any;
-        if (!grokBaseUrl || !grokApiKey) {
-            throw new Error('Missing Grok base URL or API key');
+        const { grokApiKey, grokModel } = req.body as any;
+        if (!grokApiKey) {
+            throw new Error('Missing Grok API key');
         }
 
         const dataSource = {
             type: DataSourceType.Grok,
             name: 'Grok',
-            baseUrl: grokBaseUrl,
+            baseUrl: 'https://api.x.ai/v1',
             apiKey: grokApiKey,
             defaultModel: grokModel || ''
         };
@@ -2448,14 +2448,14 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.OpenAI) {
       parsedForGen = {};
       dbConfForGen = createOpenAIGeneratorConfig(
-        dataSource.baseUrl,
+        'https://api.openai.com/v1',
         dataSource.apiKey,
         dataSource.defaultModel
       );
     } else if (dataSource?.type === DataSourceType.Claude) {
       parsedForGen = {};
       dbConfForGen = createClaudeGeneratorConfig(
-        dataSource.baseUrl,
+        'https://api.anthropic.com/v1',
         dataSource.apiKey,
         dataSource.apiVersion,
         dataSource.defaultModel
@@ -2463,14 +2463,14 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.Gemini) {
       parsedForGen = {};
       dbConfForGen = createGeminiGeneratorConfig(
-        dataSource.baseUrl,
+        'https://generativelanguage.googleapis.com/v1beta',
         dataSource.apiKey,
         dataSource.defaultModel
       );
     } else if (dataSource?.type === DataSourceType.Grok) {
       parsedForGen = {};
       dbConfForGen = createGrokGeneratorConfig(
-        dataSource.baseUrl,
+        'https://api.x.ai/v1',
         dataSource.apiKey,
         dataSource.defaultModel
       );
