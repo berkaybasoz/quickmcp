@@ -129,6 +129,18 @@ export class MCPServerGenerator {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.N8n) {
         tools = this.generateToolsForN8n(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Supabase) {
+        tools = this.generateToolsForSupabase(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Npm) {
+        tools = this.generateToolsForNpm(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Nuget) {
+        tools = this.generateToolsForNuget(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Maven) {
+        tools = this.generateToolsForMaven(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Gradle) {
+        tools = this.generateToolsForGradle(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Nexus) {
+        tools = this.generateToolsForNexus(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
         tools = this.generateToolsForTrello(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GitLab) {
@@ -3049,6 +3061,310 @@ export class MCPServerGenerator {
         }
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/executions', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForSupabase(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Supabase, baseUrl, apiKey };
+
+    tools.push({
+      server_id: serverId,
+      name: 'select_rows',
+      description: 'Select rows from a table',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name' },
+          select: { type: 'string', description: 'Select columns (comma-separated, optional)' },
+          filters: { type: 'object', description: 'Filters object (optional)' },
+          order: { type: 'string', description: 'Order by (optional)' },
+          limit: { type: 'number', description: 'Limit (optional)' },
+          offset: { type: 'number', description: 'Offset (optional)' }
+        },
+        required: ['table']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{table}', method: 'GET', op: 'select' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'insert_row',
+      description: 'Insert a row into a table',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name' },
+          data: { type: 'object', description: 'Row data' }
+        },
+        required: ['table', 'data']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{table}', method: 'POST', op: 'insert' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_rows',
+      description: 'Update rows in a table',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name' },
+          data: { type: 'object', description: 'Fields to update' },
+          filters: { type: 'object', description: 'Filters object (required to avoid full-table updates)' }
+        },
+        required: ['table', 'data', 'filters']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{table}', method: 'PATCH', op: 'update' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_rows',
+      description: 'Delete rows in a table',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          table: { type: 'string', description: 'Table name' },
+          filters: { type: 'object', description: 'Filters object (required to avoid full-table deletes)' }
+        },
+        required: ['table', 'filters']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{table}', method: 'DELETE', op: 'delete' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForNpm(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Npm, baseUrl };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search packages',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Search text' },
+          size: { type: 'number', description: 'Page size (optional)' },
+          from: { type: 'number', description: 'Offset (optional)' }
+        },
+        required: ['text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/-/v1/search', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_package',
+      description: 'Get package metadata',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          package: { type: 'string', description: 'Package name' }
+        },
+        required: ['package']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{package}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_version',
+      description: 'Get package version metadata',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          package: { type: 'string', description: 'Package name' },
+          version: { type: 'string', description: 'Version' }
+        },
+        required: ['package', 'version']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{package}/{version}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForNuget(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, registrationBaseUrl } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const searchConfig = { type: DataSourceType.Nuget, baseUrl, registrationBaseUrl };
+    const regBase = registrationBaseUrl || `${String(baseUrl || '').replace(/\/$/, '')}/registration5-semver1`;
+    const regConfig = { type: DataSourceType.Nuget, baseUrl: regBase, registrationBaseUrl: regBase };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search packages',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Query' },
+          skip: { type: 'number', description: 'Skip (optional)' },
+          take: { type: 'number', description: 'Take (optional)' },
+          prerelease: { type: 'boolean', description: 'Include prerelease (optional)' }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...searchConfig, endpoint: '/query', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_package',
+      description: 'Get package metadata',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          package_id: { type: 'string', description: 'Package ID' }
+        },
+        required: ['package_id']
+      },
+      sqlQuery: JSON.stringify({ ...regConfig, endpoint: '/{package_id}/index.json', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_versions',
+      description: 'Get package versions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          package_id: { type: 'string', description: 'Package ID' }
+        },
+        required: ['package_id']
+      },
+      sqlQuery: JSON.stringify({ ...regConfig, endpoint: '/{package_id}/index.json', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForMaven(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Maven, baseUrl };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search Maven artifacts',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Query (e.g., g:org.slf4j AND a:slf4j-api)' },
+          rows: { type: 'number', description: 'Rows (optional)' },
+          start: { type: 'number', description: 'Start (optional)' }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGradle(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Gradle, baseUrl };
+
+    tools.push({
+      server_id: serverId,
+      name: 'search_plugins',
+      description: 'Search plugins',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query' },
+          page: { type: 'number', description: 'Page (optional)' },
+          per_page: { type: 'number', description: 'Page size (optional)' }
+        },
+        required: ['q']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search/plugins', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_plugin_versions',
+      description: 'Get plugin versions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          plugin_id: { type: 'string', description: 'Plugin ID (e.g., com.github.johnrengelman.shadow)' }
+        },
+        required: ['plugin_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/plugins/{plugin_id}/versions', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForNexus(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, username, password, apiKey } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Nexus, baseUrl, username, password, apiKey };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_repositories',
+      description: 'List repositories',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/repositories', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_components',
+      description: 'List components',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          repository: { type: 'string', description: 'Repository name (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/components', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'search',
+      description: 'Search components',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Component name (optional)' },
+          group: { type: 'string', description: 'Group (optional)' },
+          version: { type: 'string', description: 'Version (optional)' },
+          repository: { type: 'string', description: 'Repository name (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/search', method: 'GET' }),
       operation: 'SELECT'
     });
 

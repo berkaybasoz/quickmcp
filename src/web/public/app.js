@@ -4278,6 +4278,218 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Supabase, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Supabase) {
+        const baseUrl = document.getElementById('supabaseBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('supabaseApiKey')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('supabase-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Supabase,
+            name: 'Supabase',
+            baseUrl,
+            apiKey
+        };
+        currentParsedData = [{
+            tableName: 'supabase_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['select_rows', 'Select rows from a table'],
+                ['insert_row', 'Insert a row into a table'],
+                ['update_rows', 'Update rows in a table'],
+                ['delete_rows', 'Delete rows in a table']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displaySupabasePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For npm, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Npm) {
+        const baseUrl = document.getElementById('npmBaseUrl')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('npm-parse-error', 'Please enter base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Npm,
+            name: 'npm',
+            baseUrl
+        };
+        currentParsedData = [{
+            tableName: 'npm_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search packages'],
+                ['get_package', 'Get package metadata'],
+                ['get_version', 'Get package version metadata']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayNpmPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For NuGet, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Nuget) {
+        const baseUrl = document.getElementById('nugetBaseUrl')?.value?.trim();
+        const registrationBaseUrl = document.getElementById('nugetRegistrationBaseUrl')?.value?.trim();
+
+        if (!baseUrl || !registrationBaseUrl) {
+            showError('nuget-parse-error', 'Please enter base URLs');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Nuget,
+            name: 'NuGet',
+            baseUrl,
+            registrationBaseUrl
+        };
+        currentParsedData = [{
+            tableName: 'nuget_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search packages'],
+                ['get_package', 'Get package metadata'],
+                ['get_versions', 'Get package versions']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayNugetPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Maven, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Maven) {
+        const baseUrl = document.getElementById('mavenBaseUrl')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('maven-parse-error', 'Please enter base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Maven,
+            name: 'Maven Central',
+            baseUrl
+        };
+        currentParsedData = [{
+            tableName: 'maven_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search artifacts']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayMavenPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Gradle, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Gradle) {
+        const baseUrl = document.getElementById('gradleBaseUrl')?.value?.trim();
+
+        if (!baseUrl) {
+            showError('gradle-parse-error', 'Please enter base URL');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Gradle,
+            name: 'Gradle',
+            baseUrl
+        };
+        currentParsedData = [{
+            tableName: 'gradle_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_plugins', 'Search plugins'],
+                ['get_plugin_versions', 'Get plugin versions']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGradlePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Nexus, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Nexus) {
+        const baseUrl = document.getElementById('nexusBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('nexusApiKey')?.value?.trim();
+        const username = document.getElementById('nexusUsername')?.value?.trim();
+        const password = document.getElementById('nexusPassword')?.value?.trim();
+
+        if (!baseUrl || (!apiKey && !(username && password))) {
+            showError('nexus-parse-error', 'Please enter base URL and API key or username/password');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Nexus,
+            name: 'Nexus',
+            baseUrl,
+            apiKey,
+            username,
+            password
+        };
+        currentParsedData = [{
+            tableName: 'nexus_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repositories', 'List repositories'],
+                ['list_components', 'List components'],
+                ['search', 'Search components']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayNexusPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Trello, show info in preview and go to step 3
     if (selectedType === DataSourceType.Trello) {
         const baseUrl = document.getElementById('trelloBaseUrl')?.value?.trim();
@@ -5629,6 +5841,18 @@ async function handleNextToStep3() {
                 displayDropboxPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.N8n) {
                 displayN8nPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Supabase) {
+                displaySupabasePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Npm) {
+                displayNpmPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Nuget) {
+                displayNugetPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Maven) {
+                displayMavenPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Gradle) {
+                displayGradlePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Nexus) {
+                displayNexusPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Trello) {
                 displayTrelloPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.GitLab) {
@@ -5982,6 +6206,29 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
         canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Supabase) {
+        const baseUrl = document.getElementById('supabaseBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('supabaseApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.Npm) {
+        const baseUrl = document.getElementById('npmBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Nuget) {
+        const baseUrl = document.getElementById('nugetBaseUrl')?.value?.trim();
+        const regBaseUrl = document.getElementById('nugetRegistrationBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl && !!regBaseUrl;
+    } else if (selectedType === DataSourceType.Maven) {
+        const baseUrl = document.getElementById('mavenBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Gradle) {
+        const baseUrl = document.getElementById('gradleBaseUrl')?.value?.trim();
+        canProceed = !!baseUrl;
+    } else if (selectedType === DataSourceType.Nexus) {
+        const baseUrl = document.getElementById('nexusBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('nexusApiKey')?.value?.trim();
+        const username = document.getElementById('nexusUsername')?.value?.trim();
+        const password = document.getElementById('nexusPassword')?.value?.trim();
+        canProceed = !!baseUrl && (!!apiKey || (!!username && !!password));
     } else if (selectedType === DataSourceType.Trello) {
         const baseUrl = document.getElementById('trelloBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('trelloApiKey')?.value?.trim();
@@ -6160,6 +6407,12 @@ function toggleDataSourceFields() {
     const openrouterSection = document.getElementById('openrouter-section');
     const dropboxSection = document.getElementById('dropbox-section');
     const n8nSection = document.getElementById('n8n-section');
+    const supabaseSection = document.getElementById('supabase-section');
+    const npmSection = document.getElementById('npm-section');
+    const nugetSection = document.getElementById('nuget-section');
+    const mavenSection = document.getElementById('maven-section');
+    const gradleSection = document.getElementById('gradle-section');
+    const nexusSection = document.getElementById('nexus-section');
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
     const bitbucketSection = document.getElementById('bitbucket-section');
@@ -6230,6 +6483,12 @@ function toggleDataSourceFields() {
     openrouterSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
     n8nSection?.classList.add('hidden');
+    supabaseSection?.classList.add('hidden');
+    npmSection?.classList.add('hidden');
+    nugetSection?.classList.add('hidden');
+    mavenSection?.classList.add('hidden');
+    gradleSection?.classList.add('hidden');
+    nexusSection?.classList.add('hidden');
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
     bitbucketSection?.classList.add('hidden');
@@ -6665,6 +6924,73 @@ function toggleDataSourceFields() {
         if (n8nApiKeyInput && !n8nApiKeyInput.dataset.listenerAttached) {
             n8nApiKeyInput.addEventListener('input', updateWizardNavigation);
             n8nApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Supabase) {
+        supabaseSection?.classList.remove('hidden');
+        const supabaseBaseUrlInput = document.getElementById('supabaseBaseUrl');
+        const supabaseApiKeyInput = document.getElementById('supabaseApiKey');
+        if (supabaseBaseUrlInput && !supabaseBaseUrlInput.dataset.listenerAttached) {
+            supabaseBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            supabaseBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (supabaseApiKeyInput && !supabaseApiKeyInput.dataset.listenerAttached) {
+            supabaseApiKeyInput.addEventListener('input', updateWizardNavigation);
+            supabaseApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Npm) {
+        npmSection?.classList.remove('hidden');
+        const npmBaseUrlInput = document.getElementById('npmBaseUrl');
+        if (npmBaseUrlInput && !npmBaseUrlInput.dataset.listenerAttached) {
+            npmBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            npmBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Nuget) {
+        nugetSection?.classList.remove('hidden');
+        const nugetBaseUrlInput = document.getElementById('nugetBaseUrl');
+        const nugetRegBaseUrlInput = document.getElementById('nugetRegistrationBaseUrl');
+        if (nugetBaseUrlInput && !nugetBaseUrlInput.dataset.listenerAttached) {
+            nugetBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            nugetBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (nugetRegBaseUrlInput && !nugetRegBaseUrlInput.dataset.listenerAttached) {
+            nugetRegBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            nugetRegBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Maven) {
+        mavenSection?.classList.remove('hidden');
+        const mavenBaseUrlInput = document.getElementById('mavenBaseUrl');
+        if (mavenBaseUrlInput && !mavenBaseUrlInput.dataset.listenerAttached) {
+            mavenBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            mavenBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Gradle) {
+        gradleSection?.classList.remove('hidden');
+        const gradleBaseUrlInput = document.getElementById('gradleBaseUrl');
+        if (gradleBaseUrlInput && !gradleBaseUrlInput.dataset.listenerAttached) {
+            gradleBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            gradleBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Nexus) {
+        nexusSection?.classList.remove('hidden');
+        const nexusBaseUrlInput = document.getElementById('nexusBaseUrl');
+        const nexusApiKeyInput = document.getElementById('nexusApiKey');
+        const nexusUsernameInput = document.getElementById('nexusUsername');
+        const nexusPasswordInput = document.getElementById('nexusPassword');
+        if (nexusBaseUrlInput && !nexusBaseUrlInput.dataset.listenerAttached) {
+            nexusBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            nexusBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (nexusApiKeyInput && !nexusApiKeyInput.dataset.listenerAttached) {
+            nexusApiKeyInput.addEventListener('input', updateWizardNavigation);
+            nexusApiKeyInput.dataset.listenerAttached = 'true';
+        }
+        if (nexusUsernameInput && !nexusUsernameInput.dataset.listenerAttached) {
+            nexusUsernameInput.addEventListener('input', updateWizardNavigation);
+            nexusUsernameInput.dataset.listenerAttached = 'true';
+        }
+        if (nexusPasswordInput && !nexusPasswordInput.dataset.listenerAttached) {
+            nexusPasswordInput.addEventListener('input', updateWizardNavigation);
+            nexusPasswordInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Trello) {
         trelloSection?.classList.remove('hidden');
@@ -10312,6 +10638,328 @@ function displayN8nPreview(n8nConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">n8n Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with n8n API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySupabasePreview(sbConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = sbConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'select_rows', desc: 'Select rows from a table' },
+        { name: 'insert_row', desc: 'Insert a row into a table' },
+        { name: 'update_rows', desc: 'Update rows in a table' },
+        { name: 'delete_rows', desc: 'Delete rows in a table' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-database text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Supabase Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Supabase REST API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayNpmPreview(npmConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = npmConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search packages' },
+        { name: 'get_package', desc: 'Get package metadata' },
+        { name: 'get_version', desc: 'Get version metadata' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-box text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">npm Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to query npm registry.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayNugetPreview(nugetConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = nugetConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search packages' },
+        { name: 'get_package', desc: 'Get package metadata' },
+        { name: 'get_versions', desc: 'Get package versions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-boxes-stacked text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">NuGet Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to query NuGet endpoints.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayMavenPreview(mavenConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = mavenConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search', desc: 'Search artifacts' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-cubes text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Maven Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to query Maven Central.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGradlePreview(gradleConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = gradleConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'search_plugins', desc: 'Search plugins' },
+        { name: 'get_plugin_versions', desc: 'Get plugin versions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-plug text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Gradle Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to query Gradle Plugin Portal.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayNexusPreview(nexusConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = nexusConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_repositories', desc: 'List repositories' },
+        { name: 'list_components', desc: 'List components' },
+        { name: 'search', desc: 'Search components' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-server text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Nexus Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Nexus API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">

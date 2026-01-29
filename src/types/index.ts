@@ -48,6 +48,12 @@ export enum DataSourceType {
   FalAI = 'falai',
   HuggingFace = 'huggingface',
   N8n = 'n8n',
+  Supabase = 'supabase',
+  Npm = 'npm',
+  Nuget = 'nuget',
+  Maven = 'maven',
+  Gradle = 'gradle',
+  Nexus = 'nexus',
   OpenAI = 'openai',
   Claude = 'claude',
   Gemini = 'gemini',
@@ -119,6 +125,12 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.FalAI,
     DataSourceType.HuggingFace,
     DataSourceType.N8n,
+    DataSourceType.Supabase,
+    DataSourceType.Npm,
+    DataSourceType.Nuget,
+    DataSourceType.Maven,
+    DataSourceType.Gradle,
+    DataSourceType.Nexus,
     DataSourceType.OpenAI,
     DataSourceType.Claude,
     DataSourceType.Gemini,
@@ -403,6 +415,41 @@ export interface N8nConnection {
   baseUrl: string;
   apiKey: string;
   type: 'n8n';
+}
+
+export interface SupabaseConnection {
+  baseUrl: string;
+  apiKey: string;
+  type: 'supabase';
+}
+
+export interface NpmConnection {
+  baseUrl: string;
+  type: 'npm';
+}
+
+export interface NugetConnection {
+  baseUrl: string;
+  registrationBaseUrl?: string;
+  type: 'nuget';
+}
+
+export interface MavenConnection {
+  baseUrl: string;
+  type: 'maven';
+}
+
+export interface GradleConnection {
+  baseUrl: string;
+  type: 'gradle';
+}
+
+export interface NexusConnection {
+  baseUrl: string;
+  username?: string;
+  password?: string;
+  apiKey?: string;
+  type: 'nexus';
 }
 
 export interface OpenAIConnection {
@@ -855,6 +902,41 @@ export interface N8nGeneratorConfig extends BaseGeneratorConfig {
   apiKey: string;
 }
 
+export interface SupabaseGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Supabase;
+  baseUrl: string;
+  apiKey: string;
+}
+
+export interface NpmGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Npm;
+  baseUrl: string;
+}
+
+export interface NugetGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Nuget;
+  baseUrl: string;
+  registrationBaseUrl?: string;
+}
+
+export interface MavenGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Maven;
+  baseUrl: string;
+}
+
+export interface GradleGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Gradle;
+  baseUrl: string;
+}
+
+export interface NexusGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Nexus;
+  baseUrl: string;
+  username?: string;
+  password?: string;
+  apiKey?: string;
+}
+
 export interface OpenAIGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.OpenAI;
   baseUrl: string;
@@ -1184,6 +1266,12 @@ export type GeneratorConfig =
   | FalAIGeneratorConfig
   | HuggingFaceGeneratorConfig
   | N8nGeneratorConfig
+  | SupabaseGeneratorConfig
+  | NpmGeneratorConfig
+  | NugetGeneratorConfig
+  | MavenGeneratorConfig
+  | GradleGeneratorConfig
+  | NexusGeneratorConfig
   | OpenAIGeneratorConfig
   | ClaudeGeneratorConfig
   | GeminiGeneratorConfig
@@ -1247,6 +1335,12 @@ export type GeneratorConfig =
   | FalAIConnection
   | HuggingFaceConnection
   | N8nConnection
+  | SupabaseConnection
+  | NpmConnection
+  | NugetConnection
+  | MavenConnection
+  | GradleConnection
+  | NexusConnection
   | OpenAIConnection
   | ClaudeConnection
   | GeminiConnection
@@ -1586,6 +1680,64 @@ export function createN8nGeneratorConfig(
   return {
     type: DataSourceType.N8n,
     baseUrl,
+    apiKey
+  };
+}
+
+export function createSupabaseGeneratorConfig(
+  baseUrl: string,
+  apiKey: string
+): SupabaseGeneratorConfig {
+  return {
+    type: DataSourceType.Supabase,
+    baseUrl,
+    apiKey
+  };
+}
+
+export function createNpmGeneratorConfig(baseUrl: string): NpmGeneratorConfig {
+  return {
+    type: DataSourceType.Npm,
+    baseUrl
+  };
+}
+
+export function createNugetGeneratorConfig(
+  baseUrl: string,
+  registrationBaseUrl?: string
+): NugetGeneratorConfig {
+  return {
+    type: DataSourceType.Nuget,
+    baseUrl,
+    registrationBaseUrl
+  };
+}
+
+export function createMavenGeneratorConfig(baseUrl: string): MavenGeneratorConfig {
+  return {
+    type: DataSourceType.Maven,
+    baseUrl
+  };
+}
+
+export function createGradleGeneratorConfig(baseUrl: string): GradleGeneratorConfig {
+  return {
+    type: DataSourceType.Gradle,
+    baseUrl
+  };
+}
+
+export function createNexusGeneratorConfig(
+  baseUrl: string,
+  username?: string,
+  password?: string,
+  apiKey?: string
+): NexusGeneratorConfig {
+  return {
+    type: DataSourceType.Nexus,
+    baseUrl,
+    username,
+    password,
     apiKey
   };
 }

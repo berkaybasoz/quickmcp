@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createFalAIGeneratorConfig, createHuggingFaceGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createN8nGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createSupabaseGeneratorConfig, createNpmGeneratorConfig, createNugetGeneratorConfig, createMavenGeneratorConfig, createGradleGeneratorConfig, createNexusGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1683,6 +1683,219 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.Supabase) {
+        const { supabaseBaseUrl, supabaseApiKey } = req.body as any;
+
+        if (!supabaseBaseUrl || !supabaseApiKey) {
+            throw new Error('Missing Supabase base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Supabase,
+            name: 'Supabase',
+            baseUrl: supabaseBaseUrl,
+            apiKey: supabaseApiKey
+        };
+
+        const parsedData = [{
+            tableName: 'supabase_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['select_rows', 'Select rows from a table'],
+                ['insert_row', 'Insert a row into a table'],
+                ['update_rows', 'Update rows in a table'],
+                ['delete_rows', 'Delete rows in a table']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Npm) {
+        const { npmBaseUrl } = req.body as any;
+
+        if (!npmBaseUrl) {
+            throw new Error('Missing npm base URL');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Npm,
+            name: 'npm',
+            baseUrl: npmBaseUrl
+        };
+
+        const parsedData = [{
+            tableName: 'npm_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search packages'],
+                ['get_package', 'Get package metadata'],
+                ['get_version', 'Get package version metadata']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Nuget) {
+        const { nugetBaseUrl, nugetRegistrationBaseUrl } = req.body as any;
+
+        if (!nugetBaseUrl || !nugetRegistrationBaseUrl) {
+            throw new Error('Missing NuGet base URLs');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Nuget,
+            name: 'NuGet',
+            baseUrl: nugetBaseUrl,
+            registrationBaseUrl: nugetRegistrationBaseUrl
+        };
+
+        const parsedData = [{
+            tableName: 'nuget_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search packages'],
+                ['get_package', 'Get package metadata'],
+                ['get_versions', 'Get package versions']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Maven) {
+        const { mavenBaseUrl } = req.body as any;
+
+        if (!mavenBaseUrl) {
+            throw new Error('Missing Maven base URL');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Maven,
+            name: 'Maven Central',
+            baseUrl: mavenBaseUrl
+        };
+
+        const parsedData = [{
+            tableName: 'maven_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search', 'Search artifacts']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Gradle) {
+        const { gradleBaseUrl } = req.body as any;
+
+        if (!gradleBaseUrl) {
+            throw new Error('Missing Gradle base URL');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Gradle,
+            name: 'Gradle',
+            baseUrl: gradleBaseUrl
+        };
+
+        const parsedData = [{
+            tableName: 'gradle_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['search_plugins', 'Search plugins'],
+                ['get_plugin_versions', 'Get plugin versions']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Nexus) {
+        const { nexusBaseUrl, nexusApiKey, nexusUsername, nexusPassword } = req.body as any;
+
+        if (!nexusBaseUrl || (!nexusApiKey && !(nexusUsername && nexusPassword))) {
+            throw new Error('Missing Nexus base URL or credentials');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Nexus,
+            name: 'Nexus',
+            baseUrl: nexusBaseUrl,
+            apiKey: nexusApiKey,
+            username: nexusUsername,
+            password: nexusPassword
+        };
+
+        const parsedData = [{
+            tableName: 'nexus_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_repositories', 'List repositories'],
+                ['list_components', 'List components'],
+                ['search', 'Search components']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Trello) {
         const { trelloBaseUrl, trelloApiKey, trelloApiToken, trelloMemberId, trelloBoardId, trelloListId } = req.body as any;
 
@@ -3065,6 +3278,41 @@ app.post('/api/generate', async (req, res) => {
       parsedForGen = {};
       dbConfForGen = createN8nGeneratorConfig(
         dataSource.baseUrl,
+        dataSource.apiKey
+      );
+    } else if (dataSource?.type === DataSourceType.Supabase) {
+      parsedForGen = {};
+      dbConfForGen = createSupabaseGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey
+      );
+    } else if (dataSource?.type === DataSourceType.Npm) {
+      parsedForGen = {};
+      dbConfForGen = createNpmGeneratorConfig(
+        dataSource.baseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.Nuget) {
+      parsedForGen = {};
+      dbConfForGen = createNugetGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.registrationBaseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.Maven) {
+      parsedForGen = {};
+      dbConfForGen = createMavenGeneratorConfig(
+        dataSource.baseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.Gradle) {
+      parsedForGen = {};
+      dbConfForGen = createGradleGeneratorConfig(
+        dataSource.baseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.Nexus) {
+      parsedForGen = {};
+      dbConfForGen = createNexusGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.username,
+        dataSource.password,
         dataSource.apiKey
       );
     } else if (dataSource?.type === DataSourceType.Trello) {

@@ -802,6 +802,66 @@
                                                 <p class="text-xs text-slate-500">Workflows and executions.</p>
                                             </div>
                                         </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="database">
+                                            <input type="radio" name="dataSourceType" value="supabase" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-600 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/supabase.png" alt="Supabase" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Supabase</h4>
+                                                <p class="text-xs text-slate-500">PostgREST table operations.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="npm" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-red-500 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/npm.png" alt="npm" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">npm</h4>
+                                                <p class="text-xs text-slate-500">Registry search and package info.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="nuget" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 peer-checked:border-indigo-500 peer-checked:shadow-lg peer-checked:shadow-indigo-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/nuget.png" alt="NuGet" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">NuGet</h4>
+                                                <p class="text-xs text-slate-500">Package search and metadata.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="maven" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-600 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-600 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/maven.png" alt="Maven" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Maven Central</h4>
+                                                <p class="text-xs text-slate-500">Search artifacts.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="gradle" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/gradle.png" alt="Gradle" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Gradle</h4>
+                                                <p class="text-xs text-slate-500">Plugin Portal API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
+                                            <input type="radio" name="dataSourceType" value="nexus" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-700 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-700 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <i class="fas fa-server text-2xl"></i>
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Nexus</h4>
+                                                <p class="text-xs text-slate-500">Repository manager API.</p>
+                                            </div>
+                                        </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="trello" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
@@ -2495,6 +2555,182 @@
                                             </p>
                                         </div>
                                         <div id="n8n-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Supabase Config -->
+                                    <div id="supabase-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">Supabase API</p>
+                                                    <p>Use your project REST endpoint and API key.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="supabaseBaseUrl" placeholder="https://YOUR_PROJECT.supabase.co/rest/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="supabaseApiKey" placeholder="anon/service key" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>4 tools</strong> will be created: select_rows, insert_row, update_rows, delete_rows
+                                            </p>
+                                        </div>
+                                        <div id="supabase-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- npm Config -->
+                                    <div id="npm-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-red-600 mt-0.5"></i>
+                                                <div class="text-sm text-red-700">
+                                                    <p class="font-medium text-red-800 mb-1">npm Registry</p>
+                                                    <p>Public npm registry endpoints.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="npmBaseUrl" value="https://registry.npmjs.org" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: search, get_package, get_version
+                                            </p>
+                                        </div>
+                                        <div id="npm-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- NuGet Config -->
+                                    <div id="nuget-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">NuGet API</p>
+                                                    <p>Search and metadata endpoints.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Search Base URL</label>
+                                                <input type="text" id="nugetBaseUrl" value="https://api.nuget.org/v3" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Registration Base URL</label>
+                                                <input type="text" id="nugetRegistrationBaseUrl" value="https://api.nuget.org/v3/registration5-semver1" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: search, get_package, get_versions
+                                            </p>
+                                        </div>
+                                        <div id="nuget-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Maven Config -->
+                                    <div id="maven-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">Maven Central</p>
+                                                    <p>Search Maven artifacts.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="mavenBaseUrl" value="https://search.maven.org/solrsearch/select" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>1 tool</strong> will be created: search
+                                            </p>
+                                        </div>
+                                        <div id="maven-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Gradle Config -->
+                                    <div id="gradle-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-sky-600 mt-0.5"></i>
+                                                <div class="text-sm text-sky-700">
+                                                    <p class="font-medium text-sky-800 mb-1">Gradle Plugin Portal</p>
+                                                    <p>Search and list plugin versions.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="gradleBaseUrl" value="https://plugins.gradle.org/api" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: search_plugins, get_plugin_versions
+                                            </p>
+                                        </div>
+                                        <div id="gradle-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Nexus Config -->
+                                    <div id="nexus-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-slate-600 mt-0.5"></i>
+                                                <div class="text-sm text-slate-700">
+                                                    <p class="font-medium text-slate-800 mb-1">Nexus Repository</p>
+                                                    <p>Use REST API endpoint and credentials.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="nexusBaseUrl" value="http://localhost:8081/service/rest/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key (Optional)</label>
+                                                <input type="password" id="nexusApiKey" placeholder="NX-API-KEY" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Username (Optional)</label>
+                                                <input type="text" id="nexusUsername" placeholder="admin" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Password (Optional)</label>
+                                                <input type="password" id="nexusPassword" placeholder="password" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: list_repositories, list_components, search
+                                            </p>
+                                        </div>
+                                        <div id="nexus-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Trello Config -->

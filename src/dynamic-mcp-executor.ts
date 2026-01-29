@@ -196,6 +196,30 @@ export class DynamicMCPExecutor {
         return await this.executeN8nCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.Supabase) {
+        return await this.executeSupabaseCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Npm) {
+        return await this.executeNpmCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Nuget) {
+        return await this.executeNugetCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Maven) {
+        return await this.executeMavenCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Gradle) {
+        return await this.executeGradleCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Nexus) {
+        return await this.executeNexusCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Trello) {
         return await this.executeTrelloCall(queryConfig, args);
       }
@@ -3848,6 +3872,279 @@ export class DynamicMCPExecutor {
       };
     }
 
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeSupabaseCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method } = queryConfig;
+    if (!baseUrl || !apiKey || !endpoint) {
+      return { success: false, error: 'Missing Supabase baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{table}')) {
+      const table = args?.table;
+      if (!table) return { success: false, error: 'Missing table', data: [], rowCount: 0 };
+      url = url.replace('{table}', encodeURIComponent(String(table)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'apikey': String(apiKey).trim(),
+      'Authorization': `Bearer ${String(apiKey).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+
+    if (methodUpper === 'GET') {
+      if (args?.select) queryParams.push(`select=${encodeURIComponent(String(args.select))}`);
+      if (args?.order) queryParams.push(`order=${encodeURIComponent(String(args.order))}`);
+      if (args?.limit !== undefined) queryParams.push(`limit=${encodeURIComponent(String(args.limit))}`);
+      if (args?.offset !== undefined) queryParams.push(`offset=${encodeURIComponent(String(args.offset))}`);
+
+      const filters = args?.filters || {};
+      const operators = new Set(['eq','neq','gt','gte','lt','lte','like','ilike','in','is','cs','cd','ov','sl','sr','nxr','nxl','adj']);
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === null) continue;
+        const strVal = String(value);
+        const opPrefix = strVal.split('.', 1)[0];
+        const finalVal = operators.has(opPrefix) ? strVal : `eq.${strVal}`;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(finalVal)}`);
+      }
+    } else {
+      const filters = args?.filters || {};
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined || value === null) continue;
+        const strVal = String(value);
+        const opPrefix = strVal.split('.', 1)[0];
+        const operators = new Set(['eq','neq','gt','gte','lt','lte','like','ilike','in','is','cs','cd','ov','sl','sr','nxr','nxl','adj']);
+        const finalVal = operators.has(opPrefix) ? strVal : `eq.${strVal}`;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(finalVal)}`);
+      }
+      body = JSON.stringify(args?.data || {});
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`🟢 Supabase API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Supabase API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeNpmCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing npm baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{package}')) {
+      const pkg = args?.package;
+      if (!pkg) return { success: false, error: 'Missing package', data: [], rowCount: 0 };
+      url = url.replace('{package}', encodeURIComponent(String(pkg)));
+    }
+    if (url.includes('{version}')) {
+      const version = args?.version;
+      if (!version) return { success: false, error: 'Missing version', data: [], rowCount: 0 };
+      url = url.replace('{version}', encodeURIComponent(String(version)));
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (['package', 'version'].includes(key)) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📦 npm API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `npm API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeNugetCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing NuGet baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{package_id}')) {
+      const packageId = args?.package_id;
+      if (!packageId) return { success: false, error: 'Missing package_id', data: [], rowCount: 0 };
+      url = url.replace('{package_id}', encodeURIComponent(String(packageId.toLowerCase())));
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (['package_id'].includes(key)) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📦 NuGet API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `NuGet API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeMavenCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method } = queryConfig;
+    if (!baseUrl) {
+      return { success: false, error: 'Missing Maven baseUrl', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint || ''}`;
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (!args?.wt) {
+      queryParams.push('wt=json');
+    }
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📦 Maven API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Maven API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGradleCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing Gradle baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{plugin_id}')) {
+      const pluginId = args?.plugin_id;
+      if (!pluginId) return { success: false, error: 'Missing plugin_id', data: [], rowCount: 0 };
+      url = url.replace('{plugin_id}', encodeURIComponent(String(pluginId)));
+    }
+
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      if (['plugin_id'].includes(key)) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`🧰 Gradle API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Gradle API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeNexusCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, endpoint, method, apiKey, username, password } = queryConfig;
+    if (!baseUrl || !endpoint) {
+      return { success: false, error: 'Missing Nexus baseUrl/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const queryParams: string[] = [];
+    for (const [key, value] of Object.entries(args || {})) {
+      if (value === undefined || value === null) continue;
+      queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (apiKey) {
+      headers['NX-API-Key'] = String(apiKey).trim();
+    } else if (username && password) {
+      const auth = Buffer.from(`${username}:${password}`).toString('base64');
+      headers['Authorization'] = `Basic ${auth}`;
+    }
+
+    console.error(`🧱 Nexus API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    const response = await fetch(url, { method: (method || 'GET').toUpperCase(), headers });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Nexus API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData || response.statusText }],
+        rowCount: 1
+      };
+    }
     const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }
