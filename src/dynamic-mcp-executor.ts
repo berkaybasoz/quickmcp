@@ -140,6 +140,14 @@ export class DynamicMCPExecutor {
         return await this.executeOpenAICompatibleCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.FalAI) {
+        return await this.executeFalAICall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.HuggingFace) {
+        return await this.executeHuggingFaceCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.Llama) {
         return await this.executeOllamaCall(queryConfig, args);
       }
@@ -182,6 +190,10 @@ export class DynamicMCPExecutor {
 
       if (queryConfig?.type === DataSourceType.Dropbox) {
         return await this.executeDropboxCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.N8n) {
+        return await this.executeN8nCall(queryConfig, args);
       }
 
       if (queryConfig?.type === DataSourceType.Trello) {
@@ -3712,6 +3724,112 @@ export class DynamicMCPExecutor {
         rowCount: 1
       };
     }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeFalAICall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method } = queryConfig;
+    if (!baseUrl || !apiKey || !endpoint) {
+      return { success: false, error: 'Missing fal.ai baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    const model = args?.model;
+    if (!model) {
+      return { success: false, error: 'Missing model', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    url = url.replace('{model}', encodeURIComponent(String(model)));
+
+    const headers: Record<string, string> = {
+      'Authorization': `Key ${String(apiKey).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    const payload = args?.input ?? {};
+    console.error(`⚡ fal.ai API call: ${String(method || 'POST').toUpperCase()} ${url}`);
+
+    const response = await fetch(url, {
+      method: (method || 'POST').toUpperCase(),
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `fal.ai API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeHuggingFaceCall(queryConfig: any, args: any): Promise<any> {
+    return await this.executeOpenAICompatibleCall(queryConfig, args);
+  }
+
+  private async executeN8nCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, method } = queryConfig;
+    if (!baseUrl || !apiKey || !endpoint) {
+      return { success: false, error: 'Missing n8n baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (args.workflow_id && url.includes('{workflow_id}')) {
+      url = url.replace('{workflow_id}', encodeURIComponent(String(args.workflow_id)));
+    } else if (url.includes('{workflow_id}')) {
+      return { success: false, error: 'Missing workflow_id', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'X-N8N-API-KEY': String(apiKey).trim(),
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['workflow_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['workflow_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`🧩 n8n API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `n8n API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData || response.statusText }],
+        rowCount: 1
+      };
+    }
+
     const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }

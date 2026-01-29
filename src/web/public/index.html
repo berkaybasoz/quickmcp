@@ -663,6 +663,26 @@
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
+                                            <input type="radio" name="dataSourceType" value="falai" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-rose-500 hover:shadow-md hover:shadow-rose-500/20 peer-checked:border-rose-500 peer-checked:shadow-lg peer-checked:shadow-rose-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/falai.png" alt="fal.ai" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">fal.ai</h4>
+                                                <p class="text-xs text-slate-500">Run models on fal.ai.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
+                                            <input type="radio" name="dataSourceType" value="huggingface" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-yellow-500 hover:shadow-md hover:shadow-yellow-500/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/huggingface.png" alt="Hugging Face" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Hugging Face</h4>
+                                                <p class="text-xs text-slate-500">HF Inference API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="ai">
                                             <input type="radio" name="dataSourceType" value="llama" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -770,6 +790,16 @@
                                                 </div>
                                                 <h4 class="font-bold text-slate-900 mb-1">Dropbox</h4>
                                                 <p class="text-xs text-slate-500">Connect to Dropbox API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                            <input type="radio" name="dataSourceType" value="n8n" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/n8n.png" alt="n8n" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">n8n</h4>
+                                                <p class="text-xs text-slate-500">Workflows and executions.</p>
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
@@ -1999,6 +2029,70 @@
                                         <div id="grok-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
+                                    <!-- fal.ai Config -->
+                                    <div id="falai-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-rose-50 rounded-lg border border-rose-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-rose-600 mt-0.5"></i>
+                                                <div class="text-sm text-rose-700">
+                                                    <p class="font-medium text-rose-800 mb-1">fal.ai API</p>
+                                                    <p>Use your fal.ai API key.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="falaiBaseUrl" value="https://fal.run" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="falaiApiKey" placeholder="fal_..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>1 tool</strong> will be created: run_model
+                                            </p>
+                                        </div>
+                                        <div id="falai-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Hugging Face Config -->
+                                    <div id="huggingface-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
+                                                <div class="text-sm text-yellow-700">
+                                                    <p class="font-medium text-yellow-800 mb-1">Hugging Face API</p>
+                                                    <p>Use your Hugging Face access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="huggingfaceBaseUrl" value="https://router.huggingface.co/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="huggingfaceApiKey" placeholder="hf_..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Model (Optional)</label>
+                                                <input type="text" id="huggingfaceDefaultModel" placeholder="meta-llama/Meta-Llama-3.1-8B-Instruct" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>1 tool</strong> will be created: chat_completion
+                                            </p>
+                                        </div>
+                                        <div id="huggingface-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
                                     <!-- Llama Config -->
                                     <div id="llama-section" class="hidden animate-fade-in space-y-6">
                                         <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
@@ -2371,6 +2465,36 @@
                                             </p>
                                         </div>
                                         <div id="dropbox-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- n8n Config -->
+                                    <div id="n8n-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                                <div class="text-sm text-amber-700">
+                                                    <p class="font-medium text-amber-800 mb-1">n8n API</p>
+                                                    <p>Use your n8n API key.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="n8nBaseUrl" value="http://localhost:5678/api/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="n8nApiKey" placeholder="n8n_api_key" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_workflows, get_workflow, activate_workflow, deactivate_workflow, list_executions
+                                            </p>
+                                        </div>
+                                        <div id="n8n-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Trello Config -->

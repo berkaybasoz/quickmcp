@@ -3758,6 +3758,76 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For fal.ai, show info in preview and go to step 3
+    if (selectedType === DataSourceType.FalAI) {
+        const baseUrl = document.getElementById('falaiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('falaiApiKey')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('falai-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.FalAI,
+            name: 'fal.ai',
+            baseUrl,
+            apiKey
+        };
+        currentParsedData = [{
+            tableName: 'falai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['run_model', 'Run a fal.ai model']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayFalAIPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Hugging Face, show info in preview and go to step 3
+    if (selectedType === DataSourceType.HuggingFace) {
+        const baseUrl = document.getElementById('huggingfaceBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('huggingfaceApiKey')?.value?.trim();
+        const defaultModel = document.getElementById('huggingfaceDefaultModel')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('huggingface-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.HuggingFace,
+            name: 'Hugging Face',
+            baseUrl,
+            apiKey,
+            defaultModel
+        };
+        currentParsedData = [{
+            tableName: 'huggingface_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat_completion', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayHuggingFacePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Llama, show info in preview and go to step 3
     if (selectedType === DataSourceType.Llama) {
         const baseUrl = document.getElementById('llamaBaseUrl')?.value?.trim();
@@ -4162,6 +4232,44 @@ async function handleNextToStep3() {
         }];
 
         displayDropboxPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For n8n, show info in preview and go to step 3
+    if (selectedType === DataSourceType.N8n) {
+        const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('n8n-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.N8n,
+            name: 'n8n',
+            baseUrl,
+            apiKey
+        };
+        currentParsedData = [{
+            tableName: 'n8n_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_workflows', 'List workflows'],
+                ['get_workflow', 'Get workflow details'],
+                ['activate_workflow', 'Activate a workflow'],
+                ['deactivate_workflow', 'Deactivate a workflow'],
+                ['list_executions', 'List executions']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayN8nPreview(currentDataSource);
         goToWizardStep(3);
         return;
     }
@@ -5489,6 +5597,10 @@ async function handleNextToStep3() {
                 displayGeminiPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Grok) {
                 displayGrokPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.FalAI) {
+                displayFalAIPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.HuggingFace) {
+                displayHuggingFacePreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Llama) {
                 displayLlamaPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.DeepSeek) {
@@ -5511,6 +5623,8 @@ async function handleNextToStep3() {
                 displayOpenRouterPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Dropbox) {
                 displayDropboxPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.N8n) {
+                displayN8nPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Trello) {
                 displayTrelloPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.GitLab) {
@@ -5808,6 +5922,14 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.Grok) {
         const apiKey = document.getElementById('grokApiKey')?.value?.trim();
         canProceed = !!apiKey;
+    } else if (selectedType === DataSourceType.FalAI) {
+        const baseUrl = document.getElementById('falaiBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('falaiApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.HuggingFace) {
+        const baseUrl = document.getElementById('huggingfaceBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('huggingfaceApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
     } else if (selectedType === DataSourceType.Llama) {
         const baseUrl = document.getElementById('llamaBaseUrl')?.value?.trim();
         canProceed = !!baseUrl;
@@ -5852,6 +5974,10 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('dropboxBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('dropboxAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.N8n) {
+        const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
     } else if (selectedType === DataSourceType.Trello) {
         const baseUrl = document.getElementById('trelloBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('trelloApiKey')?.value?.trim();
@@ -6016,6 +6142,8 @@ function toggleDataSourceFields() {
     const claudeSection = document.getElementById('claude-section');
     const geminiSection = document.getElementById('gemini-section');
     const grokSection = document.getElementById('grok-section');
+    const falaiSection = document.getElementById('falai-section');
+    const huggingfaceSection = document.getElementById('huggingface-section');
     const llamaSection = document.getElementById('llama-section');
     const deepseekSection = document.getElementById('deepseek-section');
     const azureOpenAISection = document.getElementById('azure-openai-section');
@@ -6027,6 +6155,7 @@ function toggleDataSourceFields() {
     const groqSection = document.getElementById('groq-section');
     const openrouterSection = document.getElementById('openrouter-section');
     const dropboxSection = document.getElementById('dropbox-section');
+    const n8nSection = document.getElementById('n8n-section');
     const trelloSection = document.getElementById('trello-section');
     const gitlabSection = document.getElementById('gitlab-section');
     const bitbucketSection = document.getElementById('bitbucket-section');
@@ -6083,6 +6212,8 @@ function toggleDataSourceFields() {
     claudeSection?.classList.add('hidden');
     geminiSection?.classList.add('hidden');
     grokSection?.classList.add('hidden');
+    falaiSection?.classList.add('hidden');
+    huggingfaceSection?.classList.add('hidden');
     llamaSection?.classList.add('hidden');
     deepseekSection?.classList.add('hidden');
     azureOpenAISection?.classList.add('hidden');
@@ -6094,6 +6225,7 @@ function toggleDataSourceFields() {
     groqSection?.classList.add('hidden');
     openrouterSection?.classList.add('hidden');
     dropboxSection?.classList.add('hidden');
+    n8nSection?.classList.add('hidden');
     trelloSection?.classList.add('hidden');
     gitlabSection?.classList.add('hidden');
     bitbucketSection?.classList.add('hidden');
@@ -6362,6 +6494,30 @@ function toggleDataSourceFields() {
             grokApiKeyInput.addEventListener('input', updateWizardNavigation);
             grokApiKeyInput.dataset.listenerAttached = 'true';
         }
+    } else if (selectedType === DataSourceType.FalAI) {
+        falaiSection?.classList.remove('hidden');
+        const falaiBaseUrlInput = document.getElementById('falaiBaseUrl');
+        const falaiApiKeyInput = document.getElementById('falaiApiKey');
+        if (falaiBaseUrlInput && !falaiBaseUrlInput.dataset.listenerAttached) {
+            falaiBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            falaiBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (falaiApiKeyInput && !falaiApiKeyInput.dataset.listenerAttached) {
+            falaiApiKeyInput.addEventListener('input', updateWizardNavigation);
+            falaiApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.HuggingFace) {
+        huggingfaceSection?.classList.remove('hidden');
+        const huggingfaceBaseUrlInput = document.getElementById('huggingfaceBaseUrl');
+        const huggingfaceApiKeyInput = document.getElementById('huggingfaceApiKey');
+        if (huggingfaceBaseUrlInput && !huggingfaceBaseUrlInput.dataset.listenerAttached) {
+            huggingfaceBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            huggingfaceBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (huggingfaceApiKeyInput && !huggingfaceApiKeyInput.dataset.listenerAttached) {
+            huggingfaceApiKeyInput.addEventListener('input', updateWizardNavigation);
+            huggingfaceApiKeyInput.dataset.listenerAttached = 'true';
+        }
     } else if (selectedType === DataSourceType.Llama) {
         llamaSection?.classList.remove('hidden');
         const llamaBaseUrlInput = document.getElementById('llamaBaseUrl');
@@ -6493,6 +6649,18 @@ function toggleDataSourceFields() {
         if (dropboxAccessTokenInput && !dropboxAccessTokenInput.dataset.listenerAttached) {
             dropboxAccessTokenInput.addEventListener('input', updateWizardNavigation);
             dropboxAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.N8n) {
+        n8nSection?.classList.remove('hidden');
+        const n8nBaseUrlInput = document.getElementById('n8nBaseUrl');
+        const n8nApiKeyInput = document.getElementById('n8nApiKey');
+        if (n8nBaseUrlInput && !n8nBaseUrlInput.dataset.listenerAttached) {
+            n8nBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            n8nBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (n8nApiKeyInput && !n8nApiKeyInput.dataset.listenerAttached) {
+            n8nApiKeyInput.addEventListener('input', updateWizardNavigation);
+            n8nApiKeyInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Trello) {
         trelloSection?.classList.remove('hidden');
@@ -9420,6 +9588,110 @@ function displayGrokPreview(grokConfig) {
     preview.innerHTML = html;
 }
 
+function displayFalAIPreview(falConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = falConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'run_model', desc: 'Run a fal.ai model' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/falai.png" alt="fal.ai" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">fal.ai Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with fal.ai.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayHuggingFacePreview(hfConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = hfConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'chat_completion', desc: 'Create chat completions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/huggingface.png" alt="Hugging Face" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Hugging Face Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Hugging Face API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
 function displayLlamaPreview(llamaConfig) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
@@ -9976,6 +10248,62 @@ function displayDropboxPreview(dbxConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Dropbox Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Dropbox API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayN8nPreview(n8nConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = n8nConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_workflows', desc: 'List workflows' },
+        { name: 'get_workflow', desc: 'Get workflow details' },
+        { name: 'activate_workflow', desc: 'Activate a workflow' },
+        { name: 'deactivate_workflow', desc: 'Deactivate a workflow' },
+        { name: 'list_executions', desc: 'List executions' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/n8n.png" alt="n8n" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">n8n Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with n8n API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">

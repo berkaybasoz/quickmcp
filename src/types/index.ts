@@ -45,6 +45,9 @@ export enum DataSourceType {
   YouTube = 'youtube',
   WhatsAppBusiness = 'whatsappbusiness',
   Threads = 'threads',
+  FalAI = 'falai',
+  HuggingFace = 'huggingface',
+  N8n = 'n8n',
   OpenAI = 'openai',
   Claude = 'claude',
   Gemini = 'gemini',
@@ -113,6 +116,9 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.YouTube,
     DataSourceType.WhatsAppBusiness,
     DataSourceType.Threads,
+    DataSourceType.FalAI,
+    DataSourceType.HuggingFace,
+    DataSourceType.N8n,
     DataSourceType.OpenAI,
     DataSourceType.Claude,
     DataSourceType.Gemini,
@@ -378,6 +384,25 @@ export interface ThreadsConnection {
   accessToken: string;
   userId?: string;
   type: 'threads';
+}
+
+export interface FalAIConnection {
+  baseUrl: string;
+  apiKey: string;
+  type: 'falai';
+}
+
+export interface HuggingFaceConnection {
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+  type: 'huggingface';
+}
+
+export interface N8nConnection {
+  baseUrl: string;
+  apiKey: string;
+  type: 'n8n';
 }
 
 export interface OpenAIConnection {
@@ -811,6 +836,25 @@ export interface ThreadsGeneratorConfig extends BaseGeneratorConfig {
   userId?: string;
 }
 
+export interface FalAIGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.FalAI;
+  baseUrl: string;
+  apiKey: string;
+}
+
+export interface HuggingFaceGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.HuggingFace;
+  baseUrl: string;
+  apiKey: string;
+  defaultModel?: string;
+}
+
+export interface N8nGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.N8n;
+  baseUrl: string;
+  apiKey: string;
+}
+
 export interface OpenAIGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.OpenAI;
   baseUrl: string;
@@ -1137,6 +1181,9 @@ export type GeneratorConfig =
   | YouTubeGeneratorConfig
   | WhatsAppBusinessGeneratorConfig
   | ThreadsGeneratorConfig
+  | FalAIGeneratorConfig
+  | HuggingFaceGeneratorConfig
+  | N8nGeneratorConfig
   | OpenAIGeneratorConfig
   | ClaudeGeneratorConfig
   | GeminiGeneratorConfig
@@ -1197,6 +1244,9 @@ export type GeneratorConfig =
   | YouTubeConnection
   | WhatsAppBusinessConnection
   | ThreadsConnection
+  | FalAIConnection
+  | HuggingFaceConnection
+  | N8nConnection
   | OpenAIConnection
   | ClaudeConnection
   | GeminiConnection
@@ -1502,6 +1552,41 @@ export function createThreadsGeneratorConfig(
     baseUrl,
     accessToken,
     userId
+  };
+}
+
+export function createFalAIGeneratorConfig(
+  baseUrl: string,
+  apiKey: string
+): FalAIGeneratorConfig {
+  return {
+    type: DataSourceType.FalAI,
+    baseUrl,
+    apiKey
+  };
+}
+
+export function createHuggingFaceGeneratorConfig(
+  baseUrl: string,
+  apiKey: string,
+  defaultModel?: string
+): HuggingFaceGeneratorConfig {
+  return {
+    type: DataSourceType.HuggingFace,
+    baseUrl,
+    apiKey,
+    defaultModel
+  };
+}
+
+export function createN8nGeneratorConfig(
+  baseUrl: string,
+  apiKey: string
+): N8nGeneratorConfig {
+  return {
+    type: DataSourceType.N8n,
+    baseUrl,
+    apiKey
   };
 }
 

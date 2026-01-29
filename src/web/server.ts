@@ -1211,6 +1211,73 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.FalAI) {
+        const { falaiBaseUrl, falaiApiKey } = req.body as any;
+        if (!falaiBaseUrl || !falaiApiKey) {
+            throw new Error('Missing fal.ai base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.FalAI,
+            name: 'fal.ai',
+            baseUrl: falaiBaseUrl,
+            apiKey: falaiApiKey
+        };
+
+        const parsedData = [{
+            tableName: 'falai_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['run_model', 'Run a fal.ai model']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.HuggingFace) {
+        const { huggingfaceBaseUrl, huggingfaceApiKey, huggingfaceDefaultModel } = req.body as any;
+        if (!huggingfaceBaseUrl || !huggingfaceApiKey) {
+            throw new Error('Missing Hugging Face base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.HuggingFace,
+            name: 'Hugging Face',
+            baseUrl: huggingfaceBaseUrl,
+            apiKey: huggingfaceApiKey,
+            defaultModel: huggingfaceDefaultModel || ''
+        };
+
+        const parsedData = [{
+            tableName: 'huggingface_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['chat_completion', 'Create chat completions']
+            ],
+            metadata: {
+                rowCount: 1,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.Llama) {
         const { llamaBaseUrl, llamaModel } = req.body as any;
         if (!llamaBaseUrl) {
@@ -1559,6 +1626,44 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 ['search', 'Search for files and folders'],
                 ['download', 'Download a file'],
                 ['upload', 'Upload a file']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.N8n) {
+        const { n8nBaseUrl, n8nApiKey } = req.body as any;
+
+        if (!n8nBaseUrl || !n8nApiKey) {
+            throw new Error('Missing n8n base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.N8n,
+            name: 'n8n',
+            baseUrl: n8nBaseUrl,
+            apiKey: n8nApiKey
+        };
+
+        const parsedData = [{
+            tableName: 'n8n_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_workflows', 'List workflows'],
+                ['get_workflow', 'Get workflow details'],
+                ['activate_workflow', 'Activate a workflow'],
+                ['deactivate_workflow', 'Deactivate a workflow'],
+                ['list_executions', 'List executions']
             ],
             metadata: {
                 rowCount: 5,
@@ -2862,6 +2967,19 @@ app.post('/api/generate', async (req, res) => {
         dataSource.apiKey,
         dataSource.defaultModel
       );
+    } else if (dataSource?.type === DataSourceType.FalAI) {
+      parsedForGen = {};
+      dbConfForGen = createFalAIGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey
+      );
+    } else if (dataSource?.type === DataSourceType.HuggingFace) {
+      parsedForGen = {};
+      dbConfForGen = createHuggingFaceGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey,
+        dataSource.defaultModel
+      );
     } else if (dataSource?.type === DataSourceType.Llama) {
       parsedForGen = {};
       dbConfForGen = createLlamaGeneratorConfig(
@@ -2938,6 +3056,12 @@ app.post('/api/generate', async (req, res) => {
         dataSource.baseUrl,
         dataSource.accessToken,
         dataSource.contentBaseUrl
+      );
+    } else if (dataSource?.type === DataSourceType.N8n) {
+      parsedForGen = {};
+      dbConfForGen = createN8nGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey
       );
     } else if (dataSource?.type === DataSourceType.Trello) {
       parsedForGen = {};

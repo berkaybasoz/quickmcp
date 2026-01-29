@@ -101,6 +101,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForGemini(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Grok) {
         tools = this.generateToolsForGrok(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.FalAI) {
+        tools = this.generateToolsForFalAI(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.HuggingFace) {
+        tools = this.generateToolsForHuggingFace(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Llama) {
         tools = this.generateToolsForLlama(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.DeepSeek) {
@@ -123,6 +127,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForOpenRouter(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Dropbox) {
         tools = this.generateToolsForDropbox(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.N8n) {
+        tools = this.generateToolsForN8n(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Trello) {
         tools = this.generateToolsForTrello(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GitLab) {
@@ -2361,6 +2367,56 @@ export class MCPServerGenerator {
     return tools;
   }
 
+  private generateToolsForFalAI(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.FalAI, baseUrl, apiKey };
+
+    tools.push({
+      server_id: serverId,
+      name: 'run_model',
+      description: 'Run a fal.ai model',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model identifier (e.g., fal-ai/fast-sdxl)' },
+          input: { type: 'object', description: 'Model input payload' }
+        },
+        required: ['model', 'input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{model}', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForHuggingFace(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.HuggingFace, baseUrl, apiKey, defaultModel };
+
+    tools.push({
+      server_id: serverId,
+      name: 'chat_completion',
+      description: 'Create chat completions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model name (optional, default from config)' },
+          messages: { type: 'array', items: { type: 'object' }, description: 'Chat messages' },
+          temperature: { type: 'number', description: 'Sampling temperature (optional)' },
+          max_tokens: { type: 'number', description: 'Max tokens (optional)' }
+        },
+        required: ['messages']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chat/completions', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
   private generateToolsForLlama(serverId: string, dbConfig: any): ToolDefinition[] {
     const { baseUrl, defaultModel } = dbConfig || {};
     const tools: ToolDefinition[] = [];
@@ -2845,6 +2901,89 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/files/upload', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForN8n(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.N8n, baseUrl, apiKey };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_workflows',
+      description: 'List workflows',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max results (optional)' },
+          offset: { type: 'number', description: 'Offset (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_workflow',
+      description: 'Get workflow details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workflow_id: { type: 'string', description: 'Workflow ID' }
+        },
+        required: ['workflow_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'activate_workflow',
+      description: 'Activate a workflow',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workflow_id: { type: 'string', description: 'Workflow ID' }
+        },
+        required: ['workflow_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}/activate', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'deactivate_workflow',
+      description: 'Deactivate a workflow',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workflow_id: { type: 'string', description: 'Workflow ID' }
+        },
+        required: ['workflow_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}/deactivate', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_executions',
+      description: 'List executions',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max results (optional)' },
+          status: { type: 'string', description: 'Status filter (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/executions', method: 'GET' }),
+      operation: 'SELECT'
     });
 
     return tools;
