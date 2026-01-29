@@ -1228,10 +1228,14 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             tableName: 'falai_tools',
             headers: ['tool', 'description'],
             rows: [
-                ['run_model', 'Run a fal.ai model']
+                ['run_model', 'Run a fal.ai model'],
+                ['run_model_async', 'Run a fal.ai model (async)'],
+                ['get_run_status', 'Get async run status'],
+                ['get_run_result', 'Get async run result'],
+                ['cancel_run', 'Cancel an async run']
             ],
             metadata: {
-                rowCount: 1,
+                rowCount: 5,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }

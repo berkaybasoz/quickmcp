@@ -3734,13 +3734,31 @@ export class DynamicMCPExecutor {
       return { success: false, error: 'Missing fal.ai baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
     }
 
-    const model = args?.model;
-    if (!model) {
-      return { success: false, error: 'Missing model', data: [], rowCount: 0 };
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const model = args?.model || args?.model_id;
+    if (url.includes('{model}')) {
+      if (!model) {
+        return { success: false, error: 'Missing model', data: [], rowCount: 0 };
+      }
+      url = url.replace('{model}', encodeURIComponent(String(model)));
     }
 
-    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
-    url = url.replace('{model}', encodeURIComponent(String(model)));
+    if (url.includes('{request_id}')) {
+      const requestId = args?.request_id;
+      if (!requestId) {
+        return { success: false, error: 'Missing request_id', data: [], rowCount: 0 };
+      }
+      url = url.replace('{request_id}', encodeURIComponent(String(requestId)));
+    }
+
+    if (url.includes('{subpath}')) {
+      const subpath = args?.subpath;
+      if (!subpath) {
+        url = url.replace('/{subpath}', '');
+      } else {
+        url = url.replace('{subpath}', encodeURIComponent(String(subpath)));
+      }
+    }
 
     const headers: Record<string, string> = {
       'Authorization': `Key ${String(apiKey).trim()}`,
@@ -3753,7 +3771,7 @@ export class DynamicMCPExecutor {
     const response = await fetch(url, {
       method: (method || 'POST').toUpperCase(),
       headers,
-      body: JSON.stringify(payload)
+      body: (String(method || 'POST').toUpperCase() === 'GET') ? undefined : JSON.stringify(payload)
     });
 
     const responseData: any = await response.json().catch(() => null);

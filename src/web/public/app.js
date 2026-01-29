@@ -3778,10 +3778,14 @@ async function handleNextToStep3() {
             tableName: 'falai_tools',
             headers: ['tool', 'description'],
             rows: [
-                ['run_model', 'Run a fal.ai model']
+                ['run_model', 'Run a fal.ai model'],
+                ['run_model_async', 'Run a fal.ai model (async)'],
+                ['get_run_status', 'Get async run status'],
+                ['get_run_result', 'Get async run result'],
+                ['cancel_run', 'Cancel an async run']
             ],
             metadata: {
-                rowCount: 1,
+                rowCount: 5,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -9594,7 +9598,11 @@ function displayFalAIPreview(falConfig) {
 
     const baseUrl = falConfig?.baseUrl || 'Not set';
     const tools = [
-        { name: 'run_model', desc: 'Run a fal.ai model' }
+        { name: 'run_model', desc: 'Run a fal.ai model' },
+        { name: 'run_model_async', desc: 'Run a fal.ai model (async)' },
+        { name: 'get_run_status', desc: 'Get async run status' },
+        { name: 'get_run_result', desc: 'Get async run result' },
+        { name: 'cancel_run', desc: 'Cancel an async run' }
     ];
 
     const html = `

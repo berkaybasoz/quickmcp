@@ -2371,6 +2371,7 @@ export class MCPServerGenerator {
     const { baseUrl, apiKey } = dbConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.FalAI, baseUrl, apiKey };
+    const queueBase = 'https://queue.fal.run';
 
     tools.push({
       server_id: serverId,
@@ -2386,6 +2387,71 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{model}', method: 'POST' }),
       operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'run_model_async',
+      description: 'Run a fal.ai model via the queue',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model identifier (e.g., fal-ai/fast-sdxl)' },
+          subpath: { type: 'string', description: 'Optional subpath (e.g., dev)' },
+          input: { type: 'object', description: 'Model input payload' }
+        },
+        required: ['model', 'input']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, baseUrl: queueBase, endpoint: '/{model}/{subpath}', method: 'POST' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_run_status',
+      description: 'Get the status of an async run',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model identifier (e.g., fal-ai/fast-sdxl)' },
+          request_id: { type: 'string', description: 'Request ID' }
+        },
+        required: ['model', 'request_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, baseUrl: queueBase, endpoint: '/{model}/requests/{request_id}/status', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_run_result',
+      description: 'Get the result of an async run',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model identifier (e.g., fal-ai/fast-sdxl)' },
+          request_id: { type: 'string', description: 'Request ID' }
+        },
+        required: ['model', 'request_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, baseUrl: queueBase, endpoint: '/{model}/requests/{request_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'cancel_run',
+      description: 'Cancel an async run',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'string', description: 'Model identifier (e.g., fal-ai/fast-sdxl)' },
+          request_id: { type: 'string', description: 'Request ID' }
+        },
+        required: ['model', 'request_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, baseUrl: queueBase, endpoint: '/{model}/requests/{request_id}/cancel', method: 'PUT' }),
+      operation: 'UPDATE'
     });
 
     return tools;
