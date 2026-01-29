@@ -131,8 +131,22 @@ export class MCPServerGenerator {
         tools = this.generateToolsForBitbucket(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GDrive) {
         tools = this.generateToolsForGDrive(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GoogleCalendar) {
+        tools = this.generateToolsForGoogleCalendar(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.GoogleDocs) {
+        tools = this.generateToolsForGoogleDocs(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.GoogleSheets) {
         tools = this.generateToolsForGoogleSheets(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Airtable) {
+        tools = this.generateToolsForAirtable(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Asana) {
+        tools = this.generateToolsForAsana(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Monday) {
+        tools = this.generateToolsForMonday(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.ClickUp) {
+        tools = this.generateToolsForClickUp(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Linear) {
+        tools = this.generateToolsForLinear(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Jenkins) {
         tools = this.generateToolsForJenkins(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.DockerHub) {
@@ -3268,6 +3282,155 @@ export class MCPServerGenerator {
     return tools;
   }
 
+  private generateToolsForGoogleCalendar(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, calendarId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GoogleCalendar, baseUrl, accessToken, calendarId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_calendars',
+      description: 'List calendars for the user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/me/calendarList', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_events',
+      description: 'List events in a calendar',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          calendar_id: { type: 'string', description: 'Calendar ID (optional, default from config)' },
+          timeMin: { type: 'string', description: 'RFC3339 start time (optional)' },
+          timeMax: { type: 'string', description: 'RFC3339 end time (optional)' },
+          maxResults: { type: 'number', description: 'Max results (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/calendars/{calendar_id}/events', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_event',
+      description: 'Get event details',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          calendar_id: { type: 'string', description: 'Calendar ID (optional, default from config)' },
+          event_id: { type: 'string', description: 'Event ID' }
+        },
+        required: ['event_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/calendars/{calendar_id}/events/{event_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_event',
+      description: 'Create a calendar event',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          calendar_id: { type: 'string', description: 'Calendar ID (optional, default from config)' },
+          summary: { type: 'string', description: 'Event summary/title' },
+          start: { type: 'object', description: 'Start time object' },
+          end: { type: 'object', description: 'End time object' },
+          description: { type: 'string', description: 'Event description (optional)' },
+          location: { type: 'string', description: 'Event location (optional)' }
+        },
+        required: ['summary', 'start', 'end']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/calendars/{calendar_id}/events', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_event',
+      description: 'Update a calendar event',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          calendar_id: { type: 'string', description: 'Calendar ID (optional, default from config)' },
+          event_id: { type: 'string', description: 'Event ID' },
+          summary: { type: 'string', description: 'Event summary/title (optional)' },
+          start: { type: 'object', description: 'Start time object (optional)' },
+          end: { type: 'object', description: 'End time object (optional)' },
+          description: { type: 'string', description: 'Event description (optional)' },
+          location: { type: 'string', description: 'Event location (optional)' }
+        },
+        required: ['event_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/calendars/{calendar_id}/events/{event_id}', method: 'PATCH' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForGoogleDocs(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, documentId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.GoogleDocs, baseUrl, accessToken, documentId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_document',
+      description: 'Get document content',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          document_id: { type: 'string', description: 'Document ID (optional, default from config)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/documents/{document_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_document',
+      description: 'Create a new document',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Document title' }
+        },
+        required: ['title']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/documents', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'batch_update',
+      description: 'Batch update a document',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          document_id: { type: 'string', description: 'Document ID (optional, default from config)' },
+          requests: { type: 'array', description: 'Batch update requests' }
+        },
+        required: ['requests']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/documents/{document_id}:batchUpdate', method: 'POST' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
   private generateToolsForGoogleSheets(serverId: string, dbConfig: any): ToolDefinition[] {
     const { baseUrl, accessToken, spreadsheetId } = dbConfig;
     const tools: ToolDefinition[] = [];
@@ -3355,6 +3518,351 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/spreadsheets', method: 'POST' }),
       operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForAirtable(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, baseId, tableName } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Airtable, baseUrl, accessToken, baseId, tableName };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_records',
+      description: 'List records in a table',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          base_id: { type: 'string', description: 'Base ID (optional, default from config)' },
+          table_name: { type: 'string', description: 'Table name (optional, default from config)' },
+          maxRecords: { type: 'number', description: 'Max records (optional)' },
+          view: { type: 'string', description: 'View name (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{base_id}/{table_name}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_record',
+      description: 'Get a record by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          base_id: { type: 'string', description: 'Base ID (optional, default from config)' },
+          table_name: { type: 'string', description: 'Table name (optional, default from config)' },
+          record_id: { type: 'string', description: 'Record ID' }
+        },
+        required: ['record_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{base_id}/{table_name}/{record_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_record',
+      description: 'Create a record',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          base_id: { type: 'string', description: 'Base ID (optional, default from config)' },
+          table_name: { type: 'string', description: 'Table name (optional, default from config)' },
+          fields: { type: 'object', description: 'Record fields' }
+        },
+        required: ['fields']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{base_id}/{table_name}', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_record',
+      description: 'Update a record',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          base_id: { type: 'string', description: 'Base ID (optional, default from config)' },
+          table_name: { type: 'string', description: 'Table name (optional, default from config)' },
+          record_id: { type: 'string', description: 'Record ID' },
+          fields: { type: 'object', description: 'Fields to update' }
+        },
+        required: ['record_id', 'fields']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{base_id}/{table_name}/{record_id}', method: 'PATCH' }),
+      operation: 'UPDATE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_record',
+      description: 'Delete a record',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          base_id: { type: 'string', description: 'Base ID (optional, default from config)' },
+          table_name: { type: 'string', description: 'Table name (optional, default from config)' },
+          record_id: { type: 'string', description: 'Record ID' }
+        },
+        required: ['record_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/{base_id}/{table_name}/{record_id}', method: 'DELETE' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForAsana(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, workspaceId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Asana, baseUrl, accessToken, workspaceId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_projects',
+      description: 'List projects in a workspace',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspace_id: { type: 'string', description: 'Workspace ID (optional, default from config)' },
+          limit: { type: 'number', description: 'Max results (optional)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/projects', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_tasks',
+      description: 'List tasks in a project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string', description: 'Project ID' },
+          limit: { type: 'number', description: 'Max results (optional)' }
+        },
+        required: ['project_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/tasks', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_task',
+      description: 'Get a task by ID',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'Task ID' }
+        },
+        required: ['task_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/tasks/{task_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_task',
+      description: 'Create a task',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Task name' },
+          notes: { type: 'string', description: 'Task notes (optional)' },
+          workspace_id: { type: 'string', description: 'Workspace ID (optional, default from config)' },
+          projects: { type: 'array', items: { type: 'string' }, description: 'Project IDs (optional)' }
+        },
+        required: ['name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/tasks', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_task',
+      description: 'Update a task',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'Task ID' },
+          name: { type: 'string', description: 'Task name (optional)' },
+          notes: { type: 'string', description: 'Task notes (optional)' },
+          completed: { type: 'boolean', description: 'Completed flag (optional)' }
+        },
+        required: ['task_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/tasks/{task_id}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForMonday(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Monday, baseUrl, apiKey };
+
+    tools.push({
+      server_id: serverId,
+      name: 'query',
+      description: 'Run a GraphQL query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'GraphQL query string' },
+          variables: { type: 'object', description: 'Variables (optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '', method: 'POST', op: 'query' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'mutate',
+      description: 'Run a GraphQL mutation',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mutation: { type: 'string', description: 'GraphQL mutation string' },
+          variables: { type: 'object', description: 'Variables (optional)' }
+        },
+        required: ['mutation']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '', method: 'POST', op: 'mutation' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForClickUp(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, teamId } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.ClickUp, baseUrl, accessToken, teamId };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_teams',
+      description: 'List teams',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/team', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_spaces',
+      description: 'List spaces in a team',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          team_id: { type: 'string', description: 'Team ID (optional, default from config)' }
+        }
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/team/{team_id}/space', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_tasks',
+      description: 'List tasks in a list',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          list_id: { type: 'string', description: 'List ID' }
+        },
+        required: ['list_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/list/{list_id}/task', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_task',
+      description: 'Create a task',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          list_id: { type: 'string', description: 'List ID' },
+          name: { type: 'string', description: 'Task name' },
+          description: { type: 'string', description: 'Task description (optional)' }
+        },
+        required: ['list_id', 'name']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/list/{list_id}/task', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'update_task',
+      description: 'Update a task',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'Task ID' },
+          name: { type: 'string', description: 'Task name (optional)' },
+          description: { type: 'string', description: 'Task description (optional)' },
+          status: { type: 'string', description: 'Task status (optional)' }
+        },
+        required: ['task_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/task/{task_id}', method: 'PUT' }),
+      operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForLinear(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig;
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Linear, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'query',
+      description: 'Run a GraphQL query',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'GraphQL query string' },
+          variables: { type: 'object', description: 'Variables (optional)' }
+        },
+        required: ['query']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '', method: 'POST', op: 'query' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'mutate',
+      description: 'Run a GraphQL mutation',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mutation: { type: 'string', description: 'GraphQL mutation string' },
+          variables: { type: 'object', description: 'Variables (optional)' }
+        },
+        required: ['mutation']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '', method: 'POST', op: 'mutation' }),
+      operation: 'UPDATE'
     });
 
     return tools;

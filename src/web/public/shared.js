@@ -59,7 +59,14 @@ const DataSourceType = {
     GitLab: 'gitlab',
     Bitbucket: 'bitbucket',
     GDrive: 'gdrive',
+    GoogleCalendar: 'googlecalendar',
+    GoogleDocs: 'googledocs',
     GoogleSheets: 'googlesheets',
+    Airtable: 'airtable',
+    Asana: 'asana',
+    Monday: 'monday',
+    ClickUp: 'clickup',
+    Linear: 'linear',
     Jenkins: 'jenkins',
     DockerHub: 'dockerhub'
 };
@@ -120,7 +127,14 @@ function isNoTableDataSource(type) {
         DataSourceType.GitLab,
         DataSourceType.Bitbucket,
         DataSourceType.GDrive,
+        DataSourceType.GoogleCalendar,
+        DataSourceType.GoogleDocs,
         DataSourceType.GoogleSheets,
+        DataSourceType.Airtable,
+        DataSourceType.Asana,
+        DataSourceType.Monday,
+        DataSourceType.ClickUp,
+        DataSourceType.Linear,
         DataSourceType.Jenkins,
         DataSourceType.DockerHub
     ];

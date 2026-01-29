@@ -200,8 +200,36 @@ export class DynamicMCPExecutor {
         return await this.executeGDriveCall(queryConfig, args);
       }
 
+      if (queryConfig?.type === DataSourceType.GoogleCalendar) {
+        return await this.executeGoogleCalendarCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.GoogleDocs) {
+        return await this.executeGoogleDocsCall(queryConfig, args);
+      }
+
       if (queryConfig?.type === DataSourceType.GoogleSheets) {
         return await this.executeGoogleSheetsCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Airtable) {
+        return await this.executeAirtableCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Asana) {
+        return await this.executeAsanaCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Monday) {
+        return await this.executeMondayCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.ClickUp) {
+        return await this.executeClickUpCall(queryConfig, args);
+      }
+
+      if (queryConfig?.type === DataSourceType.Linear) {
+        return await this.executeLinearCall(queryConfig, args);
       }
 
       if (queryConfig?.type === DataSourceType.Jenkins) {
@@ -3277,6 +3305,413 @@ export class DynamicMCPExecutor {
       };
     }
 
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGoogleCalendarCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, calendarId: defaultCalendarId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Google Calendar baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const calendarId = args.calendar_id || defaultCalendarId || 'primary';
+    if (url.includes('{calendar_id}')) {
+      if (!calendarId) return { success: false, error: 'Missing calendar_id', data: [], rowCount: 0 };
+      url = url.replace('{calendar_id}', encodeURIComponent(String(calendarId)));
+    }
+    if (args.event_id && url.includes('{event_id}')) {
+      url = url.replace('{event_id}', encodeURIComponent(String(args.event_id)));
+    } else if (url.includes('{event_id}')) {
+      return { success: false, error: 'Missing event_id', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${String(accessToken).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['calendar_id', 'event_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['calendar_id', 'event_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`📅 Google Calendar API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Google Calendar API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeGoogleDocsCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, documentId: defaultDocumentId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Google Docs baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const documentId = args.document_id || defaultDocumentId;
+    if (url.includes('{document_id}')) {
+      if (!documentId) return { success: false, error: 'Missing document_id', data: [], rowCount: 0 };
+      url = url.replace('{document_id}', encodeURIComponent(String(documentId)));
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${String(accessToken).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    if (methodUpper !== 'GET') {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['document_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    console.error(`📄 Google Docs API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Google Docs API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeAirtableCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, baseId: defaultBaseId, tableName: defaultTableName } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Airtable baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const baseId = args.base_id || defaultBaseId;
+    const tableName = args.table_name || defaultTableName;
+    if (url.includes('{base_id}')) {
+      if (!baseId) return { success: false, error: 'Missing base_id', data: [], rowCount: 0 };
+      url = url.replace('{base_id}', encodeURIComponent(String(baseId)));
+    }
+    if (url.includes('{table_name}')) {
+      if (!tableName) return { success: false, error: 'Missing table_name', data: [], rowCount: 0 };
+      url = url.replace('{table_name}', encodeURIComponent(String(tableName)));
+    }
+    if (args.record_id && url.includes('{record_id}')) {
+      url = url.replace('{record_id}', encodeURIComponent(String(args.record_id)));
+    } else if (url.includes('{record_id}')) {
+      return { success: false, error: 'Missing record_id', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${String(accessToken).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['base_id', 'table_name', 'record_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['base_id', 'table_name', 'record_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`🧾 Airtable API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Airtable API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.error?.message || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeAsanaCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, workspaceId: defaultWorkspaceId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing Asana baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (args.task_id && url.includes('{task_id}')) {
+      url = url.replace('{task_id}', encodeURIComponent(String(args.task_id)));
+    } else if (url.includes('{task_id}')) {
+      return { success: false, error: 'Missing task_id', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${String(accessToken).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      let hasWorkspace = false;
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['task_id'].includes(key)) continue;
+        if (key === 'workspace_id') {
+          hasWorkspace = true;
+          queryParams.push(`workspace=${encodeURIComponent(String(value))}`);
+          continue;
+        }
+        if (key === 'project_id') {
+          queryParams.push(`project=${encodeURIComponent(String(value))}`);
+          continue;
+        }
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+      if (!hasWorkspace && defaultWorkspaceId) {
+        queryParams.push(`workspace=${encodeURIComponent(String(defaultWorkspaceId))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['task_id'].includes(key)) continue;
+        if (key === 'workspace_id') {
+          payload['workspace'] = value || defaultWorkspaceId;
+        } else {
+          payload[key] = value;
+        }
+      }
+      if (!payload.workspace && defaultWorkspaceId) {
+        payload.workspace = defaultWorkspaceId;
+      }
+      body = JSON.stringify({ data: payload });
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`✅ Asana API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Asana API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.errors || responseData }],
+        rowCount: 1
+      };
+    }
+
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeMondayCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, apiKey, endpoint, op } = queryConfig;
+    if (!baseUrl || !apiKey) {
+      return { success: false, error: 'Missing Monday baseUrl/apiKey', data: [], rowCount: 0 };
+    }
+
+    const url = `${String(baseUrl).replace(/\/$/, '')}${endpoint || ''}`;
+    const headers: Record<string, string> = {
+      'Authorization': String(apiKey).trim(),
+      'Content-Type': 'application/json'
+    };
+
+    const query = op === 'mutation' ? args.mutation : args.query;
+    if (!query) {
+      return { success: false, error: 'Missing query/mutation', data: [], rowCount: 0 };
+    }
+
+    const body = JSON.stringify({
+      query,
+      variables: args.variables || undefined
+    });
+
+    console.error(`🟡 Monday GraphQL call: ${url}`);
+
+    const response = await fetch(url, { method: 'POST', headers, body });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok || responseData?.errors) {
+      return {
+        success: false,
+        error: `Monday API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.errors || responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeClickUpCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method, teamId: defaultTeamId } = queryConfig;
+    if (!baseUrl || !accessToken || !endpoint) {
+      return { success: false, error: 'Missing ClickUp baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    const teamId = args.team_id || defaultTeamId;
+    if (url.includes('{team_id}')) {
+      if (!teamId) return { success: false, error: 'Missing team_id', data: [], rowCount: 0 };
+      url = url.replace('{team_id}', encodeURIComponent(String(teamId)));
+    }
+    if (args.list_id && url.includes('{list_id}')) {
+      url = url.replace('{list_id}', encodeURIComponent(String(args.list_id)));
+    } else if (url.includes('{list_id}')) {
+      return { success: false, error: 'Missing list_id', data: [], rowCount: 0 };
+    }
+    if (args.task_id && url.includes('{task_id}')) {
+      url = url.replace('{task_id}', encodeURIComponent(String(args.task_id)));
+    } else if (url.includes('{task_id}')) {
+      return { success: false, error: 'Missing task_id', data: [], rowCount: 0 };
+    }
+
+    const methodUpper = (method || 'GET').toUpperCase();
+    const headers: Record<string, string> = {
+      'Authorization': String(accessToken).trim(),
+      'Content-Type': 'application/json'
+    };
+
+    let body: any = undefined;
+    const queryParams: string[] = [];
+    if (methodUpper === 'GET') {
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['team_id', 'list_id', 'task_id'].includes(key)) continue;
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      }
+    } else {
+      const payload: Record<string, any> = {};
+      for (const [key, value] of Object.entries(args || {})) {
+        if (value === undefined || value === null) continue;
+        if (['team_id', 'list_id', 'task_id'].includes(key)) continue;
+        payload[key] = value;
+      }
+      body = JSON.stringify(payload);
+    }
+
+    if (queryParams.length > 0) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url += `${joiner}${queryParams.join('&')}`;
+    }
+
+    console.error(`🟣 ClickUp API call: ${methodUpper} ${url}`);
+
+    const response = await fetch(url, { method: methodUpper, headers, body });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `ClickUp API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.err || responseData }],
+        rowCount: 1
+      };
+    }
+    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    return { success: true, data: dataArray, rowCount: dataArray.length };
+  }
+
+  private async executeLinearCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, op } = queryConfig;
+    if (!baseUrl || !accessToken) {
+      return { success: false, error: 'Missing Linear baseUrl/accessToken', data: [], rowCount: 0 };
+    }
+
+    const url = `${String(baseUrl).replace(/\/$/, '')}${endpoint || ''}`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${String(accessToken).trim()}`,
+      'Content-Type': 'application/json'
+    };
+
+    const query = op === 'mutation' ? args.mutation : args.query;
+    if (!query) {
+      return { success: false, error: 'Missing query/mutation', data: [], rowCount: 0 };
+    }
+
+    const body = JSON.stringify({
+      query,
+      variables: args.variables || undefined
+    });
+
+    console.error(`⚫️ Linear GraphQL call: ${url}`);
+
+    const response = await fetch(url, { method: 'POST', headers, body });
+    const responseData: any = await response.json().catch(() => null);
+    if (!response.ok || responseData?.errors) {
+      return {
+        success: false,
+        error: `Linear API error: ${response.status}`,
+        data: [{ status: response.status, message: responseData?.errors || responseData }],
+        rowCount: 1
+      };
+    }
     const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }

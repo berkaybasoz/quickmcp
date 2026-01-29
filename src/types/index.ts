@@ -62,7 +62,14 @@ export enum DataSourceType {
   GitLab = 'gitlab',
   Bitbucket = 'bitbucket',
   GDrive = 'gdrive',
+  GoogleCalendar = 'googlecalendar',
+  GoogleDocs = 'googledocs',
   GoogleSheets = 'googlesheets',
+  Airtable = 'airtable',
+  Asana = 'asana',
+  Monday = 'monday',
+  ClickUp = 'clickup',
+  Linear = 'linear',
   Jenkins = 'jenkins',
   DockerHub = 'dockerhub',
 }
@@ -123,7 +130,14 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.GitLab,
     DataSourceType.Bitbucket,
     DataSourceType.GDrive,
+    DataSourceType.GoogleCalendar,
+    DataSourceType.GoogleDocs,
     DataSourceType.GoogleSheets,
+    DataSourceType.Airtable,
+    DataSourceType.Asana,
+    DataSourceType.Monday,
+    DataSourceType.ClickUp,
+    DataSourceType.Linear,
     DataSourceType.Jenkins,
     DataSourceType.DockerHub,
   ]);
@@ -505,11 +519,58 @@ export interface GDriveConnection {
   type: 'gdrive';
 }
 
+export interface GoogleCalendarConnection {
+  baseUrl: string;
+  accessToken: string;
+  calendarId?: string;
+  type: 'googlecalendar';
+}
+
+export interface GoogleDocsConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'googledocs';
+}
+
 export interface GoogleSheetsConnection {
   baseUrl: string;
   accessToken: string;
   spreadsheetId?: string;
   type: 'googlesheets';
+}
+
+export interface AirtableConnection {
+  baseUrl: string;
+  accessToken: string;
+  baseId?: string;
+  tableName?: string;
+  type: 'airtable';
+}
+
+export interface AsanaConnection {
+  baseUrl: string;
+  accessToken: string;
+  workspaceId?: string;
+  type: 'asana';
+}
+
+export interface MondayConnection {
+  baseUrl: string;
+  apiKey: string;
+  type: 'monday';
+}
+
+export interface ClickUpConnection {
+  baseUrl: string;
+  accessToken: string;
+  teamId?: string;
+  type: 'clickup';
+}
+
+export interface LinearConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'linear';
 }
 
 export interface JenkinsConnection {
@@ -889,11 +950,58 @@ export interface GDriveGeneratorConfig extends BaseGeneratorConfig {
   rootFolderId?: string;
 }
 
+export interface GoogleCalendarGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GoogleCalendar;
+  baseUrl: string;
+  accessToken: string;
+  calendarId?: string;
+}
+
+export interface GoogleDocsGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.GoogleDocs;
+  baseUrl: string;
+  accessToken: string;
+}
+
 export interface GoogleSheetsGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.GoogleSheets;
   baseUrl: string;
   accessToken: string;
   spreadsheetId?: string;
+}
+
+export interface AirtableGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Airtable;
+  baseUrl: string;
+  accessToken: string;
+  baseId?: string;
+  tableName?: string;
+}
+
+export interface AsanaGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Asana;
+  baseUrl: string;
+  accessToken: string;
+  workspaceId?: string;
+}
+
+export interface MondayGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Monday;
+  baseUrl: string;
+  apiKey: string;
+}
+
+export interface ClickUpGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.ClickUp;
+  baseUrl: string;
+  accessToken: string;
+  teamId?: string;
+}
+
+export interface LinearGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Linear;
+  baseUrl: string;
+  accessToken: string;
 }
 
 export interface JenkinsGeneratorConfig extends BaseGeneratorConfig {
@@ -1048,7 +1156,14 @@ export type GeneratorConfig =
   | GitLabGeneratorConfig
   | BitbucketGeneratorConfig
   | GDriveGeneratorConfig
+  | GoogleCalendarGeneratorConfig
+  | GoogleDocsGeneratorConfig
   | GoogleSheetsGeneratorConfig
+  | AirtableGeneratorConfig
+  | AsanaGeneratorConfig
+  | MondayGeneratorConfig
+  | ClickUpGeneratorConfig
+  | LinearGeneratorConfig
   | JenkinsGeneratorConfig
   | DockerHubGeneratorConfig
   | JiraGeneratorConfig
@@ -1101,7 +1216,14 @@ export type GeneratorConfig =
   | GitLabConnection
   | BitbucketConnection
   | GDriveConnection
+  | GoogleCalendarConnection
+  | GoogleDocsConnection
   | GoogleSheetsConnection
+  | AirtableConnection
+  | AsanaConnection
+  | MondayConnection
+  | ClickUpConnection
+  | LinearConnection
   | JenkinsConnection
   | DockerHubConnection;
 
@@ -1641,6 +1763,30 @@ export function createGDriveGeneratorConfig(
   };
 }
 
+export function createGoogleCalendarGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  calendarId?: string
+): GoogleCalendarGeneratorConfig {
+  return {
+    type: DataSourceType.GoogleCalendar,
+    baseUrl,
+    accessToken,
+    calendarId
+  };
+}
+
+export function createGoogleDocsGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): GoogleDocsGeneratorConfig {
+  return {
+    type: DataSourceType.GoogleDocs,
+    baseUrl,
+    accessToken
+  };
+}
+
 export function createGoogleSheetsGeneratorConfig(
   baseUrl: string,
   accessToken: string,
@@ -1651,6 +1797,69 @@ export function createGoogleSheetsGeneratorConfig(
     baseUrl,
     accessToken,
     spreadsheetId
+  };
+}
+
+export function createAirtableGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  baseId?: string,
+  tableName?: string
+): AirtableGeneratorConfig {
+  return {
+    type: DataSourceType.Airtable,
+    baseUrl,
+    accessToken,
+    baseId,
+    tableName
+  };
+}
+
+export function createAsanaGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  workspaceId?: string
+): AsanaGeneratorConfig {
+  return {
+    type: DataSourceType.Asana,
+    baseUrl,
+    accessToken,
+    workspaceId
+  };
+}
+
+export function createMondayGeneratorConfig(
+  baseUrl: string,
+  apiKey: string
+): MondayGeneratorConfig {
+  return {
+    type: DataSourceType.Monday,
+    baseUrl,
+    apiKey
+  };
+}
+
+export function createClickUpGeneratorConfig(
+  baseUrl: string,
+  accessToken: string,
+  teamId?: string
+): ClickUpGeneratorConfig {
+  return {
+    type: DataSourceType.ClickUp,
+    baseUrl,
+    accessToken,
+    teamId
+  };
+}
+
+export function createLinearGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): LinearGeneratorConfig {
+  return {
+    type: DataSourceType.Linear,
+    baseUrl,
+    accessToken
   };
 }
 

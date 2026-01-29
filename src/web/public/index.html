@@ -303,6 +303,7 @@
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="api">API</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="web">Web</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="ai">AI</button>
+                                        <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="productivity">Productivity</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="social">Social</button>
                                         <button type="button" class="template-filter px-3 py-1.5 rounded-lg border text-sm bg-white text-slate-600 border-slate-200 hover:border-blue-300" data-filter="infra">Infra</button>
                                         <div class="ml-auto w-full md:w-64 relative">
@@ -551,7 +552,7 @@
                                                 <p class="text-xs text-slate-500">Connect to TikTok API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="social">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="notion" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-slate-900 hover:shadow-md hover:shadow-slate-700/20 peer-checked:border-slate-900 peer-checked:shadow-lg peer-checked:shadow-slate-700/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -771,7 +772,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Dropbox API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="trello" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-sky-500 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -811,7 +812,27 @@
                                                 <p class="text-xs text-slate-500">Connect to Google Drive API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="googlecalendar" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/googlecalender.png" alt="Google Calendar" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Google Calendar</h4>
+                                                <p class="text-xs text-slate-500">Connect to Google Calendar API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="googledocs" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 peer-checked:border-emerald-500 peer-checked:shadow-lg peer-checked:shadow-emerald-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/googledocs.png" alt="Google Docs" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Google Docs</h4>
+                                                <p class="text-xs text-slate-500">Connect to Google Docs API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="googlesheets" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-green-500 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -819,6 +840,56 @@
                                                 </div>
                                                 <h4 class="font-bold text-slate-900 mb-1">Google Sheets</h4>
                                                 <p class="text-xs text-slate-500">Connect to Google Sheets API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="airtable" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-teal-500 hover:shadow-md hover:shadow-teal-500/20 peer-checked:border-teal-500 peer-checked:shadow-lg peer-checked:shadow-teal-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/airtable.png" alt="Airtable" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Airtable</h4>
+                                                <p class="text-xs text-slate-500">Connect to Airtable API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="asana" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/asana.png" alt="Asana" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Asana</h4>
+                                                <p class="text-xs text-slate-500">Connect to Asana API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="monday" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-yellow-500 hover:shadow-md hover:shadow-yellow-500/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/monday.png" alt="Monday.com" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Monday.com</h4>
+                                                <p class="text-xs text-slate-500">Connect to Monday GraphQL API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="clickup" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-purple-500 hover:shadow-md hover:shadow-purple-500/20 peer-checked:border-purple-500 peer-checked:shadow-lg peer-checked:shadow-purple-500/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/clickup.png" alt="ClickUp" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">ClickUp</h4>
+                                                <p class="text-xs text-slate-500">Connect to ClickUp API.</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
+                                            <input type="radio" name="dataSourceType" value="linear" class="peer sr-only">
+                                            <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-indigo-600 hover:shadow-md hover:shadow-indigo-600/20 peer-checked:border-indigo-600 peer-checked:shadow-lg peer-checked:shadow-indigo-600/30 transition-all h-full">
+                                                <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <img src="images/app/linear.png" alt="Linear" class="w-10 h-10 object-contain" />
+                                                </div>
+                                                <h4 class="font-bold text-slate-900 mb-1">Linear</h4>
+                                                <p class="text-xs text-slate-500">Connect to Linear GraphQL API.</p>
                                             </div>
                                         </label>
                                         <label class="cursor-pointer group" data-role="data-source-card" data-category="infra">
@@ -861,7 +932,7 @@
                                                 <p class="text-xs text-slate-500">Browse Docker Hub repositories.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="jira" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-blue-500 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -871,7 +942,7 @@
                                                 <p class="text-xs text-slate-500">Connect to Jira API.</p>
                                             </div>
                                         </label>
-                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="api">
+                                        <label class="cursor-pointer group" data-role="data-source-card" data-category="productivity">
                                             <input type="radio" name="dataSourceType" value="confluence" class="peer sr-only">
                                             <div class="p-6 rounded-xl border border-slate-200 shadow-sm bg-slate-50 hover:bg-white hover:border-teal-500 hover:shadow-md hover:shadow-teal-500/20 peer-checked:border-teal-500 peer-checked:shadow-lg peer-checked:shadow-teal-500/30 transition-all h-full">
                                                 <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -2458,6 +2529,74 @@
                                         <div id="gdrive-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
+                                    <!-- Google Calendar Config -->
+                                    <div id="googlecalendar-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                                                <div class="text-sm text-blue-700">
+                                                    <p class="font-medium text-blue-800 mb-1">Google Calendar API</p>
+                                                    <p>Use an OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="gcalBaseUrl" value="https://www.googleapis.com/calendar/v3" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="gcalAccessToken" placeholder="ya29..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Calendar ID (Optional)</label>
+                                                <input type="text" id="gcalCalendarId" placeholder="primary or calendar id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_calendars, list_events, get_event, create_event, update_event
+                                            </p>
+                                        </div>
+                                        <div id="gcal-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Google Docs Config -->
+                                    <div id="googledocs-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-emerald-600 mt-0.5"></i>
+                                                <div class="text-sm text-emerald-700">
+                                                    <p class="font-medium text-emerald-800 mb-1">Google Docs API</p>
+                                                    <p>Use an OAuth access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="gdocsBaseUrl" value="https://docs.googleapis.com/v1" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="gdocsAccessToken" placeholder="ya29..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Document ID (Optional)</label>
+                                                <input type="text" id="gdocsDocumentId" placeholder="Document ID" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>3 tools</strong> will be created: get_document, create_document, batch_update
+                                            </p>
+                                        </div>
+                                        <div id="gdocs-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
                                     <!-- Google Sheets Config -->
                                     <div id="googlesheets-section" class="hidden animate-fade-in space-y-6">
                                         <div class="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -2490,6 +2629,172 @@
                                             </p>
                                         </div>
                                         <div id="sheets-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Airtable Config -->
+                                    <div id="airtable-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-teal-50 rounded-lg border border-teal-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-teal-600 mt-0.5"></i>
+                                                <div class="text-sm text-teal-700">
+                                                    <p class="font-medium text-teal-800 mb-1">Airtable API</p>
+                                                    <p>Use a personal access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="airtableBaseUrl" value="https://api.airtable.com/v0" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="airtableAccessToken" placeholder="pat..." class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Base ID (Optional)</label>
+                                                <input type="text" id="airtableBaseId" placeholder="appXXXX" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Table Name (Optional)</label>
+                                                <input type="text" id="airtableTableName" placeholder="Table 1" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_records, get_record, create_record, update_record, delete_record
+                                            </p>
+                                        </div>
+                                        <div id="airtable-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Asana Config -->
+                                    <div id="asana-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-orange-600 mt-0.5"></i>
+                                                <div class="text-sm text-orange-700">
+                                                    <p class="font-medium text-orange-800 mb-1">Asana API</p>
+                                                    <p>Use a personal access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="asanaBaseUrl" value="https://app.asana.com/api/1.0" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="asanaAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Workspace ID (Optional)</label>
+                                                <input type="text" id="asanaWorkspaceId" placeholder="workspace id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_projects, list_tasks, get_task, create_task, update_task
+                                            </p>
+                                        </div>
+                                        <div id="asana-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Monday Config -->
+                                    <div id="monday-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
+                                                <div class="text-sm text-yellow-700">
+                                                    <p class="font-medium text-yellow-800 mb-1">Monday.com GraphQL API</p>
+                                                    <p>Use your API token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="mondayBaseUrl" value="https://api.monday.com/v2" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>
+                                                <input type="password" id="mondayApiKey" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: query, mutate
+                                            </p>
+                                        </div>
+                                        <div id="monday-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- ClickUp Config -->
+                                    <div id="clickup-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-purple-600 mt-0.5"></i>
+                                                <div class="text-sm text-purple-700">
+                                                    <p class="font-medium text-purple-800 mb-1">ClickUp API</p>
+                                                    <p>Use a personal access token.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="clickupBaseUrl" value="https://api.clickup.com/api/v2" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="clickupAccessToken" placeholder="token" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Default Team ID (Optional)</label>
+                                                <input type="text" id="clickupTeamId" placeholder="team id" class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>5 tools</strong> will be created: list_teams, list_spaces, list_tasks, create_task, update_task
+                                            </p>
+                                        </div>
+                                        <div id="clickup-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
+                                    </div>
+
+                                    <!-- Linear Config -->
+                                    <div id="linear-section" class="hidden animate-fade-in space-y-6">
+                                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <div class="flex items-start gap-3">
+                                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                                <div class="text-sm text-indigo-700">
+                                                    <p class="font-medium text-indigo-800 mb-1">Linear GraphQL API</p>
+                                                    <p>Use your API key.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+                                                <input type="text" id="linearBaseUrl" value="https://api.linear.app/graphql" class="input" autocomplete="off">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Access Token</label>
+                                                <input type="password" id="linearAccessToken" placeholder="lin_api_..." class="input" autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <p class="text-sm text-blue-700">
+                                                <i class="fas fa-tools mr-2"></i>
+                                                <strong>2 tools</strong> will be created: query, mutate
+                                            </p>
+                                        </div>
+                                        <div id="linear-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
                                     </div>
 
                                     <!-- Jenkins Config -->

@@ -9,7 +9,7 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleSheetsGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1739,6 +1739,82 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
                 parsedData
             }
         });
+    } else if (type === DataSourceType.GoogleCalendar) {
+        const { gcalBaseUrl, gcalAccessToken, gcalCalendarId } = req.body as any;
+
+        if (!gcalBaseUrl || !gcalAccessToken) {
+            throw new Error('Missing Google Calendar base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GoogleCalendar,
+            name: 'Google Calendar',
+            baseUrl: gcalBaseUrl,
+            accessToken: gcalAccessToken,
+            calendarId: gcalCalendarId
+        };
+
+        const parsedData = [{
+            tableName: 'googlecalendar_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_calendars', 'List calendars for the user'],
+                ['list_events', 'List events in a calendar'],
+                ['get_event', 'Get event details'],
+                ['create_event', 'Create a calendar event'],
+                ['update_event', 'Update a calendar event']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.GoogleDocs) {
+        const { gdocsBaseUrl, gdocsAccessToken, gdocsDocumentId } = req.body as any;
+
+        if (!gdocsBaseUrl || !gdocsAccessToken) {
+            throw new Error('Missing Google Docs base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.GoogleDocs,
+            name: 'Google Docs',
+            baseUrl: gdocsBaseUrl,
+            accessToken: gdocsAccessToken,
+            documentId: gdocsDocumentId
+        };
+
+        const parsedData = [{
+            tableName: 'googledocs_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_document', 'Get document content'],
+                ['create_document', 'Create a new document'],
+                ['batch_update', 'Batch update a document']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
     } else if (type === DataSourceType.GoogleSheets) {
         const { sheetsBaseUrl, sheetsAccessToken, sheetsSpreadsheetId } = req.body as any;
 
@@ -1766,6 +1842,194 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Airtable) {
+        const { airtableBaseUrl, airtableAccessToken, airtableBaseId, airtableTableName } = req.body as any;
+
+        if (!airtableBaseUrl || !airtableAccessToken) {
+            throw new Error('Missing Airtable base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Airtable,
+            name: 'Airtable',
+            baseUrl: airtableBaseUrl,
+            accessToken: airtableAccessToken,
+            baseId: airtableBaseId,
+            tableName: airtableTableName
+        };
+
+        const parsedData = [{
+            tableName: 'airtable_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_records', 'List records in a table'],
+                ['get_record', 'Get a record by ID'],
+                ['create_record', 'Create a record'],
+                ['update_record', 'Update a record'],
+                ['delete_record', 'Delete a record']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Asana) {
+        const { asanaBaseUrl, asanaAccessToken, asanaWorkspaceId } = req.body as any;
+
+        if (!asanaBaseUrl || !asanaAccessToken) {
+            throw new Error('Missing Asana base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Asana,
+            name: 'Asana',
+            baseUrl: asanaBaseUrl,
+            accessToken: asanaAccessToken,
+            workspaceId: asanaWorkspaceId
+        };
+
+        const parsedData = [{
+            tableName: 'asana_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects in a workspace'],
+                ['list_tasks', 'List tasks in a project'],
+                ['get_task', 'Get a task by ID'],
+                ['create_task', 'Create a task'],
+                ['update_task', 'Update a task']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Monday) {
+        const { mondayBaseUrl, mondayApiKey } = req.body as any;
+
+        if (!mondayBaseUrl || !mondayApiKey) {
+            throw new Error('Missing Monday base URL or API key');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Monday,
+            name: 'Monday.com',
+            baseUrl: mondayBaseUrl,
+            apiKey: mondayApiKey
+        };
+
+        const parsedData = [{
+            tableName: 'monday_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run a GraphQL query'],
+                ['mutate', 'Run a GraphQL mutation']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.ClickUp) {
+        const { clickupBaseUrl, clickupAccessToken, clickupTeamId } = req.body as any;
+
+        if (!clickupBaseUrl || !clickupAccessToken) {
+            throw new Error('Missing ClickUp base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.ClickUp,
+            name: 'ClickUp',
+            baseUrl: clickupBaseUrl,
+            accessToken: clickupAccessToken,
+            teamId: clickupTeamId
+        };
+
+        const parsedData = [{
+            tableName: 'clickup_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_teams', 'List teams'],
+                ['list_spaces', 'List spaces in a team'],
+                ['list_tasks', 'List tasks in a list'],
+                ['create_task', 'Create a task'],
+                ['update_task', 'Update a task']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Linear) {
+        const { linearBaseUrl, linearAccessToken } = req.body as any;
+
+        if (!linearBaseUrl || !linearAccessToken) {
+            throw new Error('Missing Linear base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Linear,
+            name: 'Linear',
+            baseUrl: linearBaseUrl,
+            accessToken: linearAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'linear_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run a GraphQL query'],
+                ['mutate', 'Run a GraphQL mutation']
+            ],
+            metadata: {
+                rowCount: 2,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -2708,12 +2972,59 @@ app.post('/api/generate', async (req, res) => {
         dataSource.accessToken,
         dataSource.rootFolderId
       );
+    } else if (dataSource?.type === DataSourceType.GoogleCalendar) {
+      parsedForGen = {};
+      dbConfForGen = createGoogleCalendarGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.calendarId
+      );
+    } else if (dataSource?.type === DataSourceType.GoogleDocs) {
+      parsedForGen = {};
+      dbConfForGen = createGoogleDocsGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
     } else if (dataSource?.type === DataSourceType.GoogleSheets) {
       parsedForGen = {};
       dbConfForGen = createGoogleSheetsGeneratorConfig(
         dataSource.baseUrl,
         dataSource.accessToken,
         dataSource.spreadsheetId
+      );
+    } else if (dataSource?.type === DataSourceType.Airtable) {
+      parsedForGen = {};
+      dbConfForGen = createAirtableGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.baseId,
+        dataSource.tableName
+      );
+    } else if (dataSource?.type === DataSourceType.Asana) {
+      parsedForGen = {};
+      dbConfForGen = createAsanaGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.workspaceId
+      );
+    } else if (dataSource?.type === DataSourceType.Monday) {
+      parsedForGen = {};
+      dbConfForGen = createMondayGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.apiKey
+      );
+    } else if (dataSource?.type === DataSourceType.ClickUp) {
+      parsedForGen = {};
+      dbConfForGen = createClickUpGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken,
+        dataSource.teamId
+      );
+    } else if (dataSource?.type === DataSourceType.Linear) {
+      parsedForGen = {};
+      dbConfForGen = createLinearGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
       );
     } else if (dataSource?.type === DataSourceType.Jenkins) {
       parsedForGen = {};

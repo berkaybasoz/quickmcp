@@ -4340,6 +4340,84 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For Google Calendar, show info in preview and go to step 3
+    if (selectedType === DataSourceType.GoogleCalendar) {
+        const baseUrl = document.getElementById('gcalBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gcalAccessToken')?.value?.trim();
+        const calendarId = document.getElementById('gcalCalendarId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('gcal-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.GoogleCalendar,
+            name: 'Google Calendar',
+            baseUrl,
+            accessToken,
+            calendarId
+        };
+        currentParsedData = [{
+            tableName: 'googlecalendar_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_calendars', 'List calendars for the user'],
+                ['list_events', 'List events in a calendar'],
+                ['get_event', 'Get event details'],
+                ['create_event', 'Create a calendar event'],
+                ['update_event', 'Update a calendar event']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGoogleCalendarPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Google Docs, show info in preview and go to step 3
+    if (selectedType === DataSourceType.GoogleDocs) {
+        const baseUrl = document.getElementById('gdocsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gdocsAccessToken')?.value?.trim();
+        const documentId = document.getElementById('gdocsDocumentId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('gdocs-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.GoogleDocs,
+            name: 'Google Docs',
+            baseUrl,
+            accessToken,
+            documentId
+        };
+        currentParsedData = [{
+            tableName: 'googledocs_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['get_document', 'Get document content'],
+                ['create_document', 'Create a new document'],
+                ['batch_update', 'Batch update a document']
+            ],
+            metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayGoogleDocsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For Google Sheets, show info in preview and go to step 3
     if (selectedType === DataSourceType.GoogleSheets) {
         const baseUrl = document.getElementById('sheetsBaseUrl')?.value?.trim();
@@ -4376,6 +4454,198 @@ async function handleNextToStep3() {
         }];
 
         displayGoogleSheetsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Airtable, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Airtable) {
+        const baseUrl = document.getElementById('airtableBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('airtableAccessToken')?.value?.trim();
+        const baseId = document.getElementById('airtableBaseId')?.value?.trim();
+        const tableName = document.getElementById('airtableTableName')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('airtable-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Airtable,
+            name: 'Airtable',
+            baseUrl,
+            accessToken,
+            baseId,
+            tableName
+        };
+        currentParsedData = [{
+            tableName: 'airtable_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_records', 'List records in a table'],
+                ['get_record', 'Get a record by ID'],
+                ['create_record', 'Create a record'],
+                ['update_record', 'Update a record'],
+                ['delete_record', 'Delete a record']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayAirtablePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Asana, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Asana) {
+        const baseUrl = document.getElementById('asanaBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('asanaAccessToken')?.value?.trim();
+        const workspaceId = document.getElementById('asanaWorkspaceId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('asana-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Asana,
+            name: 'Asana',
+            baseUrl,
+            accessToken,
+            workspaceId
+        };
+        currentParsedData = [{
+            tableName: 'asana_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_projects', 'List projects in a workspace'],
+                ['list_tasks', 'List tasks in a project'],
+                ['get_task', 'Get a task by ID'],
+                ['create_task', 'Create a task'],
+                ['update_task', 'Update a task']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayAsanaPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Monday, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Monday) {
+        const baseUrl = document.getElementById('mondayBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('mondayApiKey')?.value?.trim();
+
+        if (!baseUrl || !apiKey) {
+            showError('monday-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Monday,
+            name: 'Monday.com',
+            baseUrl,
+            apiKey
+        };
+        currentParsedData = [{
+            tableName: 'monday_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run a GraphQL query'],
+                ['mutate', 'Run a GraphQL mutation']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayMondayPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For ClickUp, show info in preview and go to step 3
+    if (selectedType === DataSourceType.ClickUp) {
+        const baseUrl = document.getElementById('clickupBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('clickupAccessToken')?.value?.trim();
+        const teamId = document.getElementById('clickupTeamId')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('clickup-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.ClickUp,
+            name: 'ClickUp',
+            baseUrl,
+            accessToken,
+            teamId
+        };
+        currentParsedData = [{
+            tableName: 'clickup_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_teams', 'List teams'],
+                ['list_spaces', 'List spaces in a team'],
+                ['list_tasks', 'List tasks in a list'],
+                ['create_task', 'Create a task'],
+                ['update_task', 'Update a task']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayClickUpPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Linear, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Linear) {
+        const baseUrl = document.getElementById('linearBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('linearAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('linear-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Linear,
+            name: 'Linear',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'linear_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['query', 'Run a GraphQL query'],
+                ['mutate', 'Run a GraphQL mutation']
+            ],
+            metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayLinearPreview(currentDataSource);
         goToWizardStep(3);
         return;
     }
@@ -5249,8 +5519,22 @@ async function handleNextToStep3() {
                 displayBitbucketPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.GDrive) {
                 displayGDrivePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.GoogleCalendar) {
+                displayGoogleCalendarPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.GoogleDocs) {
+                displayGoogleDocsPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.GoogleSheets) {
                 displayGoogleSheetsPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Airtable) {
+                displayAirtablePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Asana) {
+                displayAsanaPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Monday) {
+                displayMondayPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.ClickUp) {
+                displayClickUpPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Linear) {
+                displayLinearPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Jenkins) {
                 displayJenkinsPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.DockerHub) {
@@ -5586,9 +5870,37 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('gdriveBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('gdriveAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.GoogleCalendar) {
+        const baseUrl = document.getElementById('gcalBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gcalAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.GoogleDocs) {
+        const baseUrl = document.getElementById('gdocsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('gdocsAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
     } else if (selectedType === DataSourceType.GoogleSheets) {
         const baseUrl = document.getElementById('sheetsBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('sheetsAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Airtable) {
+        const baseUrl = document.getElementById('airtableBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('airtableAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Asana) {
+        const baseUrl = document.getElementById('asanaBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('asanaAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Monday) {
+        const baseUrl = document.getElementById('mondayBaseUrl')?.value?.trim();
+        const apiKey = document.getElementById('mondayApiKey')?.value?.trim();
+        canProceed = !!baseUrl && !!apiKey;
+    } else if (selectedType === DataSourceType.ClickUp) {
+        const baseUrl = document.getElementById('clickupBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('clickupAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Linear) {
+        const baseUrl = document.getElementById('linearBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('linearAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
     } else if (selectedType === DataSourceType.Jenkins) {
         const baseUrl = document.getElementById('jenkinsBaseUrl')?.value?.trim();
@@ -5719,7 +6031,14 @@ function toggleDataSourceFields() {
     const gitlabSection = document.getElementById('gitlab-section');
     const bitbucketSection = document.getElementById('bitbucket-section');
     const gdriveSection = document.getElementById('gdrive-section');
+    const googlecalendarSection = document.getElementById('googlecalendar-section');
+    const googledocsSection = document.getElementById('googledocs-section');
     const sheetsSection = document.getElementById('googlesheets-section');
+    const airtableSection = document.getElementById('airtable-section');
+    const asanaSection = document.getElementById('asana-section');
+    const mondaySection = document.getElementById('monday-section');
+    const clickupSection = document.getElementById('clickup-section');
+    const linearSection = document.getElementById('linear-section');
     const jenkinsSection = document.getElementById('jenkins-section');
     const dockerhubSection = document.getElementById('dockerhub-section');
     const jiraSection = document.getElementById('jira-section');
@@ -5779,7 +6098,14 @@ function toggleDataSourceFields() {
     gitlabSection?.classList.add('hidden');
     bitbucketSection?.classList.add('hidden');
     gdriveSection?.classList.add('hidden');
+    googlecalendarSection?.classList.add('hidden');
+    googledocsSection?.classList.add('hidden');
     sheetsSection?.classList.add('hidden');
+    airtableSection?.classList.add('hidden');
+    asanaSection?.classList.add('hidden');
+    mondaySection?.classList.add('hidden');
+    clickupSection?.classList.add('hidden');
+    linearSection?.classList.add('hidden');
     jenkinsSection?.classList.add('hidden');
     dockerhubSection?.classList.add('hidden');
     jiraSection?.classList.add('hidden');
@@ -6226,6 +6552,30 @@ function toggleDataSourceFields() {
             gdriveAccessTokenInput.addEventListener('input', updateWizardNavigation);
             gdriveAccessTokenInput.dataset.listenerAttached = 'true';
         }
+    } else if (selectedType === DataSourceType.GoogleCalendar) {
+        googlecalendarSection?.classList.remove('hidden');
+        const gcalBaseUrlInput = document.getElementById('gcalBaseUrl');
+        const gcalAccessTokenInput = document.getElementById('gcalAccessToken');
+        if (gcalBaseUrlInput && !gcalBaseUrlInput.dataset.listenerAttached) {
+            gcalBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            gcalBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (gcalAccessTokenInput && !gcalAccessTokenInput.dataset.listenerAttached) {
+            gcalAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            gcalAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.GoogleDocs) {
+        googledocsSection?.classList.remove('hidden');
+        const gdocsBaseUrlInput = document.getElementById('gdocsBaseUrl');
+        const gdocsAccessTokenInput = document.getElementById('gdocsAccessToken');
+        if (gdocsBaseUrlInput && !gdocsBaseUrlInput.dataset.listenerAttached) {
+            gdocsBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            gdocsBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (gdocsAccessTokenInput && !gdocsAccessTokenInput.dataset.listenerAttached) {
+            gdocsAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            gdocsAccessTokenInput.dataset.listenerAttached = 'true';
+        }
     } else if (selectedType === DataSourceType.GoogleSheets) {
         sheetsSection?.classList.remove('hidden');
         const sheetsBaseUrlInput = document.getElementById('sheetsBaseUrl');
@@ -6237,6 +6587,66 @@ function toggleDataSourceFields() {
         if (sheetsAccessTokenInput && !sheetsAccessTokenInput.dataset.listenerAttached) {
             sheetsAccessTokenInput.addEventListener('input', updateWizardNavigation);
             sheetsAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Airtable) {
+        airtableSection?.classList.remove('hidden');
+        const airtableBaseUrlInput = document.getElementById('airtableBaseUrl');
+        const airtableAccessTokenInput = document.getElementById('airtableAccessToken');
+        if (airtableBaseUrlInput && !airtableBaseUrlInput.dataset.listenerAttached) {
+            airtableBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            airtableBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (airtableAccessTokenInput && !airtableAccessTokenInput.dataset.listenerAttached) {
+            airtableAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            airtableAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Asana) {
+        asanaSection?.classList.remove('hidden');
+        const asanaBaseUrlInput = document.getElementById('asanaBaseUrl');
+        const asanaAccessTokenInput = document.getElementById('asanaAccessToken');
+        if (asanaBaseUrlInput && !asanaBaseUrlInput.dataset.listenerAttached) {
+            asanaBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            asanaBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (asanaAccessTokenInput && !asanaAccessTokenInput.dataset.listenerAttached) {
+            asanaAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            asanaAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Monday) {
+        mondaySection?.classList.remove('hidden');
+        const mondayBaseUrlInput = document.getElementById('mondayBaseUrl');
+        const mondayApiKeyInput = document.getElementById('mondayApiKey');
+        if (mondayBaseUrlInput && !mondayBaseUrlInput.dataset.listenerAttached) {
+            mondayBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            mondayBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (mondayApiKeyInput && !mondayApiKeyInput.dataset.listenerAttached) {
+            mondayApiKeyInput.addEventListener('input', updateWizardNavigation);
+            mondayApiKeyInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.ClickUp) {
+        clickupSection?.classList.remove('hidden');
+        const clickupBaseUrlInput = document.getElementById('clickupBaseUrl');
+        const clickupAccessTokenInput = document.getElementById('clickupAccessToken');
+        if (clickupBaseUrlInput && !clickupBaseUrlInput.dataset.listenerAttached) {
+            clickupBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            clickupBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (clickupAccessTokenInput && !clickupAccessTokenInput.dataset.listenerAttached) {
+            clickupAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            clickupAccessTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Linear) {
+        linearSection?.classList.remove('hidden');
+        const linearBaseUrlInput = document.getElementById('linearBaseUrl');
+        const linearAccessTokenInput = document.getElementById('linearAccessToken');
+        if (linearBaseUrlInput && !linearBaseUrlInput.dataset.listenerAttached) {
+            linearBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            linearBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (linearAccessTokenInput && !linearAccessTokenInput.dataset.listenerAttached) {
+            linearAccessTokenInput.addEventListener('input', updateWizardNavigation);
+            linearAccessTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Jenkins) {
         jenkinsSection?.classList.remove('hidden');
@@ -9827,6 +10237,126 @@ function displayGDrivePreview(gdConfig) {
     preview.innerHTML = html;
 }
 
+function displayGoogleCalendarPreview(gcalConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = gcalConfig?.baseUrl || 'Not set';
+    const calendarId = gcalConfig?.calendarId || 'Not set';
+    const tools = [
+        { name: 'list_calendars', desc: 'List calendars for the user' },
+        { name: 'list_events', desc: 'List events in a calendar' },
+        { name: 'get_event', desc: 'Get event details' },
+        { name: 'create_event', desc: 'Create a calendar event' },
+        { name: 'update_event', desc: 'Update a calendar event' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/googlecalender.png" alt="Google Calendar" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Google Calendar Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Google Calendar API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Calendar:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${calendarId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayGoogleDocsPreview(gdocsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = gdocsConfig?.baseUrl || 'Not set';
+    const documentId = gdocsConfig?.documentId || 'Not set';
+    const tools = [
+        { name: 'get_document', desc: 'Get document content' },
+        { name: 'create_document', desc: 'Create a new document' },
+        { name: 'batch_update', desc: 'Batch update a document' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/googledocs.png" alt="Google Docs" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Google Docs Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Google Docs API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Document:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${documentId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
 function displayGoogleSheetsPreview(sheetsConfig) {
     const preview = document.getElementById('data-preview');
     if (!preview) return;
@@ -9850,6 +10380,296 @@ function displayGoogleSheetsPreview(sheetsConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Google Sheets Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Google Sheets API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayAirtablePreview(airtableConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = airtableConfig?.baseUrl || 'Not set';
+    const baseId = airtableConfig?.baseId || 'Not set';
+    const tableName = airtableConfig?.tableName || 'Not set';
+    const tools = [
+        { name: 'list_records', desc: 'List records in a table' },
+        { name: 'get_record', desc: 'Get a record by ID' },
+        { name: 'create_record', desc: 'Create a record' },
+        { name: 'update_record', desc: 'Update a record' },
+        { name: 'delete_record', desc: 'Delete a record' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/airtable.png" alt="Airtable" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Airtable Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Airtable API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Base/Table:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseId} / ${tableName}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayAsanaPreview(asanaConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = asanaConfig?.baseUrl || 'Not set';
+    const workspaceId = asanaConfig?.workspaceId || 'Not set';
+    const tools = [
+        { name: 'list_projects', desc: 'List projects in a workspace' },
+        { name: 'list_tasks', desc: 'List tasks in a project' },
+        { name: 'get_task', desc: 'Get a task by ID' },
+        { name: 'create_task', desc: 'Create a task' },
+        { name: 'update_task', desc: 'Update a task' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/asana.png" alt="Asana" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Asana Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Asana API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Workspace:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${workspaceId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayMondayPreview(mondayConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = mondayConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'query', desc: 'Run a GraphQL query' },
+        { name: 'mutate', desc: 'Run a GraphQL mutation' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/monday.png" alt="Monday.com" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Monday.com Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Monday GraphQL API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayClickUpPreview(clickupConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = clickupConfig?.baseUrl || 'Not set';
+    const teamId = clickupConfig?.teamId || 'Not set';
+    const tools = [
+        { name: 'list_teams', desc: 'List teams' },
+        { name: 'list_spaces', desc: 'List spaces in a team' },
+        { name: 'list_tasks', desc: 'List tasks in a list' },
+        { name: 'create_task', desc: 'Create a task' },
+        { name: 'update_task', desc: 'Update a task' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/clickup.png" alt="ClickUp" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">ClickUp Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with ClickUp API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Default Team:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${teamId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayLinearPreview(linearConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = linearConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'query', desc: 'Run a GraphQL query' },
+        { name: 'mutate', desc: 'Run a GraphQL mutation' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/linear.png" alt="Linear" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Linear Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Linear GraphQL API.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">
