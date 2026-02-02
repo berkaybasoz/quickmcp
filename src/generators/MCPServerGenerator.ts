@@ -115,6 +115,14 @@ export class MCPServerGenerator {
         tools = this.generateToolsForObsidian(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.BearNotes) {
         tools = this.generateToolsForBearNotes(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.IMessage) {
+        tools = this.generateToolsForIMessage(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Zoom) {
+        tools = this.generateToolsForZoom(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.MicrosoftTeams) {
+        tools = this.generateToolsForMicrosoftTeams(serverId, dbConfig);
+      } else if (dbConfig?.type === DataSourceType.Signal) {
+        tools = this.generateToolsForSignal(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.OpenAI) {
         tools = this.generateToolsForOpenAI(serverId, dbConfig);
       } else if (dbConfig?.type === DataSourceType.Claude) {
@@ -2943,6 +2951,290 @@ export class MCPServerGenerator {
       },
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/notes/{note_id}/archive', method: 'POST' }),
       operation: 'UPDATE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForIMessage(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.IMessage, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_chats',
+      description: 'List chats',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chats', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_messages',
+      description: 'List messages in a chat',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          chat_id: { type: 'string', description: 'Chat ID' },
+          limit: { type: 'number', description: 'Limit (optional)' }
+        },
+        required: ['chat_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chats/{chat_id}/messages', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_message',
+      description: 'Get a message',
+      inputSchema: {
+        type: 'object',
+        properties: { message_id: { type: 'string', description: 'Message ID' } },
+        required: ['message_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/messages/{message_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          chat_id: { type: 'string', description: 'Chat ID' },
+          text: { type: 'string', description: 'Message text' }
+        },
+        required: ['chat_id', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/chats/{chat_id}/messages', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForZoom(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Zoom, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_users',
+      description: 'List users',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_meetings',
+      description: 'List meetings for a user',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (default: me)' },
+          page_size: { type: 'number', description: 'Page size (optional)' },
+          page_number: { type: 'number', description: 'Page number (optional)' }
+        },
+        required: ['user_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/{user_id}/meetings', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_meeting',
+      description: 'Get meeting details',
+      inputSchema: {
+        type: 'object',
+        properties: { meeting_id: { type: 'string', description: 'Meeting ID' } },
+        required: ['meeting_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/meetings/{meeting_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'create_meeting',
+      description: 'Create a meeting',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          user_id: { type: 'string', description: 'User ID (default: me)' },
+          topic: { type: 'string', description: 'Meeting topic' },
+          start_time: { type: 'string', description: 'Start time (optional)' },
+          duration: { type: 'number', description: 'Duration minutes (optional)' }
+        },
+        required: ['user_id', 'topic']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/users/{user_id}/meetings', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_meeting',
+      description: 'Delete a meeting',
+      inputSchema: {
+        type: 'object',
+        properties: { meeting_id: { type: 'string', description: 'Meeting ID' } },
+        required: ['meeting_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/meetings/{meeting_id}', method: 'DELETE' }),
+      operation: 'DELETE'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForMicrosoftTeams(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.MicrosoftTeams, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_teams',
+      description: 'List teams',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/me/joinedTeams', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_channels',
+      description: 'List channels in a team',
+      inputSchema: {
+        type: 'object',
+        properties: { team_id: { type: 'string', description: 'Team ID' } },
+        required: ['team_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/teams/{team_id}/channels', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_messages',
+      description: 'List channel messages',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          team_id: { type: 'string', description: 'Team ID' },
+          channel_id: { type: 'string', description: 'Channel ID' }
+        },
+        required: ['team_id', 'channel_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/teams/{team_id}/channels/{channel_id}/messages', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_message',
+      description: 'Get a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          team_id: { type: 'string', description: 'Team ID' },
+          channel_id: { type: 'string', description: 'Channel ID' },
+          message_id: { type: 'string', description: 'Message ID' }
+        },
+        required: ['team_id', 'channel_id', 'message_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/teams/{team_id}/channels/{channel_id}/messages/{message_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          team_id: { type: 'string', description: 'Team ID' },
+          channel_id: { type: 'string', description: 'Channel ID' },
+          body: { type: 'string', description: 'Message body (HTML or text)' }
+        },
+        required: ['team_id', 'channel_id', 'body']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/teams/{team_id}/channels/{channel_id}/messages', method: 'POST' }),
+      operation: 'INSERT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForSignal(serverId: string, dbConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = dbConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = { type: DataSourceType.Signal, baseUrl, accessToken };
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_groups',
+      description: 'List groups',
+      inputSchema: { type: 'object', properties: {} },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/groups', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_messages',
+      description: 'List messages',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread or group ID' }
+        },
+        required: ['thread_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/messages/{thread_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get_message',
+      description: 'Get a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread or group ID' },
+          message_id: { type: 'string', description: 'Message ID' }
+        },
+        required: ['thread_id', 'message_id']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/messages/{thread_id}/{message_id}', method: 'GET' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'send_message',
+      description: 'Send a message',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          thread_id: { type: 'string', description: 'Thread or group ID' },
+          text: { type: 'string', description: 'Message text' }
+        },
+        required: ['thread_id', 'text']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/messages/{thread_id}', method: 'POST' }),
+      operation: 'INSERT'
     });
 
     return tools;

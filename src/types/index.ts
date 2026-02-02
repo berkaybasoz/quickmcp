@@ -56,6 +56,10 @@ export enum DataSourceType {
   Things3 = 'things3',
   Obsidian = 'obsidian',
   BearNotes = 'bearnotes',
+  IMessage = 'imessage',
+  Zoom = 'zoom',
+  MicrosoftTeams = 'microsoftteams',
+  Signal = 'signal',
   FalAI = 'falai',
   HuggingFace = 'huggingface',
   N8n = 'n8n',
@@ -144,6 +148,10 @@ export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean
     DataSourceType.Things3,
     DataSourceType.Obsidian,
     DataSourceType.BearNotes,
+    DataSourceType.IMessage,
+    DataSourceType.Zoom,
+    DataSourceType.MicrosoftTeams,
+    DataSourceType.Signal,
     DataSourceType.FalAI,
     DataSourceType.HuggingFace,
     DataSourceType.N8n,
@@ -485,6 +493,30 @@ export interface BearNotesConnection {
   baseUrl: string;
   accessToken: string;
   type: 'bearnotes';
+}
+
+export interface IMessageConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'imessage';
+}
+
+export interface ZoomConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'zoom';
+}
+
+export interface MicrosoftTeamsConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'microsoftteams';
+}
+
+export interface SignalConnection {
+  baseUrl: string;
+  accessToken: string;
+  type: 'signal';
 }
 
 export interface FalAIConnection {
@@ -1039,6 +1071,30 @@ export interface BearNotesGeneratorConfig extends BaseGeneratorConfig {
   accessToken: string;
 }
 
+export interface IMessageGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.IMessage;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface ZoomGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Zoom;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface MicrosoftTeamsGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.MicrosoftTeams;
+  baseUrl: string;
+  accessToken: string;
+}
+
+export interface SignalGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Signal;
+  baseUrl: string;
+  accessToken: string;
+}
+
 export interface FalAIGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.FalAI;
   baseUrl: string;
@@ -1430,6 +1486,10 @@ export type GeneratorConfig =
   | Things3GeneratorConfig
   | ObsidianGeneratorConfig
   | BearNotesGeneratorConfig
+  | IMessageGeneratorConfig
+  | ZoomGeneratorConfig
+  | MicrosoftTeamsGeneratorConfig
+  | SignalGeneratorConfig
   | FalAIGeneratorConfig
   | HuggingFaceGeneratorConfig
   | N8nGeneratorConfig
@@ -1510,6 +1570,10 @@ export type GeneratorConfig =
   | Things3Connection
   | ObsidianConnection
   | BearNotesConnection
+  | IMessageConnection
+  | ZoomConnection
+  | MicrosoftTeamsConnection
+  | SignalConnection
   | FalAIConnection
   | HuggingFaceConnection
   | N8nConnection
@@ -1945,6 +2009,50 @@ export function createBearNotesGeneratorConfig(
 ): BearNotesGeneratorConfig {
   return {
     type: DataSourceType.BearNotes,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createIMessageGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): IMessageGeneratorConfig {
+  return {
+    type: DataSourceType.IMessage,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createZoomGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): ZoomGeneratorConfig {
+  return {
+    type: DataSourceType.Zoom,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createMicrosoftTeamsGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): MicrosoftTeamsGeneratorConfig {
+  return {
+    type: DataSourceType.MicrosoftTeams,
+    baseUrl,
+    accessToken
+  };
+}
+
+export function createSignalGeneratorConfig(
+  baseUrl: string,
+  accessToken: string
+): SignalGeneratorConfig {
+  return {
+    type: DataSourceType.Signal,
     baseUrl,
     accessToken
   };

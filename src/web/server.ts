@@ -9,7 +9,103 @@ import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
-import { DataSource, DataSourceType, MCPServerConfig, ParsedData, CurlDataSource, createCurlDataSource, CsvDataSource, ExcelDataSource, createCsvDataSource, createExcelDataSource, RestDataSource, createRestDataSource, GeneratorConfig, createRestGeneratorConfig, createWebpageGeneratorConfig, createGraphQLGeneratorConfig, createSoapGeneratorConfig, createRssGeneratorConfig, createCurlGeneratorConfig, createFileGeneratorConfig, createGitHubGeneratorConfig, createXGeneratorConfig, createPrometheusGeneratorConfig, createGrafanaGeneratorConfig, createMongoDBGeneratorConfig, createFacebookGeneratorConfig, createInstagramGeneratorConfig, createTikTokGeneratorConfig, createNotionGeneratorConfig, createTelegramGeneratorConfig, createOpenAIGeneratorConfig, createClaudeGeneratorConfig, createGeminiGeneratorConfig, createGrokGeneratorConfig, createSpotifyGeneratorConfig, createSonosGeneratorConfig, createShazamGeneratorConfig, createPhilipsHueGeneratorConfig, createEightSleepGeneratorConfig, createHomeAssistantGeneratorConfig, createAppleNotesGeneratorConfig, createAppleRemindersGeneratorConfig, createThings3GeneratorConfig, createObsidianGeneratorConfig, createBearNotesGeneratorConfig, createFalAIGeneratorConfig, createHuggingFaceGeneratorConfig, createLlamaGeneratorConfig, createDeepSeekGeneratorConfig, createAzureOpenAIGeneratorConfig, createMistralGeneratorConfig, createCohereGeneratorConfig, createPerplexityGeneratorConfig, createTogetherGeneratorConfig, createFireworksGeneratorConfig, createGroqGeneratorConfig, createOpenRouterGeneratorConfig, createDropboxGeneratorConfig, createN8nGeneratorConfig, createTrelloGeneratorConfig, createGitLabGeneratorConfig, createBitbucketGeneratorConfig, createGDriveGeneratorConfig, createGoogleCalendarGeneratorConfig, createGoogleDocsGeneratorConfig, createGoogleSheetsGeneratorConfig, createAirtableGeneratorConfig, createAsanaGeneratorConfig, createMondayGeneratorConfig, createClickUpGeneratorConfig, createLinearGeneratorConfig, createSupabaseGeneratorConfig, createNpmGeneratorConfig, createNugetGeneratorConfig, createMavenGeneratorConfig, createGradleGeneratorConfig, createNexusGeneratorConfig, createJenkinsGeneratorConfig, createDockerHubGeneratorConfig, createJiraGeneratorConfig, createConfluenceGeneratorConfig, createFtpGeneratorConfig, createLocalFSGeneratorConfig, createEmailGeneratorConfig, createSlackGeneratorConfig, createDiscordGeneratorConfig, createDockerGeneratorConfig, createKubernetesGeneratorConfig, createElasticsearchGeneratorConfig, createOpenSearchGeneratorConfig, createOpenShiftGeneratorConfig } from '../types';
+import {
+  DataSource,
+  DataSourceType,
+  MCPServerConfig,
+  ParsedData,
+  CurlDataSource,
+  createCurlDataSource,
+  CsvDataSource,
+  ExcelDataSource,
+  createCsvDataSource,
+  createExcelDataSource,
+  RestDataSource,
+  createRestDataSource,
+  GeneratorConfig,
+  createRestGeneratorConfig,
+  createWebpageGeneratorConfig,
+  createGraphQLGeneratorConfig,
+  createSoapGeneratorConfig,
+  createRssGeneratorConfig,
+  createCurlGeneratorConfig,
+  createFileGeneratorConfig,
+  createGitHubGeneratorConfig,
+  createXGeneratorConfig,
+  createPrometheusGeneratorConfig,
+  createGrafanaGeneratorConfig,
+  createMongoDBGeneratorConfig,
+  createFacebookGeneratorConfig,
+  createInstagramGeneratorConfig,
+  createTikTokGeneratorConfig,
+  createNotionGeneratorConfig,
+  createTelegramGeneratorConfig,
+  createOpenAIGeneratorConfig,
+  createClaudeGeneratorConfig,
+  createGeminiGeneratorConfig,
+  createGrokGeneratorConfig,
+  createSpotifyGeneratorConfig,
+  createSonosGeneratorConfig,
+  createShazamGeneratorConfig,
+  createPhilipsHueGeneratorConfig,
+  createEightSleepGeneratorConfig,
+  createHomeAssistantGeneratorConfig,
+  createAppleNotesGeneratorConfig,
+  createAppleRemindersGeneratorConfig,
+  createThings3GeneratorConfig,
+  createObsidianGeneratorConfig,
+  createBearNotesGeneratorConfig,
+  createIMessageGeneratorConfig,
+  createZoomGeneratorConfig,
+  createMicrosoftTeamsGeneratorConfig,
+  createSignalGeneratorConfig,
+  createFalAIGeneratorConfig,
+  createHuggingFaceGeneratorConfig,
+  createLlamaGeneratorConfig,
+  createDeepSeekGeneratorConfig,
+  createAzureOpenAIGeneratorConfig,
+  createMistralGeneratorConfig,
+  createCohereGeneratorConfig,
+  createPerplexityGeneratorConfig,
+  createTogetherGeneratorConfig,
+  createFireworksGeneratorConfig,
+  createGroqGeneratorConfig,
+  createOpenRouterGeneratorConfig,
+  createDropboxGeneratorConfig,
+  createN8nGeneratorConfig,
+  createTrelloGeneratorConfig,
+  createGitLabGeneratorConfig,
+  createBitbucketGeneratorConfig,
+  createGDriveGeneratorConfig,
+  createGoogleCalendarGeneratorConfig,
+  createGoogleDocsGeneratorConfig,
+  createGoogleSheetsGeneratorConfig,
+  createAirtableGeneratorConfig,
+  createAsanaGeneratorConfig,
+  createMondayGeneratorConfig,
+  createClickUpGeneratorConfig,
+  createLinearGeneratorConfig,
+  createSupabaseGeneratorConfig,
+  createNpmGeneratorConfig,
+  createNugetGeneratorConfig,
+  createMavenGeneratorConfig,
+  createGradleGeneratorConfig,
+  createNexusGeneratorConfig,
+  createJenkinsGeneratorConfig,
+  createDockerHubGeneratorConfig,
+  createJiraGeneratorConfig,
+  createConfluenceGeneratorConfig,
+  createFtpGeneratorConfig,
+  createLocalFSGeneratorConfig,
+  createEmailGeneratorConfig,
+  createSlackGeneratorConfig,
+  createDiscordGeneratorConfig,
+  createDockerGeneratorConfig,
+  createKubernetesGeneratorConfig,
+  createElasticsearchGeneratorConfig,
+  createOpenSearchGeneratorConfig,
+  createOpenShiftGeneratorConfig
+} from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
 import { SQLiteManager } from '../database/sqlite-manager';
@@ -1470,6 +1566,156 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
             ],
             metadata: {
                 rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.IMessage) {
+        const { imessageBaseUrl, imessageAccessToken } = req.body as any;
+
+        if (!imessageBaseUrl || !imessageAccessToken) {
+            throw new Error('Missing iMessage base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.IMessage,
+            name: 'iMessage',
+            baseUrl: imessageBaseUrl,
+            accessToken: imessageAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'imessage_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_chats', 'List chats'],
+                ['list_messages', 'List messages in a chat'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Zoom) {
+        const { zoomBaseUrl, zoomAccessToken } = req.body as any;
+
+        if (!zoomBaseUrl || !zoomAccessToken) {
+            throw new Error('Missing Zoom base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Zoom,
+            name: 'Zoom',
+            baseUrl: zoomBaseUrl,
+            accessToken: zoomAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'zoom_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_users', 'List users'],
+                ['list_meetings', 'List meetings for a user'],
+                ['get_meeting', 'Get meeting details'],
+                ['create_meeting', 'Create a meeting'],
+                ['delete_meeting', 'Delete a meeting']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.MicrosoftTeams) {
+        const { microsoftteamsBaseUrl, microsoftteamsAccessToken } = req.body as any;
+
+        if (!microsoftteamsBaseUrl || !microsoftteamsAccessToken) {
+            throw new Error('Missing Microsoft Teams base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.MicrosoftTeams,
+            name: 'Microsoft Teams',
+            baseUrl: microsoftteamsBaseUrl,
+            accessToken: microsoftteamsAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'microsoftteams_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_teams', 'List teams'],
+                ['list_channels', 'List channels in a team'],
+                ['list_messages', 'List channel messages'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        return res.json({
+            success: true,
+            data: {
+                dataSource,
+                parsedData
+            }
+        });
+    } else if (type === DataSourceType.Signal) {
+        const { signalBaseUrl, signalAccessToken } = req.body as any;
+
+        if (!signalBaseUrl || !signalAccessToken) {
+            throw new Error('Missing Signal base URL or access token');
+        }
+
+        const dataSource = {
+            type: DataSourceType.Signal,
+            name: 'Signal',
+            baseUrl: signalBaseUrl,
+            accessToken: signalAccessToken
+        };
+
+        const parsedData = [{
+            tableName: 'signal_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_groups', 'List groups'],
+                ['list_messages', 'List messages'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 4,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -3635,6 +3881,30 @@ app.post('/api/generate', async (req, res) => {
     } else if (dataSource?.type === DataSourceType.BearNotes) {
       parsedForGen = {};
       dbConfForGen = createBearNotesGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.IMessage) {
+      parsedForGen = {};
+      dbConfForGen = createIMessageGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Zoom) {
+      parsedForGen = {};
+      dbConfForGen = createZoomGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.MicrosoftTeams) {
+      parsedForGen = {};
+      dbConfForGen = createMicrosoftTeamsGeneratorConfig(
+        dataSource.baseUrl,
+        dataSource.accessToken
+      );
+    } else if (dataSource?.type === DataSourceType.Signal) {
+      parsedForGen = {};
+      dbConfForGen = createSignalGeneratorConfig(
         dataSource.baseUrl,
         dataSource.accessToken
       );

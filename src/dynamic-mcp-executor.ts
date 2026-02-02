@@ -156,6 +156,18 @@ export class DynamicMCPExecutor {
       if (queryConfig?.type === DataSourceType.BearNotes) {
         return await this.executeBearNotesCall(queryConfig, args);
       }
+      if (queryConfig?.type === DataSourceType.IMessage) {
+        return await this.executeIMessageCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Zoom) {
+        return await this.executeZoomCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.MicrosoftTeams) {
+        return await this.executeMicrosoftTeamsCall(queryConfig, args);
+      }
+      if (queryConfig?.type === DataSourceType.Signal) {
+        return await this.executeSignalCall(queryConfig, args);
+      }
 
       if (queryConfig?.type === DataSourceType.OpenAI) {
         return await this.executeOpenAICompatibleCall(queryConfig, args);
@@ -2990,6 +3002,90 @@ export class DynamicMCPExecutor {
     }
 
     return await this.executeBearerJsonRequest('🐻 Bear Notes', url, method, token, args, ['note_id']);
+  }
+
+  private async executeIMessageCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing iMessage baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{chat_id}')) {
+      if (!args?.chat_id) return { success: false, error: 'Missing chat_id', data: [], rowCount: 0 };
+      url = url.replace('{chat_id}', encodeURIComponent(String(args.chat_id)));
+    }
+    if (url.includes('{message_id}')) {
+      if (!args?.message_id) return { success: false, error: 'Missing message_id', data: [], rowCount: 0 };
+      url = url.replace('{message_id}', encodeURIComponent(String(args.message_id)));
+    }
+
+    return await this.executeBearerJsonRequest('💬 iMessage', url, method, token, args, ['chat_id', 'message_id']);
+  }
+
+  private async executeZoomCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Zoom baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{user_id}')) {
+      const userId = args?.user_id || 'me';
+      url = url.replace('{user_id}', encodeURIComponent(String(userId)));
+    }
+    if (url.includes('{meeting_id}')) {
+      if (!args?.meeting_id) return { success: false, error: 'Missing meeting_id', data: [], rowCount: 0 };
+      url = url.replace('{meeting_id}', encodeURIComponent(String(args.meeting_id)));
+    }
+
+    return await this.executeBearerJsonRequest('🎥 Zoom', url, method, token, args, ['user_id', 'meeting_id']);
+  }
+
+  private async executeMicrosoftTeamsCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Microsoft Teams baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{team_id}')) {
+      if (!args?.team_id) return { success: false, error: 'Missing team_id', data: [], rowCount: 0 };
+      url = url.replace('{team_id}', encodeURIComponent(String(args.team_id)));
+    }
+    if (url.includes('{channel_id}')) {
+      if (!args?.channel_id) return { success: false, error: 'Missing channel_id', data: [], rowCount: 0 };
+      url = url.replace('{channel_id}', encodeURIComponent(String(args.channel_id)));
+    }
+    if (url.includes('{message_id}')) {
+      if (!args?.message_id) return { success: false, error: 'Missing message_id', data: [], rowCount: 0 };
+      url = url.replace('{message_id}', encodeURIComponent(String(args.message_id)));
+    }
+
+    return await this.executeBearerJsonRequest('💼 Teams', url, method, token, args, ['team_id', 'channel_id', 'message_id']);
+  }
+
+  private async executeSignalCall(queryConfig: any, args: any): Promise<any> {
+    const { baseUrl, accessToken, endpoint, method } = queryConfig;
+    const token = String(accessToken || '').trim();
+    if (!baseUrl || !token || !endpoint) {
+      return { success: false, error: 'Missing Signal baseUrl/accessToken/endpoint', data: [], rowCount: 0 };
+    }
+
+    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
+    if (url.includes('{thread_id}')) {
+      if (!args?.thread_id) return { success: false, error: 'Missing thread_id', data: [], rowCount: 0 };
+      url = url.replace('{thread_id}', encodeURIComponent(String(args.thread_id)));
+    }
+    if (url.includes('{message_id}')) {
+      if (!args?.message_id) return { success: false, error: 'Missing message_id', data: [], rowCount: 0 };
+      url = url.replace('{message_id}', encodeURIComponent(String(args.message_id)));
+    }
+
+    return await this.executeBearerJsonRequest('📶 Signal', url, method, token, args, ['thread_id', 'message_id']);
   }
 
   private async executeBearerJsonRequest(

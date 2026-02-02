@@ -4025,6 +4025,156 @@ async function handleNextToStep3() {
         return;
     }
 
+    // For iMessage, show info in preview and go to step 3
+    if (selectedType === DataSourceType.IMessage) {
+        const baseUrl = document.getElementById('imessageBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('imessageAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('imessage-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.IMessage,
+            name: 'iMessage',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'imessage_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_chats', 'List chats'],
+                ['list_messages', 'List messages in a chat'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayIMessagePreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Zoom, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Zoom) {
+        const baseUrl = document.getElementById('zoomBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('zoomAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('zoom-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Zoom,
+            name: 'Zoom',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'zoom_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_users', 'List users'],
+                ['list_meetings', 'List meetings for a user'],
+                ['get_meeting', 'Get meeting details'],
+                ['create_meeting', 'Create a meeting'],
+                ['delete_meeting', 'Delete a meeting']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayZoomPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Microsoft Teams, show info in preview and go to step 3
+    if (selectedType === DataSourceType.MicrosoftTeams) {
+        const baseUrl = document.getElementById('microsoftteamsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('microsoftteamsAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('microsoftteams-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.MicrosoftTeams,
+            name: 'Microsoft Teams',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'microsoftteams_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_teams', 'List teams'],
+                ['list_channels', 'List channels in a team'],
+                ['list_messages', 'List channel messages'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displayMicrosoftTeamsPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
+    // For Signal, show info in preview and go to step 3
+    if (selectedType === DataSourceType.Signal) {
+        const baseUrl = document.getElementById('signalBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('signalAccessToken')?.value?.trim();
+
+        if (!baseUrl || !accessToken) {
+            showError('signal-parse-error', 'Please enter base URL and access token');
+            return;
+        }
+
+        currentDataSource = {
+            type: DataSourceType.Signal,
+            name: 'Signal',
+            baseUrl,
+            accessToken
+        };
+        currentParsedData = [{
+            tableName: 'signal_tools',
+            headers: ['tool', 'description'],
+            rows: [
+                ['list_groups', 'List groups'],
+                ['list_messages', 'List messages'],
+                ['get_message', 'Get a message'],
+                ['send_message', 'Send a message']
+            ],
+            metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+            }
+        }];
+
+        displaySignalPreview(currentDataSource);
+        goToWizardStep(3);
+        return;
+    }
+
     // For OpenAI, show info in preview and go to step 3
     if (selectedType === DataSourceType.OpenAI) {
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
@@ -6244,6 +6394,14 @@ async function handleNextToStep3() {
                 displayObsidianPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.BearNotes) {
                 displayBearNotesPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.IMessage) {
+                displayIMessagePreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Zoom) {
+                displayZoomPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.MicrosoftTeams) {
+                displayMicrosoftTeamsPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Signal) {
+                displaySignalPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenAI) {
                 displayOpenAIPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.Claude) {
@@ -6621,6 +6779,22 @@ function updateWizardNavigation() {
         const baseUrl = document.getElementById('bearnotesBaseUrl')?.value?.trim();
         const accessToken = document.getElementById('bearnotesAccessToken')?.value?.trim();
         canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.IMessage) {
+        const baseUrl = document.getElementById('imessageBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('imessageAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Zoom) {
+        const baseUrl = document.getElementById('zoomBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('zoomAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.MicrosoftTeams) {
+        const baseUrl = document.getElementById('microsoftteamsBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('microsoftteamsAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
+    } else if (selectedType === DataSourceType.Signal) {
+        const baseUrl = document.getElementById('signalBaseUrl')?.value?.trim();
+        const accessToken = document.getElementById('signalAccessToken')?.value?.trim();
+        canProceed = !!baseUrl && !!accessToken;
     } else if (selectedType === DataSourceType.OpenAI) {
         const apiKey = document.getElementById('openaiApiKey')?.value?.trim();
         canProceed = !!apiKey;
@@ -6883,6 +7057,10 @@ function toggleDataSourceFields() {
     const things3Section = document.getElementById('things3-section');
     const obsidianSection = document.getElementById('obsidian-section');
     const bearnotesSection = document.getElementById('bearnotes-section');
+    const imessageSection = document.getElementById('imessage-section');
+    const zoomSection = document.getElementById('zoom-section');
+    const microsoftteamsSection = document.getElementById('microsoftteams-section');
+    const signalSection = document.getElementById('signal-section');
     const openaiSection = document.getElementById('openai-section');
     const claudeSection = document.getElementById('claude-section');
     const geminiSection = document.getElementById('gemini-section');
@@ -6970,6 +7148,10 @@ function toggleDataSourceFields() {
     things3Section?.classList.add('hidden');
     obsidianSection?.classList.add('hidden');
     bearnotesSection?.classList.add('hidden');
+    imessageSection?.classList.add('hidden');
+    zoomSection?.classList.add('hidden');
+    microsoftteamsSection?.classList.add('hidden');
+    signalSection?.classList.add('hidden');
     openaiSection?.classList.add('hidden');
     claudeSection?.classList.add('hidden');
     geminiSection?.classList.add('hidden');
@@ -7365,6 +7547,54 @@ function toggleDataSourceFields() {
         if (bearnotesTokenInput && !bearnotesTokenInput.dataset.listenerAttached) {
             bearnotesTokenInput.addEventListener('input', updateWizardNavigation);
             bearnotesTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.IMessage) {
+        imessageSection?.classList.remove('hidden');
+        const imessageBaseUrlInput = document.getElementById('imessageBaseUrl');
+        const imessageTokenInput = document.getElementById('imessageAccessToken');
+        if (imessageBaseUrlInput && !imessageBaseUrlInput.dataset.listenerAttached) {
+            imessageBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            imessageBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (imessageTokenInput && !imessageTokenInput.dataset.listenerAttached) {
+            imessageTokenInput.addEventListener('input', updateWizardNavigation);
+            imessageTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Zoom) {
+        zoomSection?.classList.remove('hidden');
+        const zoomBaseUrlInput = document.getElementById('zoomBaseUrl');
+        const zoomTokenInput = document.getElementById('zoomAccessToken');
+        if (zoomBaseUrlInput && !zoomBaseUrlInput.dataset.listenerAttached) {
+            zoomBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            zoomBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (zoomTokenInput && !zoomTokenInput.dataset.listenerAttached) {
+            zoomTokenInput.addEventListener('input', updateWizardNavigation);
+            zoomTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.MicrosoftTeams) {
+        microsoftteamsSection?.classList.remove('hidden');
+        const microsoftteamsBaseUrlInput = document.getElementById('microsoftteamsBaseUrl');
+        const microsoftteamsTokenInput = document.getElementById('microsoftteamsAccessToken');
+        if (microsoftteamsBaseUrlInput && !microsoftteamsBaseUrlInput.dataset.listenerAttached) {
+            microsoftteamsBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            microsoftteamsBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (microsoftteamsTokenInput && !microsoftteamsTokenInput.dataset.listenerAttached) {
+            microsoftteamsTokenInput.addEventListener('input', updateWizardNavigation);
+            microsoftteamsTokenInput.dataset.listenerAttached = 'true';
+        }
+    } else if (selectedType === DataSourceType.Signal) {
+        signalSection?.classList.remove('hidden');
+        const signalBaseUrlInput = document.getElementById('signalBaseUrl');
+        const signalTokenInput = document.getElementById('signalAccessToken');
+        if (signalBaseUrlInput && !signalBaseUrlInput.dataset.listenerAttached) {
+            signalBaseUrlInput.addEventListener('input', updateWizardNavigation);
+            signalBaseUrlInput.dataset.listenerAttached = 'true';
+        }
+        if (signalTokenInput && !signalTokenInput.dataset.listenerAttached) {
+            signalTokenInput.addEventListener('input', updateWizardNavigation);
+            signalTokenInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.OpenAI) {
         openaiSection?.classList.remove('hidden');
@@ -10919,6 +11149,228 @@ function displayBearNotesPreview(bearConfig) {
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Bear Notes Configuration</h3>
                         <p class="text-slate-700 mb-3">This server will generate tools to interact with Bear Notes.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayIMessagePreview(imessageConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = imessageConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_chats', desc: 'List chats' },
+        { name: 'list_messages', desc: 'List messages in a chat' },
+        { name: 'get_message', desc: 'Get a message' },
+        { name: 'send_message', desc: 'Send a message' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/imessage.png" alt="iMessage" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">iMessage Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with iMessage.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayZoomPreview(zoomConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = zoomConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_users', desc: 'List users' },
+        { name: 'list_meetings', desc: 'List meetings for a user' },
+        { name: 'get_meeting', desc: 'Get meeting details' },
+        { name: 'create_meeting', desc: 'Create a meeting' },
+        { name: 'delete_meeting', desc: 'Delete a meeting' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/zoom.png" alt="Zoom" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Zoom Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Zoom API.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displayMicrosoftTeamsPreview(teamsConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = teamsConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_teams', desc: 'List teams' },
+        { name: 'list_channels', desc: 'List channels in a team' },
+        { name: 'list_messages', desc: 'List channel messages' },
+        { name: 'get_message', desc: 'Get a message' },
+        { name: 'send_message', desc: 'Send a message' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/microsoftteams.png" alt="Microsoft Teams" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Microsoft Teams Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Microsoft Teams.</p>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-slate-500">Base URL:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${tools.map(t => `
+                                    <div class="flex items-start gap-2 text-sm">
+                                        <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+                                        <div>
+                                            <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code>
+                                            <p class="text-xs text-slate-500 mt-0.5">${t.desc}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    preview.innerHTML = html;
+}
+
+function displaySignalPreview(signalConfig) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const baseUrl = signalConfig?.baseUrl || 'Not set';
+    const tools = [
+        { name: 'list_groups', desc: 'List groups' },
+        { name: 'list_messages', desc: 'List messages' },
+        { name: 'get_message', desc: 'Get a message' },
+        { name: 'send_message', desc: 'Send a message' }
+    ];
+
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <img src="images/app/signal.png" alt="Signal" class="w-8 h-8 object-contain" />
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-900 text-lg mb-2">Signal Configuration</h3>
+                        <p class="text-slate-700 mb-3">This server will generate tools to interact with Signal.</p>
 
                         <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
                             <div class="grid grid-cols-2 gap-4 text-sm">
