@@ -1,377 +1,111 @@
-import { createDataStore } from './database/factory';
-import { IDataStore, ToolDefinition } from './database/datastore';
-import { ActiveDatabaseConnection, DataSourceType } from './types';
+import { ToolDefinition } from '../database/datastore';
+import { ActiveDatabaseConnection, DataSourceType } from '../types';
+import { ServerUtils } from './server-utils';
+import { MongoClient } from 'mongodb';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
-import { MongoClient } from 'mongodb';
 
-export class DynamicMCPExecutor {
-  private dataStore: IDataStore;
+export class ToolExecuter {
   private dbConnections: Map<string, ActiveDatabaseConnection> = new Map();
 
-  constructor() {
-    this.dataStore = createDataStore();
-  }
-
-  async getAllTools(): Promise<any[]> {
-    const tools = this.dataStore.getAllTools();
-
-    return tools.map(tool => ({
-      name: `${tool.server_id}__${tool.name}`,
-      description: `[${tool.server_id}] ${tool.description}`,
-      inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
-    }));
-  }
-
-  async getAllResources(): Promise<any[]> {
-    const resources = this.dataStore.getAllResources();
-
-    return resources.map(resource => ({
-      name: `${resource.server_id}__${resource.name}`,
-      description: `[${resource.server_id}] ${resource.description}`,
-      uri: resource.uri_template
-    }));
-  }
+  constructor(private readonly serverUtils: ServerUtils) {}
 
   async executeTool(toolName: string, args: any): Promise<any> {
     try {
-      const [serverId, actualToolName] = this.parseToolName(toolName);
-      const tool = this.getTool(serverId, actualToolName);
-      const serverConfig = this.getServerConfig(serverId);
-      const queryConfig = this.parseQueryConfig(tool.sqlQuery);
-
-      if (queryConfig?.type === DataSourceType.Rest) {
-        return await this.executeRestCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Webpage) {
-        return await this.executeWebpageFetch(queryConfig);
-      }
-
-      if (queryConfig?.type === DataSourceType.GraphQL) {
-        return await this.executeGraphQLCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Soap) {
-        return await this.executeSoapCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Rss) {
-        return await this.executeRssCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Curl) {
-        return await this.executeCurlRequest(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GitHub) {
-        return await this.executeGitHubCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.X) {
-        return await this.executeXCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Prometheus) {
-        return await this.executePrometheusCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Grafana) {
-        return await this.executeGrafanaCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.MongoDB) {
-        return await this.executeMongoDBCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Facebook) {
-        return await this.executeFacebookCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Instagram) {
-        return await this.executeInstagramCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.TikTok) {
-        return await this.executeTikTokCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Notion) {
-        return await this.executeNotionCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Telegram) {
-        return await this.executeTelegramCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.LinkedIn) {
-        return await this.executeLinkedInCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Reddit) {
-        return await this.executeRedditCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.YouTube) {
-        return await this.executeYouTubeCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.WhatsAppBusiness) {
-        return await this.executeWhatsAppBusinessCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Threads) {
-        return await this.executeThreadsCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Spotify) {
-        return await this.executeSpotifyCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Sonos) {
-        return await this.executeSonosCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Shazam) {
-        return await this.executeShazamCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.PhilipsHue) {
-        return await this.executePhilipsHueCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.EightSleep) {
-        return await this.executeEightSleepCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.HomeAssistant) {
-        return await this.executeHomeAssistantCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.AppleNotes) {
-        return await this.executeAppleNotesCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.AppleReminders) {
-        return await this.executeAppleRemindersCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Things3) {
-        return await this.executeThings3Call(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Obsidian) {
-        return await this.executeObsidianCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.BearNotes) {
-        return await this.executeBearNotesCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.IMessage) {
-        return await this.executeIMessageCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Zoom) {
-        return await this.executeZoomCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.MicrosoftTeams) {
-        return await this.executeMicrosoftTeamsCall(queryConfig, args);
-      }
-      if (queryConfig?.type === DataSourceType.Signal) {
-        return await this.executeSignalCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.OpenAI) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Claude) {
-        return await this.executeClaudeCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Gemini) {
-        return await this.executeGeminiCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Grok) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.FalAI) {
-        return await this.executeFalAICall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.HuggingFace) {
-        return await this.executeHuggingFaceCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Llama) {
-        return await this.executeOllamaCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.DeepSeek) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.AzureOpenAI) {
-        return await this.executeAzureOpenAICall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Mistral) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Cohere) {
-        return await this.executeCohereCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Perplexity) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Together) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Fireworks) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Groq) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.OpenRouter) {
-        return await this.executeOpenAICompatibleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Dropbox) {
-        return await this.executeDropboxCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.N8n) {
-        return await this.executeN8nCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Supabase) {
-        return await this.executeSupabaseCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Npm) {
-        return await this.executeNpmCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Nuget) {
-        return await this.executeNugetCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Maven) {
-        return await this.executeMavenCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Gradle) {
-        return await this.executeGradleCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Nexus) {
-        return await this.executeNexusCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Trello) {
-        return await this.executeTrelloCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GitLab) {
-        return await this.executeGitLabCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Bitbucket) {
-        return await this.executeBitbucketCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GDrive) {
-        return await this.executeGDriveCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GoogleCalendar) {
-        return await this.executeGoogleCalendarCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GoogleDocs) {
-        return await this.executeGoogleDocsCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.GoogleSheets) {
-        return await this.executeGoogleSheetsCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Airtable) {
-        return await this.executeAirtableCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Asana) {
-        return await this.executeAsanaCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Monday) {
-        return await this.executeMondayCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.ClickUp) {
-        return await this.executeClickUpCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Linear) {
-        return await this.executeLinearCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Jenkins) {
-        return await this.executeJenkinsCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.DockerHub) {
-        return await this.executeDockerHubCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Jira) {
-        return await this.executeJiraCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Confluence) {
-        return await this.executeConfluenceCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Ftp) {
-        return await this.executeFtpCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.LocalFS) {
-        return await this.executeLocalFSCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Email) {
-        return await this.executeEmailCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Slack) {
-        return await this.executeSlackCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Discord) {
-        return await this.executeDiscordCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Docker) {
-        return await this.executeDockerCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Kubernetes) {
-        return await this.executeKubernetesCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.Elasticsearch) {
-        return await this.executeElasticsearchCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.OpenSearch) {
-        return await this.executeElasticsearchCall(queryConfig, args);
-      }
-
-      if (queryConfig?.type === DataSourceType.OpenShift) {
-        return await this.executeOpenShiftCall(queryConfig, args);
-      }
+      const [serverId, actualToolName] = this.serverUtils.parseToolName(toolName);
+      const tool = this.serverUtils.getTool(serverId, actualToolName);
+      const serverConfig = this.serverUtils.getServerConfig(serverId);
+      const queryConfig = this.serverUtils.parseQueryConfig(tool.sqlQuery);
+
+      if (queryConfig?.type === DataSourceType.Rest) return await this.executeRestCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Webpage) return await this.executeWebpageFetch(queryConfig);
+      if (queryConfig?.type === DataSourceType.GraphQL) return await this.executeGraphQLCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Soap) return await this.executeSoapCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Rss) return await this.executeRssCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Curl) return await this.executeCurlRequest(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GitHub) return await this.executeGitHubCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.X) return await this.executeXCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Prometheus) return await this.executePrometheusCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Grafana) return await this.executeGrafanaCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.MongoDB) return await this.executeMongoDBCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Facebook) return await this.executeFacebookCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Instagram) return await this.executeInstagramCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.TikTok) return await this.executeTikTokCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Notion) return await this.executeNotionCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Telegram) return await this.executeTelegramCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.LinkedIn) return await this.executeLinkedInCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Reddit) return await this.executeRedditCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.YouTube) return await this.executeYouTubeCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.WhatsAppBusiness) return await this.executeWhatsAppBusinessCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Threads) return await this.executeThreadsCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Spotify) return await this.executeSpotifyCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Sonos) return await this.executeSonosCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Shazam) return await this.executeShazamCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.PhilipsHue) return await this.executePhilipsHueCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.EightSleep) return await this.executeEightSleepCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.HomeAssistant) return await this.executeHomeAssistantCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.AppleNotes) return await this.executeAppleNotesCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.AppleReminders) return await this.executeAppleRemindersCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Things3) return await this.executeThings3Call(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Obsidian) return await this.executeObsidianCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.BearNotes) return await this.executeBearNotesCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.IMessage) return await this.executeIMessageCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Zoom) return await this.executeZoomCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.MicrosoftTeams) return await this.executeMicrosoftTeamsCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Signal) return await this.executeSignalCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.OpenAI) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Claude) return await this.executeClaudeCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Gemini) return await this.executeGeminiCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Grok) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.FalAI) return await this.executeFalAICall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.HuggingFace) return await this.executeHuggingFaceCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Llama) return await this.executeOllamaCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.DeepSeek) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.AzureOpenAI) return await this.executeAzureOpenAICall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Mistral) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Cohere) return await this.executeCohereCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Perplexity) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Together) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Fireworks) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Groq) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.OpenRouter) return await this.executeOpenAICompatibleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Dropbox) return await this.executeDropboxCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.N8n) return await this.executeN8nCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Supabase) return await this.executeSupabaseCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Npm) return await this.executeNpmCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Nuget) return await this.executeNugetCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Maven) return await this.executeMavenCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Gradle) return await this.executeGradleCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Nexus) return await this.executeNexusCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Trello) return await this.executeTrelloCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GitLab) return await this.executeGitLabCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Bitbucket) return await this.executeBitbucketCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GDrive) return await this.executeGDriveCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GoogleCalendar) return await this.executeGoogleCalendarCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GoogleDocs) return await this.executeGoogleDocsCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.GoogleSheets) return await this.executeGoogleSheetsCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Airtable) return await this.executeAirtableCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Asana) return await this.executeAsanaCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Monday) return await this.executeMondayCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.ClickUp) return await this.executeClickUpCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Linear) return await this.executeLinearCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Jenkins) return await this.executeJenkinsCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.DockerHub) return await this.executeDockerHubCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Jira) return await this.executeJiraCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Confluence) return await this.executeConfluenceCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Ftp) return await this.executeFtpCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.LocalFS) return await this.executeLocalFSCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Email) return await this.executeEmailCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Slack) return await this.executeSlackCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Discord) return await this.executeDiscordCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Docker) return await this.executeDockerCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Kubernetes) return await this.executeKubernetesCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Elasticsearch) return await this.executeElasticsearchCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.OpenSearch) return await this.executeElasticsearchCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.OpenShift) return await this.executeOpenShiftCall(queryConfig, args);
 
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
-
     } catch (error) {
       console.error(`❌ Error executing tool ${toolName}:`, error);
       throw error;
@@ -1131,39 +865,6 @@ export class DynamicMCPExecutor {
         data: [{ error: error instanceof Error ? error.message : String(error) }],
         rowCount: 1
       };
-    }
-  }
-
-  private parseToolName(toolName: string): [string, string] {
-    const parts = toolName.split('__');
-    if (parts.length !== 2) {
-      throw new Error(`Invalid tool name format: ${toolName}`);
-    }
-    return [parts[0], parts[1]];
-  }
-
-  private getTool(serverId: string, toolName: string): ToolDefinition {
-    const tools = this.dataStore.getToolsForServer(serverId);
-    const tool = tools.find(t => t.name === toolName);
-    if (!tool) {
-      throw new Error(`Tool not found: ${serverId}__${toolName}`);
-    }
-    return tool;
-  }
-
-  private getServerConfig(serverId: string): any {
-    const serverConfig = this.dataStore.getServer(serverId);
-    if (!serverConfig) {
-      throw new Error(`Server not found: ${serverId}`);
-    }
-    return serverConfig;
-  }
-
-  private parseQueryConfig(sqlQuery: string): any {
-    try {
-      return JSON.parse(sqlQuery);
-    } catch {
-      return null;
     }
   }
 
@@ -6407,49 +6108,36 @@ export class DynamicMCPExecutor {
     };
   }
 
-  async readResource(resourceName: string): Promise<any> {
-    try {
-      // Parse resource name: "serverId__resourceName"
-      const parts = resourceName.split('__');
-      if (parts.length !== 2) {
-        throw new Error(`Invalid resource name format: ${resourceName}`);
+  async executeResourceQuery(serverId: string, sourceConfig: any, sqlQuery: string, args: any = {}, operation = 'SELECT'): Promise<any> {
+    const dbConnection = await this.getOrCreateConnection(serverId, sourceConfig);
+    return this.executeQuery(dbConnection, sqlQuery, args, operation);
+  }
+
+  getActiveConnectionsCount(): number {
+    return this.dbConnections.size;
+  }
+
+  async closeConnections(): Promise<void> {
+    for (const [serverId, dbConnection] of this.dbConnections.entries()) {
+      try {
+        switch (dbConnection.config.type) {
+          case DataSourceType.MSSQL:
+            await dbConnection.connection.close();
+            break;
+          case DataSourceType.MySQL:
+            await dbConnection.connection.end();
+            break;
+          case DataSourceType.PostgreSQL:
+            await dbConnection.connection.end();
+            break;
+        }
+        console.error(`🔌 Closed database connection for server ${serverId}`);
+      } catch (error) {
+        console.error(`❌ Error closing connection for server ${serverId}:`, error);
       }
-
-      const [serverId, actualResourceName] = parts;
-
-      // Get resource definition from JSON database
-      const resources = this.dataStore.getResourcesForServer(serverId);
-      const resource = resources.find(r => r.name === actualResourceName);
-
-      if (!resource) {
-        throw new Error(`Resource not found: ${resourceName}`);
-      }
-
-      // Get server config from JSON database
-      const serverConfig = this.dataStore.getServer(serverId);
-      if (!serverConfig) {
-        throw new Error(`Server not found: ${serverId}`);
-      }
-
-      // Get or create database connection
-      const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.sourceConfig);
-
-      // Execute the SQL query
-      const result = await this.executeQuery(dbConnection, resource.sqlQuery, {}, 'SELECT');
-
-      console.error(`✅ Read resource ${resourceName} successfully`);
-      return {
-        contents: [{
-          uri: resource.uri_template,
-          mimeType: 'application/json',
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
-
-    } catch (error) {
-      console.error(`❌ Error reading resource ${resourceName}:`, error);
-      throw error;
     }
+
+    this.dbConnections.clear();
   }
 
   private async getOrCreateConnection(serverId: string, sourceConfig: any): Promise<ActiveDatabaseConnection> {
@@ -6462,7 +6150,7 @@ export class DynamicMCPExecutor {
 
     try {
       switch (sourceConfig.type) {
-        case 'mssql':
+        case DataSourceType.MSSQL:
           connection = await sql.connect({
             server: sourceConfig.host,
             port: sourceConfig.port || 1433,
@@ -6474,11 +6162,10 @@ export class DynamicMCPExecutor {
               trustServerCertificate: sourceConfig.trustServerCertificate ?? true
             }
           });
-
           console.error(`🔗 Connected to MSSQL database for server ${serverId}`);
           break;
 
-        case 'mysql':
+        case DataSourceType.MySQL:
           connection = await mysql.createConnection({
             host: sourceConfig.host,
             port: sourceConfig.port || 3306,
@@ -6486,11 +6173,10 @@ export class DynamicMCPExecutor {
             user: sourceConfig.username,
             password: sourceConfig.password
           });
-
           console.error(`🔗 Connected to MySQL database for server ${serverId}`);
           break;
 
-        case 'postgresql':
+        case DataSourceType.PostgreSQL:
           connection = new Pool({
             host: sourceConfig.host,
             port: sourceConfig.port || 5432,
@@ -6498,8 +6184,6 @@ export class DynamicMCPExecutor {
             user: sourceConfig.username,
             password: sourceConfig.password
           });
-
-          // Test connection
           await connection.query('SELECT 1');
           console.error(`🔗 Connected to PostgreSQL database for server ${serverId}`);
           break;
@@ -6512,10 +6196,8 @@ export class DynamicMCPExecutor {
         connection,
         config: sourceConfig
       };
-
       this.dbConnections.set(serverId, dbConnection);
       return dbConnection;
-
     } catch (error) {
       console.error(`❌ Failed to connect to database for server ${serverId}:`, error);
       throw error;
@@ -6528,10 +6210,9 @@ export class DynamicMCPExecutor {
 
     try {
       switch (type) {
-        case 'mssql':
+        case DataSourceType.MSSQL: {
           const request = connection.request();
 
-          // Extract all @param references from the SQL query
           const paramRegex = /@(\w+)/g;
           let match;
           const sqlParams = new Set();
@@ -6539,8 +6220,6 @@ export class DynamicMCPExecutor {
             sqlParams.add(match[1]);
           }
 
-          // For SQL Server, handle data type compatibility issues
-          // If no filter parameters are provided (all are null), simplify the query
           const hasActiveFilters = Array.from(sqlParams).some((paramName: string) => {
             if (paramName === 'limit' || paramName === 'offset') return false;
             const value = args[paramName];
@@ -6549,22 +6228,19 @@ export class DynamicMCPExecutor {
 
           let modifiedQuery = sqlQuery;
           if (!hasActiveFilters && operation === 'SELECT') {
-            // Remove complex WHERE clause that causes ntext compatibility issues
             modifiedQuery = sqlQuery.replace(/WHERE.*?(?=ORDER BY|GROUP BY|HAVING|$)/gi, '');
           }
 
-          // Always add all SQL parameters, using provided values or defaults
           for (const paramName of sqlParams) {
             const paramNameStr = paramName as string;
             let value = args[paramNameStr];
-            
-            // Set defaults for limit and offset if not provided
+
             if (paramNameStr === 'limit' && (value === undefined || value === null)) {
               value = 100;
             } else if (paramNameStr === 'offset' && (value === undefined || value === null)) {
               value = 0;
             }
-            
+
             if (value !== undefined && value !== null) {
               request.input(paramNameStr, value);
             } else {
@@ -6573,35 +6249,28 @@ export class DynamicMCPExecutor {
           }
 
           const result = await request.query(modifiedQuery);
-
           if (operation === 'SELECT') {
             return result.recordset;
-          } else {
-            return { rowsAffected: result.rowsAffected[0] };
           }
+          return { rowsAffected: result.rowsAffected[0] };
+        }
 
-        case 'mysql':
-          // For SELECT with LIMIT/OFFSET, use query() instead of execute() to avoid prepared statement issues
+        case DataSourceType.MySQL: {
           if (operation === 'SELECT') {
             const limit = args.limit || 100;
             const offset = args.offset || 0;
-            // Replace placeholders with actual values for SELECT
             const selectQuery = sqlQuery.replace('LIMIT ? OFFSET ?', `LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`);
             const [selectRows] = await connection.query(selectQuery);
             return selectRows;
           }
 
-          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed
           if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
             const [aggRows] = await connection.query(sqlQuery);
             return aggRows;
           }
 
-          // Build parameters array for INSERT/UPDATE/DELETE
           let mysqlParams: any[] = [];
           if (operation === 'INSERT') {
-            // Extract column names from INSERT query to ensure correct order
-            // Format: INSERT INTO `table` (`col1`, `col2`, ...) VALUES (?, ?, ...)
             const insertMatch = sqlQuery.match(/INSERT INTO\s+`[^`]+`\s+\(([^)]+)\)/i);
             if (insertMatch) {
               const columnNames = insertMatch[1].match(/`([^`]+)`/g)?.map(c => c.replace(/`/g, '')) || [];
@@ -6612,8 +6281,6 @@ export class DynamicMCPExecutor {
                 .map(([, value]) => value === undefined ? null : value);
             }
           } else if (operation === 'UPDATE') {
-            // Extract column names from UPDATE query SET clause
-            // Format: UPDATE `table` SET `col1` = ?, `col2` = ? WHERE `id` = ?
             const setMatch = sqlQuery.match(/SET\s+(.+?)\s+WHERE/i);
             if (setMatch) {
               const columnNames = setMatch[1].match(/`([^`]+)`\s*=/g)?.map(c => c.replace(/`|=/g, '').trim()) || [];
@@ -6631,15 +6298,14 @@ export class DynamicMCPExecutor {
 
           const [rows] = await connection.execute(sqlQuery, mysqlParams);
           return { rowsAffected: (rows as any).affectedRows };
+        }
 
-        case 'postgresql':
-          // For COUNT, MIN, MAX, SUM, AVG - no parameters needed (check BEFORE SELECT)
+        case DataSourceType.PostgreSQL: {
           if (['COUNT', 'MIN', 'MAX', 'SUM', 'AVG'].some(op => sqlQuery.toUpperCase().includes(`${op}(`))) {
             const pgAggResult = await connection.query(sqlQuery);
             return pgAggResult.rows;
           }
 
-          // For SELECT with LIMIT/OFFSET
           if (operation === 'SELECT') {
             const limit = args.limit || 100;
             const offset = args.offset || 0;
@@ -6647,11 +6313,8 @@ export class DynamicMCPExecutor {
             return pgSelectResult.rows;
           }
 
-          // Build parameters array for INSERT/UPDATE/DELETE
           let pgParams: any[] = [];
           if (operation === 'INSERT') {
-            // Extract column names from INSERT query to ensure correct order
-            // Format: INSERT INTO "table" ("col1", "col2", ...) VALUES ($1, $2, ...)
             const insertMatch = sqlQuery.match(/INSERT INTO\s+"[^"]+"\s+\(([^)]+)\)/i);
             if (insertMatch) {
               const columnNames = insertMatch[1].match(/"([^"]+)"/g)?.map(c => c.replace(/"/g, '')) || [];
@@ -6662,8 +6325,6 @@ export class DynamicMCPExecutor {
                 .map(([, value]) => value === undefined ? null : value);
             }
           } else if (operation === 'UPDATE') {
-            // Extract column names from UPDATE query SET clause
-            // Format: UPDATE "table" SET "col1" = $1, "col2" = $2 WHERE "id" = $N
             const setMatch = sqlQuery.match(/SET\s+(.+?)\s+WHERE/i);
             if (setMatch) {
               const columnNames = setMatch[1].match(/"([^"]+)"\s*=/g)?.map(c => c.replace(/"|=/g, '').trim()) || [];
@@ -6681,45 +6342,14 @@ export class DynamicMCPExecutor {
 
           const pgResult = await connection.query(sqlQuery, pgParams);
           return { rowsAffected: pgResult.rowCount };
+        }
 
         default:
           throw new Error(`Unsupported database type: ${type}`);
       }
     } catch (error) {
-      console.error(`❌ Database query failed:`, error);
+      console.error('❌ Database query failed:', error);
       throw error;
     }
-  }
-
-  getStats(): any {
-    return {
-      ...this.dataStore.getStats(),
-      activeConnections: this.dbConnections.size
-    };
-  }
-
-  async close(): Promise<void> {
-    // Close all database connections
-    for (const [serverId, dbConnection] of this.dbConnections.entries()) {
-      try {
-        switch (dbConnection.config.type) {
-          case 'mssql':
-            await dbConnection.connection.close();
-            break;
-          case 'mysql':
-            await dbConnection.connection.end();
-            break;
-          case 'postgresql':
-            await dbConnection.connection.end();
-            break;
-        }
-        console.error(`🔌 Closed database connection for server ${serverId}`);
-      } catch (error) {
-        console.error(`❌ Error closing connection for server ${serverId}:`, error);
-      }
-    }
-
-    this.dbConnections.clear();
-    this.dataStore.close();
   }
 }

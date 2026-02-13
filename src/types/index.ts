@@ -6,7 +6,11 @@ export interface CurlSetting {
 }
 
 export enum DataSourceType {
-  Database = 'database',
+  MSSQL = 'mssql',
+  MySQL = 'mysql',
+  PostgreSQL = 'postgresql',
+  SQLite = 'sqlite',
+  Oracle = 'oracle',
   CSV = 'csv',
   Excel = 'excel',
   JSON = 'json',
@@ -96,6 +100,16 @@ export enum DataSourceType {
   Linear = 'linear',
   Jenkins = 'jenkins',
   DockerHub = 'dockerhub',
+}
+
+export function isDatabase(type: DataSourceType | string | undefined | null): boolean {
+  if (!type) return false;
+  const value = String(type).toLowerCase();
+  return value === DataSourceType.MSSQL
+    || value === DataSourceType.MySQL
+    || value === DataSourceType.PostgreSQL
+    || value === DataSourceType.SQLite
+    || value === DataSourceType.Oracle;
 }
 
 // Utility: determine when resources should be skipped for a data source
@@ -292,25 +306,25 @@ export interface DatabaseConnection {
   database: string;
   username?: string;
   password?: string;
-  type: 'mysql' | 'postgresql' | 'sqlite' | 'mssql';
+  type: DataSourceType.MySQL | DataSourceType.PostgreSQL | DataSourceType.SQLite | DataSourceType.MSSQL;
 }
 
 export interface GitHubConnection {
   token: string;
   owner?: string;
   repo?: string;
-  type: 'github';
+  type: DataSourceType.GitHub;
 }
 
 export interface XConnection {
   token: string;
   username?: string;
-  type: 'x';
+  type: DataSourceType.X;
 }
 
 export interface PrometheusConnection {
   baseUrl: string;
-  type: 'prometheus';
+  type: DataSourceType.Prometheus;
 }
 
 export interface GrafanaConnection {
@@ -319,7 +333,7 @@ export interface GrafanaConnection {
   apiKey?: string;
   username?: string;
   password?: string;
-  type: 'grafana';
+  type: DataSourceType.Grafana;
 }
 
 export interface MongoDBConnection {
@@ -329,7 +343,7 @@ export interface MongoDBConnection {
   username?: string;
   password?: string;
   authSource?: string;
-  type: 'mongodb';
+  type: DataSourceType.MongoDB;
 }
 
 export interface FacebookConnection {
@@ -338,41 +352,41 @@ export interface FacebookConnection {
   accessToken: string;
   userId?: string;
   pageId?: string;
-  type: 'facebook';
+  type: DataSourceType.Facebook;
 }
 
 export interface InstagramConnection {
   baseUrl: string;
   accessToken: string;
   userId?: string;
-  type: 'instagram';
+  type: DataSourceType.Instagram;
 }
 
 export interface TikTokConnection {
   baseUrl: string;
   accessToken: string;
   userId?: string;
-  type: 'tiktok';
+  type: DataSourceType.TikTok;
 }
 
 export interface NotionConnection {
   baseUrl: string;
   accessToken: string;
   notionVersion?: string;
-  type: 'notion';
+  type: DataSourceType.Notion;
 }
 
 export interface TelegramConnection {
   baseUrl: string;
   botToken: string;
   defaultChatId?: string;
-  type: 'telegram';
+  type: DataSourceType.Telegram;
 }
 
 export interface GraphQLConnection {
   baseUrl: string;
   headers?: { [key: string]: string };
-  type: 'graphql';
+  type: DataSourceType.GraphQL;
 }
 
 export interface SoapConnection {
@@ -380,12 +394,12 @@ export interface SoapConnection {
   wsdlUrl?: string;
   soapAction?: string;
   headers?: { [key: string]: string };
-  type: 'soap';
+  type: DataSourceType.Soap;
 }
 
 export interface RssConnection {
   feedUrl: string;
-  type: 'rss';
+  type: DataSourceType.Rss;
 }
 
 export interface LinkedInConnection {
@@ -393,7 +407,7 @@ export interface LinkedInConnection {
   accessToken: string;
   personId?: string;
   organizationId?: string;
-  type: 'linkedin';
+  type: DataSourceType.LinkedIn;
 }
 
 export interface RedditConnection {
@@ -410,7 +424,7 @@ export interface YouTubeConnection {
   apiKey: string;
   accessToken?: string;
   channelId?: string;
-  type: 'youtube';
+  type: DataSourceType.YouTube;
 }
 
 export interface WhatsAppBusinessConnection {
@@ -418,151 +432,151 @@ export interface WhatsAppBusinessConnection {
   accessToken: string;
   phoneNumberId: string;
   businessAccountId?: string;
-  type: 'whatsappbusiness';
+  type: DataSourceType.WhatsAppBusiness;
 }
 
 export interface ThreadsConnection {
   baseUrl: string;
   accessToken: string;
   userId?: string;
-  type: 'threads';
+  type: DataSourceType.Threads;
 }
 
 export interface SpotifyConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'spotify';
+  type: DataSourceType.Spotify;
 }
 
 export interface SonosConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'sonos';
+  type: DataSourceType.Sonos;
 }
 
 export interface ShazamConnection {
   baseUrl: string;
   apiKey: string;
   apiHost?: string;
-  type: 'shazam';
+  type: DataSourceType.Shazam;
 }
 
 export interface PhilipsHueConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'philipshue';
+  type: DataSourceType.PhilipsHue;
 }
 
 export interface EightSleepConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'eightsleep';
+  type: DataSourceType.EightSleep;
 }
 
 export interface HomeAssistantConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'homeassistant';
+  type: DataSourceType.HomeAssistant;
 }
 
 export interface AppleNotesConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'applenotes';
+  type: DataSourceType.AppleNotes;
 }
 
 export interface AppleRemindersConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'applereminders';
+  type: DataSourceType.AppleReminders;
 }
 
 export interface Things3Connection {
   baseUrl: string;
   accessToken: string;
-  type: 'things3';
+  type: DataSourceType.Things3;
 }
 
 export interface ObsidianConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'obsidian';
+  type: DataSourceType.Obsidian;
 }
 
 export interface BearNotesConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'bearnotes';
+  type: DataSourceType.BearNotes;
 }
 
 export interface IMessageConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'imessage';
+  type: DataSourceType.IMessage;
 }
 
 export interface ZoomConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'zoom';
+  type: DataSourceType.Zoom;
 }
 
 export interface MicrosoftTeamsConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'microsoftteams';
+  type: DataSourceType.MicrosoftTeams;
 }
 
 export interface SignalConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'signal';
+  type: DataSourceType.Signal;
 }
 
 export interface FalAIConnection {
   baseUrl: string;
   apiKey: string;
-  type: 'falai';
+  type: DataSourceType.FalAI;
 }
 
 export interface HuggingFaceConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'huggingface';
+  type: DataSourceType.HuggingFace;
 }
 
 export interface N8nConnection {
   baseUrl: string;
   apiKey: string;
-  type: 'n8n';
+  type: DataSourceType.N8n;
 }
 
 export interface SupabaseConnection {
   baseUrl: string;
   apiKey: string;
-  type: 'supabase';
+  type: DataSourceType.Supabase;
 }
 
 export interface NpmConnection {
   baseUrl: string;
-  type: 'npm';
+  type: DataSourceType.Npm;
 }
 
 export interface NugetConnection {
   baseUrl: string;
   registrationBaseUrl?: string;
-  type: 'nuget';
+  type: DataSourceType.Nuget;
 }
 
 export interface MavenConnection {
   baseUrl: string;
-  type: 'maven';
+  type: DataSourceType.Maven;
 }
 
 export interface GradleConnection {
   baseUrl: string;
-  type: 'gradle';
+  type: DataSourceType.Gradle;
 }
 
 export interface NexusConnection {
@@ -570,14 +584,14 @@ export interface NexusConnection {
   username?: string;
   password?: string;
   apiKey?: string;
-  type: 'nexus';
+  type: DataSourceType.Nexus;
 }
 
 export interface OpenAIConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'openai';
+  type: DataSourceType.OpenAI;
 }
 
 export interface ClaudeConnection {
@@ -585,34 +599,34 @@ export interface ClaudeConnection {
   apiKey: string;
   apiVersion?: string;
   defaultModel?: string;
-  type: 'claude';
+  type: DataSourceType.Claude;
 }
 
 export interface GeminiConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'gemini';
+  type: DataSourceType.Gemini;
 }
 
 export interface GrokConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'grok';
+  type: DataSourceType.Grok;
 }
 
 export interface LlamaConnection {
   baseUrl: string;
   defaultModel?: string;
-  type: 'llama';
+  type: DataSourceType.Llama;
 }
 
 export interface DeepSeekConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'deepseek';
+  type: DataSourceType.DeepSeek;
 }
 
 export interface AzureOpenAIConnection {
@@ -620,63 +634,63 @@ export interface AzureOpenAIConnection {
   apiKey: string;
   apiVersion?: string;
   deployment: string;
-  type: 'azure_openai';
+  type: DataSourceType.AzureOpenAI;
 }
 
 export interface MistralConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'mistral';
+  type: DataSourceType.Mistral;
 }
 
 export interface CohereConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'cohere';
+  type: DataSourceType.Cohere;
 }
 
 export interface PerplexityConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'perplexity';
+  type: DataSourceType.Perplexity;
 }
 
 export interface TogetherConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'together';
+  type: DataSourceType.Together;
 }
 
 export interface FireworksConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'fireworks';
+  type: DataSourceType.Fireworks;
 }
 
 export interface GroqConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'groq';
+  type: DataSourceType.Groq;
 }
 
 export interface OpenRouterConnection {
   baseUrl: string;
   apiKey: string;
   defaultModel?: string;
-  type: 'openrouter';
+  type: DataSourceType.OpenRouter;
 }
 
 export interface DropboxConnection {
   baseUrl: string;
   contentBaseUrl?: string;
   accessToken: string;
-  type: 'dropbox';
+  type: DataSourceType.Dropbox;
 }
 
 export interface TrelloConnection {
@@ -686,14 +700,14 @@ export interface TrelloConnection {
   memberId?: string;
   boardId?: string;
   listId?: string;
-  type: 'trello';
+  type: DataSourceType.Trello;
 }
 
 export interface GitLabConnection {
   baseUrl: string;
   token: string;
   projectId?: string;
-  type: 'gitlab';
+  type: DataSourceType.GitLab;
 }
 
 export interface BitbucketConnection {
@@ -702,34 +716,34 @@ export interface BitbucketConnection {
   appPassword: string;
   workspace?: string;
   repoSlug?: string;
-  type: 'bitbucket';
+  type: DataSourceType.Bitbucket;
 }
 
 export interface GDriveConnection {
   baseUrl: string;
   accessToken: string;
   rootFolderId?: string;
-  type: 'gdrive';
+  type: DataSourceType.GDrive;
 }
 
 export interface GoogleCalendarConnection {
   baseUrl: string;
   accessToken: string;
   calendarId?: string;
-  type: 'googlecalendar';
+  type: DataSourceType.GoogleCalendar;
 }
 
 export interface GoogleDocsConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'googledocs';
+  type: DataSourceType.GoogleDocs;
 }
 
 export interface GoogleSheetsConnection {
   baseUrl: string;
   accessToken: string;
   spreadsheetId?: string;
-  type: 'googlesheets';
+  type: DataSourceType.GoogleSheets;
 }
 
 export interface AirtableConnection {
@@ -737,47 +751,47 @@ export interface AirtableConnection {
   accessToken: string;
   baseId?: string;
   tableName?: string;
-  type: 'airtable';
+  type: DataSourceType.Airtable;
 }
 
 export interface AsanaConnection {
   baseUrl: string;
   accessToken: string;
   workspaceId?: string;
-  type: 'asana';
+  type: DataSourceType.Asana;
 }
 
 export interface MondayConnection {
   baseUrl: string;
   apiKey: string;
-  type: 'monday';
+  type: DataSourceType.Monday;
 }
 
 export interface ClickUpConnection {
   baseUrl: string;
   accessToken: string;
   teamId?: string;
-  type: 'clickup';
+  type: DataSourceType.ClickUp;
 }
 
 export interface LinearConnection {
   baseUrl: string;
   accessToken: string;
-  type: 'linear';
+  type: DataSourceType.Linear;
 }
 
 export interface JenkinsConnection {
   baseUrl: string;
   username: string;
   apiToken: string;
-  type: 'jenkins';
+  type: DataSourceType.Jenkins;
 }
 
 export interface DockerHubConnection {
   baseUrl: string;
   accessToken?: string;
   namespace?: string;
-  type: 'dockerhub';
+  type: DataSourceType.DockerHub;
 }
 
 export interface MCPServerConfig {

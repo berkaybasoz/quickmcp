@@ -281,12 +281,16 @@ body {
 #sidebar.collapsed a[href="/"] i { color: #2563eb !important; }            /* blue-600 */
 #sidebar.collapsed a[href="/manage-servers"] i { color: #10b981 !important; } /* emerald-500 */
 #sidebar.collapsed a[href="/test-servers"] i { color: #7c3aed !important; }   /* violet-600 */
+#sidebar.collapsed a[href="/authorization"] i { color: #d97706 !important; } /* amber-600 */
+#sidebar.collapsed a[href="/users"] i { color: #059669 !important; } /* emerald-600 */
 #sidebar.collapsed a[href="/how-to-use"] i { color: #f59e0b !important; }     /* amber-500 */
 
 /* Tint inner background by icon color */
 #sidebar.collapsed a[href="/"] .relative > div::before { background: rgba(37, 99, 235, 0.14) !important; }          /* blue tint */
 #sidebar.collapsed a[href="/manage-servers"] .relative > div::before { background: rgba(16, 185, 129, 0.14) !important; } /* emerald tint */
 #sidebar.collapsed a[href="/test-servers"] .relative > div::before { background: rgba(124, 58, 237, 0.14) !important; }   /* violet tint */
+#sidebar.collapsed a[href="/authorization"] .relative > div::before { background: rgba(217, 119, 6, 0.16) !important; } /* amber tint */
+#sidebar.collapsed a[href="/users"] .relative > div::before { background: rgba(5, 150, 105, 0.16) !important; } /* emerald tint */
 #sidebar.collapsed a[href="/how-to-use"] .relative > div::before { background: rgba(245, 158, 11, 0.18) !important; }     /* amber tint */
 
 /* Hover states: stronger tint + border highlight + slight scale */
@@ -298,6 +302,12 @@ body {
 
 #sidebar.collapsed a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; transform: scale(1.03); }
 #sidebar.collapsed a[href="/test-servers"]:hover .relative > div::before { background: rgba(124, 58, 237, 0.22) !important; }
+
+#sidebar.collapsed a[href="/authorization"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/authorization"]:hover .relative > div::before { background: rgba(217, 119, 6, 0.26) !important; }
+
+#sidebar.collapsed a[href="/users"]:hover .relative > div { border-color: #6ee7b7 !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/users"]:hover .relative > div::before { background: rgba(5, 150, 105, 0.24) !important; }
 
 #sidebar.collapsed a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
 #sidebar.collapsed a[href="/how-to-use"]:hover .relative > div::before { background: rgba(245, 158, 11, 0.28) !important; }
@@ -313,14 +323,20 @@ body {
 #sidebar:not(.collapsed) a[href="/"] i { color: #2563eb !important; }
 #sidebar:not(.collapsed) a[href="/manage-servers"] i { color: #10b981 !important; }
 #sidebar:not(.collapsed) a[href="/test-servers"] i { color: #7c3aed !important; }
+#sidebar:not(.collapsed) a[href="/authorization"] i { color: #d97706 !important; }
+#sidebar:not(.collapsed) a[href="/users"] i { color: #059669 !important; }
 #sidebar:not(.collapsed) a[href="/how-to-use"] i { color: #f59e0b !important; }
 #sidebar:not(.collapsed) a[href="/"] .relative > div { background: rgba(37, 99, 235, 0.14) !important; }
 #sidebar:not(.collapsed) a[href="/manage-servers"] .relative > div { background: rgba(16, 185, 129, 0.14) !important; }
 #sidebar:not(.collapsed) a[href="/test-servers"] .relative > div { background: rgba(124, 58, 237, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/authorization"] .relative > div { background: rgba(217, 119, 6, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/users"] .relative > div { background: rgba(5, 150, 105, 0.14) !important; }
 #sidebar:not(.collapsed) a[href="/how-to-use"] .relative > div { background: rgba(245, 158, 11, 0.14) !important; }
 #sidebar:not(.collapsed) a[href="/"]:hover .relative > div { border-color: #93c5fd !important; background: rgba(37, 99, 235, 0.24) !important; transform: translateY(-1px); }
 #sidebar:not(.collapsed) a[href="/manage-servers"]:hover .relative > div { border-color: #6ee7b7 !important; background: rgba(16, 185, 129, 0.22) !important; transform: translateY(-1px); }
 #sidebar:not(.collapsed) a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; background: rgba(124, 58, 237, 0.22) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/authorization"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(217, 119, 6, 0.24) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/users"]:hover .relative > div { border-color: #6ee7b7 !important; background: rgba(5, 150, 105, 0.24) !important; transform: translateY(-1px); }
 #sidebar:not(.collapsed) a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(245, 158, 11, 0.24) !important; transform: translateY(-1px); }
 
 /* AppBar New Server button: enforce single, consistent style across pages */
@@ -333,6 +349,11 @@ body {
 /* Hide any legacy per-page New Server buttons that lack the shared id */
 header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerBtn) {
   display: none !important;
+}
+
+/* Avoid first-paint sidebar flicker before sidebar.js mounts content */
+#sidebar:not([data-ready="1"]) {
+  visibility: hidden !important;
 }
 
 /* Right details panel collapsed state */

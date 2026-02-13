@@ -23,14 +23,35 @@ function sign(message: string, secret: string): string {
 
 export interface AccessTokenPayload {
   sub: string;
+  ws?: string;
+  role?: string;
   exp: number;
   iat: number;
 }
 
-export function createAccessToken(username: string, secret: string, ttlSeconds: number): string {
+export interface McpTokenPayload {
+  jti?: string;
+  sub: string;
+  ws?: string;
+  workspace?: string;
+  role?: string;
+  typ?: string;
+  iat?: number;
+  exp?: number;
+}
+
+export function createAccessToken(
+  username: string,
+  secret: string,
+  ttlSeconds: number,
+  workspaceId?: string,
+  role?: string
+): string {
   const nowSec = Math.floor(Date.now() / 1000);
   const payload: AccessTokenPayload = {
     sub: username,
+    ws: workspaceId,
+    role,
     iat: nowSec,
     exp: nowSec + ttlSeconds
   };
@@ -56,6 +77,33 @@ export function verifyAccessToken(token: string, secret: string): AccessTokenPay
   try {
     const payload = JSON.parse(base64UrlDecode(payloadEncoded)) as AccessTokenPayload;
     if (!payload?.sub || !payload?.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export function verifyMcpToken(token: string, secret: string): McpTokenPayload | null {
+  const [payloadEncoded, signature] = token.split('.');
+  if (!payloadEncoded || !signature) {
+    return null;
+  }
+
+  const expected = sign(payloadEncoded, secret);
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(base64UrlDecode(payloadEncoded)) as McpTokenPayload;
+    if (!payload?.sub) {
+      return null;
+    }
+    if (typeof payload.exp === 'number' && payload.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
     return payload;

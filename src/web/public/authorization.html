@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP - Authorization</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="quickmcp-styles.css">
+</head>
+<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+  <header class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+        <i class="fas fa-rocket text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+        <p class="text-xs text-slate-500 font-medium">Authorization</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md" data-user-avatar>G</div>
+      <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
+
+    <main class="flex-1 overflow-y-auto p-8">
+      <div class="max-w-6xl mx-auto space-y-6">
+        <section class="card p-6">
+          <h2 class="text-2xl font-bold text-slate-900">MCP Authorization</h2>
+          <p id="authSummary" class="text-sm text-slate-600 mt-2"></p>
+        </section>
+
+        <section class="card p-6 space-y-5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900">Generate Token</h3>
+            <button id="generateTokenBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Generate Token</button>
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-700 mb-1">Token Name</label>
+            <div class="relative">
+              <i class="fas fa-tag absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input id="tokenName" class="input w-full pl-9" placeholder="e.g. Claude Desktop, Cursor, Windsurf" maxlength="120" required>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-slate-700 mb-1">User</label>
+              <div class="relative">
+                <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <select id="subjectUserSelect" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm"></select>
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-700 mb-1">Token Expiration</label>
+              <div class="relative">
+                <i class="fas fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <select id="tokenTtlPreset" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm">
+                  <option value="never" selected>Never expires</option>
+                  <option value="1m">1 minute</option>
+                  <option value="5m">5 minutes</option>
+                  <option value="15m">15 minutes</option>
+                  <option value="30m">30 minutes</option>
+                  <option value="1h">1 hour</option>
+                  <option value="4h">4 hours</option>
+                  <option value="12h">12 hours</option>
+                  <option value="24h">24 hours</option>
+                  <option value="1w">1 week</option>
+                  <option value="2w">2 weeks</option>
+                  <option value="1mo">1 month</option>
+                  <option value="3mo">3 months</option>
+                  <option value="6mo">6 months</option>
+                </select>
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input id="allowAllServers" type="checkbox" class="h-4 w-4 rounded border-slate-300">
+              All MCP servers
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input id="allTools" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+              Enable all tools
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input id="allResources" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+              Enable all resources
+            </label>
+          </div>
+
+          <div id="treeSection" class="hidden">
+            <h4 class="font-medium text-slate-900 mb-2">MCP Access Tree</h4>
+            <p class="text-xs text-slate-500 mb-2">Select enabled servers/tools/resources to include in this token.</p>
+            <div id="mcpTree" class="max-h-[28rem] overflow-auto border border-slate-200 rounded-lg p-3 space-y-3 bg-white"></div>
+          </div>
+
+          <div class="relative">
+            <textarea id="generatedToken" rows="4" class="input w-full font-mono text-xs resize-none pr-10" placeholder="Generated token will appear here." readonly></textarea>
+            <button
+              id="copyTokenBtn"
+              type="button"
+              class="absolute right-2 top-2 h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Copy token"
+              aria-label="Copy token"
+              disabled
+            >
+              <i class="fas fa-copy text-sm"></i>
+            </button>
+          </div>
+          <p id="tokenMeta" class="text-xs text-slate-500"></p>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Existing Tokens</h3>
+            <button id="refreshTokensBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 text-sm">Refresh</button>
+          </div>
+          <div id="tokenTableWrap" class="overflow-x-auto"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="sidebar.js"></script>
+  <script>
+    let authContext = { users: [], servers: [] };
+
+    function byId(id) { return document.getElementById(id); }
+    function refreshCopyButtonState() {
+      const btn = byId('copyTokenBtn');
+      const token = byId('generatedToken').value.trim();
+      btn.disabled = token.length === 0;
+    }
+
+    function getSelectedServerIds() {
+      if (byId('allowAllServers').checked) return [];
+      return Array.from(document.querySelectorAll('input[data-server-enabled]:checked')).map((el) => el.getAttribute('data-server-enabled'));
+    }
+
+    function getAllowedItemIds(selector) {
+      return Array.from(document.querySelectorAll(selector)).map((el) => el.getAttribute('data-item-id'));
+    }
+
+    function renderUsers() {
+      const select = byId('subjectUserSelect');
+      const prev = select.value;
+      const options = (authContext.users || []).map((u) => `<option value="${u.username}">${u.username} (${u.role})</option>`);
+      select.innerHTML = options.join('');
+      if (prev && Array.from(select.options).some((o) => o.value === prev)) {
+        select.value = prev;
+      }
+    }
+
+    function shouldShowTree() {
+      return !byId('allowAllServers').checked || !byId('allTools').checked || !byId('allResources').checked;
+    }
+
+    function renderTree() {
+      const section = byId('treeSection');
+      const root = byId('mcpTree');
+      if (!shouldShowTree()) {
+        section.classList.add('hidden');
+        root.innerHTML = '';
+        return;
+      }
+
+      section.classList.remove('hidden');
+      const selectedUser = byId('subjectUserSelect').value || '';
+      const servers = authContext.servers || [];
+      const allServers = byId('allowAllServers').checked;
+      const allTools = byId('allTools').checked;
+      const allResources = byId('allResources').checked;
+
+      root.innerHTML = `
+        <div class="border border-slate-200 rounded-lg bg-slate-50/50">
+          <div class="px-3 py-2 border-b border-slate-200 text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <i class="fas fa-user text-slate-500"></i>
+            <span>${selectedUser || 'user'}</span>
+          </div>
+          <div class="p-2 space-y-2">
+            ${servers.map((s) => `
+              <details class="border border-slate-200 rounded-md bg-white">
+                <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800 flex items-center gap-2">
+                  <input type="checkbox" data-server-enabled="${s.id}" class="h-4 w-4 rounded border-slate-300 mr-1" ${allServers ? 'checked disabled' : 'checked'}>
+                  <span>${s.name}</span>
+                  <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                </summary>
+                <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <div class="text-xs font-semibold text-slate-600 mb-2">Tools</div>
+                    <div class="space-y-1 max-h-40 overflow-auto">
+                      ${(s.tools || []).map((id) => `
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full">
+                          <input type="checkbox" data-item-id="${id}" data-kind="tool" class="h-3.5 w-3.5 rounded border-slate-300"
+                            ${allTools ? 'checked disabled' : 'checked'}>
+                          <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
+                        </label>
+                      `).join('') || '<p class="text-xs text-slate-400">No tools</p>'}
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-xs font-semibold text-slate-600 mb-2">Resources</div>
+                    <div class="space-y-1 max-h-40 overflow-auto">
+                      ${(s.resources || []).map((id) => `
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full">
+                          <input type="checkbox" data-item-id="${id}" data-kind="resource" class="h-3.5 w-3.5 rounded border-slate-300"
+                            ${allResources ? 'checked disabled' : 'checked'}>
+                          <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
+                        </label>
+                      `).join('') || '<p class="text-xs text-slate-400">No resources</p>'}
+                    </div>
+                  </div>
+                </div>
+              </details>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      root.querySelectorAll('input[data-server-enabled]').forEach((el) => {
+        el.addEventListener('change', (event) => {
+          const serverId = event.target.getAttribute('data-server-enabled');
+          const checked = !!event.target.checked;
+          root.querySelectorAll(`input[data-item-id^="${serverId}__"]`).forEach((item) => {
+            if (!item.disabled) item.checked = checked;
+          });
+        });
+      });
+    }
+
+    function renderServers() {
+      renderTree();
+    }
+
+    async function loadConfig() {
+      const res = await fetch('/api/authorization/config');
+      if (!res.ok) throw new Error('Failed to load config');
+      const payload = await res.json();
+      const data = payload?.data || {};
+      byId('authSummary').textContent = data.mcpTokenRequired
+        ? 'Create and manage access tokens to control which users can see and run MCP servers, tools, and resources.'
+        : 'You can optionally create access tokens to control who can use MCP servers, tools, and resources.';
+    }
+
+    async function loadContext() {
+      const res = await fetch('/api/authorization/context');
+      if (!res.ok) throw new Error('Failed to load context');
+      const payload = await res.json();
+      authContext = payload?.data || { users: [], servers: [] };
+      renderUsers();
+      renderServers();
+    }
+
+    async function loadTokens() {
+      const root = byId('tokenTableWrap');
+      root.innerHTML = '<p class="text-sm text-slate-500">Loading tokens...</p>';
+      const res = await fetch('/api/authorization/tokens');
+      if (!res.ok) throw new Error('Failed to load tokens');
+      const payload = await res.json();
+      const tokens = payload?.data?.tokens || [];
+      if (!tokens.length) {
+        root.innerHTML = '<p class="text-sm text-slate-500">No tokens found.</p>';
+        return;
+      }
+
+      root.innerHTML = `
+        <table class="min-w-full text-sm">
+          <thead><tr class="text-left border-b border-slate-200">
+            <th class="py-2 pr-4 font-semibold text-slate-700">Token Name</th>
+            <th class="py-2 pr-4 font-semibold text-slate-700">User</th>
+            <th class="py-2 pr-4 font-semibold text-slate-700">Created</th>
+            <th class="py-2 pr-4 font-semibold text-slate-700">Expires</th>
+            <th class="py-2 pr-4 font-semibold text-slate-700">Status</th>
+            <th class="py-2 pr-4 font-semibold text-slate-700">Action</th>
+          </tr></thead>
+          <tbody>
+            ${tokens.map((t) => `
+              <tr class="border-b border-slate-100">
+                <td class="py-2 pr-4">${t.tokenName || ''}</td>
+                <td class="py-2 pr-4">${t.subjectUsername}</td>
+                <td class="py-2 pr-4 text-slate-600">${t.createdAt || '-'}</td>
+                <td class="py-2 pr-4 text-slate-600">${t.neverExpires ? 'Never' : (t.expiresAt || '-')}</td>
+                <td class="py-2 pr-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold ${t.revokedAt ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">${t.revokedAt ? 'Revoked' : 'Active'}</span>
+                </td>
+                <td class="py-2 pr-4 space-x-2">
+                  <button class="show-token-btn px-2 py-1 rounded border border-slate-200 hover:border-blue-400 text-xs" data-id="${t.id}">Show Token</button>
+                  ${t.revokedAt ? '' : `<button class="revoke-token-btn px-2 py-1 rounded border border-red-200 text-red-700 hover:bg-red-50 text-xs" data-id="${t.id}">Revoke</button>`}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      root.querySelectorAll('.show-token-btn').forEach((btn) => {
+        btn.addEventListener('click', async (event) => {
+          const id = event.target.getAttribute('data-id');
+          const resp = await fetch(`/api/authorization/tokens/${encodeURIComponent(id)}`);
+          if (!resp.ok) throw new Error('Failed to load token');
+          const tokenPayload = await resp.json();
+          byId('generatedToken').value = tokenPayload?.data?.token || '';
+          byId('tokenMeta').textContent = `Token shown from history.`;
+          refreshCopyButtonState();
+        });
+      });
+
+      root.querySelectorAll('.revoke-token-btn').forEach((btn) => {
+        btn.addEventListener('click', async (event) => {
+          const id = event.target.getAttribute('data-id');
+          const resp = await fetch(`/api/authorization/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          if (!resp.ok) throw new Error('Failed to revoke token');
+          await loadTokens();
+          window.utils?.showToast?.('Token revoked', 'success');
+        });
+      });
+    }
+
+    async function generateToken() {
+      const subjectUsername = byId('subjectUserSelect').value;
+      const tokenName = byId('tokenName').value.trim();
+      if (!tokenName) {
+        throw new Error('Token name is required');
+      }
+      const ttlPreset = byId('tokenTtlPreset').value;
+      const neverExpires = ttlPreset === 'never';
+      const presetToHours = {
+        '1m': 1 / 60,
+        '5m': 5 / 60,
+        '15m': 15 / 60,
+        '30m': 30 / 60,
+        '1h': 1,
+        '4h': 4,
+        '12h': 12,
+        '24h': 24,
+        '1w': 24 * 7,
+        '2w': 24 * 14,
+        '1mo': 24 * 30,
+        '3mo': 24 * 90,
+        '6mo': 24 * 180
+      };
+      const ttlHours = neverExpires ? null : (presetToHours[ttlPreset] || 24 * 30);
+      const allowAllServers = byId('allowAllServers').checked;
+      const allTools = byId('allTools').checked;
+      const allResources = byId('allResources').checked;
+      const serverIds = getSelectedServerIds();
+      const allowedTools = allTools ? [] : getAllowedItemIds('#mcpTree input[data-kind="tool"]:checked[data-item-id]');
+      const allowedResources = allResources ? [] : getAllowedItemIds('#mcpTree input[data-kind="resource"]:checked[data-item-id]');
+
+      const res = await fetch('/api/authorization/mcp-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokenName,
+          subjectUsername,
+          neverExpires,
+          ttlHours,
+          allowAllServers,
+          allowAllTools: allTools,
+          allowAllResources: allResources,
+          serverIds,
+          allowedTools,
+          allowedResources
+        })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Failed to generate token');
+
+      byId('generatedToken').value = payload?.data?.token || '';
+      byId('tokenMeta').textContent = payload?.data?.neverExpires
+        ? 'Never expires'
+        : `Expires: ${payload?.data?.expiresAt || '-'}`;
+      refreshCopyButtonState();
+      await loadTokens();
+    }
+
+    byId('generateTokenBtn').addEventListener('click', () => {
+      generateToken().catch((error) => window.utils?.showToast?.(error.message || 'Failed to generate token', 'error'));
+    });
+    byId('refreshTokensBtn').addEventListener('click', () => {
+      loadTokens().catch((error) => window.utils?.showToast?.(error.message || 'Failed to load tokens', 'error'));
+    });
+    byId('allowAllServers').addEventListener('change', renderTree);
+    byId('allTools').addEventListener('change', renderTree);
+    byId('allResources').addEventListener('change', renderTree);
+    byId('subjectUserSelect').addEventListener('change', renderTree);
+    byId('copyTokenBtn').addEventListener('click', async () => {
+      const token = byId('generatedToken').value.trim();
+      if (!token) return;
+      try {
+        await navigator.clipboard.writeText(token);
+        window.utils?.showToast?.('Token copied', 'success');
+      } catch (_) {
+        window.utils?.showToast?.('Failed to copy token', 'error');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await loadConfig();
+        await loadContext();
+        await loadTokens();
+        refreshCopyButtonState();
+      } catch (error) {
+        window.utils?.showToast?.(error.message || 'Authorization page failed to load', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

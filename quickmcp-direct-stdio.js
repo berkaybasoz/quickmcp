@@ -4,16 +4,30 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
+const crypto = require('crypto');
 
 // Use the current working directory provided by the caller.
 // Do not change directories; keep paths relative to this script.
 
-let SQLiteManager;
+let safeCreateDataStore;
 try {
-  ({ SQLiteManager } = require('./dist/database/sqlite-manager.js'));
-} catch (e) {
-  // Fallback to local shim to avoid hard dependency on built dist
-  ({ SQLiteManager } = require('./sqlite-manager.shim.js'));
+  ({ safeCreateDataStore } = require('./dist/database/database-utils.js'));
+} catch (_) {
+  throw new Error('[QuickMCP] Missing dist/database/database-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+}
+
+let resolveAuthMode;
+try {
+  ({ resolveAuthMode } = require('./dist/config/auth-config.js'));
+} catch (_) {
+  throw new Error('[QuickMCP] Missing dist/config/auth-config.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+}
+
+let verifyMcpToken;
+try {
+  ({ verifyMcpToken } = require('./dist/auth/token-utils.js'));
+} catch (_) {
+  throw new Error('[QuickMCP] Missing dist/auth/token-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
 // Parse CLI flags for convenience
@@ -42,8 +56,146 @@ if (dataDirArg) {
   if (val) process.env.QUICKMCP_DATA_DIR = val;
 }
 
-// Create SQLite manager
-const sqliteManager = new SQLiteManager();
+const dataStore = safeCreateDataStore({ logger: (...args) => console.error(...args) });
+
+const mcpAuthMode = resolveAuthMode();
+const mcpTokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
+const mcpToken = (process.env.QUICKMCP_TOKEN || '').trim();
+const verifiedMcpPayload = mcpToken ? verifyMcpToken(mcpToken, mcpTokenSecret) : null;
+const mcpIdentity = verifiedMcpPayload ? {
+  tokenId: verifiedMcpPayload.jti ? String(verifiedMcpPayload.jti) : '',
+  username: String(verifiedMcpPayload.sub),
+  workspace: String(verifiedMcpPayload.ws || verifiedMcpPayload.workspace || verifiedMcpPayload.sub),
+  role: String(verifiedMcpPayload.role || 'user')
+} : null;
+const mcpTokenHash = mcpToken ? crypto.createHash('sha256').update(mcpToken).digest('hex') : '';
+
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) return value.map((v) => String(v));
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function getMcpTokenRecord() {
+  if (mcpAuthMode === 'NONE') return null;
+  if (!mcpTokenHash || typeof dataStore.getMcpTokenByHash !== 'function') return null;
+  try {
+    const row = dataStore.getMcpTokenByHash(mcpTokenHash);
+    if (!row) return null;
+    return {
+      id: row.id,
+      tokenName: String(row.tokenName || row.token_name || ''),
+      workspaceId: String(row.workspaceId || row.workspace_id || ''),
+      subjectUsername: String(row.subjectUsername || row.subject_username || ''),
+      allowAllServers: row.allowAllServers === true || Number(row.allow_all_servers) === 1,
+      allowAllTools: row.allowAllTools === true || Number(row.allow_all_tools) === 1,
+      allowAllResources: row.allowAllResources === true || Number(row.allow_all_resources) === 1,
+      serverIds: normalizeStringArray(row.serverIds || row.server_ids_json),
+      allowedTools: normalizeStringArray(row.allowedTools || row.allowed_tools_json),
+      allowedResources: normalizeStringArray(row.allowedResources || row.allowed_resources_json),
+      neverExpires: row.neverExpires === true || Number(row.never_expires) === 1,
+      expiresAt: row.expiresAt ? String(row.expiresAt) : (row.expires_at ? String(row.expires_at) : null),
+      revokedAt: row.revokedAt ? String(row.revokedAt) : (row.revoked_at ? String(row.revoked_at) : null)
+    };
+  } catch {
+    return null;
+  }
+}
+
+const mcpTokenRecord = getMcpTokenRecord();
+
+function isMcpAuthorizedGlobally() {
+  if (mcpAuthMode === 'NONE') return true;
+  if (!mcpIdentity || !mcpTokenRecord) return false;
+  if (mcpTokenRecord.revokedAt) return false;
+  if (mcpTokenRecord.id && mcpIdentity.tokenId && mcpTokenRecord.id !== mcpIdentity.tokenId) return false;
+  if (mcpTokenRecord.subjectUsername !== mcpIdentity.username) return false;
+  if (mcpTokenRecord.workspaceId !== mcpIdentity.workspace) return false;
+  if (!mcpTokenRecord.neverExpires && mcpTokenRecord.expiresAt) {
+    const expiresMs = Date.parse(mcpTokenRecord.expiresAt);
+    if (Number.isFinite(expiresMs) && expiresMs <= Date.now()) return false;
+  }
+  return true;
+}
+
+function parseServerOwner(serverId) {
+  const idx = String(serverId || '').indexOf('__');
+  if (idx <= 0) return '';
+  return String(serverId).slice(0, idx);
+}
+
+function isServerOwnedByCurrentIdentity(serverId) {
+  if (mcpAuthMode === 'NONE') return true;
+  if (!mcpIdentity || !mcpTokenRecord) return false;
+  const owner = parseServerOwner(serverId);
+  return owner === mcpIdentity.workspace || owner === mcpIdentity.username;
+}
+
+function getServerRequireMcpToken(serverId) {
+  if (mcpAuthMode === 'NONE') return false;
+  if (typeof dataStore.getServerAuthConfig !== 'function') return true;
+  try {
+    const cfg = dataStore.getServerAuthConfig(serverId);
+    if (!cfg) return true;
+    return cfg.requireMcpToken !== false;
+  } catch {
+    return true;
+  }
+}
+
+function isServerAuthorized(serverId) {
+  if (mcpAuthMode === 'NONE') return true;
+  if (!isMcpAuthorizedGlobally()) return false;
+  if (!isServerOwnedByCurrentIdentity(serverId)) return false;
+  if (mcpTokenRecord && !mcpTokenRecord.allowAllServers) {
+    if (!mcpTokenRecord.serverIds.includes(serverId)) return false;
+  }
+  const requireToken = getServerRequireMcpToken(serverId);
+  if (requireToken && !mcpIdentity) return false;
+  return true;
+}
+
+function isToolAuthorized(serverId, toolName) {
+  if (!isServerAuthorized(serverId)) return false;
+  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
+    if (!mcpTokenRecord.allowAllTools) {
+      const full = `${serverId}__${toolName}`;
+      return mcpTokenRecord.allowedTools.includes(full);
+    }
+    const full = `${serverId}__${toolName}`;
+    return true;
+  }
+  return true;
+}
+
+function isResourceAuthorized(serverId, resourceName) {
+  if (!isServerAuthorized(serverId)) return false;
+  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
+    if (!mcpTokenRecord.allowAllResources) {
+      const full = `${serverId}__${resourceName}`;
+      return mcpTokenRecord.allowedResources.includes(full);
+    }
+    const full = `${serverId}__${resourceName}`;
+    return true;
+  }
+  return true;
+}
+
+function resolveToolByFullName(fullName) {
+  try {
+    const tools = dataStore.getAllTools();
+    return tools.find((tool) => `${tool.server_id}__${tool.name}` === fullName) || null;
+  } catch {
+    return null;
+  }
+}
 
 // Optionally start the Web UI (Express) like `npm run dev`
 // Enable by setting QUICKMCP_ENABLE_WEB=1 (and optionally PORT, QUICKMCP_DATA_DIR)
@@ -136,7 +288,7 @@ function safeStartWebServer() {
   // Install one-time handler to catch immediate async throw from Express
   process.prependOnceListener('uncaughtException', handler);
   try {
-    require('./dist/web/server.js');
+    require('./dist/server/server.js');
   } catch (e) {
     // Synchronous load error
     process.removeListener('uncaughtException', handler);
@@ -152,7 +304,7 @@ function safeStartWebServer() {
 
 // Diagnostics: print environment and mssql details to help debug Claude Desktop
 try {
-  const resolvedDynExec = require.resolve('./dist/dynamic-mcp-executor.js');
+  const resolvedDynExec = require.resolve('./dist/server/dynamic-mcp-executor.js');
   const mssql = require('mssql');
   const mssqlVersion = require('mssql/package.json').version;
   console.error('[QuickMCP] Node:', process.version);
@@ -213,9 +365,19 @@ async function handleMessage(message) {
 
     case 'tools/list':
       try {
-        const tools = sqliteManager.getAllTools();
-        console.error(`[QuickMCP] Got ${tools.length} tools from SQLite`);
-        const formattedTools = tools.map(tool => ({
+        if (!isMcpAuthorizedGlobally()) {
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { tools: [] }
+          };
+          break;
+        }
+
+        const tools = dataStore.getAllTools();
+        const authorizedTools = tools.filter((tool) => isToolAuthorized(tool.server_id, tool.name));
+        console.error(`[QuickMCP] Got ${tools.length} tools from datasource, authorized=${authorizedTools.length}`);
+        const formattedTools = authorizedTools.map(tool => ({
           name: `${tool.server_id}__${tool.name}`,
           description: `[${tool.server_id}] ${tool.description}`,
           inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
@@ -239,8 +401,18 @@ async function handleMessage(message) {
 
     case 'resources/list':
       try {
-        const resources = sqliteManager.getAllResources();
-        const formattedResources = resources.map(resource => ({
+        if (!isMcpAuthorizedGlobally()) {
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { resources: [] }
+          };
+          break;
+        }
+
+        const resources = dataStore.getAllResources();
+        const authorizedResources = resources.filter((resource) => isResourceAuthorized(resource.server_id, resource.name));
+        const formattedResources = authorizedResources.map(resource => ({
           name: `${resource.server_id}__${resource.name}`,
           description: `[${resource.server_id}] ${resource.description}`,
           uri: resource.uri_template
@@ -274,14 +446,30 @@ async function handleMessage(message) {
       try {
         console.error(`[QuickMCP] Executing tool: ${message.params.name}`);
         console.error(`[QuickMCP] Arguments:`, JSON.stringify(message.params.arguments));
+
+        const requestedToolName = message?.params?.name || '';
+        const resolvedTool = resolveToolByFullName(requestedToolName);
+        const requestedServerId = resolvedTool ? resolvedTool.server_id : String(requestedToolName).split('__')[0];
+
+        const requestedToolShortName = resolvedTool ? resolvedTool.name : String(requestedToolName).split('__').slice(1).join('__');
+        if (!isToolAuthorized(requestedServerId, requestedToolShortName)) {
+          response = {
+            jsonrpc: '2.0',
+            id: message.id,
+            error: {
+              code: -32001,
+              message: 'Unauthorized MCP access. Set QUICKMCP_TOKEN for this user/server.'
+            }
+          };
+          break;
+        }
+
         // REST-aware execution path: if tool.sqlQuery encodes a REST spec, call via fetch
         try {
-          const fullName = message.params.name || '';
-          const parts = fullName.split('__');
-          const serverId = parts[0];
-          const toolName = parts.slice(1).join('__');
-          const tools = sqliteManager.getAllTools();
-          const tool = tools.find(t => t.server_id === serverId && t.name === toolName);
+          const fullName = requestedToolName;
+          const tool = resolvedTool;
+          const serverId = tool ? tool.server_id : '';
+          const toolName = tool ? tool.name : '';
           let restSpec = null;
           if (tool && tool.sqlQuery) {
             try { restSpec = JSON.parse(tool.sqlQuery); } catch (_) { restSpec = null; }
@@ -290,8 +478,8 @@ async function handleMessage(message) {
             // Fill from server config or heuristics
             let baseUrl = restSpec.baseUrl;
             try {
-              if (!baseUrl && sqliteManager.getServer) {
-                const srv = sqliteManager.getServer(serverId);
+              if (!baseUrl && dataStore.getServer) {
+                const srv = dataStore.getServer(serverId);
                 baseUrl = srv && srv.sourceConfig && srv.sourceConfig.baseUrl;
               }
             } catch (_) {}
@@ -338,7 +526,7 @@ async function handleMessage(message) {
         }
 
         // Fallback to DB-backed executor
-        const { DynamicMCPExecutor } = require('./dist/dynamic-mcp-executor.js');
+        const { DynamicMCPExecutor } = require('./dist/server/dynamic-mcp-executor.js');
         const executor = new DynamicMCPExecutor();
         const timeoutPromise = new Promise((_, reject) => { setTimeout(() => reject(new Error('Tool execution timeout')), 10000); });
         const toolResult = await Promise.race([ executor.executeTool(message.params.name, message.params.arguments || {}), timeoutPromise ]);
@@ -353,6 +541,25 @@ async function handleMessage(message) {
             code: -32603,
             message: `Tool execution failed: ${error.message}`
           }
+        };
+      }
+      break;
+
+    case 'resources/read':
+      if (!isMcpAuthorizedGlobally()) {
+        response = {
+          jsonrpc: '2.0',
+          id: message.id,
+          error: {
+            code: -32001,
+            message: 'Unauthorized MCP access. Set QUICKMCP_TOKEN.'
+          }
+        };
+      } else {
+        response = {
+          jsonrpc: '2.0',
+          id: message.id,
+          error: { code: -32601, message: 'Method not found: resources/read' }
         };
       }
       break;
@@ -455,19 +662,19 @@ process.stdin.on('data', async (data) => {
 
 process.stdin.on('end', () => {
   console.error('[QuickMCP] STDIN ended');
-  sqliteManager.close();
+  try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.error('[QuickMCP] Interrupted');
-  sqliteManager.close();
+  try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error('[QuickMCP] Terminated');
-  sqliteManager.close();
+  try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 

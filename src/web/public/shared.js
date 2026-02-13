@@ -5,7 +5,11 @@ let userMenuAnchor = null;
 
 // DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
 const DataSourceType = {
-    Database: 'database',
+    MSSQL: 'mssql',
+    MySQL: 'mysql',
+    PostgreSQL: 'postgresql',
+    SQLite: 'sqlite',
+    Oracle: 'oracle',
     CSV: 'csv',
     Excel: 'excel',
     JSON: 'json',
@@ -97,6 +101,16 @@ const DataSourceType = {
     Jenkins: 'jenkins',
     DockerHub: 'dockerhub'
 };
+
+function isDatabase(type) {
+    if (!type) return false;
+    const value = String(type).toLowerCase();
+    return value === DataSourceType.MSSQL
+        || value === DataSourceType.MySQL
+        || value === DataSourceType.PostgreSQL
+        || value === DataSourceType.SQLite
+        || value === DataSourceType.Oracle;
+}
 
 // Data source types that don't require table selection (runtime execution)
 // These types generate their own tools and don't need parsed table data
@@ -196,6 +210,16 @@ function isNoTableDataSource(type) {
 document.addEventListener('DOMContentLoaded', function() {
     updateUserAvatar();
 
+    const openBtn = document.getElementById('openSidebar');
+    if (openBtn) {
+        openBtn.addEventListener('click', openSidebar);
+    }
+
+    const closeBtn = document.getElementById('closeSidebar');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeSidebar);
+    }
+
     // Close sidebar when overlay is clicked on mobile
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
@@ -265,6 +289,13 @@ function initializeUserMenu() {
 
     if (!document.body.dataset.userMenuGlobalBound) {
         document.addEventListener('click', () => closeUserMenu());
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('#closeSidebar')) {
+                closeSidebar();
+            }
+        });
         window.addEventListener('resize', () => closeUserMenu());
         document.body.dataset.userMenuGlobalBound = 'true';
     }
@@ -360,6 +391,14 @@ function handleResize() {
         // Mobile: sidebar hidden by default
         sidebar?.classList.add('-translate-x-full');
     }
+}
+
+function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    sidebar?.classList.remove('-translate-x-full');
+    overlay?.classList.remove('opacity-0', 'invisible');
 }
 
 // Utility function to close sidebar (called from main app)

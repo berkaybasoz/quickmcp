@@ -25,7 +25,8 @@ export class MCPServerGenerator {
     ownerUsername: string,
     parsedData: any,
     sourceConfig: any,
-    selectedTables?: any[]
+    selectedTables?: any[],
+    serverVersion?: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       //console.log(`🚀 Generating virtual MCP server: ${serverId}`);
@@ -35,6 +36,7 @@ export class MCPServerGenerator {
       const serverConfig: ServerConfig = {
         id: serverId,
         name: serverName,
+        version: (typeof serverVersion === 'string' && serverVersion.trim()) ? serverVersion.trim() : '1.0.0',
         ownerUsername,
         sourceConfig: sourceConfig,
         createdAt: new Date().toISOString()
@@ -7642,7 +7644,7 @@ export class MCPServerGenerator {
     let query = `SELECT ${columnList} FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
     if (withParams) {
-      if (dbType === 'mysql' || dbType === 'postgresql') {
+      if (dbType === DataSourceType.MySQL || dbType === DataSourceType.PostgreSQL) {
         // MySQL and PostgreSQL: simple query without complex WHERE, parameters handled in executor
         const orderColumn = columns.find(col =>
           col.name.toLowerCase() === 'id' ||
@@ -7695,10 +7697,10 @@ export class MCPServerGenerator {
   private generateUpdateQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
     const updateColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
 
-    if (dbType === 'mysql') {
+    if (dbType === DataSourceType.MySQL) {
       const setClause = updateColumns.map(col => `${this.quoteIdentifier(col.name, dbType)} = ?`).join(', ');
       return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
-    } else if (dbType === 'postgresql') {
+    } else if (dbType === DataSourceType.PostgreSQL) {
       const setClause = updateColumns.map((col, idx) => `${this.quoteIdentifier(col.name, dbType)} = $${idx + 1}`).join(', ');
       return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('id', dbType)} = $${updateColumns.length + 1}`;
     } else {
@@ -7708,9 +7710,9 @@ export class MCPServerGenerator {
   }
 
   private generateDeleteQuery(tableName: string, dbType: string): string {
-    if (dbType === 'mysql') {
+    if (dbType === DataSourceType.MySQL) {
       return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
-    } else if (dbType === 'postgresql') {
+    } else if (dbType === DataSourceType.PostgreSQL) {
       return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = $1`;
     } else {
       return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('Id', dbType)} = @id`;
@@ -7720,7 +7722,7 @@ export class MCPServerGenerator {
   private generateCountQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
     let query = `SELECT COUNT(*) as total_count FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    if (dbType === 'mssql') {
+    if (dbType === DataSourceType.MSSQL) {
       const whereConditions = columns.map(col =>
         `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
       ).join(' AND ');
@@ -7734,7 +7736,7 @@ export class MCPServerGenerator {
   private generateMinQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
     let query = `SELECT MIN(${this.quoteIdentifier(columnName, dbType)}) as min_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    if (dbType === 'mssql') {
+    if (dbType === DataSourceType.MSSQL) {
       const whereConditions = columns.map(col =>
         `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
       ).join(' AND ');
@@ -7747,7 +7749,7 @@ export class MCPServerGenerator {
   private generateMaxQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
     let query = `SELECT MAX(${this.quoteIdentifier(columnName, dbType)}) as max_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    if (dbType === 'mssql') {
+    if (dbType === DataSourceType.MSSQL) {
       const whereConditions = columns.map(col =>
         `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
       ).join(' AND ');
@@ -7760,7 +7762,7 @@ export class MCPServerGenerator {
   private generateSumQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
     let query = `SELECT SUM(${this.quoteIdentifier(columnName, dbType)}) as sum_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
-    if (dbType === 'mssql') {
+    if (dbType === DataSourceType.MSSQL) {
       const whereConditions = columns.map(col =>
         `(@filter_${col.name} IS NULL OR ${this.quoteIdentifier(col.name, dbType)} = @filter_${col.name})`
       ).join(' AND ');
@@ -7773,9 +7775,9 @@ export class MCPServerGenerator {
   private generateAvgQuery(tableName: string, columnName: string, columns: ParsedColumn[], dbType: string): string {
     let query: string;
 
-    if (dbType === 'mysql') {
+    if (dbType === DataSourceType.MSSQL) {
       query = `SELECT AVG(${this.quoteIdentifier(columnName, dbType)}) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
-    } else if (dbType === 'postgresql') {
+    } else if (dbType === DataSourceType.PostgreSQL) {
       query = `SELECT AVG(${this.quoteIdentifier(columnName, dbType)}::FLOAT) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
     } else {
       query = `SELECT AVG(CAST(${this.quoteIdentifier(columnName, dbType)} AS FLOAT)) as avg_value FROM ${this.quoteIdentifier(tableName, dbType)}`;
@@ -7798,11 +7800,11 @@ export class MCPServerGenerator {
   // Database-specific SQL formatting helpers
   private quoteIdentifier(name: string, dbType: string): string {
     switch (dbType) {
-      case 'mysql':
+      case DataSourceType.MySQL:
         return `\`${name}\``;
-      case 'postgresql':
+      case DataSourceType.PostgreSQL:
         return `"${name}"`;
-      case 'mssql':
+      case DataSourceType.MSSQL:
       default:
         return `[${name}]`;
     }
@@ -7810,11 +7812,11 @@ export class MCPServerGenerator {
 
   private getParamPlaceholder(name: string, index: number, dbType: string): string {
     switch (dbType) {
-      case 'mysql':
+      case DataSourceType.MySQL:
         return '?';
-      case 'postgresql':
+      case DataSourceType.PostgreSQL:
         return `$${index}`;
-      case 'mssql':
+      case DataSourceType.MSSQL:
       default:
         return `@${name}`;
     }

@@ -6274,16 +6274,15 @@ async function handleNextToStep3() {
         const formData = new FormData();
         formData.append('type', selectedType);
 
-        const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
         if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
             const fileInput = document.getElementById('fileInput');
             if (!fileInput?.files[0]) {
                 throw new Error('Please select a file');
             }
             formData.append('file', fileInput.files[0]);
-        } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
+        } else if (isDatabase(selectedType)) {
             const connection = {
-                type: dbTypes.has(selectedType) ? selectedType : DataSourceType.Database,
+                type: selectedType,
                 host: document.getElementById('dbHost')?.value,
                 port: parseInt(document.getElementById('dbPort')?.value),
                 database: document.getElementById('dbName')?.value,
@@ -6291,7 +6290,7 @@ async function handleNextToStep3() {
                 password: document.getElementById('dbPassword')?.value
             };
             formData.append('connection', JSON.stringify(connection));
-            formData.set('type', DataSourceType.Database);
+            formData.set('type', selectedType);
             // Güvenli olması için metin alanlarını da ekle (multer text fields)
             formData.append('dbType', connection.type || '');
             formData.append('dbHost', connection.host || '');
@@ -6624,12 +6623,11 @@ function updateWizardNavigation() {
     }
 
     let canProceed = false;
-    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         const fileInput = document.getElementById('fileInput');
         canProceed = !!fileInput?.files?.length;
-    } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
-        const dbType = dbTypes.has(selectedType) ? selectedType : DataSourceType.Database;
+    } else if (isDatabase(selectedType)) {
+        const dbType = selectedType;
         const dbHost = document.getElementById('dbHost')?.value;
         const dbName = document.getElementById('dbName')?.value;
         const dbUser = document.getElementById('dbUser')?.value;
@@ -7204,10 +7202,9 @@ function toggleDataSourceFields() {
     elasticsearchSection?.classList.add('hidden');
     opensearchSection?.classList.add('hidden');
 
-    const dbTypes = new Set(['mssql','mysql','postgresql','sqlite','oracle','redis','hazelcast','kafka','db2']);
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         fileSection?.classList.remove('hidden');
-    } else if (selectedType === DataSourceType.Database || dbTypes.has(selectedType)) {
+    } else if (isDatabase(selectedType)) {
         dbSection?.classList.remove('hidden');
         updateDefaultPort();
     } else if (selectedType === DataSourceType.Rest) {

@@ -12,7 +12,8 @@ import {
   GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
-import { DynamicMCPExecutor } from './dynamic-mcp-executor';
+import { DynamicMCPExecutor } from './server/dynamic-mcp-executor';
+import { PortUtils } from './server/port-utils';
 
 export class IntegratedMCPServer {
   private server: Server;
@@ -265,9 +266,13 @@ export class IntegratedMCPServer {
     });
   }
 
-  async start(port: number = 3001): Promise<void> {
+  async start(port?: number): Promise<void> {
+    const resolvedPort = typeof port === 'number' && Number.isFinite(port) && port > 0
+      ? port
+      : new PortUtils(process.env).resolveServerPorts().mcpPort;
+
     // Start HTTP server
-    const httpServer = this.app.listen(port, () => {
+    const httpServer = this.app.listen(resolvedPort, () => {
       //console.log(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
 
       const stats = this.executor.getStats();
