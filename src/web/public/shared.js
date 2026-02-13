@@ -1,4 +1,7 @@
 // Shared utility functions for QuickMCP
+let currentUserName = 'Guest';
+let currentAuthMode = 'NONE';
+let userMenuAnchor = null;
 
 // DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
 const DataSourceType = {
@@ -191,6 +194,8 @@ function isNoTableDataSource(type) {
 
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
+    updateUserAvatar();
+
     // Close sidebar when overlay is clicked on mobile
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
@@ -201,6 +206,149 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', handleResize);
     handleResize();
 });
+
+async function updateUserAvatar() {
+    const avatarEls = document.querySelectorAll('[data-user-avatar]');
+    if (!avatarEls.length) return;
+
+    try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+            initializeUserMenu();
+            return;
+        }
+
+        const payload = await response.json();
+        const username = payload?.data?.username;
+        const authMode = payload?.data?.authMode;
+        currentAuthMode = typeof authMode === 'string' ? authMode : 'NONE';
+        currentUserName = (typeof username === 'string' && username.trim().length > 0)
+            ? username.trim()
+            : 'Guest';
+        const initial = (typeof username === 'string' && username.trim().length > 0)
+            ? username.trim().charAt(0).toUpperCase()
+            : 'G';
+
+        avatarEls.forEach((el) => {
+            el.textContent = initial;
+        });
+        initializeUserMenu();
+    } catch {
+        // Keep static fallback avatar letter.
+        initializeUserMenu();
+    }
+}
+
+function initializeUserMenu() {
+    const avatarEls = document.querySelectorAll('[data-user-avatar]');
+    if (!avatarEls.length) return;
+
+    avatarEls.forEach((el) => {
+        if (el.dataset.userMenuBound === 'true') return;
+        el.dataset.userMenuBound = 'true';
+        el.classList.add('cursor-pointer');
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+
+        el.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleUserMenu(el);
+        });
+
+        el.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleUserMenu(el);
+            }
+        });
+    });
+
+    if (!document.body.dataset.userMenuGlobalBound) {
+        document.addEventListener('click', () => closeUserMenu());
+        window.addEventListener('resize', () => closeUserMenu());
+        document.body.dataset.userMenuGlobalBound = 'true';
+    }
+}
+
+function getOrCreateUserMenu() {
+    let menu = document.getElementById('userAvatarMenu');
+    if (menu) return menu;
+
+    menu = document.createElement('div');
+    menu.id = 'userAvatarMenu';
+    menu.className = 'hidden fixed z-[120] w-52 rounded-xl border border-slate-200 bg-white shadow-xl p-2';
+    document.body.appendChild(menu);
+    return menu;
+}
+
+function positionUserMenu(menu, anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const top = rect.bottom + 8;
+    const right = Math.max(window.innerWidth - rect.right, 8);
+    menu.style.top = `${top}px`;
+    menu.style.right = `${right}px`;
+}
+
+function renderUserMenu(menu) {
+    const signedInLabel = currentUserName || 'Guest';
+    const showLogout = currentAuthMode === 'LITE';
+
+    menu.innerHTML = `
+        <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 mb-2">
+            <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Signed In</div>
+            <div class="text-sm font-semibold text-slate-800">${signedInLabel}</div>
+        </div>
+        <button type="button" id="userMenuOptionsBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
+            Options
+        </button>
+        ${showLogout ? `
+        <button type="button" id="userMenuLogoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">
+            Sign out
+        </button>
+        ` : ''}
+    `;
+
+    const optionsBtn = menu.querySelector('#userMenuOptionsBtn');
+    if (optionsBtn) {
+        optionsBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            window.utils?.showToast?.('Options panel will be added soon.', 'info');
+            closeUserMenu();
+        });
+    }
+
+    const logoutBtn = menu.querySelector('#userMenuLogoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch {}
+            window.location.href = '/login';
+        });
+    }
+}
+
+function toggleUserMenu(anchorEl) {
+    const menu = getOrCreateUserMenu();
+    const isOpen = !menu.classList.contains('hidden');
+    if (isOpen && userMenuAnchor === anchorEl) {
+        closeUserMenu();
+        return;
+    }
+
+    userMenuAnchor = anchorEl;
+    renderUserMenu(menu);
+    positionUserMenu(menu, anchorEl);
+    menu.classList.remove('hidden');
+}
+
+function closeUserMenu() {
+    const menu = document.getElementById('userAvatarMenu');
+    if (!menu) return;
+    menu.classList.add('hidden');
+    userMenuAnchor = null;
+}
 
 // Handle responsive behavior
 function handleResize() {

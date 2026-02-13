@@ -1,4 +1,5 @@
-import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from './database/sqlite-manager';
+import { createDataStore } from './database/factory';
+import { IDataStore, ToolDefinition } from './database/datastore';
 import { ActiveDatabaseConnection, DataSourceType } from './types';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
@@ -6,15 +7,15 @@ import { Pool } from 'pg';
 import { MongoClient } from 'mongodb';
 
 export class DynamicMCPExecutor {
-  private sqliteManager: SQLiteManager;
+  private dataStore: IDataStore;
   private dbConnections: Map<string, ActiveDatabaseConnection> = new Map();
 
   constructor() {
-    this.sqliteManager = new SQLiteManager();
+    this.dataStore = createDataStore();
   }
 
   async getAllTools(): Promise<any[]> {
-    const tools = this.sqliteManager.getAllTools();
+    const tools = this.dataStore.getAllTools();
 
     return tools.map(tool => ({
       name: `${tool.server_id}__${tool.name}`,
@@ -24,7 +25,7 @@ export class DynamicMCPExecutor {
   }
 
   async getAllResources(): Promise<any[]> {
-    const resources = this.sqliteManager.getAllResources();
+    const resources = this.dataStore.getAllResources();
 
     return resources.map(resource => ({
       name: `${resource.server_id}__${resource.name}`,
@@ -1142,7 +1143,7 @@ export class DynamicMCPExecutor {
   }
 
   private getTool(serverId: string, toolName: string): ToolDefinition {
-    const tools = this.sqliteManager.getToolsForServer(serverId);
+    const tools = this.dataStore.getToolsForServer(serverId);
     const tool = tools.find(t => t.name === toolName);
     if (!tool) {
       throw new Error(`Tool not found: ${serverId}__${toolName}`);
@@ -1151,7 +1152,7 @@ export class DynamicMCPExecutor {
   }
 
   private getServerConfig(serverId: string): any {
-    const serverConfig = this.sqliteManager.getServer(serverId);
+    const serverConfig = this.dataStore.getServer(serverId);
     if (!serverConfig) {
       throw new Error(`Server not found: ${serverId}`);
     }
@@ -6395,7 +6396,7 @@ export class DynamicMCPExecutor {
   }
 
   private async executeDatabaseQuery(serverId: string, serverConfig: any, tool: ToolDefinition, args: any): Promise<any> {
-    const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
+    const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.sourceConfig);
     const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
 
     console.error(`✅ Executed tool ${serverId}__${tool.name} successfully`);
@@ -6417,7 +6418,7 @@ export class DynamicMCPExecutor {
       const [serverId, actualResourceName] = parts;
 
       // Get resource definition from JSON database
-      const resources = this.sqliteManager.getResourcesForServer(serverId);
+      const resources = this.dataStore.getResourcesForServer(serverId);
       const resource = resources.find(r => r.name === actualResourceName);
 
       if (!resource) {
@@ -6425,13 +6426,13 @@ export class DynamicMCPExecutor {
       }
 
       // Get server config from JSON database
-      const serverConfig = this.sqliteManager.getServer(serverId);
+      const serverConfig = this.dataStore.getServer(serverId);
       if (!serverConfig) {
         throw new Error(`Server not found: ${serverId}`);
       }
 
       // Get or create database connection
-      const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.dbConfig);
+      const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.sourceConfig);
 
       // Execute the SQL query
       const result = await this.executeQuery(dbConnection, resource.sqlQuery, {}, 'SELECT');
@@ -6451,7 +6452,7 @@ export class DynamicMCPExecutor {
     }
   }
 
-  private async getOrCreateConnection(serverId: string, dbConfig: any): Promise<ActiveDatabaseConnection> {
+  private async getOrCreateConnection(serverId: string, sourceConfig: any): Promise<ActiveDatabaseConnection> {
     if (this.dbConnections.has(serverId)) {
       return this.dbConnections.get(serverId)!;
     }
@@ -6460,17 +6461,17 @@ export class DynamicMCPExecutor {
     let dbConnection: ActiveDatabaseConnection;
 
     try {
-      switch (dbConfig.type) {
+      switch (sourceConfig.type) {
         case 'mssql':
           connection = await sql.connect({
-            server: dbConfig.host,
-            port: dbConfig.port || 1433,
-            database: dbConfig.database,
-            user: dbConfig.username,
-            password: dbConfig.password,
+            server: sourceConfig.host,
+            port: sourceConfig.port || 1433,
+            database: sourceConfig.database,
+            user: sourceConfig.username,
+            password: sourceConfig.password,
             options: {
-              encrypt: dbConfig.encrypt || false,
-              trustServerCertificate: dbConfig.trustServerCertificate ?? true
+              encrypt: sourceConfig.encrypt || false,
+              trustServerCertificate: sourceConfig.trustServerCertificate ?? true
             }
           });
 
@@ -6479,11 +6480,11 @@ export class DynamicMCPExecutor {
 
         case 'mysql':
           connection = await mysql.createConnection({
-            host: dbConfig.host,
-            port: dbConfig.port || 3306,
-            database: dbConfig.database,
-            user: dbConfig.username,
-            password: dbConfig.password
+            host: sourceConfig.host,
+            port: sourceConfig.port || 3306,
+            database: sourceConfig.database,
+            user: sourceConfig.username,
+            password: sourceConfig.password
           });
 
           console.error(`🔗 Connected to MySQL database for server ${serverId}`);
@@ -6491,11 +6492,11 @@ export class DynamicMCPExecutor {
 
         case 'postgresql':
           connection = new Pool({
-            host: dbConfig.host,
-            port: dbConfig.port || 5432,
-            database: dbConfig.database,
-            user: dbConfig.username,
-            password: dbConfig.password
+            host: sourceConfig.host,
+            port: sourceConfig.port || 5432,
+            database: sourceConfig.database,
+            user: sourceConfig.username,
+            password: sourceConfig.password
           });
 
           // Test connection
@@ -6504,12 +6505,12 @@ export class DynamicMCPExecutor {
           break;
 
         default:
-          throw new Error(`Unsupported database type: ${dbConfig.type}`);
+          throw new Error(`Unsupported database type: ${sourceConfig.type}`);
       }
 
       dbConnection = {
         connection,
-        config: dbConfig
+        config: sourceConfig
       };
 
       this.dbConnections.set(serverId, dbConnection);
@@ -6692,7 +6693,7 @@ export class DynamicMCPExecutor {
 
   getStats(): any {
     return {
-      ...this.sqliteManager.getStats(),
+      ...this.dataStore.getStats(),
       activeConnections: this.dbConnections.size
     };
   }
@@ -6719,6 +6720,6 @@ export class DynamicMCPExecutor {
     }
 
     this.dbConnections.clear();
-    this.sqliteManager.close();
+    this.dataStore.close();
   }
 }

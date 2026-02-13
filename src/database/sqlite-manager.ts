@@ -1,47 +1,13 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord } from './datastore';
 
-export interface ServerConfig {
-  id: string;
-  name: string;
-  dbConfig: {
-    type: 'mssql' | 'mysql' | 'postgresql';
-    server: string;
-    port: number;
-    database: string;
-    username: string;
-    password: string;
-    encrypt?: boolean;
-    trustServerCertificate?: boolean;
-  };
-  createdAt: string;
-}
-
-export interface ToolDefinition {
-  server_id: string;
-  name: string;
-  description: string;
-  inputSchema: any;
-  sqlQuery: string;
-  operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
-}
-
-export interface ResourceDefinition {
-  server_id: string;
-  name: string;
-  description: string;
-  uri_template: string;
-  sqlQuery: string;
-}
-
-export class SQLiteManager {
+export class SQLiteManager implements IDataStore {
   private db: Database.Database;
   private dbPath: string;
 
   constructor() {
-    // Resolve data directory relative to the project root (not process.cwd())
-    // This prevents attempts to write to "/data" when the process CWD is '/'.
     const projectRoot = path.resolve(__dirname, '..', '..');
     const configuredDir = process.env.QUICKMCP_DATA_DIR;
     const dbDir = configuredDir
@@ -60,18 +26,17 @@ export class SQLiteManager {
   }
 
   private initializeTables(): void {
-    // Servers table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS servers (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
-        db_config TEXT NOT NULL,
+        owner_username TEXT NOT NULL DEFAULT 'guest',
+        source_config TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Tools table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS tools (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,7 +52,6 @@ export class SQLiteManager {
       )
     `);
 
-    // Resources table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS resources (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,48 +66,80 @@ export class SQLiteManager {
       )
     `);
 
-    //console.error('✅ SQLite database initialized:', this.dbPath);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        token_hash TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        revoked_at TEXT
+      )
+    `);
+
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_servers_owner ON servers(owner_username)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(username)`);
   }
 
-  // Server operations
   saveServer(server: ServerConfig): void {
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO servers (id, name, db_config, created_at, updated_at)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT OR REPLACE INTO servers (id, name, owner_username, source_config, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
 
     stmt.run(
       server.id,
       server.name,
-      JSON.stringify(server.dbConfig),
+      server.ownerUsername,
+      JSON.stringify(server.sourceConfig),
       server.createdAt
     );
+  }
+
+  private mapServerRow(row: any): ServerConfig {
+    let parsedConfig: any = {};
+    try {
+      parsedConfig = JSON.parse(row.source_config);
+    } catch {
+      parsedConfig = {};
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      ownerUsername: row.owner_username || 'guest',
+      sourceConfig: parsedConfig,
+      createdAt: row.created_at
+    };
   }
 
   getServer(serverId: string): ServerConfig | null {
     const stmt = this.db.prepare('SELECT * FROM servers WHERE id = ?');
     const row = stmt.get(serverId) as any;
+    return row ? this.mapServerRow(row) : null;
+  }
 
-    if (!row) return null;
-
-    return {
-      id: row.id,
-      name: row.name,
-      dbConfig: JSON.parse(row.db_config),
-      createdAt: row.created_at
-    };
+  getServerForOwner(serverId: string, ownerUsername: string): ServerConfig | null {
+    const stmt = this.db.prepare('SELECT * FROM servers WHERE id = ? AND owner_username = ?');
+    const row = stmt.get(serverId, ownerUsername) as any;
+    return row ? this.mapServerRow(row) : null;
   }
 
   getAllServers(): ServerConfig[] {
     const stmt = this.db.prepare('SELECT * FROM servers ORDER BY created_at DESC');
     const rows = stmt.all() as any[];
+    return rows.map((row) => this.mapServerRow(row));
+  }
 
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      dbConfig: JSON.parse(row.db_config),
-      createdAt: row.created_at
-    }));
+  getAllServersByOwner(ownerUsername: string): ServerConfig[] {
+    const stmt = this.db.prepare('SELECT * FROM servers WHERE owner_username = ? ORDER BY created_at DESC');
+    const rows = stmt.all(ownerUsername) as any[];
+    return rows.map((row) => this.mapServerRow(row));
+  }
+
+  serverNameExistsForOwner(serverName: string, ownerUsername: string): boolean {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM servers WHERE name = ? AND owner_username = ?');
+    const row = stmt.get(serverName, ownerUsername) as any;
+    return (row?.count || 0) > 0;
   }
 
   deleteServer(serverId: string): void {
@@ -151,15 +147,14 @@ export class SQLiteManager {
     stmt.run(serverId);
   }
 
-  // Tool operations
   saveTools(tools: ToolDefinition[]): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO tools (server_id, name, description, input_schema, sql_query, operation)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
 
-    const transaction = this.db.transaction((tools: ToolDefinition[]) => {
-      for (const tool of tools) {
+    const transaction = this.db.transaction((items: ToolDefinition[]) => {
+      for (const tool of items) {
         stmt.run(
           tool.server_id,
           tool.name,
@@ -202,15 +197,14 @@ export class SQLiteManager {
     }));
   }
 
-  // Resource operations
   saveResources(resources: ResourceDefinition[]): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO resources (server_id, name, description, uri_template, sql_query)
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    const transaction = this.db.transaction((resources: ResourceDefinition[]) => {
-      for (const resource of resources) {
+    const transaction = this.db.transaction((items: ResourceDefinition[]) => {
+      for (const resource of items) {
         stmt.run(
           resource.server_id,
           resource.name,
@@ -250,12 +244,52 @@ export class SQLiteManager {
     }));
   }
 
-  // Cleanup
+  saveRefreshToken(tokenHash: string, username: string, expiresAt: string): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO refresh_tokens (token_hash, username, expires_at, created_at, revoked_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP, NULL)
+    `);
+    stmt.run(tokenHash, username, expiresAt);
+  }
+
+  getRefreshToken(tokenHash: string): RefreshTokenRecord | null {
+    const stmt = this.db.prepare('SELECT * FROM refresh_tokens WHERE token_hash = ?');
+    const row = stmt.get(tokenHash) as any;
+    if (!row) {
+      return null;
+    }
+
+    return {
+      tokenHash: row.token_hash,
+      username: row.username,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+      revokedAt: row.revoked_at || null
+    };
+  }
+
+  revokeRefreshToken(tokenHash: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE refresh_tokens
+      SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
+      WHERE token_hash = ?
+    `);
+    stmt.run(tokenHash);
+  }
+
+  revokeAllRefreshTokensForUser(username: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE refresh_tokens
+      SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
+      WHERE username = ? AND revoked_at IS NULL
+    `);
+    stmt.run(username);
+  }
+
   close(): void {
     this.db.close();
   }
 
-  // Statistics
   getStats(): { servers: number; tools: number; resources: number } {
     const serversCount = this.db.prepare('SELECT COUNT(*) as count FROM servers').get() as any;
     const toolsCount = this.db.prepare('SELECT COUNT(*) as count FROM tools').get() as any;

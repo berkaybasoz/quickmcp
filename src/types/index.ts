@@ -99,8 +99,8 @@ export enum DataSourceType {
 }
 
 // Utility: determine when resources should be skipped for a data source
-export function shouldGenerateResources(parsedData: any, dbConfig: any): boolean {
-  const type = dbConfig?.type as DataSourceType | string | undefined;
+export function shouldGenerateResources(parsedData: any, sourceConfig: any): boolean {
+  const type = sourceConfig?.type as DataSourceType | string | undefined;
   const nonResourceTypes = new Set<string>([
     DataSourceType.Rest,
     DataSourceType.Webpage,

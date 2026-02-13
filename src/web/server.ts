@@ -108,10 +108,17 @@ import {
 } from '../types';
 import { fork } from 'child_process';
 import { IntegratedMCPServer } from '../integrated-mcp-server-new';
-import { SQLiteManager } from '../database/sqlite-manager';
+import { createDataStore, getDataProvider } from '../database/factory';
+import { IDataStore } from '../database/datastore';
 import Database from 'better-sqlite3';
+import { AuthMode, getAuthAccessTtlSeconds, parseAuthAdminUsers, getAuthCookieSecret, getAuthDefaultUsername, getAuthRefreshTtlSeconds, resolveAuthMode, validateAuthDataProviderCompatibility } from '../config/auth-config';
+import { AUTH_COOKIE_NAMES, createAccessToken, createRefreshToken, hashRefreshToken, isSecureCookieEnv, verifyAccessToken } from '../auth/token-utils';
 
 const app = express();
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
+type AuthenticatedRequest = Request & { authUser?: string };
 
 // Resolve a writable uploads directory that works under npx (CWD may be '/')
 // Priority: QUICKMCP_UPLOAD_DIR -> os.tmpdir()/quickmcp-uploads
@@ -129,17 +136,29 @@ const upload = multer({ dest: uploadDir });
 app.use(cors());
 app.use(express.json());
 
+const dataProvider = getDataProvider();
+const authMode = resolveAuthMode();
+const authCookieSecret = getAuthCookieSecret();
+const authDefaultUsername = getAuthDefaultUsername();
+const authAdminUsers = parseAuthAdminUsers();
+const authAccessTtlSec = getAuthAccessTtlSeconds();
+const authRefreshTtlSec = getAuthRefreshTtlSeconds();
+
+validateAuthDataProviderCompatibility(dataProvider, authMode);
+
+const cookieSecure = isSecureCookieEnv(process.env.NODE_ENV);
+const accessCookieName = AUTH_COOKIE_NAMES.access;
+const refreshCookieName = AUTH_COOKIE_NAMES.refresh;
+
 // Prefer the new UI under src/web/public if bundled, otherwise fall back to dist/web/public
 const distPublicDir = path.join(__dirname, 'public');
 const srcPublicDir = path.join(__dirname, '..', '..', 'src', 'web', 'public');
 const publicDir = fsSync.existsSync(srcPublicDir) ? srcPublicDir : distPublicDir;
 
-app.use(express.static(publicDir));
-
 const parser = new DataSourceParser();
 // Lazily initialize heavy/native-backed services to avoid startup failure
 let generator: MCPServerGenerator | null = null;
-let sqliteManager: SQLiteManager | null = null;
+let dataStore: IDataStore | null = null;
 const testRunner = new MCPTestRunner();
 
 function ensureGenerator(): MCPServerGenerator {
@@ -149,11 +168,133 @@ function ensureGenerator(): MCPServerGenerator {
   return generator;
 }
 
-function ensureSQLite(): SQLiteManager {
-  if (!sqliteManager) {
-    sqliteManager = new SQLiteManager();
+function ensureDataStore(): IDataStore {
+  if (!dataStore) {
+    dataStore = createDataStore();
   }
-  return sqliteManager;
+  return dataStore;
+}
+
+function parseCookies(req: Request): Record<string, string> {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return {};
+  return cookieHeader.split(';').reduce((acc, cookie) => {
+    const [rawName, ...rest] = cookie.trim().split('=');
+    if (!rawName) return acc;
+    acc[rawName] = decodeURIComponent(rest.join('='));
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+function setCookie(res: Response, name: string, value: string, maxAgeSec: number): void {
+  const parts = [
+    `${name}=${encodeURIComponent(value)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${maxAgeSec}`
+  ];
+  if (cookieSecure) {
+    parts.push('Secure');
+  }
+  res.append('Set-Cookie', parts.join('; '));
+}
+
+function clearCookie(res: Response, name: string): void {
+  const parts = [`${name}=`, 'Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0'];
+  if (cookieSecure) {
+    parts.push('Secure');
+  }
+  res.append('Set-Cookie', parts.join('; '));
+}
+
+function buildServerId(ownerUsername: string, serverName: string): string {
+  return `${ownerUsername}__${serverName}`;
+}
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname.startsWith('/api/auth')) return true;
+  if (pathname === '/login') return true;
+  if (pathname.startsWith('/images/')) return true;
+  if (pathname.endsWith('.js') || pathname.endsWith('.css') || pathname.endsWith('.png') || pathname.endsWith('.jpg') || pathname.endsWith('.svg') || pathname.endsWith('.ico')) {
+    return true;
+  }
+  return false;
+}
+
+function getAuthenticatedUser(req: Request): string | null {
+  if (authMode === 'NONE') return authDefaultUsername;
+  const cookies = parseCookies(req);
+  const accessToken = cookies[accessCookieName];
+  if (!accessToken) return null;
+  const payload = verifyAccessToken(accessToken, authCookieSecret);
+  return payload?.sub || null;
+}
+
+function tryRefreshAuth(req: Request, res: Response): string | null {
+  if (authMode !== 'LITE') {
+    return null;
+  }
+
+  const cookies = parseCookies(req);
+  const refreshToken = cookies[refreshCookieName];
+  if (!refreshToken) {
+    return null;
+  }
+
+  const refreshTokenHash = hashRefreshToken(refreshToken, authCookieSecret);
+  const record = ensureDataStore().getRefreshToken(refreshTokenHash);
+  if (!record || record.revokedAt || new Date(record.expiresAt).getTime() <= Date.now()) {
+    if (record && !record.revokedAt) {
+      ensureDataStore().revokeRefreshToken(refreshTokenHash);
+    }
+    clearCookie(res, accessCookieName);
+    clearCookie(res, refreshCookieName);
+    return null;
+  }
+
+  ensureDataStore().revokeRefreshToken(refreshTokenHash);
+  const newRefreshToken = createRefreshToken();
+  const newRefreshHash = hashRefreshToken(newRefreshToken, authCookieSecret);
+  const refreshExpiresAt = new Date(Date.now() + authRefreshTtlSec * 1000).toISOString();
+  ensureDataStore().saveRefreshToken(newRefreshHash, record.username, refreshExpiresAt);
+
+  const newAccessToken = createAccessToken(record.username, authCookieSecret, authAccessTtlSec);
+  setCookie(res, accessCookieName, newAccessToken, authAccessTtlSec);
+  setCookie(res, refreshCookieName, newRefreshToken, authRefreshTtlSec);
+  return record.username;
+}
+
+function getEffectiveUsername(req: AuthenticatedRequest): string {
+  if (authMode === 'NONE') return authDefaultUsername;
+  return req.authUser || '';
+}
+
+function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  if (authMode === 'NONE') {
+    req.authUser = authDefaultUsername;
+    next();
+    return;
+  }
+
+  if (isPublicPath(req.path)) {
+    next();
+    return;
+  }
+
+  const username = getAuthenticatedUser(req);
+  const effectiveUser = username || tryRefreshAuth(req, res);
+  if (!effectiveUser) {
+    if (req.path.startsWith('/api/')) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    res.redirect('/login');
+    return;
+  }
+
+  req.authUser = effectiveUser;
+  next();
 }
 
 let nextAvailablePort = 3001;
@@ -231,6 +372,136 @@ const generatedServers = new Map<string, {
   runtimeProcess?: any;
   runtimePort?: number;
 }>();
+
+app.use(authMiddleware);
+app.use(express.static(publicDir));
+
+app.get('/api/auth/config', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      authMode
+    }
+  });
+});
+
+app.get('/api/auth/me', (req: AuthenticatedRequest, res) => {
+  if (authMode === 'NONE') {
+    res.json({
+      success: true,
+      data: { username: authDefaultUsername, authMode }
+    });
+    return;
+  }
+
+  const username = getAuthenticatedUser(req);
+  if (!username) {
+    res.status(401).json({ success: false, error: 'Unauthorized' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: { username, authMode }
+  });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  if (authMode === 'NONE') {
+    res.status(400).json({ success: false, error: 'Login is disabled when AUTH_MODE=NONE' });
+    return;
+  }
+
+  if (authMode === 'SUPABASE_GOOGLE') {
+    res.status(501).json({ success: false, error: 'SUPABASE_GOOGLE auth flow is not implemented in this build' });
+    return;
+  }
+
+  const { username, password } = req.body || {};
+  const adminUser = authAdminUsers.find((item) => item.username === username && item.password === password);
+  if (!adminUser) {
+    res.status(401).json({ success: false, error: 'Invalid username or password' });
+    return;
+  }
+
+  const accessToken = createAccessToken(adminUser.username, authCookieSecret, authAccessTtlSec);
+  const refreshToken = createRefreshToken();
+  const refreshTokenHash = hashRefreshToken(refreshToken, authCookieSecret);
+  const refreshExpiresAt = new Date(Date.now() + authRefreshTtlSec * 1000).toISOString();
+
+  ensureDataStore().saveRefreshToken(refreshTokenHash, adminUser.username, refreshExpiresAt);
+
+  setCookie(res, accessCookieName, accessToken, authAccessTtlSec);
+  setCookie(res, refreshCookieName, refreshToken, authRefreshTtlSec);
+
+  res.json({ success: true, data: { username: adminUser.username } });
+});
+
+app.post('/api/auth/refresh', (req, res) => {
+  if (authMode !== 'LITE') {
+    res.status(400).json({ success: false, error: 'Refresh endpoint is only available when AUTH_MODE=LITE' });
+    return;
+  }
+
+  const cookies = parseCookies(req);
+  const refreshToken = cookies[refreshCookieName];
+  if (!refreshToken) {
+    res.status(401).json({ success: false, error: 'Missing refresh token' });
+    return;
+  }
+
+  const refreshTokenHash = hashRefreshToken(refreshToken, authCookieSecret);
+  const record = ensureDataStore().getRefreshToken(refreshTokenHash);
+
+  if (!record || record.revokedAt || new Date(record.expiresAt).getTime() <= Date.now()) {
+    if (record && !record.revokedAt) {
+      ensureDataStore().revokeRefreshToken(refreshTokenHash);
+    }
+    clearCookie(res, accessCookieName);
+    clearCookie(res, refreshCookieName);
+    res.status(401).json({ success: false, error: 'Refresh token is invalid or expired' });
+    return;
+  }
+
+  ensureDataStore().revokeRefreshToken(refreshTokenHash);
+  const newRefreshToken = createRefreshToken();
+  const newRefreshHash = hashRefreshToken(newRefreshToken, authCookieSecret);
+  const refreshExpiresAt = new Date(Date.now() + authRefreshTtlSec * 1000).toISOString();
+  ensureDataStore().saveRefreshToken(newRefreshHash, record.username, refreshExpiresAt);
+
+  const newAccessToken = createAccessToken(record.username, authCookieSecret, authAccessTtlSec);
+  setCookie(res, accessCookieName, newAccessToken, authAccessTtlSec);
+  setCookie(res, refreshCookieName, newRefreshToken, authRefreshTtlSec);
+
+  res.json({ success: true, data: { username: record.username } });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const cookies = parseCookies(req);
+  const refreshToken = cookies[refreshCookieName];
+  if (refreshToken) {
+    const refreshTokenHash = hashRefreshToken(refreshToken, authCookieSecret);
+    ensureDataStore().revokeRefreshToken(refreshTokenHash);
+  }
+
+  clearCookie(res, accessCookieName);
+  clearCookie(res, refreshCookieName);
+  res.json({ success: true });
+});
+
+app.get('/login', (req, res) => {
+  if (authMode === 'NONE') {
+    res.redirect('/');
+    return;
+  }
+
+  if (getAuthenticatedUser(req)) {
+    res.redirect('/');
+    return;
+  }
+
+  res.sendFile(path.join(publicDir, 'login.html'));
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -3685,9 +3956,10 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
 });
 
 // Generate MCP server endpoint
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', async (req: AuthenticatedRequest, res) => {
   try {
     const { name, description, version, dataSource, selectedTables, parsedData } = req.body;
+    const ownerUsername = getEffectiveUsername(req);
     
     console.log('🔍 Generate request received:');
     console.log('- Name:', name);
@@ -3697,13 +3969,23 @@ app.post('/api/generate', async (req, res) => {
     console.log('- Parsed data tables:', parsedData?.length || 0);
 
     // Check if server with this name already exists
-    const existingServer = ensureGenerator().getServer(name);
-    if (existingServer) {
+    const serverName = String(name || '').trim();
+    if (!serverName) {
       return res.status(400).json({
         success: false,
-        error: `MCP Server with name "${name}" already exists. Please choose a different name.`
+        error: 'Server name is required'
       });
     }
+
+    const existsForOwner = ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername);
+    if (existsForOwner) {
+      return res.status(400).json({
+        success: false,
+        error: `MCP Server with name "${serverName}" already exists for user "${ownerUsername}".`
+      });
+    }
+
+    const serverId = buildServerId(ownerUsername, serverName);
 
     let parsedForGen: any = null;
     let dbConfForGen: GeneratorConfig | null = null;
@@ -4282,14 +4564,15 @@ app.post('/api/generate', async (req, res) => {
         });
       });
       parsedForGen = parsedDataObject;
-      dbConfForGen = dataSource.connection || createFileGeneratorConfig(name);
+      dbConfForGen = dataSource.connection || createFileGeneratorConfig(serverName);
     }
 
     // Generate virtual server (saves to SQLite database)
-    console.log(`🎯 API calling generateServer with name: "${name}"`);
+    console.log(`🎯 API calling generateServer with name: "${serverName}"`);
     const result = await ensureGenerator().generateServer(
-      name,
-      name,
+      serverId,
+      serverName,
+      ownerUsername,
       parsedForGen,
       dbConfForGen,
       selectedTables
@@ -4297,13 +4580,13 @@ app.post('/api/generate', async (req, res) => {
 
     if (result.success) {
       // Get counts for display
-      const tools = ensureGenerator().getToolsForServer(name);
-      const resources = ensureGenerator().getResourcesForServer(name);
+      const tools = ensureGenerator().getToolsForServer(serverId);
+      const resources = ensureGenerator().getResourcesForServer(serverId);
 
       res.json({
         success: true,
         data: {
-          serverId: name,
+          serverId,
           message: result.message,
           toolsCount: tools.length,
           resourcesCount: resources.length,
@@ -4326,13 +4609,14 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // List generated servers endpoint
-app.get('/api/servers', (req, res) => {
+app.get('/api/servers', (req: AuthenticatedRequest, res) => {
+  const ownerUsername = getEffectiveUsername(req);
   const gen = ensureGenerator();
-  const allServers = gen.getAllServers();
+  const allServers = gen.getAllServersByOwner(ownerUsername);
   const servers = allServers.map(server => {
-    // Prefer persisted db_config from SQLite to avoid stale/partial objects
-    const persisted = ensureSQLite().getServer(server.id);
-    const rawType = (persisted?.dbConfig as any)?.type || (server as any)?.dbConfig?.type || 'unknown';
+    // Prefer persisted source_config from SQLite to avoid stale/partial objects
+    const persisted = ensureDataStore().getServer(server.id);
+    const rawType = (persisted?.sourceConfig as any)?.type || (server as any)?.sourceConfig?.type || 'unknown';
     const type = typeof rawType === 'string' ? rawType : 'unknown';
     const tools = gen.getToolsForServer(server.id);
     const resources = gen.getResourcesForServer(server.id);
@@ -4340,6 +4624,7 @@ app.get('/api/servers', (req, res) => {
     return {
       id: server.id,
       name: server.name,
+      ownerUsername: server.ownerUsername,
       type: finalType,
       description: `${server.name} - Virtual MCP Server (${finalType})`,
       version: "1.0.0",
@@ -4354,26 +4639,27 @@ app.get('/api/servers', (req, res) => {
 
 // Check if server name is available endpoint
 app.get('/api/servers/check-name/:name', (req, res) => {
+  const ownerUsername = getEffectiveUsername(req as AuthenticatedRequest);
   const serverName = req.params.name;
-  const existingServer = ensureGenerator().getServer(serverName);
-  const isAvailable = !existingServer;
+  const isAvailable = !ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername);
 
   res.json({
     success: true,
     available: isAvailable,
     message: isAvailable ?
       `Server name "${serverName}" is available` :
-      `Server name "${serverName}" already exists`
+      `Server name "${serverName}" already exists for user "${ownerUsername}"`
   });
 });
 
 // Check if a tool name is available across all servers
-app.get('/api/check-tool-name/:toolName', async (req, res) => {
+app.get('/api/check-tool-name/:toolName', async (req: AuthenticatedRequest, res) => {
     const { toolName } = req.params;
+    const ownerUsername = getEffectiveUsername(req);
     try {
-        const allServers = ensureSQLite().getAllServers();
+        const allServers = ensureDataStore().getAllServersByOwner(ownerUsername);
         const isTaken = allServers.some(server => {
-            const tools = ensureSQLite().getToolsForServer(server.id);
+            const tools = ensureDataStore().getToolsForServer(server.id);
             return tools.some(tool => tool.name === toolName);
         });
         res.json({ success: true, available: !isTaken });
@@ -4384,8 +4670,9 @@ app.get('/api/check-tool-name/:toolName', async (req, res) => {
 });
 
 // Get server details endpoint
-app.get('/api/servers/:id', (req, res) => {
-  const server = ensureGenerator().getServer(req.params.id);
+app.get('/api/servers/:id', (req: AuthenticatedRequest, res) => {
+  const ownerUsername = getEffectiveUsername(req);
+  const server = ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
 
   if (!server) {
     return res.status(404).json({
@@ -4394,9 +4681,10 @@ app.get('/api/servers/:id', (req, res) => {
     });
   }
 
-  const tools = generator.getToolsForServer(server.id);
-  const resources = generator.getResourcesForServer(server.id);
-  const rawType = (server.dbConfig as any)?.type || 'unknown';
+  const gen = ensureGenerator();
+  const tools = gen.getToolsForServer(server.id);
+  const resources = gen.getResourcesForServer(server.id);
+  const rawType = (server.sourceConfig as any)?.type || 'unknown';
   const finalType = typeof rawType === 'string' ? rawType : 'unknown';
 
   res.json({
@@ -4427,12 +4715,13 @@ app.get('/api/servers/:id', (req, res) => {
 // inferTypeFromTools removed by request
 
 // Get server data endpoint - provides sample data from database
-app.get('/api/servers/:id/data', async (req, res) => {
+app.get('/api/servers/:id/data', async (req: AuthenticatedRequest, res) => {
   try {
     const serverId = req.params.id;
+    const ownerUsername = getEffectiveUsername(req);
     const limit = parseInt(req.query.limit as string) || 10;
 
-    const server = ensureGenerator().getServer(serverId);
+    const server = ensureGenerator().getServerForOwner(serverId, ownerUsername);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -4484,10 +4773,11 @@ app.get('/api/servers/:id/data', async (req, res) => {
 });
 
 // Test server endpoint
-app.post('/api/servers/:id/test', async (req, res) => {
+app.post('/api/servers/:id/test', async (req: AuthenticatedRequest, res) => {
   try {
+    const ownerUsername = getEffectiveUsername(req);
     // Get server from SQLite database
-    const server = ensureSQLite().getServer(req.params.id);
+    const server = ensureDataStore().getServerForOwner(req.params.id, ownerUsername);
     if (!server) {
       return res.status(404).json({
         success: false,
@@ -4496,7 +4786,7 @@ app.post('/api/servers/:id/test', async (req, res) => {
     }
 
     // Get tools for this server
-    const tools = ensureSQLite().getToolsForServer(req.params.id);
+    const tools = ensureDataStore().getToolsForServer(req.params.id);
     
     // Check if this is a custom test or auto test
     const { runAll, testType, toolName, parameters } = req.body;
@@ -4613,10 +4903,11 @@ app.post('/api/servers/:id/test', async (req, res) => {
 });
 
 // Rename server endpoint
-app.patch('/api/servers/:id/rename', async (req, res) => {
+app.patch('/api/servers/:id/rename', async (req: AuthenticatedRequest, res) => {
   try {
     const serverId = req.params.id;
     const { newName } = req.body;
+    const ownerUsername = getEffectiveUsername(req);
 
     console.log(`🔄 Rename request for server ID: ${serverId}, new name: ${newName}`);
 
@@ -4630,8 +4921,8 @@ app.patch('/api/servers/:id/rename', async (req, res) => {
     const trimmedName = newName.trim();
 
     // Check if server exists
-    const sqlite = ensureSQLite();
-    const existingServer = sqlite.getServer(serverId);
+    const sqlite = ensureDataStore();
+    const existingServer = sqlite.getServerForOwner(serverId, ownerUsername);
     if (!existingServer) {
       console.log(`❌ Server with ID "${serverId}" not found`);
       return res.status(404).json({
@@ -4641,7 +4932,7 @@ app.patch('/api/servers/:id/rename', async (req, res) => {
     }
 
     // Check if new name is already taken by another server
-    const allServers = sqlite.getAllServers();
+    const allServers = sqlite.getAllServersByOwner(ownerUsername);
     const serverWithSameName = allServers.find(s => s.name === trimmedName && s.id !== serverId);
     if (serverWithSameName) {
       console.log(`❌ Server name "${trimmedName}" is already taken by ID: ${serverWithSameName.id}`);
@@ -4674,13 +4965,14 @@ app.patch('/api/servers/:id/rename', async (req, res) => {
 });
 
 // Delete server endpoint
-app.delete('/api/servers/:id', async (req, res) => {
+app.delete('/api/servers/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const serverId = req.params.id;
+    const ownerUsername = getEffectiveUsername(req);
     console.log(`Attempting to delete server with ID: ${serverId}`);
 
     // Check if server exists in JSON database
-    const existingServer = ensureGenerator().getServer(serverId);
+    const existingServer = ensureGenerator().getServerForOwner(serverId, ownerUsername);
     if (!existingServer) {
       console.log(`Server with ID "${serverId}" not found in database`);
       return res.status(404).json({
@@ -4716,8 +5008,14 @@ app.delete('/api/servers/:id', async (req, res) => {
 });
 
 // Start runtime server endpoint
-app.post('/api/servers/:id/start-runtime', async (req, res) => {
+app.post('/api/servers/:id/start-runtime', async (req: AuthenticatedRequest, res) => {
   try {
+    const ownerUsername = getEffectiveUsername(req);
+    const server = ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+    if (!server) {
+      return res.status(404).json({ success: false, error: 'Server not found' });
+    }
+
     const serverInfo = generatedServers.get(req.params.id);
 
     if (!serverInfo) {
@@ -4756,7 +5054,13 @@ app.post('/api/servers/:id/start-runtime', async (req, res) => {
 });
 
 // Stop runtime server endpoint
-app.post('/api/servers/:id/stop-runtime', (req, res) => {
+app.post('/api/servers/:id/stop-runtime', (req: AuthenticatedRequest, res) => {
+  const ownerUsername = getEffectiveUsername(req);
+  const server = ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
   const serverInfo = generatedServers.get(req.params.id);
 
   if (!serverInfo) {
@@ -4776,7 +5080,13 @@ app.post('/api/servers/:id/stop-runtime', (req, res) => {
 });
 
 // Export server endpoint
-app.get('/api/servers/:id/export', (req, res) => {
+app.get('/api/servers/:id/export', (req: AuthenticatedRequest, res) => {
+  const ownerUsername = getEffectiveUsername(req);
+  const server = ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
   const serverInfo = generatedServers.get(req.params.id);
 
   if (!serverInfo) {

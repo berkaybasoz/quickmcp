@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import './web/server';
 
 export * from './types';

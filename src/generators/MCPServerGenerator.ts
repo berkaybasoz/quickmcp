@@ -1,4 +1,5 @@
-import { SQLiteManager, ServerConfig, ToolDefinition, ResourceDefinition } from '../database/sqlite-manager';
+import { createDataStore } from '../database/factory';
+import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition } from '../database/datastore';
 import { DataSourceType, shouldGenerateResources } from '../types';
 
 interface ParsedColumn {
@@ -12,17 +13,18 @@ interface ParsedData {
 }
 
 export class MCPServerGenerator {
-  private sqliteManager: SQLiteManager;
+  private dataStore: IDataStore;
 
   constructor() {
-    this.sqliteManager = new SQLiteManager();
+    this.dataStore = createDataStore();
   }
 
   async generateServer(
     serverId: string,
     serverName: string,
+    ownerUsername: string,
     parsedData: any,
-    dbConfig: any,
+    sourceConfig: any,
     selectedTables?: any[]
   ): Promise<{ success: boolean; message: string }> {
     try {
@@ -33,214 +35,215 @@ export class MCPServerGenerator {
       const serverConfig: ServerConfig = {
         id: serverId,
         name: serverName,
-        dbConfig: dbConfig,
+        ownerUsername,
+        sourceConfig: sourceConfig,
         createdAt: new Date().toISOString()
       };
       //console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
 
       // Save server to SQLite database only
-      this.sqliteManager.saveServer(serverConfig);
+      this.dataStore.saveServer(serverConfig);
       //console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
       let tools: ToolDefinition[] = [];
-      //console.log('🔍 MCPServerGenerator - dbConfig.type:', dbConfig?.type);
+      //console.log('🔍 MCPServerGenerator - sourceConfig.type:', sourceConfig?.type);
       //console.log('🔍 MCPServerGenerator - DataSourceType.Jira:', DataSourceType.Jira);
 
-      // Treat array parsedData as REST endpoints even if dbConfig.type is missing
-      if (Array.isArray(parsedData) || dbConfig?.type === DataSourceType.Rest) {
+      // Treat array parsedData as REST endpoints even if sourceConfig.type is missing
+      if (Array.isArray(parsedData) || sourceConfig?.type === DataSourceType.Rest) {
         const endpoints = Array.isArray(parsedData) ? parsedData : [];
-        tools = this.generateToolsForRest(serverId, parsedData, dbConfig, selectedTables);
+        tools = this.generateToolsForRest(serverId, parsedData, sourceConfig, selectedTables);
         //console.log('✅ Generated REST tools:', tools.length);
-      } else if (dbConfig?.type === DataSourceType.Webpage) {
-        tools = this.generateToolsForWebpage(serverId, dbConfig);
+      } else if (sourceConfig?.type === DataSourceType.Webpage) {
+        tools = this.generateToolsForWebpage(serverId, sourceConfig);
         //console.log('✅ Generated webpage tools:', tools.length);
-      } else if (dbConfig?.type === DataSourceType.GraphQL) {
-        tools = this.generateToolsForGraphQL(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Soap) {
-        tools = this.generateToolsForSoap(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Rss) {
-        tools = this.generateToolsForRss(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Curl) {
-        tools = this.generateToolsForCurl(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GitHub) {
-        tools = this.generateToolsForGitHub(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.X) {
-        tools = this.generateToolsForX(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Prometheus) {
-        tools = this.generateToolsForPrometheus(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Grafana) {
-        tools = this.generateToolsForGrafana(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.MongoDB) {
-        tools = this.generateToolsForMongoDB(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Facebook) {
-        tools = this.generateToolsForFacebook(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Instagram) {
-        tools = this.generateToolsForInstagram(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.TikTok) {
-        tools = this.generateToolsForTikTok(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Notion) {
-        tools = this.generateToolsForNotion(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Telegram) {
-        tools = this.generateToolsForTelegram(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.LinkedIn) {
-        tools = this.generateToolsForLinkedIn(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Reddit) {
-        tools = this.generateToolsForReddit(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.YouTube) {
-        tools = this.generateToolsForYouTube(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.WhatsAppBusiness) {
-        tools = this.generateToolsForWhatsAppBusiness(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Threads) {
-        tools = this.generateToolsForThreads(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Spotify) {
-        tools = this.generateToolsForSpotify(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Sonos) {
-        tools = this.generateToolsForSonos(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Shazam) {
-        tools = this.generateToolsForShazam(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.PhilipsHue) {
-        tools = this.generateToolsForPhilipsHue(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.EightSleep) {
-        tools = this.generateToolsForEightSleep(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.HomeAssistant) {
-        tools = this.generateToolsForHomeAssistant(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.AppleNotes) {
-        tools = this.generateToolsForAppleNotes(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.AppleReminders) {
-        tools = this.generateToolsForAppleReminders(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Things3) {
-        tools = this.generateToolsForThings3(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Obsidian) {
-        tools = this.generateToolsForObsidian(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.BearNotes) {
-        tools = this.generateToolsForBearNotes(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.IMessage) {
-        tools = this.generateToolsForIMessage(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Zoom) {
-        tools = this.generateToolsForZoom(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.MicrosoftTeams) {
-        tools = this.generateToolsForMicrosoftTeams(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Signal) {
-        tools = this.generateToolsForSignal(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.OpenAI) {
-        tools = this.generateToolsForOpenAI(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Claude) {
-        tools = this.generateToolsForClaude(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Gemini) {
-        tools = this.generateToolsForGemini(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Grok) {
-        tools = this.generateToolsForGrok(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.FalAI) {
-        tools = this.generateToolsForFalAI(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.HuggingFace) {
-        tools = this.generateToolsForHuggingFace(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Llama) {
-        tools = this.generateToolsForLlama(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.DeepSeek) {
-        tools = this.generateToolsForDeepSeek(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.AzureOpenAI) {
-        tools = this.generateToolsForAzureOpenAI(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Mistral) {
-        tools = this.generateToolsForMistral(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Cohere) {
-        tools = this.generateToolsForCohere(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Perplexity) {
-        tools = this.generateToolsForPerplexity(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Together) {
-        tools = this.generateToolsForTogether(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Fireworks) {
-        tools = this.generateToolsForFireworks(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Groq) {
-        tools = this.generateToolsForGroq(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.OpenRouter) {
-        tools = this.generateToolsForOpenRouter(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Dropbox) {
-        tools = this.generateToolsForDropbox(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.N8n) {
-        tools = this.generateToolsForN8n(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Supabase) {
-        tools = this.generateToolsForSupabase(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Npm) {
-        tools = this.generateToolsForNpm(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Nuget) {
-        tools = this.generateToolsForNuget(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Maven) {
-        tools = this.generateToolsForMaven(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Gradle) {
-        tools = this.generateToolsForGradle(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Nexus) {
-        tools = this.generateToolsForNexus(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Trello) {
-        tools = this.generateToolsForTrello(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GitLab) {
-        tools = this.generateToolsForGitLab(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Bitbucket) {
-        tools = this.generateToolsForBitbucket(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GDrive) {
-        tools = this.generateToolsForGDrive(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GoogleCalendar) {
-        tools = this.generateToolsForGoogleCalendar(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GoogleDocs) {
-        tools = this.generateToolsForGoogleDocs(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.GoogleSheets) {
-        tools = this.generateToolsForGoogleSheets(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Airtable) {
-        tools = this.generateToolsForAirtable(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Asana) {
-        tools = this.generateToolsForAsana(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Monday) {
-        tools = this.generateToolsForMonday(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.ClickUp) {
-        tools = this.generateToolsForClickUp(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Linear) {
-        tools = this.generateToolsForLinear(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Jenkins) {
-        tools = this.generateToolsForJenkins(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.DockerHub) {
-        tools = this.generateToolsForDockerHub(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Jira) {
+      } else if (sourceConfig?.type === DataSourceType.GraphQL) {
+        tools = this.generateToolsForGraphQL(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Soap) {
+        tools = this.generateToolsForSoap(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Rss) {
+        tools = this.generateToolsForRss(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Curl) {
+        tools = this.generateToolsForCurl(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GitHub) {
+        tools = this.generateToolsForGitHub(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.X) {
+        tools = this.generateToolsForX(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Prometheus) {
+        tools = this.generateToolsForPrometheus(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Grafana) {
+        tools = this.generateToolsForGrafana(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.MongoDB) {
+        tools = this.generateToolsForMongoDB(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Facebook) {
+        tools = this.generateToolsForFacebook(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Instagram) {
+        tools = this.generateToolsForInstagram(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.TikTok) {
+        tools = this.generateToolsForTikTok(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Notion) {
+        tools = this.generateToolsForNotion(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Telegram) {
+        tools = this.generateToolsForTelegram(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.LinkedIn) {
+        tools = this.generateToolsForLinkedIn(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Reddit) {
+        tools = this.generateToolsForReddit(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.YouTube) {
+        tools = this.generateToolsForYouTube(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.WhatsAppBusiness) {
+        tools = this.generateToolsForWhatsAppBusiness(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Threads) {
+        tools = this.generateToolsForThreads(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Spotify) {
+        tools = this.generateToolsForSpotify(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Sonos) {
+        tools = this.generateToolsForSonos(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Shazam) {
+        tools = this.generateToolsForShazam(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.PhilipsHue) {
+        tools = this.generateToolsForPhilipsHue(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.EightSleep) {
+        tools = this.generateToolsForEightSleep(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.HomeAssistant) {
+        tools = this.generateToolsForHomeAssistant(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.AppleNotes) {
+        tools = this.generateToolsForAppleNotes(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.AppleReminders) {
+        tools = this.generateToolsForAppleReminders(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Things3) {
+        tools = this.generateToolsForThings3(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Obsidian) {
+        tools = this.generateToolsForObsidian(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.BearNotes) {
+        tools = this.generateToolsForBearNotes(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.IMessage) {
+        tools = this.generateToolsForIMessage(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Zoom) {
+        tools = this.generateToolsForZoom(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.MicrosoftTeams) {
+        tools = this.generateToolsForMicrosoftTeams(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Signal) {
+        tools = this.generateToolsForSignal(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.OpenAI) {
+        tools = this.generateToolsForOpenAI(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Claude) {
+        tools = this.generateToolsForClaude(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Gemini) {
+        tools = this.generateToolsForGemini(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Grok) {
+        tools = this.generateToolsForGrok(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.FalAI) {
+        tools = this.generateToolsForFalAI(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.HuggingFace) {
+        tools = this.generateToolsForHuggingFace(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Llama) {
+        tools = this.generateToolsForLlama(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.DeepSeek) {
+        tools = this.generateToolsForDeepSeek(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.AzureOpenAI) {
+        tools = this.generateToolsForAzureOpenAI(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Mistral) {
+        tools = this.generateToolsForMistral(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Cohere) {
+        tools = this.generateToolsForCohere(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Perplexity) {
+        tools = this.generateToolsForPerplexity(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Together) {
+        tools = this.generateToolsForTogether(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Fireworks) {
+        tools = this.generateToolsForFireworks(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Groq) {
+        tools = this.generateToolsForGroq(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.OpenRouter) {
+        tools = this.generateToolsForOpenRouter(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Dropbox) {
+        tools = this.generateToolsForDropbox(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.N8n) {
+        tools = this.generateToolsForN8n(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Supabase) {
+        tools = this.generateToolsForSupabase(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Npm) {
+        tools = this.generateToolsForNpm(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Nuget) {
+        tools = this.generateToolsForNuget(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Maven) {
+        tools = this.generateToolsForMaven(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Gradle) {
+        tools = this.generateToolsForGradle(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Nexus) {
+        tools = this.generateToolsForNexus(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Trello) {
+        tools = this.generateToolsForTrello(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GitLab) {
+        tools = this.generateToolsForGitLab(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Bitbucket) {
+        tools = this.generateToolsForBitbucket(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GDrive) {
+        tools = this.generateToolsForGDrive(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GoogleCalendar) {
+        tools = this.generateToolsForGoogleCalendar(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GoogleDocs) {
+        tools = this.generateToolsForGoogleDocs(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.GoogleSheets) {
+        tools = this.generateToolsForGoogleSheets(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Airtable) {
+        tools = this.generateToolsForAirtable(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Asana) {
+        tools = this.generateToolsForAsana(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Monday) {
+        tools = this.generateToolsForMonday(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.ClickUp) {
+        tools = this.generateToolsForClickUp(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Linear) {
+        tools = this.generateToolsForLinear(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Jenkins) {
+        tools = this.generateToolsForJenkins(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.DockerHub) {
+        tools = this.generateToolsForDockerHub(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Jira) {
         //console.log('✅ Matched Jira type, generating Jira tools');
-        tools = this.generateToolsForJira(serverId, dbConfig);
+        tools = this.generateToolsForJira(serverId, sourceConfig);
         //console.log('✅ Generated Jira tools:', tools.length);
-      } else if (dbConfig?.type === DataSourceType.Confluence) {
-        tools = this.generateToolsForConfluence(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Ftp) {
-        tools = this.generateToolsForFtp(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.LocalFS) {
-        tools = this.generateToolsForLocalFS(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Email) {
-        tools = this.generateToolsForEmail(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Slack) {
-        tools = this.generateToolsForSlack(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Discord) {
-        tools = this.generateToolsForDiscord(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Docker) {
-        tools = this.generateToolsForDocker(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Kubernetes) {
-        tools = this.generateToolsForKubernetes(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.Elasticsearch) {
-        tools = this.generateToolsForElasticsearch(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.OpenSearch) {
-        tools = this.generateToolsForElasticsearch(serverId, dbConfig);
-      } else if (dbConfig?.type === DataSourceType.OpenShift) {
-        tools = this.generateToolsForOpenShift(serverId, dbConfig);
+      } else if (sourceConfig?.type === DataSourceType.Confluence) {
+        tools = this.generateToolsForConfluence(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Ftp) {
+        tools = this.generateToolsForFtp(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.LocalFS) {
+        tools = this.generateToolsForLocalFS(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Email) {
+        tools = this.generateToolsForEmail(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Slack) {
+        tools = this.generateToolsForSlack(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Discord) {
+        tools = this.generateToolsForDiscord(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Docker) {
+        tools = this.generateToolsForDocker(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Kubernetes) {
+        tools = this.generateToolsForKubernetes(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Elasticsearch) {
+        tools = this.generateToolsForElasticsearch(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.OpenSearch) {
+        tools = this.generateToolsForElasticsearch(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.OpenShift) {
+        tools = this.generateToolsForOpenShift(serverId, sourceConfig);
       } else {
-        //console.log('⚠️ Falling back to generateToolsForData, dbConfig.type:', dbConfig?.type);
-        tools = this.generateToolsForData(serverId, parsedData as ParsedData, dbConfig, selectedTables);
+        //console.log('⚠️ Falling back to generateToolsForData, sourceConfig.type:', sourceConfig?.type);
+        tools = this.generateToolsForData(serverId, parsedData as ParsedData, sourceConfig, selectedTables);
         //console.log('✅ Generated data tools:', tools.length);
       }
       if (tools.length > 0) {
-        this.sqliteManager.saveTools(tools);
+        this.dataStore.saveTools(tools);
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
       // Generate and save resources when applicable
       let resources: ResourceDefinition[] = [];
-      if (shouldGenerateResources(parsedData, dbConfig)) {
-        resources = this.generateResourcesForData(serverId, parsedData as ParsedData, dbConfig);
+      if (shouldGenerateResources(parsedData, sourceConfig)) {
+        resources = this.generateResourcesForData(serverId, parsedData as ParsedData, sourceConfig);
         if (resources.length > 0) {
-          this.sqliteManager.saveResources(resources);
+          this.dataStore.saveResources(resources);
           //console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
         }
       }
@@ -258,7 +261,7 @@ export class MCPServerGenerator {
     }
   }
 
-  private generateToolsForRest(serverId: string, endpoints: any[], dbConfig: any, selected?: any[]): ToolDefinition[] {
+  private generateToolsForRest(serverId: string, endpoints: any[], sourceConfig: any, selected?: any[]): ToolDefinition[] {
     const selectedIdx = new Set<number>((selected || []).map((s: any) => s.index));
     const items = endpoints.map((e, i) => ({ ...e, __index: i })).filter(e => selectedIdx.size ? selectedIdx.has(e.__index) : true);
     const mapOp = (method: string): 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' => {
@@ -279,7 +282,7 @@ export class MCPServerGenerator {
         props[p.name] = { type: t, description: p.description || '' };
       });
       const inputSchema = { type: 'object', properties: props, required: [] as string[] };
-      const sqlQuery = JSON.stringify({ type: DataSourceType.Rest, baseUrl: dbConfig?.baseUrl, method: ep.method, path: ep.path });
+      const sqlQuery = JSON.stringify({ type: DataSourceType.Rest, baseUrl: sourceConfig?.baseUrl, method: ep.method, path: ep.path });
       return {
         server_id: serverId,
         name,
@@ -291,8 +294,8 @@ export class MCPServerGenerator {
     });
   }
 
-  private generateToolsForWebpage(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { url, alias } = dbConfig || {};
+  private generateToolsForWebpage(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { url, alias } = sourceConfig || {};
     if (!url) {
       console.error('❌ No URL provided for webpage server');
       return [];
@@ -321,8 +324,8 @@ export class MCPServerGenerator {
     return [tool];
   }
 
-  private generateToolsForGraphQL(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, headers } = dbConfig || {};
+  private generateToolsForGraphQL(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, headers } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GraphQL, baseUrl, headers };
 
@@ -360,8 +363,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSoap(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, wsdlUrl, soapAction, headers } = dbConfig || {};
+  private generateToolsForSoap(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, wsdlUrl, soapAction, headers } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Soap, baseUrl, wsdlUrl, soapAction, headers };
 
@@ -385,8 +388,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForRss(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { feedUrl } = dbConfig || {};
+  private generateToolsForRss(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { feedUrl } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Rss, feedUrl };
 
@@ -423,8 +426,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForCurl(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { url, method = 'GET', alias } = dbConfig || {};
+  private generateToolsForCurl(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { url, method = 'GET', alias } = sourceConfig || {};
     if (!url) {
       console.error('❌ No URL provided for cURL server');
       return [];
@@ -456,15 +459,15 @@ export class MCPServerGenerator {
         },
         required: []
       },
-      sqlQuery: JSON.stringify(dbConfig),
+      sqlQuery: JSON.stringify(sourceConfig),
       operation: mapOp(method)
     };
 
     return [tool];
   }
 
-  private generateToolsForGitHub(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { token, owner, repo } = dbConfig;
+  private generateToolsForGitHub(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { token, owner, repo } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     // Base config stored in sqlQuery
@@ -664,8 +667,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForX(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { token, username } = dbConfig;
+  private generateToolsForX(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { token, username } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -778,8 +781,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForPrometheus(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl } = dbConfig;
+  private generateToolsForPrometheus(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Prometheus, baseUrl };
 
@@ -868,8 +871,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGrafana(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, authType, apiKey, username, password } = dbConfig;
+  private generateToolsForGrafana(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, authType, apiKey, username, password } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Grafana, baseUrl, authType, apiKey, username, password };
 
@@ -954,8 +957,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForMongoDB(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { host, port, database, username, password, authSource } = dbConfig;
+  private generateToolsForMongoDB(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, port, database, username, password, authSource } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.MongoDB, host, port, database, username, password, authSource };
 
@@ -1076,8 +1079,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForFacebook(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiVersion, accessToken, userId, pageId } = dbConfig;
+  private generateToolsForFacebook(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiVersion, accessToken, userId, pageId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Facebook, baseUrl, apiVersion, accessToken, userId, pageId };
 
@@ -1184,8 +1187,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForInstagram(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, userId } = dbConfig || {};
+  private generateToolsForInstagram(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = { type: DataSourceType.Instagram, baseUrl, accessToken, userId };
@@ -1259,8 +1262,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForTikTok(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, userId } = dbConfig || {};
+  private generateToolsForTikTok(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = { type: DataSourceType.TikTok, baseUrl, accessToken, userId };
@@ -1333,8 +1336,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForNotion(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, notionVersion } = dbConfig || {};
+  private generateToolsForNotion(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, notionVersion } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = { type: DataSourceType.Notion, baseUrl, accessToken, notionVersion };
@@ -1443,8 +1446,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForTelegram(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, botToken, defaultChatId } = dbConfig || {};
+  private generateToolsForTelegram(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, botToken, defaultChatId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = { type: DataSourceType.Telegram, baseUrl, botToken, defaultChatId };
@@ -1496,8 +1499,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForLinkedIn(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, personId, organizationId } = dbConfig || {};
+  private generateToolsForLinkedIn(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, personId, organizationId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.LinkedIn, baseUrl, accessToken, personId, organizationId };
 
@@ -1637,8 +1640,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForReddit(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, userAgent, subreddit, username } = dbConfig || {};
+  private generateToolsForReddit(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userAgent, subreddit, username } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Reddit, baseUrl, accessToken, userAgent, subreddit, username };
 
@@ -1777,8 +1780,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForYouTube(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, accessToken, channelId } = dbConfig || {};
+  private generateToolsForYouTube(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, accessToken, channelId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.YouTube, baseUrl, apiKey, accessToken, channelId };
 
@@ -1937,8 +1940,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForWhatsAppBusiness(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, phoneNumberId, businessAccountId } = dbConfig || {};
+  private generateToolsForWhatsAppBusiness(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, phoneNumberId, businessAccountId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.WhatsAppBusiness, baseUrl, accessToken, phoneNumberId, businessAccountId };
 
@@ -2064,8 +2067,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForThreads(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, userId } = dbConfig || {};
+  private generateToolsForThreads(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, userId } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Threads, baseUrl, accessToken, userId };
 
@@ -2168,8 +2171,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSpotify(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForSpotify(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Spotify, baseUrl, accessToken };
 
@@ -2247,8 +2250,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSonos(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForSonos(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Sonos, baseUrl, accessToken };
 
@@ -2321,8 +2324,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForShazam(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, apiHost } = dbConfig || {};
+  private generateToolsForShazam(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiHost } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Shazam, baseUrl, apiKey, apiHost };
 
@@ -2388,8 +2391,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForPhilipsHue(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForPhilipsHue(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.PhilipsHue, baseUrl, accessToken };
 
@@ -2463,8 +2466,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForEightSleep(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForEightSleep(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.EightSleep, baseUrl, accessToken };
 
@@ -2525,8 +2528,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForHomeAssistant(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForHomeAssistant(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.HomeAssistant, baseUrl, accessToken };
 
@@ -2577,8 +2580,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForAppleNotes(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForAppleNotes(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.AppleNotes, baseUrl, accessToken };
 
@@ -2655,8 +2658,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForAppleReminders(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForAppleReminders(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.AppleReminders, baseUrl, accessToken };
 
@@ -2730,8 +2733,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForThings3(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForThings3(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Things3, baseUrl, accessToken };
 
@@ -2803,8 +2806,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForObsidian(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForObsidian(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Obsidian, baseUrl, accessToken };
 
@@ -2878,8 +2881,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForBearNotes(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForBearNotes(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.BearNotes, baseUrl, accessToken };
 
@@ -2956,8 +2959,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForIMessage(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForIMessage(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.IMessage, baseUrl, accessToken };
 
@@ -3018,8 +3021,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForZoom(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForZoom(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Zoom, baseUrl, accessToken };
 
@@ -3096,8 +3099,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForMicrosoftTeams(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForMicrosoftTeams(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.MicrosoftTeams, baseUrl, accessToken };
 
@@ -3176,8 +3179,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSignal(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig || {};
+  private generateToolsForSignal(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Signal, baseUrl, accessToken };
 
@@ -3240,8 +3243,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForOpenAI(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForOpenAI(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.OpenAI, baseUrl, apiKey, defaultModel };
 
@@ -3369,8 +3372,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForClaude(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, apiVersion, defaultModel } = dbConfig || {};
+  private generateToolsForClaude(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiVersion, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Claude, baseUrl, apiKey, apiVersion, defaultModel };
 
@@ -3395,8 +3398,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGemini(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForGemini(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Gemini, baseUrl, apiKey, defaultModel };
 
@@ -3437,8 +3440,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGrok(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForGrok(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Grok, baseUrl, apiKey, defaultModel };
 
@@ -3481,8 +3484,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForFalAI(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey } = dbConfig || {};
+  private generateToolsForFalAI(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.FalAI, baseUrl, apiKey };
     const queueBase = 'https://queue.fal.run';
@@ -3571,8 +3574,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForHuggingFace(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForHuggingFace(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.HuggingFace, baseUrl, apiKey, defaultModel };
 
@@ -3597,8 +3600,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForLlama(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, defaultModel } = dbConfig || {};
+  private generateToolsForLlama(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Llama, baseUrl, defaultModel };
 
@@ -3655,8 +3658,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForDeepSeek(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForDeepSeek(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.DeepSeek, baseUrl, apiKey, defaultModel };
 
@@ -3697,8 +3700,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForAzureOpenAI(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, apiVersion, deployment } = dbConfig || {};
+  private generateToolsForAzureOpenAI(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiVersion, deployment } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.AzureOpenAI, baseUrl, apiKey, apiVersion, deployment };
 
@@ -3739,8 +3742,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForMistral(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForMistral(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Mistral, baseUrl, apiKey, defaultModel };
 
@@ -3781,8 +3784,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForCohere(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForCohere(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Cohere, baseUrl, apiKey, defaultModel };
 
@@ -3825,8 +3828,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForPerplexity(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForPerplexity(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Perplexity, baseUrl, apiKey, defaultModel };
 
@@ -3851,8 +3854,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForTogether(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForTogether(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Together, baseUrl, apiKey, defaultModel };
 
@@ -3893,8 +3896,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForFireworks(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForFireworks(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Fireworks, baseUrl, apiKey, defaultModel };
 
@@ -3935,8 +3938,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGroq(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForGroq(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Groq, baseUrl, apiKey, defaultModel };
 
@@ -3961,8 +3964,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForOpenRouter(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, defaultModel } = dbConfig || {};
+  private generateToolsForOpenRouter(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, defaultModel } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.OpenRouter, baseUrl, apiKey, defaultModel };
 
@@ -3987,8 +3990,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForDropbox(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, contentBaseUrl, accessToken } = dbConfig;
+  private generateToolsForDropbox(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, contentBaseUrl, accessToken } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Dropbox, baseUrl, contentBaseUrl, accessToken };
 
@@ -4086,8 +4089,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForN8n(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey } = dbConfig;
+  private generateToolsForN8n(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.N8n, baseUrl, apiKey };
 
@@ -4169,8 +4172,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSupabase(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey } = dbConfig;
+  private generateToolsForSupabase(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Supabase, baseUrl, apiKey };
 
@@ -4246,8 +4249,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForNpm(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl } = dbConfig;
+  private generateToolsForNpm(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Npm, baseUrl };
 
@@ -4302,8 +4305,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForNuget(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, registrationBaseUrl } = dbConfig;
+  private generateToolsForNuget(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, registrationBaseUrl } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const searchConfig = { type: DataSourceType.Nuget, baseUrl, registrationBaseUrl };
     const regBase = registrationBaseUrl || `${String(baseUrl || '').replace(/\/$/, '')}/registration5-semver1`;
@@ -4360,8 +4363,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForMaven(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl } = dbConfig;
+  private generateToolsForMaven(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Maven, baseUrl };
 
@@ -4385,8 +4388,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGradle(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl } = dbConfig;
+  private generateToolsForGradle(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Gradle, baseUrl };
 
@@ -4425,8 +4428,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForNexus(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, username, password, apiKey } = dbConfig;
+  private generateToolsForNexus(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, username, password, apiKey } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Nexus, baseUrl, username, password, apiKey };
 
@@ -4473,8 +4476,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForTrello(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, apiToken, memberId, boardId, listId } = dbConfig;
+  private generateToolsForTrello(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, apiToken, memberId, boardId, listId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Trello, baseUrl, apiKey, apiToken, memberId, boardId, listId };
 
@@ -4595,8 +4598,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGitLab(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, token, projectId } = dbConfig;
+  private generateToolsForGitLab(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, token, projectId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GitLab, baseUrl, token, projectId };
 
@@ -4703,8 +4706,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForBitbucket(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, username, appPassword, workspace, repoSlug } = dbConfig;
+  private generateToolsForBitbucket(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, username, appPassword, workspace, repoSlug } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Bitbucket, baseUrl, username, appPassword, workspace, repoSlug };
 
@@ -4814,8 +4817,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGDrive(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, rootFolderId } = dbConfig;
+  private generateToolsForGDrive(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, rootFolderId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GDrive, baseUrl, accessToken, rootFolderId };
 
@@ -4905,8 +4908,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGoogleCalendar(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, calendarId } = dbConfig;
+  private generateToolsForGoogleCalendar(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, calendarId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GoogleCalendar, baseUrl, accessToken, calendarId };
 
@@ -5001,8 +5004,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGoogleDocs(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, documentId } = dbConfig;
+  private generateToolsForGoogleDocs(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, documentId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GoogleDocs, baseUrl, accessToken, documentId };
 
@@ -5054,8 +5057,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForGoogleSheets(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, spreadsheetId } = dbConfig;
+  private generateToolsForGoogleSheets(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, spreadsheetId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.GoogleSheets, baseUrl, accessToken, spreadsheetId };
 
@@ -5146,8 +5149,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForAirtable(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, baseId, tableName } = dbConfig;
+  private generateToolsForAirtable(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, baseId, tableName } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Airtable, baseUrl, accessToken, baseId, tableName };
 
@@ -5240,8 +5243,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForAsana(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, workspaceId } = dbConfig;
+  private generateToolsForAsana(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, workspaceId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Asana, baseUrl, accessToken, workspaceId };
 
@@ -5330,8 +5333,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForMonday(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey } = dbConfig;
+  private generateToolsForMonday(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Monday, baseUrl, apiKey };
 
@@ -5370,8 +5373,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForClickUp(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, teamId } = dbConfig;
+  private generateToolsForClickUp(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, teamId } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.ClickUp, baseUrl, accessToken, teamId };
 
@@ -5451,8 +5454,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForLinear(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken } = dbConfig;
+  private generateToolsForLinear(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Linear, baseUrl, accessToken };
 
@@ -5491,8 +5494,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForJenkins(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, username, apiToken } = dbConfig;
+  private generateToolsForJenkins(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, username, apiToken } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.Jenkins, baseUrl, username, apiToken };
 
@@ -5553,8 +5556,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForDockerHub(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, accessToken, namespace } = dbConfig;
+  private generateToolsForDockerHub(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, accessToken, namespace } = sourceConfig;
     const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.DockerHub, baseUrl, accessToken, namespace };
 
@@ -5629,8 +5632,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForJira(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { host, email, apiToken, projectKey, apiVersion } = dbConfig;
+  private generateToolsForJira(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, email, apiToken, projectKey, apiVersion } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     // Determine API version (default to v2 for Jira Server compatibility)
@@ -5868,8 +5871,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForFtp(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { host, port, username, password, secure, basePath } = dbConfig;
+  private generateToolsForFtp(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, port, username, password, secure, basePath } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     // Base config stored in sqlQuery
@@ -6017,8 +6020,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForLocalFS(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { basePath, allowWrite, allowDelete } = dbConfig;
+  private generateToolsForLocalFS(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { basePath, allowWrite, allowDelete } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     // Base config stored in sqlQuery
@@ -6212,8 +6215,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForConfluence(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { host, email, apiToken, spaceKey } = dbConfig;
+  private generateToolsForConfluence(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, email, apiToken, spaceKey } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -6345,8 +6348,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForEmail(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { mode, imapHost, imapPort, smtpHost, smtpPort, username, password, secure } = dbConfig;
+  private generateToolsForEmail(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { mode, imapHost, imapPort, smtpHost, smtpPort, username, password, secure } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     const emailMode = mode || 'both';
@@ -6559,8 +6562,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForSlack(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { botToken, defaultChannel } = dbConfig;
+  private generateToolsForSlack(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { botToken, defaultChannel } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     // Base config stored in sqlQuery
@@ -6715,8 +6718,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForDiscord(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { botToken, defaultGuildId, defaultChannelId } = dbConfig;
+  private generateToolsForDiscord(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { botToken, defaultGuildId, defaultChannelId } = sourceConfig;
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -6842,8 +6845,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForDocker(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { dockerPath } = dbConfig || {};
+  private generateToolsForDocker(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { dockerPath } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -6961,8 +6964,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForKubernetes(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { kubectlPath, kubeconfig, namespace } = dbConfig || {};
+  private generateToolsForKubernetes(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { kubectlPath, kubeconfig, namespace } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -7093,12 +7096,12 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForElasticsearch(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey, username, password, index } = dbConfig || {};
+  private generateToolsForElasticsearch(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { baseUrl, apiKey, username, password, index } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
-      type: dbConfig?.type || DataSourceType.Elasticsearch,
+      type: sourceConfig?.type || DataSourceType.Elasticsearch,
       baseUrl,
       apiKey,
       username,
@@ -7194,8 +7197,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForOpenShift(serverId: string, dbConfig: any): ToolDefinition[] {
-    const { ocPath, kubeconfig, namespace } = dbConfig || {};
+  private generateToolsForOpenShift(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { ocPath, kubeconfig, namespace } = sourceConfig || {};
     const tools: ToolDefinition[] = [];
 
     const baseConfig = {
@@ -7301,7 +7304,7 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForData(serverId: string, parsedData: ParsedData, dbConfig: any, selectedTables?: any[]): ToolDefinition[] {
+  private generateToolsForData(serverId: string, parsedData: ParsedData, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
     const tools: ToolDefinition[] = [];
 
     //console.log('🔍 generateToolsForData called with selectedTables:', selectedTables);
@@ -7356,7 +7359,7 @@ export class MCPServerGenerator {
             },
             required: []
           },
-          sqlQuery: this.generateSelectQuery(tableName, columns, dbConfig.type),
+          sqlQuery: this.generateSelectQuery(tableName, columns, sourceConfig.type),
           operation: 'SELECT'
         });
       }
@@ -7372,7 +7375,7 @@ export class MCPServerGenerator {
           properties: this.generateInputProperties(columns, true),
           required: columns.filter(col => !col.nullable && col.name.toLowerCase() !== 'id').map(col => col.name)
         },
-        sqlQuery: this.generateInsertQuery(tableName, columns, dbConfig.type),
+        sqlQuery: this.generateInsertQuery(tableName, columns, sourceConfig.type),
         operation: 'INSERT'
         });
       }
@@ -7394,7 +7397,7 @@ export class MCPServerGenerator {
             },
             required: ['id']
           },
-          sqlQuery: this.generateUpdateQuery(tableName, columns, dbConfig.type),
+          sqlQuery: this.generateUpdateQuery(tableName, columns, sourceConfig.type),
           operation: 'UPDATE'
         });
       }
@@ -7415,7 +7418,7 @@ export class MCPServerGenerator {
             },
             required: ['id']
           },
-          sqlQuery: this.generateDeleteQuery(tableName, dbConfig.type),
+          sqlQuery: this.generateDeleteQuery(tableName, sourceConfig.type),
           operation: 'DELETE'
         });
       }
@@ -7431,7 +7434,7 @@ export class MCPServerGenerator {
             properties: this.generateFilterProperties(columns),
             required: []
           },
-          sqlQuery: this.generateCountQuery(tableName, columns, dbConfig.type),
+          sqlQuery: this.generateCountQuery(tableName, columns, sourceConfig.type),
           operation: 'SELECT'
         });
       }
@@ -7464,7 +7467,7 @@ export class MCPServerGenerator {
                 properties: this.generateFilterProperties(columns),
                 required: []
               },
-              sqlQuery: this.generateMinQuery(tableName, col.name, columns, dbConfig.type),
+              sqlQuery: this.generateMinQuery(tableName, col.name, columns, sourceConfig.type),
               operation: 'SELECT'
             });
           });
@@ -7484,7 +7487,7 @@ export class MCPServerGenerator {
                 properties: this.generateFilterProperties(columns),
                 required: []
               },
-              sqlQuery: this.generateMaxQuery(tableName, col.name, columns, dbConfig.type),
+              sqlQuery: this.generateMaxQuery(tableName, col.name, columns, sourceConfig.type),
               operation: 'SELECT'
             });
           });
@@ -7504,7 +7507,7 @@ export class MCPServerGenerator {
               properties: this.generateFilterProperties(columns),
               required: []
             },
-            sqlQuery: this.generateSumQuery(tableName, col.name, columns, dbConfig.type),
+            sqlQuery: this.generateSumQuery(tableName, col.name, columns, sourceConfig.type),
             operation: 'SELECT'
           });
         });
@@ -7524,7 +7527,7 @@ export class MCPServerGenerator {
                 properties: this.generateFilterProperties(columns),
                 required: []
               },
-              sqlQuery: this.generateAvgQuery(tableName, col.name, columns, dbConfig.type),
+              sqlQuery: this.generateAvgQuery(tableName, col.name, columns, sourceConfig.type),
               operation: 'SELECT'
             });
           });
@@ -7538,7 +7541,7 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateResourcesForData(serverId: string, parsedData: ParsedData, dbConfig: any): ResourceDefinition[] {
+  private generateResourcesForData(serverId: string, parsedData: ParsedData, sourceConfig: any): ResourceDefinition[] {
     const resources: ResourceDefinition[] = [];
 
     for (const [tableName, rows] of Object.entries(parsedData)) {
@@ -7551,7 +7554,7 @@ export class MCPServerGenerator {
         name: `${cleanTableName}_list`,
         description: `List all records from ${tableName} table`,
         uri_template: `${cleanTableName}://list`,
-        sqlQuery: this.generateSelectQuery(tableName, this.analyzeColumns(rows), dbConfig.type, false)
+        sqlQuery: this.generateSelectQuery(tableName, this.analyzeColumns(rows), sourceConfig.type, false)
       });
     }
 
@@ -7819,39 +7822,47 @@ export class MCPServerGenerator {
 
   // Public methods for management
   getAllServers(): ServerConfig[] {
-    return this.sqliteManager.getAllServers();
+    return this.dataStore.getAllServers();
+  }
+
+  getAllServersByOwner(ownerUsername: string): ServerConfig[] {
+    return this.dataStore.getAllServersByOwner(ownerUsername);
   }
 
   getServer(serverId: string): ServerConfig | null {
-    return this.sqliteManager.getServer(serverId);
+    return this.dataStore.getServer(serverId);
+  }
+
+  getServerForOwner(serverId: string, ownerUsername: string): ServerConfig | null {
+    return this.dataStore.getServerForOwner(serverId, ownerUsername);
   }
 
   deleteServer(serverId: string): void {
-    this.sqliteManager.deleteServer(serverId);
+    this.dataStore.deleteServer(serverId);
     console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
   }
 
   getAllTools(): ToolDefinition[] {
-    return this.sqliteManager.getAllTools();
+    return this.dataStore.getAllTools();
   }
 
   getToolsForServer(serverId: string): ToolDefinition[] {
-    return this.sqliteManager.getToolsForServer(serverId);
+    return this.dataStore.getToolsForServer(serverId);
   }
 
   getAllResources(): ResourceDefinition[] {
-    return this.sqliteManager.getAllResources();
+    return this.dataStore.getAllResources();
   }
 
   getResourcesForServer(serverId: string): ResourceDefinition[] {
-    return this.sqliteManager.getResourcesForServer(serverId);
+    return this.dataStore.getResourcesForServer(serverId);
   }
 
   getStats(): { servers: number; tools: number; resources: number } {
-    return this.sqliteManager.getStats();
+    return this.dataStore.getStats();
   }
 
   close(): void {
-    this.sqliteManager.close();
+    this.dataStore.close();
   }
 }

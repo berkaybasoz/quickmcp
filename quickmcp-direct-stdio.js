@@ -59,7 +59,10 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
       const home = os.homedir() || os.tmpdir();
       runDir = path.join(home, '.quickmcp');
       try { fs.mkdirSync(runDir, { recursive: true }); } catch {}
-      try { process.chdir(runDir); } catch {}
+      // NOTE: Disabled intentionally.
+      // Do not change process CWD here; changing CWD causes SQLite/database path drift
+      // between different launch modes (dev, npx, stdio).
+      // try { process.chdir(runDir); } catch {}
     }
     // Prepare uploads directory and expose as env for newer builds
     const uploadsDir = path.join(runDir, 'uploads');
@@ -289,7 +292,7 @@ async function handleMessage(message) {
             try {
               if (!baseUrl && sqliteManager.getServer) {
                 const srv = sqliteManager.getServer(serverId);
-                baseUrl = srv && srv.dbConfig && srv.dbConfig.baseUrl;
+                baseUrl = srv && srv.sourceConfig && srv.sourceConfig.baseUrl;
               }
             } catch (_) {}
             let method = (restSpec.method || '').toUpperCase();

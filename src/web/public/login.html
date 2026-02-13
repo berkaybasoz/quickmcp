@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="archdraw-styles.css">
+</head>
+<body class="h-screen flex items-center justify-center bg-slate-100 text-slate-900">
+  <div class="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+    <h1 class="text-xl font-semibold mb-1">QuickMCP Login</h1>
+    <p class="text-sm text-slate-500 mb-6">LITE auth mode is enabled. Sign in to continue.</p>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label for="username" class="block text-sm font-medium mb-1">Username</label>
+        <input id="username" type="text" required class="input w-full" autocomplete="username">
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium mb-1">Password</label>
+        <input id="password" type="password" required class="input w-full" autocomplete="current-password">
+      </div>
+      <p id="errorText" class="text-sm text-red-600 hidden"></p>
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2">Login</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const errorText = document.getElementById('errorText');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorText.classList.add('hidden');
+      errorText.textContent = '';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({ error: 'Login failed' }));
+          throw new Error(body.error || 'Login failed');
+        }
+
+        window.location.href = '/';
+      } catch (error) {
+        errorText.textContent = error.message || 'Login failed';
+        errorText.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
