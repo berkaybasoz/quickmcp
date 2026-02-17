@@ -1131,6 +1131,44 @@ async function loadServers() {
 }
 
 // Display servers
+const SERVER_TYPE_IMAGE_BASENAMES = new Set([
+    'airtable', 'applenotes', 'applereminders', 'asana', 'azureai', 'bearnotes', 'bitbucket', 'claude', 'clickup',
+    'cohere', 'confluence', 'confluence2', 'curl', 'db2', 'deepseek', 'discord', 'docker', 'dockerhub', 'dropbox',
+    'elasticsearch', 'facebook', 'falai', 'fireworks', 'gdrive', 'gemini', 'github', 'gitlab', 'gmail',
+    'googlecalender', 'googledocs', 'googlesheets', 'gradle', 'grafana', 'graphql', 'grok', 'groq', 'hazelcast',
+    'huggingface', 'imessage', 'instagram', 'jenkins', 'jira', 'kafka', 'kubernetes', 'linear', 'linkedin', 'llama',
+    'maven', 'microsoftteams', 'mistral', 'monday', 'mongodb', 'mssql', 'mysql', 'n8n', 'notion', 'npm', 'nuget',
+    'obsidian', 'openai', 'openrouter', 'opensearch', 'openshift', 'oracle', 'perplexity', 'postgresql',
+    'prometheus', 'reddit', 'redis', 'rss', 'signal', 'slack', 'soap', 'sqlite', 'supabase', 'telegram', 'things3',
+    'threads', 'tiktok', 'together', 'trello', 'webhook', 'whatsappbusiness', 'x', 'youtube', 'zoom'
+]);
+
+function getServerTypeIconMeta(serverType) {
+    const type = String(serverType || '').toLowerCase();
+    const aliases = {
+        azureopenai: 'azureai',
+        googlecalendar: 'googlecalender',
+        rest: 'webhook',
+        webpage: 'webhook',
+        email: 'gmail'
+    };
+    const normalized = aliases[type] || type;
+
+    if (normalized === 'curl') {
+        return { image: 'images/app/curl_mini.png', icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+    }
+    if (normalized === 'ftp') {
+        return { image: '', icon: 'fa-folder-open', bg: 'bg-amber-100', text: 'text-amber-700' };
+    }
+    if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
+        return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+    }
+    if (normalized === 'localfs') {
+        return { image: '', icon: 'fa-folder-tree', bg: 'bg-amber-100', text: 'text-amber-700' };
+    }
+    return { image: '', icon: 'fa-server', bg: 'bg-slate-100', text: 'text-slate-600' };
+}
+
 function displayServers(servers) {
     const serverList = document.getElementById('server-list');
     if (!serverList) return;
@@ -1162,7 +1200,7 @@ function displayServers(servers) {
             </button>
         </div>
         <div class="hidden md:grid grid-cols-12 items-center px-5 py-3 bg-slate-50 border-x border-b border-slate-200 text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
-            <div class="col-span-4">Name</div>
+            <div class="col-span-4 pl-10">Name</div>
             <div class="col-span-2">Type</div>
             <div class="col-span-1">Version</div>
             <div class="col-span-2">Tools</div>
@@ -1173,14 +1211,19 @@ function displayServers(servers) {
     const rowsHtml = servers.map(server => {
         const derivedType = server.type || (typeof server.description === 'string' && (server.description.match(/\(([^)]+)\)/)?.[1] || '')) || '';
         const safeType = derivedType || 'unknown';
+        const iconMeta = getServerTypeIconMeta(safeType);
         return `
         <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
             <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="hidden md:inline-flex w-6 h-6 items-center justify-center rounded-md bg-blue-100 text-blue-600"><i class="fas fa-server text-xs"></i></span>
+                    <span class="hidden md:inline-flex w-8 h-8 items-center justify-center rounded-lg shadow-sm ${iconMeta.bg} ${iconMeta.text}">
+                        ${iconMeta.image
+                            ? `<img src="${iconMeta.image}" alt="${safeType}" class="w-6 h-6 object-contain" />`
+                            : `<i class="fas ${iconMeta.icon} text-sm"></i>`
+                        }
+                    </span>
                     <span id="server-name-${server.id}" ondblclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" class="font-semibold text-slate-900 truncate cursor-pointer" title="${server.name}">${server.name}</span>
                 </div>
-                <div class="text-xs text-slate-500 truncate md:mt-0.5">${server.description || ''}</div>
             </div>
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs">${safeType}</span>
