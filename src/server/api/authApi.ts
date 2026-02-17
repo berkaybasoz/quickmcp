@@ -186,7 +186,9 @@ export class AuthApi {
       const servers = store.getAllServersByOwner(ctx.workspaceId).map((server) => {
         const tools = store.getToolsForServer(server.id).map((t) => `${server.id}__${t.name}`);
         const resources = store.getResourcesForServer(server.id).map((r) => `${server.id}__${r.name}`);
-        return { id: server.id, name: server.name, tools, resources };
+        const rawType = (server.sourceConfig as any)?.type;
+        const type = typeof rawType === 'string' ? rawType : 'unknown';
+        return { id: server.id, name: server.name, type, tools, resources };
       });
 
       res.json({ success: true, data: { workspaceId: ctx.workspaceId, users, servers } });

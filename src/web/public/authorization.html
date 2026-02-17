@@ -104,11 +104,11 @@
             </div>
 
             <div class="relative">
-              <textarea id="generatedToken" rows="4" class="input w-full font-mono text-xs resize-none pr-10" placeholder="Generated token will appear here." readonly></textarea>
+              <textarea id="generatedToken" rows="4" class="input w-full font-mono text-xs resize-none pr-12 pt-3" placeholder="Generated token will appear here." readonly></textarea>
               <button
                 id="copyTokenBtn"
                 type="button"
-                class="absolute right-2 top-2 h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="absolute right-3 top-3 h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Copy token"
                 aria-label="Copy token"
                 disabled
@@ -144,6 +144,32 @@
     </main>
   </div>
 
+  <div id="tokenModalOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[70] hidden"></div>
+  <div id="tokenModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-900">Token</h3>
+        <button id="closeTokenModalBtn" class="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-800" title="Close">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div class="relative">
+          <textarea id="tokenModalValue" rows="5" class="input w-full font-mono text-xs resize-none pr-24 pt-3" readonly></textarea>
+          <div class="absolute right-3 top-3 flex items-center gap-2">
+            <button id="toggleTokenMaskBtn" class="h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600" title="Show / Hide Token">
+              <i id="toggleTokenMaskIcon" class="fas fa-eye text-sm"></i>
+            </button>
+            <button id="copyTokenModalBtn" class="h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600" title="Copy Token">
+              <i class="fas fa-copy text-sm"></i>
+            </button>
+          </div>
+        </div>
+        <p id="tokenModalMeta" class="text-xs text-slate-500"></p>
+      </div>
+    </div>
+  </div>
+
   <script src="shared.js"></script>
   <script src="sidebar.js"></script>
   <script>
@@ -154,6 +180,8 @@
       serverRules: {},
       toolRules: {}
     };
+    let tokenModalRawValue = '';
+    let tokenModalMasked = true;
 
     function byId(id) { return document.getElementById(id); }
     function setAuthorizationTab(tab) {
@@ -179,6 +207,32 @@
       if (value === 'allow') return true;
       if (value === 'deny') return false;
       return null;
+    }
+
+    function maskTokenValue(token) {
+      const value = String(token || '');
+      if (!value) return '';
+      if (value.length <= 8) return '•'.repeat(value.length);
+      return `${value.slice(0, 4)}${'•'.repeat(Math.max(8, value.length - 8))}${value.slice(-4)}`;
+    }
+
+    function renderTokenModalValue() {
+      byId('tokenModalValue').value = tokenModalMasked ? maskTokenValue(tokenModalRawValue) : tokenModalRawValue;
+      byId('toggleTokenMaskIcon').className = tokenModalMasked ? 'fas fa-eye text-sm' : 'fas fa-eye-slash text-sm';
+    }
+
+    function openTokenModal(token, metaText = '') {
+      tokenModalRawValue = String(token || '');
+      tokenModalMasked = true;
+      renderTokenModalValue();
+      byId('tokenModalMeta').textContent = metaText || '';
+      byId('tokenModalOverlay').classList.remove('hidden');
+      byId('tokenModal').classList.remove('hidden');
+    }
+
+    function closeTokenModal() {
+      byId('tokenModalOverlay').classList.add('hidden');
+      byId('tokenModal').classList.add('hidden');
     }
 
     function collectTriStateRules(selector, attrName) {
@@ -208,6 +262,26 @@
       const idx = String(serverId || '').indexOf('__');
       if (idx <= 0) return '';
       return String(serverId).slice(0, idx);
+    }
+
+    function getMcpDisplayName(server) {
+      const id = String(server?.id || '');
+      const rawName = String(server?.name || id || '');
+      const owner = serverOwnerFromId(id);
+      if (owner && rawName.startsWith(`${owner}__`)) return rawName.slice(owner.length + 2);
+      if (rawName.includes('__')) return rawName.split('__').slice(-1)[0];
+      return rawName;
+    }
+
+    function getMcpTypeIcon(type) {
+      const t = String(type || '').toLowerCase();
+      if (['mysql', 'postgresql', 'postgres', 'mssql', 'oracle', 'sqlite', 'mongodb', 'database'].includes(t)) return 'fa-database';
+      if (['rest', 'graphql', 'soap', 'rss', 'webpage', 'curl'].includes(t)) return 'fa-globe';
+      if (['docker', 'kubernetes', 'openshift', 'elasticsearch', 'opensearch', 'prometheus', 'grafana'].includes(t)) return 'fa-cubes';
+      if (['slack', 'discord', 'telegram', 'whatsappbusiness', 'x', 'facebook', 'instagram', 'tiktok', 'linkedin', 'reddit', 'youtube', 'threads'].includes(t)) return 'fa-comments';
+      if (['openai', 'claude', 'gemini', 'grok', 'falai', 'huggingface', 'llama', 'deepseek', 'azureopenai', 'mistral', 'cohere', 'perplexity', 'together', 'fireworks', 'groq', 'openrouter'].includes(t)) return 'fa-brain';
+      if (t === 'ftp' || t === 'localfs') return 'fa-folder-open';
+      return 'fa-server';
     }
 
     function renderUsers() {
@@ -273,8 +347,10 @@
                           <option value="allow">Allow</option>
                           <option value="deny">Deny</option>
                         </select>
-                        <span>${s.name}</span>
-                        <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                        <span class="inline-flex items-center gap-2">
+                          <i class="fas ${getMcpTypeIcon(s.type)} text-slate-500"></i>
+                          <span>${getMcpDisplayName(s)}</span>
+                        </span>
                       </summary>
                       <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
@@ -453,8 +529,10 @@
                           <option value="require" ${policyValueToSelect(tokenPolicyState.serverRules[s.id]) === 'require' ? 'selected' : ''}>Require Token</option>
                           <option value="no-token" ${policyValueToSelect(tokenPolicyState.serverRules[s.id]) === 'no-token' ? 'selected' : ''}>No Token</option>
                         </select>
-                        <span>${s.name}</span>
-                        <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                        <span class="inline-flex items-center gap-2">
+                          <i class="fas ${getMcpTypeIcon(s.type)} text-slate-500"></i>
+                          <span>${getMcpDisplayName(s)}</span>
+                        </span>
                       </summary>
                       <div class="px-3 pb-3">
                         <div class="text-xs font-semibold text-slate-600 mb-2">Tools</div>
@@ -624,9 +702,11 @@
           const resp = await fetch(`/api/authorization/tokens/${encodeURIComponent(id)}`);
           if (!resp.ok) throw new Error('Failed to load token');
           const tokenPayload = await resp.json();
-          byId('generatedToken').value = tokenPayload?.data?.token || '';
-          byId('tokenMeta').textContent = `Token shown from history.`;
-          refreshCopyButtonState();
+          const data = tokenPayload?.data || {};
+          openTokenModal(
+            data.token || '',
+            data.neverExpires ? 'Never expires' : `Expires: ${data.expiresAt || '-'}`
+          );
         });
       });
 
@@ -713,6 +793,27 @@
         window.utils?.showToast?.('Token copied', 'success');
       } catch (_) {
         window.utils?.showToast?.('Failed to copy token', 'error');
+      }
+    });
+    byId('closeTokenModalBtn').addEventListener('click', closeTokenModal);
+    byId('tokenModalOverlay').addEventListener('click', closeTokenModal);
+    byId('toggleTokenMaskBtn').addEventListener('click', () => {
+      tokenModalMasked = !tokenModalMasked;
+      renderTokenModalValue();
+    });
+    byId('copyTokenModalBtn').addEventListener('click', async () => {
+      const token = tokenModalRawValue.trim();
+      if (!token) return;
+      try {
+        await navigator.clipboard.writeText(token);
+        window.utils?.showToast?.('Token copied', 'success');
+      } catch (_) {
+        window.utils?.showToast?.('Failed to copy token', 'error');
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !byId('tokenModal').classList.contains('hidden')) {
+        closeTokenModal();
       }
     });
 
