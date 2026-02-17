@@ -21,6 +21,9 @@ export function safeCreateDataStore(options?: SafeCreateDataStoreOptions): IData
       getServer: () => null,
       getMcpTokenByHash: () => null,
       getServerAuthConfig: () => null,
+      getMcpTokenPolicy: () => null,
+      listMcpTokenPolicies: () => [],
+      setMcpTokenPolicy: () => {},
       close: () => {}
     } as unknown as IDataStore;
   }

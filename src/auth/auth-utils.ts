@@ -29,6 +29,32 @@ export interface AuthUtilsConfig {
   ensureDataStore: () => IDataStore;
 }
 
+export type McpIdentity = {
+  tokenId: string;
+  username: string;
+  workspace: string;
+  role: string;
+};
+
+export type McpTokenAuthRecord = {
+  id: string;
+  tokenName: string;
+  workspaceId: string;
+  subjectUsername: string;
+  allowAllServers: boolean;
+  allowAllTools: boolean;
+  allowAllResources: boolean;
+  serverIds: string[];
+  allowedTools: string[];
+  allowedResources: string[];
+  serverRules: Record<string, boolean | null>;
+  toolRules: Record<string, boolean | null>;
+  resourceRules: Record<string, boolean | null>;
+  neverExpires: boolean;
+  expiresAt: string | null;
+  revokedAt: string | null;
+};
+
 export class AuthUtils {
   private readonly authMode: AuthMode;
   private readonly authDefaultUsername: string;
@@ -336,4 +362,254 @@ export class AuthUtils {
     const secret = process.env.QUICKMCP_TOKEN_SECRET || this.authCookieSecret;
     return crypto.createHmac('sha256', secret).update(payloadEncoded).digest('base64url');
   }
+}
+
+export function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v));
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+export function normalizeRuleMap(value: unknown): Record<string, boolean | null> {
+  let obj: Record<string, unknown> = {};
+  if (value && typeof value === 'object') {
+    obj = value as Record<string, unknown>;
+  } else if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      obj = parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : {};
+    } catch {
+      obj = {};
+    }
+  }
+  const out: Record<string, boolean | null> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const key = String(k || '').trim();
+    if (!key) continue;
+    if (v === true || v === 'allow' || v === 'true' || v === 1 || v === '1') out[key] = true;
+    else if (v === false || v === 'deny' || v === 'false' || v === -1 || v === '-1') out[key] = false;
+    else out[key] = null;
+  }
+  return out;
+}
+
+export function getMcpTokenRecord(
+  dataStore: { getMcpTokenByHash?: (tokenHash: string) => any },
+  mcpAuthMode: AuthMode,
+  mcpTokenHash: string
+): McpTokenAuthRecord | null {
+  if (mcpAuthMode === 'NONE') return null;
+  if (!mcpTokenHash || typeof dataStore.getMcpTokenByHash !== 'function') return null;
+  try {
+    const row = dataStore.getMcpTokenByHash(mcpTokenHash);
+    if (!row) return null;
+    return {
+      id: row.id,
+      tokenName: String(row.tokenName || row.token_name || ''),
+      workspaceId: String(row.workspaceId || row.workspace_id || ''),
+      subjectUsername: String(row.subjectUsername || row.subject_username || ''),
+      allowAllServers: row.allowAllServers === true || Number(row.allow_all_servers) === 1,
+      allowAllTools: row.allowAllTools === true || Number(row.allow_all_tools) === 1,
+      allowAllResources: row.allowAllResources === true || Number(row.allow_all_resources) === 1,
+      serverIds: normalizeStringArray(row.serverIds || row.server_ids_json),
+      allowedTools: normalizeStringArray(row.allowedTools || row.allowed_tools_json),
+      allowedResources: normalizeStringArray(row.allowedResources || row.allowed_resources_json),
+      serverRules: normalizeRuleMap(row.serverRules || row.server_rules_json || {}),
+      toolRules: normalizeRuleMap(row.toolRules || row.tool_rules_json || {}),
+      resourceRules: normalizeRuleMap(row.resourceRules || row.resource_rules_json || {}),
+      neverExpires: row.neverExpires === true || Number(row.never_expires) === 1,
+      expiresAt: row.expiresAt ? String(row.expiresAt) : (row.expires_at ? String(row.expires_at) : null),
+      revokedAt: row.revokedAt ? String(row.revokedAt) : (row.revoked_at ? String(row.revoked_at) : null)
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function isMcpAuthorizedGlobally(
+  mcpAuthMode: AuthMode,
+  mcpIdentity: McpIdentity | null,
+  mcpTokenRecord: McpTokenAuthRecord | null
+): boolean {
+  if (mcpAuthMode === 'NONE') return true;
+  if (!mcpIdentity || !mcpTokenRecord) return false;
+  if (mcpTokenRecord.revokedAt) return false;
+  if (mcpTokenRecord.id && mcpIdentity.tokenId && mcpTokenRecord.id !== mcpIdentity.tokenId) return false;
+  if (mcpTokenRecord.subjectUsername !== mcpIdentity.username) return false;
+  if (mcpTokenRecord.workspaceId !== mcpIdentity.workspace) return false;
+  if (!mcpTokenRecord.neverExpires && mcpTokenRecord.expiresAt) {
+    const expiresMs = Date.parse(mcpTokenRecord.expiresAt);
+    if (Number.isFinite(expiresMs) && expiresMs <= Date.now()) return false;
+  }
+  return true;
+}
+
+export function parseServerOwner(serverId: string): string {
+  const idx = String(serverId || '').indexOf('__');
+  if (idx <= 0) return '';
+  return String(serverId).slice(0, idx);
+}
+
+export function isServerOwnedByCurrentIdentity(
+  mcpAuthMode: AuthMode,
+  mcpIdentity: McpIdentity | null,
+  mcpTokenRecord: McpTokenAuthRecord | null,
+  serverId: string
+): boolean {
+  if (mcpAuthMode === 'NONE') return true;
+  if (!mcpIdentity || !mcpTokenRecord) return false;
+  const owner = parseServerOwner(serverId);
+  return owner === mcpIdentity.workspace || owner === mcpIdentity.username;
+}
+
+export function getServerRequireMcpToken(
+  mcpAuthMode: AuthMode,
+  dataStore: {
+    getServerAuthConfig?: (serverId: string) => any;
+    getMcpTokenPolicy?: (scopeType: 'global' | 'user' | 'server' | 'tool', scopeId: string) => any;
+  },
+  serverId: string
+): boolean {
+  if (mcpAuthMode === 'NONE') return false;
+  let requireToken = true;
+  try {
+    const globalCfg = typeof dataStore.getMcpTokenPolicy === 'function'
+      ? dataStore.getMcpTokenPolicy('global', '*')
+      : null;
+    if (globalCfg) {
+      requireToken = globalCfg.requireMcpToken !== false;
+    }
+    const owner = parseServerOwner(serverId);
+    if (owner && typeof dataStore.getMcpTokenPolicy === 'function') {
+      const userCfg = dataStore.getMcpTokenPolicy('user', owner);
+      if (userCfg) {
+        requireToken = userCfg.requireMcpToken !== false;
+      }
+    }
+    if (typeof dataStore.getMcpTokenPolicy === 'function') {
+      const serverCfg = dataStore.getMcpTokenPolicy('server', serverId);
+      if (serverCfg) {
+        return serverCfg.requireMcpToken !== false;
+      }
+    }
+    if (typeof dataStore.getServerAuthConfig === 'function') {
+      const legacyCfg = dataStore.getServerAuthConfig(serverId);
+      if (legacyCfg) {
+        return legacyCfg.requireMcpToken !== false;
+      }
+    }
+  } catch {}
+  return requireToken;
+}
+
+function getToolRequireMcpToken(
+  mcpAuthMode: AuthMode,
+  dataStore: {
+    getServerAuthConfig?: (serverId: string) => any;
+    getMcpTokenPolicy?: (scopeType: 'global' | 'user' | 'server' | 'tool', scopeId: string) => any;
+  },
+  serverId: string,
+  toolName: string
+): boolean {
+  const inherited = getServerRequireMcpToken(mcpAuthMode, dataStore, serverId);
+  if (mcpAuthMode === 'NONE') return false;
+  if (typeof dataStore.getMcpTokenPolicy !== 'function') return inherited;
+  try {
+    const toolCfg = dataStore.getMcpTokenPolicy('tool', `${serverId}__${toolName}`);
+    if (!toolCfg) return inherited;
+    return toolCfg.requireMcpToken !== false;
+  } catch {
+    return inherited;
+  }
+}
+
+export function isServerAuthorized(
+  mcpAuthMode: AuthMode,
+  dataStore: {
+    getServerAuthConfig?: (serverId: string) => any;
+    getMcpTokenPolicy?: (scopeType: 'global' | 'user' | 'server' | 'tool', scopeId: string) => any;
+  },
+  mcpIdentity: McpIdentity | null,
+  mcpTokenRecord: McpTokenAuthRecord | null,
+  serverId: string
+): boolean {
+  if (mcpAuthMode === 'NONE') return true;
+  const requireToken = getServerRequireMcpToken(mcpAuthMode, dataStore, serverId);
+  if (!requireToken) return true;
+
+  if (!isMcpAuthorizedGlobally(mcpAuthMode, mcpIdentity, mcpTokenRecord)) return false;
+  if (!isServerOwnedByCurrentIdentity(mcpAuthMode, mcpIdentity, mcpTokenRecord, serverId)) return false;
+  if (mcpTokenRecord && mcpTokenRecord.serverRules && Object.prototype.hasOwnProperty.call(mcpTokenRecord.serverRules, serverId)) {
+    const decision = mcpTokenRecord.serverRules[serverId];
+    if (decision === false) return false;
+    if (decision === true) return true;
+  }
+  if (mcpTokenRecord && !mcpTokenRecord.allowAllServers) {
+    if (!mcpTokenRecord.serverIds.includes(serverId)) return false;
+  }
+  return true;
+}
+
+export function isToolAuthorized(
+  mcpAuthMode: AuthMode,
+  dataStore: {
+    getServerAuthConfig?: (serverId: string) => any;
+    getMcpTokenPolicy?: (scopeType: 'global' | 'user' | 'server' | 'tool', scopeId: string) => any;
+  },
+  mcpIdentity: McpIdentity | null,
+  mcpTokenRecord: McpTokenAuthRecord | null,
+  serverId: string,
+  toolName: string
+): boolean {
+  const requireToken = getToolRequireMcpToken(mcpAuthMode, dataStore, serverId, toolName);
+  if (!requireToken) return true;
+  if (!isMcpAuthorizedGlobally(mcpAuthMode, mcpIdentity, mcpTokenRecord)) return false;
+  if (!isServerOwnedByCurrentIdentity(mcpAuthMode, mcpIdentity, mcpTokenRecord, serverId)) return false;
+  const full = `${serverId}__${toolName}`;
+  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
+    if (mcpTokenRecord.toolRules && Object.prototype.hasOwnProperty.call(mcpTokenRecord.toolRules, full)) {
+      const decision = mcpTokenRecord.toolRules[full];
+      if (decision === false) return false;
+      if (decision === true) return true;
+    }
+    if (!mcpTokenRecord.allowAllTools) {
+      return mcpTokenRecord.allowedTools.includes(full);
+    }
+    return true;
+  }
+  return true;
+}
+
+export function isResourceAuthorized(
+  mcpAuthMode: AuthMode,
+  dataStore: {
+    getServerAuthConfig?: (serverId: string) => any;
+    getMcpTokenPolicy?: (scopeType: 'global' | 'user' | 'server' | 'tool', scopeId: string) => any;
+  },
+  mcpIdentity: McpIdentity | null,
+  mcpTokenRecord: McpTokenAuthRecord | null,
+  serverId: string,
+  resourceName: string
+): boolean {
+  if (!isServerAuthorized(mcpAuthMode, dataStore, mcpIdentity, mcpTokenRecord, serverId)) return false;
+  const full = `${serverId}__${resourceName}`;
+  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
+    if (mcpTokenRecord.resourceRules && Object.prototype.hasOwnProperty.call(mcpTokenRecord.resourceRules, full)) {
+      const decision = mcpTokenRecord.resourceRules[full];
+      if (decision === false) return false;
+      if (decision === true) return true;
+    }
+    if (!mcpTokenRecord.allowAllResources) {
+      return mcpTokenRecord.allowedResources.includes(full);
+    }
+    return true;
+  }
+  return true;
 }

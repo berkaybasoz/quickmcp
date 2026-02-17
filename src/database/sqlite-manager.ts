@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord } from './datastore';
+import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope } from './datastore';
 
 export class SQLiteManager implements IDataStore {
   private db: Database.Database;
@@ -124,10 +124,23 @@ export class SQLiteManager implements IDataStore {
         server_ids_json TEXT NOT NULL DEFAULT '[]',
         allowed_tools_json TEXT NOT NULL DEFAULT '[]',
         allowed_resources_json TEXT NOT NULL DEFAULT '[]',
+        server_rules_json TEXT NOT NULL DEFAULT '{}',
+        tool_rules_json TEXT NOT NULL DEFAULT '{}',
+        resource_rules_json TEXT NOT NULL DEFAULT '{}',
         never_expires INTEGER NOT NULL DEFAULT 0,
         expires_at TEXT,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         revoked_at TEXT
+      )
+    `);
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS mcp_token_policies (
+        scope_type TEXT NOT NULL CHECK (scope_type IN ('global', 'user', 'server', 'tool')),
+        scope_id TEXT NOT NULL,
+        require_mcp_token INTEGER NOT NULL CHECK (require_mcp_token IN (0, 1)),
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (scope_type, scope_id)
       )
     `);
 
@@ -137,11 +150,17 @@ export class SQLiteManager implements IDataStore {
     const hasAllowAllResources = mcpCols.some((col) => col.name === 'allow_all_resources');
     const hasAllowedTools = mcpCols.some((col) => col.name === 'allowed_tools_json');
     const hasAllowedResources = mcpCols.some((col) => col.name === 'allowed_resources_json');
+    const hasServerRules = mcpCols.some((col) => col.name === 'server_rules_json');
+    const hasToolRules = mcpCols.some((col) => col.name === 'tool_rules_json');
+    const hasResourceRules = mcpCols.some((col) => col.name === 'resource_rules_json');
     if (!hasTokenName) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN token_name TEXT NOT NULL DEFAULT ''`);
     if (!hasAllowAllTools) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN allow_all_tools INTEGER NOT NULL DEFAULT 1`);
     if (!hasAllowAllResources) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN allow_all_resources INTEGER NOT NULL DEFAULT 1`);
     if (!hasAllowedTools) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN allowed_tools_json TEXT NOT NULL DEFAULT '[]'`);
     if (!hasAllowedResources) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN allowed_resources_json TEXT NOT NULL DEFAULT '[]'`);
+    if (!hasServerRules) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN server_rules_json TEXT NOT NULL DEFAULT '{}'`);
+    if (!hasToolRules) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN tool_rules_json TEXT NOT NULL DEFAULT '{}'`);
+    if (!hasResourceRules) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN resource_rules_json TEXT NOT NULL DEFAULT '{}'`);
 
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_servers_owner ON servers(owner_username)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(username)`);
@@ -150,6 +169,7 @@ export class SQLiteManager implements IDataStore {
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_server_auth_required ON server_auth_config(require_mcp_token)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_tokens_workspace ON mcp_tokens(workspace_id)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_tokens_hash ON mcp_tokens(token_hash)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_token_policies_scope ON mcp_token_policies(scope_type)`);
   }
 
   saveServer(server: ServerConfig): void {
@@ -448,6 +468,15 @@ export class SQLiteManager implements IDataStore {
   }
 
   getServerAuthConfig(serverId: string): ServerAuthConfig | null {
+    const policy = this.getMcpTokenPolicy('server', serverId);
+    if (policy) {
+      return {
+        serverId,
+        requireMcpToken: policy.requireMcpToken,
+        updatedAt: policy.updatedAt
+      };
+    }
+
     const stmt = this.db.prepare('SELECT server_id, require_mcp_token, updated_at FROM server_auth_config WHERE server_id = ?');
     const row = stmt.get(serverId) as any;
     if (!row) {
@@ -469,6 +498,60 @@ export class SQLiteManager implements IDataStore {
         updated_at = CURRENT_TIMESTAMP
     `);
     stmt.run(serverId, requireMcpToken ? 1 : 0);
+    this.setMcpTokenPolicy('server', serverId, requireMcpToken);
+  }
+
+  private mapMcpTokenPolicyRow(row: any): McpTokenPolicyRecord {
+    return {
+      scopeType: row.scope_type as McpTokenPolicyScope,
+      scopeId: String(row.scope_id),
+      requireMcpToken: Number(row.require_mcp_token) === 1,
+      updatedAt: String(row.updated_at)
+    };
+  }
+
+  getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): McpTokenPolicyRecord | null {
+    const stmt = this.db.prepare(`
+      SELECT scope_type, scope_id, require_mcp_token, updated_at
+      FROM mcp_token_policies
+      WHERE scope_type = ? AND scope_id = ?
+    `);
+    const row = stmt.get(scopeType, scopeId) as any;
+    return row ? this.mapMcpTokenPolicyRow(row) : null;
+  }
+
+  listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): McpTokenPolicyRecord[] {
+    const stmt = scopeType
+      ? this.db.prepare(`
+          SELECT scope_type, scope_id, require_mcp_token, updated_at
+          FROM mcp_token_policies
+          WHERE scope_type = ?
+          ORDER BY updated_at DESC
+        `)
+      : this.db.prepare(`
+          SELECT scope_type, scope_id, require_mcp_token, updated_at
+          FROM mcp_token_policies
+          ORDER BY updated_at DESC
+        `);
+    const rows = (scopeType ? stmt.all(scopeType) : stmt.all()) as any[];
+    return rows.map((row) => this.mapMcpTokenPolicyRow(row));
+  }
+
+  setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): void {
+    if (!scopeId) return;
+    if (requireMcpToken === null) {
+      const del = this.db.prepare('DELETE FROM mcp_token_policies WHERE scope_type = ? AND scope_id = ?');
+      del.run(scopeType, scopeId);
+      return;
+    }
+    const upsert = this.db.prepare(`
+      INSERT INTO mcp_token_policies (scope_type, scope_id, require_mcp_token, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(scope_type, scope_id) DO UPDATE SET
+        require_mcp_token = excluded.require_mcp_token,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    upsert.run(scopeType, scopeId, requireMcpToken ? 1 : 0);
   }
 
   private mapMcpTokenRow(row: any): McpTokenRecord {
@@ -486,6 +569,9 @@ export class SQLiteManager implements IDataStore {
       serverIds: JSON.parse(row.server_ids_json || '[]'),
       allowedTools: JSON.parse(row.allowed_tools_json || '[]'),
       allowedResources: JSON.parse(row.allowed_resources_json || '[]'),
+      serverRules: JSON.parse(row.server_rules_json || '{}'),
+      toolRules: JSON.parse(row.tool_rules_json || '{}'),
+      resourceRules: JSON.parse(row.resource_rules_json || '{}'),
       neverExpires: Number(row.never_expires) === 1,
       expiresAt: row.expires_at || null,
       createdAt: row.created_at,
@@ -499,8 +585,9 @@ export class SQLiteManager implements IDataStore {
         id, token_name, workspace_id, subject_username, created_by, token_hash, token_value,
         allow_all_servers, allow_all_tools, allow_all_resources,
         server_ids_json, allowed_tools_json, allowed_resources_json,
+        server_rules_json, tool_rules_json, resource_rules_json,
         never_expires, expires_at, created_at, revoked_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
     `);
     stmt.run(
       input.id,
@@ -516,6 +603,9 @@ export class SQLiteManager implements IDataStore {
       JSON.stringify(input.serverIds || []),
       JSON.stringify(input.allowedTools || []),
       JSON.stringify(input.allowedResources || []),
+      JSON.stringify(input.serverRules || {}),
+      JSON.stringify(input.toolRules || {}),
+      JSON.stringify(input.resourceRules || {}),
       input.neverExpires ? 1 : 0,
       input.expiresAt
     );

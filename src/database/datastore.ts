@@ -52,6 +52,15 @@ export interface ServerAuthConfig {
   updatedAt: string;
 }
 
+export type McpTokenPolicyScope = 'global' | 'user' | 'server' | 'tool';
+
+export interface McpTokenPolicyRecord {
+  scopeType: McpTokenPolicyScope;
+  scopeId: string;
+  requireMcpToken: boolean;
+  updatedAt: string;
+}
+
 export interface McpTokenRecord {
   id: string;
   tokenName: string;
@@ -66,6 +75,9 @@ export interface McpTokenRecord {
   serverIds: string[];
   allowedTools: string[];
   allowedResources: string[];
+  serverRules?: Record<string, boolean | null>;
+  toolRules?: Record<string, boolean | null>;
+  resourceRules?: Record<string, boolean | null>;
   neverExpires: boolean;
   expiresAt: string | null;
   createdAt: string;
@@ -86,6 +98,9 @@ export interface McpTokenCreateInput {
   serverIds: string[];
   allowedTools: string[];
   allowedResources: string[];
+  serverRules?: Record<string, boolean | null>;
+  toolRules?: Record<string, boolean | null>;
+  resourceRules?: Record<string, boolean | null>;
   neverExpires: boolean;
   expiresAt: string | null;
 }
@@ -122,6 +137,9 @@ export interface IDataStore {
 
   getServerAuthConfig(serverId: string): ServerAuthConfig | null;
   setServerAuthConfig(serverId: string, requireMcpToken: boolean): void;
+  getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): McpTokenPolicyRecord | null;
+  listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): McpTokenPolicyRecord[];
+  setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): void;
 
   createMcpToken(input: McpTokenCreateInput): void;
   getMcpTokenByHash(tokenHash: string): McpTokenRecord | null;

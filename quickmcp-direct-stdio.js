@@ -5,6 +5,19 @@ const fs = require('fs');
 const os = require('os');
 const net = require('net');
 const crypto = require('crypto');
+const dotenv = require('dotenv');
+
+// Load .env from script directory first (works with Claude Desktop custom CWD),
+// then fallback to process CWD.
+dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config();
+
+// Secure default for direct-stdio: if caller does not provide auth/deploy mode,
+// enforce ONPREM semantics (AUTH_MODE=LITE) so MCP token checks are active.
+if (!process.env.AUTH_MODE && !process.env.DEPLOY_MODE) {
+  process.env.DEPLOY_MODE = 'ONPREM';
+  console.error('[QuickMCP] AUTH_MODE/DEPLOY_MODE not provided, defaulting DEPLOY_MODE=ONPREM (AUTH_MODE=LITE)');
+}
 
 // Use the current working directory provided by the caller.
 // Do not change directories; keep paths relative to this script.
@@ -28,6 +41,23 @@ try {
   ({ verifyMcpToken } = require('./dist/auth/token-utils.js'));
 } catch (_) {
   throw new Error('[QuickMCP] Missing dist/auth/token-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+}
+
+let getMcpTokenRecordFromStore;
+let isMcpAuthorizedGloballyFromUtils;
+let isServerAuthorizedFromUtils;
+let isToolAuthorizedFromUtils;
+let isResourceAuthorizedFromUtils;
+try {
+  ({
+    getMcpTokenRecord: getMcpTokenRecordFromStore,
+    isMcpAuthorizedGlobally: isMcpAuthorizedGloballyFromUtils,
+    isServerAuthorized: isServerAuthorizedFromUtils,
+    isToolAuthorized: isToolAuthorizedFromUtils,
+    isResourceAuthorized: isResourceAuthorizedFromUtils
+  } = require('./dist/auth/auth-utils.js'));
+} catch (_) {
+  throw new Error('[QuickMCP] Missing dist/auth/auth-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
 // Parse CLI flags for convenience
@@ -61,6 +91,7 @@ const dataStore = safeCreateDataStore({ logger: (...args) => console.error(...ar
 const mcpAuthMode = resolveAuthMode();
 const mcpTokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
 const mcpToken = (process.env.QUICKMCP_TOKEN || '').trim();
+const hasProvidedMcpToken = mcpToken.length > 0;
 const verifiedMcpPayload = mcpToken ? verifyMcpToken(mcpToken, mcpTokenSecret) : null;
 const mcpIdentity = verifiedMcpPayload ? {
   tokenId: verifiedMcpPayload.jti ? String(verifiedMcpPayload.jti) : '',
@@ -69,123 +100,37 @@ const mcpIdentity = verifiedMcpPayload ? {
   role: String(verifiedMcpPayload.role || 'user')
 } : null;
 const mcpTokenHash = mcpToken ? crypto.createHash('sha256').update(mcpToken).digest('hex') : '';
-
-function normalizeStringArray(value) {
-  if (Array.isArray(value)) return value.map((v) => String(v));
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
-    } catch {
-      return [];
-    }
+const getCurrentMcpTokenRecord = () => getMcpTokenRecordFromStore(dataStore, mcpAuthMode, mcpTokenHash);
+const isMcpAuthorizedGlobally = () => {
+  const tokenRecord = getCurrentMcpTokenRecord();
+  return isMcpAuthorizedGloballyFromUtils(mcpAuthMode, mcpIdentity, tokenRecord);
+};
+const isServerAuthorized = (serverId) => {
+  // If a token is explicitly provided, it must be valid and active even when
+  // a server is configured as token-optional. This prevents revoked tokens
+  // from continuing to authorize requests.
+  if (mcpAuthMode !== 'NONE' && hasProvidedMcpToken && !isMcpAuthorizedGlobally()) {
+    return false;
   }
-  return [];
-}
+  const tokenRecord = getCurrentMcpTokenRecord();
+  return isServerAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId);
+};
+const isToolAuthorized = (serverId, toolName) => {
+  const tokenRecord = getCurrentMcpTokenRecord();
+  return isToolAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, toolName);
+};
+const isResourceAuthorized = (serverId, resourceName) => {
+  const tokenRecord = getCurrentMcpTokenRecord();
+  return isResourceAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, resourceName);
+};
+const startupAuthError = hasProvidedMcpToken && !isMcpAuthorizedGlobally()
+  ? 'Unauthorized user: MCP token is invalid, revoked, expired, or not valid for this workspace.'
+  : null;
 
-function getMcpTokenRecord() {
-  if (mcpAuthMode === 'NONE') return null;
-  if (!mcpTokenHash || typeof dataStore.getMcpTokenByHash !== 'function') return null;
-  try {
-    const row = dataStore.getMcpTokenByHash(mcpTokenHash);
-    if (!row) return null;
-    return {
-      id: row.id,
-      tokenName: String(row.tokenName || row.token_name || ''),
-      workspaceId: String(row.workspaceId || row.workspace_id || ''),
-      subjectUsername: String(row.subjectUsername || row.subject_username || ''),
-      allowAllServers: row.allowAllServers === true || Number(row.allow_all_servers) === 1,
-      allowAllTools: row.allowAllTools === true || Number(row.allow_all_tools) === 1,
-      allowAllResources: row.allowAllResources === true || Number(row.allow_all_resources) === 1,
-      serverIds: normalizeStringArray(row.serverIds || row.server_ids_json),
-      allowedTools: normalizeStringArray(row.allowedTools || row.allowed_tools_json),
-      allowedResources: normalizeStringArray(row.allowedResources || row.allowed_resources_json),
-      neverExpires: row.neverExpires === true || Number(row.never_expires) === 1,
-      expiresAt: row.expiresAt ? String(row.expiresAt) : (row.expires_at ? String(row.expires_at) : null),
-      revokedAt: row.revokedAt ? String(row.revokedAt) : (row.revoked_at ? String(row.revoked_at) : null)
-    };
-  } catch {
-    return null;
-  }
-}
-
-const mcpTokenRecord = getMcpTokenRecord();
-
-function isMcpAuthorizedGlobally() {
-  if (mcpAuthMode === 'NONE') return true;
-  if (!mcpIdentity || !mcpTokenRecord) return false;
-  if (mcpTokenRecord.revokedAt) return false;
-  if (mcpTokenRecord.id && mcpIdentity.tokenId && mcpTokenRecord.id !== mcpIdentity.tokenId) return false;
-  if (mcpTokenRecord.subjectUsername !== mcpIdentity.username) return false;
-  if (mcpTokenRecord.workspaceId !== mcpIdentity.workspace) return false;
-  if (!mcpTokenRecord.neverExpires && mcpTokenRecord.expiresAt) {
-    const expiresMs = Date.parse(mcpTokenRecord.expiresAt);
-    if (Number.isFinite(expiresMs) && expiresMs <= Date.now()) return false;
-  }
-  return true;
-}
-
-function parseServerOwner(serverId) {
-  const idx = String(serverId || '').indexOf('__');
-  if (idx <= 0) return '';
-  return String(serverId).slice(0, idx);
-}
-
-function isServerOwnedByCurrentIdentity(serverId) {
-  if (mcpAuthMode === 'NONE') return true;
-  if (!mcpIdentity || !mcpTokenRecord) return false;
-  const owner = parseServerOwner(serverId);
-  return owner === mcpIdentity.workspace || owner === mcpIdentity.username;
-}
-
-function getServerRequireMcpToken(serverId) {
-  if (mcpAuthMode === 'NONE') return false;
-  if (typeof dataStore.getServerAuthConfig !== 'function') return true;
-  try {
-    const cfg = dataStore.getServerAuthConfig(serverId);
-    if (!cfg) return true;
-    return cfg.requireMcpToken !== false;
-  } catch {
-    return true;
-  }
-}
-
-function isServerAuthorized(serverId) {
-  if (mcpAuthMode === 'NONE') return true;
-  if (!isMcpAuthorizedGlobally()) return false;
-  if (!isServerOwnedByCurrentIdentity(serverId)) return false;
-  if (mcpTokenRecord && !mcpTokenRecord.allowAllServers) {
-    if (!mcpTokenRecord.serverIds.includes(serverId)) return false;
-  }
-  const requireToken = getServerRequireMcpToken(serverId);
-  if (requireToken && !mcpIdentity) return false;
-  return true;
-}
-
-function isToolAuthorized(serverId, toolName) {
-  if (!isServerAuthorized(serverId)) return false;
-  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
-    if (!mcpTokenRecord.allowAllTools) {
-      const full = `${serverId}__${toolName}`;
-      return mcpTokenRecord.allowedTools.includes(full);
-    }
-    const full = `${serverId}__${toolName}`;
-    return true;
-  }
-  return true;
-}
-
-function isResourceAuthorized(serverId, resourceName) {
-  if (!isServerAuthorized(serverId)) return false;
-  if (mcpAuthMode !== 'NONE' && mcpTokenRecord) {
-    if (!mcpTokenRecord.allowAllResources) {
-      const full = `${serverId}__${resourceName}`;
-      return mcpTokenRecord.allowedResources.includes(full);
-    }
-    const full = `${serverId}__${resourceName}`;
-    return true;
-  }
-  return true;
+console.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
+console.error(`[QuickMCP] MCP token present: ${mcpIdentity ? 'yes' : 'no'}`);
+if (startupAuthError) {
+  console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
 }
 
 function resolveToolByFullName(fullName) {
@@ -346,6 +291,22 @@ async function handleMessage(message) {
 
   let response;
 
+  if (startupAuthError && message.method !== 'initialize' && message.method !== 'notifications/initialized') {
+    response = {
+      jsonrpc: '2.0',
+      id: message.id,
+      error: {
+        code: -32001,
+        message: startupAuthError
+      }
+    };
+    if (response) {
+      console.error(`[QuickMCP] Sending: error`);
+      sendMessage(response);
+    }
+    return;
+  }
+
   switch (message.method) {
     case 'initialize':
       response = {
@@ -365,15 +326,6 @@ async function handleMessage(message) {
 
     case 'tools/list':
       try {
-        if (!isMcpAuthorizedGlobally()) {
-          response = {
-            jsonrpc: '2.0',
-            id: message.id,
-            result: { tools: [] }
-          };
-          break;
-        }
-
         const tools = dataStore.getAllTools();
         const authorizedTools = tools.filter((tool) => isToolAuthorized(tool.server_id, tool.name));
         console.error(`[QuickMCP] Got ${tools.length} tools from datasource, authorized=${authorizedTools.length}`);
@@ -401,15 +353,6 @@ async function handleMessage(message) {
 
     case 'resources/list':
       try {
-        if (!isMcpAuthorizedGlobally()) {
-          response = {
-            jsonrpc: '2.0',
-            id: message.id,
-            result: { resources: [] }
-          };
-          break;
-        }
-
         const resources = dataStore.getAllResources();
         const authorizedResources = resources.filter((resource) => isResourceAuthorized(resource.server_id, resource.name));
         const formattedResources = authorizedResources.map(resource => ({
@@ -546,22 +489,11 @@ async function handleMessage(message) {
       break;
 
     case 'resources/read':
-      if (!isMcpAuthorizedGlobally()) {
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          error: {
-            code: -32001,
-            message: 'Unauthorized MCP access. Set QUICKMCP_TOKEN.'
-          }
-        };
-      } else {
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          error: { code: -32601, message: 'Method not found: resources/read' }
-        };
-      }
+      response = {
+        jsonrpc: '2.0',
+        id: message.id,
+        error: { code: -32601, message: 'Method not found: resources/read' }
+      };
       break;
 
     case 'notifications/initialized':

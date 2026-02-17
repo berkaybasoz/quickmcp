@@ -1,4 +1,4 @@
-import { IDataStore, RefreshTokenRecord, ResourceDefinition, ServerConfig, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord } from './datastore';
+import { IDataStore, RefreshTokenRecord, ResourceDefinition, ServerConfig, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope } from './datastore';
 
 export class JdbcDataStore implements IDataStore {
   constructor() {
@@ -35,6 +35,9 @@ export class JdbcDataStore implements IDataStore {
   updateUserRole(_username: string, _workspaceId: string, _role: UserRole): void { throw new Error('Not implemented'); }
   getServerAuthConfig(_serverId: string): ServerAuthConfig | null { throw new Error('Not implemented'); }
   setServerAuthConfig(_serverId: string, _requireMcpToken: boolean): void { throw new Error('Not implemented'); }
+  getMcpTokenPolicy(_scopeType: McpTokenPolicyScope, _scopeId: string): McpTokenPolicyRecord | null { throw new Error('Not implemented'); }
+  listMcpTokenPolicies(_scopeType?: McpTokenPolicyScope): McpTokenPolicyRecord[] { throw new Error('Not implemented'); }
+  setMcpTokenPolicy(_scopeType: McpTokenPolicyScope, _scopeId: string, _requireMcpToken: boolean | null): void { throw new Error('Not implemented'); }
   createMcpToken(_input: McpTokenCreateInput): void { throw new Error('Not implemented'); }
   getMcpTokenByHash(_tokenHash: string): McpTokenRecord | null { throw new Error('Not implemented'); }
   getMcpTokenById(_id: string): McpTokenRecord | null { throw new Error('Not implemented'); }

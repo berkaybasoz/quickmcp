@@ -38,100 +38,107 @@
           <p id="authSummary" class="text-sm text-slate-600 mt-2"></p>
         </section>
 
-        <section class="card p-6 space-y-5">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-slate-900">Generate Token</h3>
-            <button id="generateTokenBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Generate Token</button>
+        <section class="card p-0 overflow-hidden">
+          <div class="border-b border-slate-200 bg-slate-50/80">
+            <div class="px-5 pt-4">
+              <nav class="flex items-end gap-1" aria-label="Authorization tabs">
+                <button id="tabToken" class="px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px">Token</button>
+                <button id="tabPolicy" class="px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70">Policy</button>
+              </nav>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm text-slate-700 mb-1">Token Name</label>
+          <div id="tokenTabPanel" class="p-5 space-y-6">
+          <section class="card p-6 space-y-5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-slate-900">Generate Token</h3>
+              <button id="generateTokenBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Generate Token</button>
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-700 mb-1">Token Name</label>
+              <div class="relative">
+                <i class="fas fa-tag absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input id="tokenName" class="input w-full pl-9" placeholder="e.g. Claude Desktop, Cursor, Windsurf" maxlength="120" required>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-slate-700 mb-1">User</label>
+                <div class="relative">
+                  <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                  <select id="subjectUserSelect" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm"></select>
+                  <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-700 mb-1">Token Expiration</label>
+                <div class="relative">
+                  <i class="fas fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                  <select id="tokenTtlPreset" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm">
+                    <option value="never" selected>Never expires</option>
+                    <option value="1m">1 minute</option>
+                    <option value="5m">5 minutes</option>
+                    <option value="15m">15 minutes</option>
+                    <option value="30m">30 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="4h">4 hours</option>
+                    <option value="12h">12 hours</option>
+                    <option value="24h">24 hours</option>
+                    <option value="1w">1 week</option>
+                    <option value="2w">2 weeks</option>
+                    <option value="1mo">1 month</option>
+                    <option value="3mo">3 months</option>
+                    <option value="6mo">6 months</option>
+                  </select>
+                  <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                </div>
+              </div>
+            </div>
+
+            <div id="treeSection">
+              <h4 class="font-medium text-slate-900 mb-2">MCP Access Tree</h4>
+              <p class="text-xs text-slate-500 mb-2">Use 3-state policy for each item: Inherit, Allow, Deny.</p>
+              <div id="mcpTree" class="max-h-[28rem] overflow-auto border border-slate-200 rounded-lg p-3 space-y-3 bg-white"></div>
+            </div>
+
             <div class="relative">
-              <i class="fas fa-tag absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-              <input id="tokenName" class="input w-full pl-9" placeholder="e.g. Claude Desktop, Cursor, Windsurf" maxlength="120" required>
+              <textarea id="generatedToken" rows="4" class="input w-full font-mono text-xs resize-none pr-10" placeholder="Generated token will appear here." readonly></textarea>
+              <button
+                id="copyTokenBtn"
+                type="button"
+                class="absolute right-2 top-2 h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Copy token"
+                aria-label="Copy token"
+                disabled
+              >
+                <i class="fas fa-copy text-sm"></i>
+              </button>
             </div>
-          </div>
+            <p id="tokenMeta" class="text-xs text-slate-500"></p>
+          </section>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm text-slate-700 mb-1">User</label>
-              <div class="relative">
-                <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <select id="subjectUserSelect" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm"></select>
-                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-              </div>
+          <section class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">Existing Tokens</h3>
+              <button id="refreshTokensBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 text-sm">Refresh</button>
             </div>
-            <div>
-              <label class="block text-sm text-slate-700 mb-1">Token Expiration</label>
-              <div class="relative">
-                <i class="fas fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <select id="tokenTtlPreset" class="input w-full pl-9 pr-9 appearance-none bg-white border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-sm">
-                  <option value="never" selected>Never expires</option>
-                  <option value="1m">1 minute</option>
-                  <option value="5m">5 minutes</option>
-                  <option value="15m">15 minutes</option>
-                  <option value="30m">30 minutes</option>
-                  <option value="1h">1 hour</option>
-                  <option value="4h">4 hours</option>
-                  <option value="12h">12 hours</option>
-                  <option value="24h">24 hours</option>
-                  <option value="1w">1 week</option>
-                  <option value="2w">2 weeks</option>
-                  <option value="1mo">1 month</option>
-                  <option value="3mo">3 months</option>
-                  <option value="6mo">6 months</option>
-                </select>
-                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-              </div>
+            <div id="tokenTableWrap" class="overflow-x-auto"></div>
+          </section>
+          </div>
+
+          <div id="policyTabPanel" class="p-5 space-y-6 hidden">
+            <section class="card p-6 space-y-5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-slate-900">Token Requirement Policy</h3>
+              <button id="saveTokenPolicyBtn" class="bg-slate-800 hover:bg-slate-900 text-white rounded-lg px-4 py-2 text-sm font-medium">Save Policy</button>
             </div>
+            <p class="text-xs text-slate-500">Configure where token is required: Application, User, MCP Server, and Tool level.</p>
+            <div id="tokenPolicyTree" class="max-h-[28rem] overflow-auto border border-slate-200 rounded-lg p-3 space-y-3 bg-white"></div>
+            </section>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input id="allowAllServers" type="checkbox" class="h-4 w-4 rounded border-slate-300">
-              All MCP servers
-            </label>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input id="allTools" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
-              Enable all tools
-            </label>
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input id="allResources" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
-              Enable all resources
-            </label>
-          </div>
-
-          <div id="treeSection" class="hidden">
-            <h4 class="font-medium text-slate-900 mb-2">MCP Access Tree</h4>
-            <p class="text-xs text-slate-500 mb-2">Select enabled servers/tools/resources to include in this token.</p>
-            <div id="mcpTree" class="max-h-[28rem] overflow-auto border border-slate-200 rounded-lg p-3 space-y-3 bg-white"></div>
-          </div>
-
-          <div class="relative">
-            <textarea id="generatedToken" rows="4" class="input w-full font-mono text-xs resize-none pr-10" placeholder="Generated token will appear here." readonly></textarea>
-            <button
-              id="copyTokenBtn"
-              type="button"
-              class="absolute right-2 top-2 h-8 w-8 rounded-md border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Copy token"
-              aria-label="Copy token"
-              disabled
-            >
-              <i class="fas fa-copy text-sm"></i>
-            </button>
-          </div>
-          <p id="tokenMeta" class="text-xs text-slate-500"></p>
-        </section>
-
-        <section class="card p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-slate-900">Existing Tokens</h3>
-            <button id="refreshTokensBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 text-sm">Refresh</button>
-          </div>
-          <div id="tokenTableWrap" class="overflow-x-auto"></div>
+        </div>
         </section>
       </div>
     </main>
@@ -141,21 +148,66 @@
   <script src="sidebar.js"></script>
   <script>
     let authContext = { users: [], servers: [] };
+    let tokenPolicyState = {
+      globalRequireMcpToken: true,
+      userRules: {},
+      serverRules: {},
+      toolRules: {}
+    };
 
     function byId(id) { return document.getElementById(id); }
+    function setAuthorizationTab(tab) {
+      const isToken = tab === 'token';
+      byId('tokenTabPanel').classList.toggle('hidden', !isToken);
+      byId('policyTabPanel').classList.toggle('hidden', isToken);
+
+      byId('tabToken').className = isToken
+        ? 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px'
+        : 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+      byId('tabPolicy').className = !isToken
+        ? 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px'
+        : 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+    }
+
     function refreshCopyButtonState() {
       const btn = byId('copyTokenBtn');
       const token = byId('generatedToken').value.trim();
       btn.disabled = token.length === 0;
     }
 
-    function getSelectedServerIds() {
-      if (byId('allowAllServers').checked) return [];
-      return Array.from(document.querySelectorAll('input[data-server-enabled]:checked')).map((el) => el.getAttribute('data-server-enabled'));
+    function normalizeTriStateValue(value) {
+      if (value === 'allow') return true;
+      if (value === 'deny') return false;
+      return null;
     }
 
-    function getAllowedItemIds(selector) {
-      return Array.from(document.querySelectorAll(selector)).map((el) => el.getAttribute('data-item-id'));
+    function collectTriStateRules(selector, attrName) {
+      const out = {};
+      document.querySelectorAll(selector).forEach((el) => {
+        const id = el.getAttribute(attrName);
+        if (!id) return;
+        out[id] = normalizeTriStateValue(el.value);
+      });
+      return out;
+    }
+
+    function triFromValue(value) {
+      if (value === 'allow') return true;
+      if (value === 'deny') return false;
+      return null;
+    }
+
+    function resolveTriValue(...values) {
+      for (const value of values) {
+        if (value === true || value === false) return value;
+      }
+      return null;
+    }
+
+    function serverOwnerFromId(serverId) {
+      const idx = String(serverId || '').indexOf('__');
+      if (idx <= 0) return '';
+      return String(serverId).slice(0, idx);
     }
 
     function renderUsers() {
@@ -168,65 +220,96 @@
       }
     }
 
-    function shouldShowTree() {
-      return !byId('allowAllServers').checked || !byId('allTools').checked || !byId('allResources').checked;
-    }
-
     function renderTree() {
-      const section = byId('treeSection');
       const root = byId('mcpTree');
-      if (!shouldShowTree()) {
-        section.classList.add('hidden');
-        root.innerHTML = '';
-        return;
-      }
-
-      section.classList.remove('hidden');
-      const selectedUser = byId('subjectUserSelect').value || '';
+      const selectedSubjectUser = byId('subjectUserSelect').value || '';
+      const users = authContext.users || [];
       const servers = authContext.servers || [];
-      const allServers = byId('allowAllServers').checked;
-      const allTools = byId('allTools').checked;
-      const allResources = byId('allResources').checked;
+      const grouped = users.map((u) => ({
+        username: u.username,
+        role: u.role,
+        servers: servers.filter((s) => serverOwnerFromId(s.id) === u.username)
+      }));
+      const matchedCount = grouped.reduce((acc, item) => acc + (item.servers || []).length, 0);
+      if (matchedCount === 0 && selectedSubjectUser) {
+        const idx = grouped.findIndex((g) => g.username === selectedSubjectUser);
+        if (idx >= 0) grouped[idx].servers = servers;
+      }
 
       root.innerHTML = `
         <div class="border border-slate-200 rounded-lg bg-slate-50/50">
           <div class="px-3 py-2 border-b border-slate-200 text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <i class="fas fa-user text-slate-500"></i>
-            <span>${selectedUser || 'user'}</span>
+            <select id="rootMcpRule" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white">
+              <option value="inherit" selected>Inherit</option>
+              <option value="allow">Allow</option>
+              <option value="deny">Deny</option>
+            </select>
+            <span class="flex items-center gap-2">
+              <i class="fas fa-sitemap text-slate-500"></i>
+              <span>MCP Servers</span>
+            </span>
           </div>
           <div class="p-2 space-y-2">
-            ${servers.map((s) => `
-              <details class="border border-slate-200 rounded-md bg-white">
+            ${grouped.map((g) => `
+              <details class="border border-slate-200 rounded-md bg-white" open>
                 <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800 flex items-center gap-2">
-                  <input type="checkbox" data-server-enabled="${s.id}" class="h-4 w-4 rounded border-slate-300 mr-1" ${allServers ? 'checked disabled' : 'checked'}>
-                  <span>${s.name}</span>
-                  <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                  <select data-user-rule="${g.username}" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white">
+                    <option value="inherit" selected>Inherit</option>
+                    <option value="allow">Allow</option>
+                    <option value="deny">Deny</option>
+                  </select>
+                  <span class="flex items-center gap-2">
+                    <i class="fas fa-user text-slate-500"></i>
+                    <span>${g.username}</span>
+                    <span class="text-[11px] text-slate-500">(${g.role})</span>
+                  </span>
                 </summary>
-                <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <div class="text-xs font-semibold text-slate-600 mb-2">Tools</div>
-                    <div class="space-y-1 max-h-40 overflow-auto">
-                      ${(s.tools || []).map((id) => `
-                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full">
-                          <input type="checkbox" data-item-id="${id}" data-kind="tool" class="h-3.5 w-3.5 rounded border-slate-300"
-                            ${allTools ? 'checked disabled' : 'checked'}>
-                          <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
-                        </label>
-                      `).join('') || '<p class="text-xs text-slate-400">No tools</p>'}
-                    </div>
-                  </div>
-                  <div>
-                    <div class="text-xs font-semibold text-slate-600 mb-2">Resources</div>
-                    <div class="space-y-1 max-h-40 overflow-auto">
-                      ${(s.resources || []).map((id) => `
-                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full">
-                          <input type="checkbox" data-item-id="${id}" data-kind="resource" class="h-3.5 w-3.5 rounded border-slate-300"
-                            ${allResources ? 'checked disabled' : 'checked'}>
-                          <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
-                        </label>
-                      `).join('') || '<p class="text-xs text-slate-400">No resources</p>'}
-                    </div>
-                  </div>
+                <div class="px-3 pb-3 space-y-2">
+                  ${(g.servers || []).map((s) => `
+                    <details class="border border-slate-200 rounded-md bg-slate-50/50">
+                      <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800 flex items-center gap-2">
+                        <select data-server-rule="${s.id}" data-owner="${g.username}" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white mr-1">
+                          <option value="inherit" selected>Inherit</option>
+                          <option value="allow">Allow</option>
+                          <option value="deny">Deny</option>
+                        </select>
+                        <span>${s.name}</span>
+                        <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                      </summary>
+                      <div class="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <div class="text-xs font-semibold text-slate-600 mb-2">Tools</div>
+                          <div class="space-y-1 max-h-40 overflow-auto">
+                            ${(s.tools || []).map((id) => `
+                              <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full justify-between">
+                                <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
+                                <select data-tool-rule="${id}" data-server-id="${s.id}" class="h-6 text-[11px] border border-slate-300 rounded px-1 bg-white">
+                                  <option value="inherit" selected>Inherit</option>
+                                  <option value="allow">Allow</option>
+                                  <option value="deny">Deny</option>
+                                </select>
+                              </label>
+                            `).join('') || '<p class="text-xs text-slate-400">No tools</p>'}
+                          </div>
+                        </div>
+                        <div>
+                          <div class="text-xs font-semibold text-slate-600 mb-2">Resources</div>
+                          <div class="space-y-1 max-h-40 overflow-auto">
+                            ${(s.resources || []).map((id) => `
+                              <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full justify-between">
+                                <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
+                                <select data-resource-rule="${id}" data-server-id="${s.id}" class="h-6 text-[11px] border border-slate-300 rounded px-1 bg-white">
+                                  <option value="inherit" selected>Inherit</option>
+                                  <option value="allow">Allow</option>
+                                  <option value="deny">Deny</option>
+                                </select>
+                              </label>
+                            `).join('') || '<p class="text-xs text-slate-400">No resources</p>'}
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  `).join('') || '<p class="text-xs text-slate-400 px-1 py-2">No servers for this user</p>'}
                 </div>
               </details>
             `).join('')}
@@ -234,19 +317,244 @@
         </div>
       `;
 
-      root.querySelectorAll('input[data-server-enabled]').forEach((el) => {
+      root.querySelectorAll('select[data-user-rule]').forEach((el) => {
         el.addEventListener('change', (event) => {
-          const serverId = event.target.getAttribute('data-server-enabled');
-          const checked = !!event.target.checked;
-          root.querySelectorAll(`input[data-item-id^="${serverId}__"]`).forEach((item) => {
-            if (!item.disabled) item.checked = checked;
+          const username = event.target.getAttribute('data-user-rule');
+          const value = event.target.value;
+          root.querySelectorAll(`select[data-server-rule][data-owner="${username}"]`).forEach((item) => {
+            if (item.value === 'inherit') item.value = value;
+          });
+        });
+      });
+
+      root.querySelectorAll('select[data-server-rule]').forEach((el) => {
+        el.addEventListener('change', (event) => {
+          const serverId = event.target.getAttribute('data-server-rule');
+          const value = event.target.value;
+          root.querySelectorAll(`select[data-tool-rule][data-server-id="${serverId}"], select[data-resource-rule][data-server-id="${serverId}"]`).forEach((item) => {
+            if (item.value === 'inherit') item.value = value;
+          });
+        });
+      });
+
+      const rootRule = byId('rootMcpRule');
+      if (rootRule) {
+        rootRule.addEventListener('change', (event) => {
+          const value = event.target.value;
+          root.querySelectorAll('select[data-user-rule], select[data-server-rule], select[data-tool-rule], select[data-resource-rule]').forEach((item) => {
+            if (item.value === 'inherit') item.value = value;
+          });
+        });
+      }
+    }
+
+    function computeEffectiveRules() {
+      const tree = byId('mcpTree');
+      const rootRule = triFromValue(byId('rootMcpRule')?.value || 'inherit');
+      const userRuleMap = {};
+
+      tree.querySelectorAll('select[data-user-rule]').forEach((el) => {
+        const username = el.getAttribute('data-user-rule');
+        if (!username) return;
+        userRuleMap[username] = triFromValue(el.value);
+      });
+
+      const serverRules = {};
+      tree.querySelectorAll('select[data-server-rule]').forEach((el) => {
+        const serverId = el.getAttribute('data-server-rule');
+        if (!serverId) return;
+        const owner = el.getAttribute('data-owner') || serverOwnerFromId(serverId);
+        const local = triFromValue(el.value);
+        serverRules[serverId] = resolveTriValue(local, userRuleMap[owner], rootRule);
+      });
+
+      const toolRules = {};
+      tree.querySelectorAll('select[data-tool-rule]').forEach((el) => {
+        const id = el.getAttribute('data-tool-rule');
+        if (!id) return;
+        const serverId = el.getAttribute('data-server-id') || '';
+        const owner = serverOwnerFromId(serverId);
+        const local = triFromValue(el.value);
+        toolRules[id] = resolveTriValue(local, serverRules[serverId], userRuleMap[owner], rootRule);
+      });
+
+      const resourceRules = {};
+      tree.querySelectorAll('select[data-resource-rule]').forEach((el) => {
+        const id = el.getAttribute('data-resource-rule');
+        if (!id) return;
+        const serverId = el.getAttribute('data-server-id') || '';
+        const owner = serverOwnerFromId(serverId);
+        const local = triFromValue(el.value);
+        resourceRules[id] = resolveTriValue(local, serverRules[serverId], userRuleMap[owner], rootRule);
+      });
+
+      return { serverRules, toolRules, resourceRules };
+    }
+
+    function renderServers() {
+      renderTree();
+    }
+
+    function policyValueToSelect(value) {
+      if (value === true) return 'require';
+      if (value === false) return 'no-token';
+      return 'inherit';
+    }
+
+    function selectToPolicyValue(value) {
+      if (value === 'require') return true;
+      if (value === 'no-token') return false;
+      return null;
+    }
+
+    function renderTokenPolicyTree() {
+      const root = byId('tokenPolicyTree');
+      const users = authContext.users || [];
+      const servers = authContext.servers || [];
+      const grouped = users.map((u) => ({
+        username: u.username,
+        role: u.role,
+        servers: servers.filter((s) => serverOwnerFromId(s.id) === u.username)
+      }));
+
+      root.innerHTML = `
+        <div class="border border-slate-200 rounded-lg bg-slate-50/50">
+          <div class="px-3 py-2 border-b border-slate-200 text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <select id="policyRootRule" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white">
+              <option value="require" ${tokenPolicyState.globalRequireMcpToken ? 'selected' : ''}>Require Token</option>
+              <option value="no-token" ${tokenPolicyState.globalRequireMcpToken ? '' : 'selected'}>No Token</option>
+            </select>
+            <span class="flex items-center gap-2">
+              <i class="fas fa-globe text-slate-500"></i>
+              <span>Application (All MCP)</span>
+            </span>
+          </div>
+          <div class="p-2 space-y-2">
+            ${grouped.map((g) => `
+              <details class="border border-slate-200 rounded-md bg-white" open>
+                <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800 flex items-center gap-2">
+                  <select data-policy-user="${g.username}" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white">
+                    <option value="inherit" ${policyValueToSelect(tokenPolicyState.userRules[g.username]) === 'inherit' ? 'selected' : ''}>Inherit</option>
+                    <option value="require" ${policyValueToSelect(tokenPolicyState.userRules[g.username]) === 'require' ? 'selected' : ''}>Require Token</option>
+                    <option value="no-token" ${policyValueToSelect(tokenPolicyState.userRules[g.username]) === 'no-token' ? 'selected' : ''}>No Token</option>
+                  </select>
+                  <span class="flex items-center gap-2">
+                    <i class="fas fa-user text-slate-500"></i>
+                    <span>${g.username}</span>
+                    <span class="text-[11px] text-slate-500">(${g.role})</span>
+                  </span>
+                </summary>
+                <div class="px-3 pb-3 space-y-2">
+                  ${(g.servers || []).map((s) => `
+                    <details class="border border-slate-200 rounded-md bg-slate-50/50">
+                      <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-slate-800 flex items-center gap-2">
+                        <select data-policy-server="${s.id}" data-owner="${g.username}" class="h-7 text-xs border border-slate-300 rounded px-1 bg-white mr-1">
+                          <option value="inherit" ${policyValueToSelect(tokenPolicyState.serverRules[s.id]) === 'inherit' ? 'selected' : ''}>Inherit</option>
+                          <option value="require" ${policyValueToSelect(tokenPolicyState.serverRules[s.id]) === 'require' ? 'selected' : ''}>Require Token</option>
+                          <option value="no-token" ${policyValueToSelect(tokenPolicyState.serverRules[s.id]) === 'no-token' ? 'selected' : ''}>No Token</option>
+                        </select>
+                        <span>${s.name}</span>
+                        <span class="text-xs text-slate-500 font-mono">${s.id}</span>
+                      </summary>
+                      <div class="px-3 pb-3">
+                        <div class="text-xs font-semibold text-slate-600 mb-2">Tools</div>
+                        <div class="space-y-1 max-h-40 overflow-auto">
+                          ${(s.tools || []).map((id) => `
+                            <label class="inline-flex items-center gap-2 text-xs text-slate-700 w-full justify-between">
+                              <span class="font-mono truncate">${id.split('__').slice(-1)[0]}</span>
+                              <select data-policy-tool="${id}" data-server-id="${s.id}" class="h-6 text-[11px] border border-slate-300 rounded px-1 bg-white">
+                                <option value="inherit" ${policyValueToSelect(tokenPolicyState.toolRules[id]) === 'inherit' ? 'selected' : ''}>Inherit</option>
+                                <option value="require" ${policyValueToSelect(tokenPolicyState.toolRules[id]) === 'require' ? 'selected' : ''}>Require Token</option>
+                                <option value="no-token" ${policyValueToSelect(tokenPolicyState.toolRules[id]) === 'no-token' ? 'selected' : ''}>No Token</option>
+                              </select>
+                            </label>
+                          `).join('') || '<p class="text-xs text-slate-400">No tools</p>'}
+                        </div>
+                      </div>
+                    </details>
+                  `).join('') || '<p class="text-xs text-slate-400 px-1 py-2">No servers for this user</p>'}
+                </div>
+              </details>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      root.querySelectorAll('select[data-policy-user]').forEach((el) => {
+        el.addEventListener('change', (event) => {
+          const username = event.target.getAttribute('data-policy-user');
+          const value = event.target.value;
+          root.querySelectorAll(`select[data-policy-server][data-owner="${username}"]`).forEach((item) => {
+            if (item.value === 'inherit') item.value = value;
+          });
+        });
+      });
+
+      root.querySelectorAll('select[data-policy-server]').forEach((el) => {
+        el.addEventListener('change', (event) => {
+          const serverId = event.target.getAttribute('data-policy-server');
+          const value = event.target.value;
+          root.querySelectorAll(`select[data-policy-tool][data-server-id="${serverId}"]`).forEach((item) => {
+            if (item.value === 'inherit') item.value = value;
           });
         });
       });
     }
 
-    function renderServers() {
-      renderTree();
+    function collectTokenPolicyPayload() {
+      const userRules = {};
+      const serverRules = {};
+      const toolRules = {};
+      const globalRequireMcpToken = byId('policyRootRule')?.value !== 'no-token';
+
+      byId('tokenPolicyTree').querySelectorAll('select[data-policy-user]').forEach((el) => {
+        const id = el.getAttribute('data-policy-user');
+        if (!id) return;
+        userRules[id] = selectToPolicyValue(el.value);
+      });
+      byId('tokenPolicyTree').querySelectorAll('select[data-policy-server]').forEach((el) => {
+        const id = el.getAttribute('data-policy-server');
+        if (!id) return;
+        serverRules[id] = selectToPolicyValue(el.value);
+      });
+      byId('tokenPolicyTree').querySelectorAll('select[data-policy-tool]').forEach((el) => {
+        const id = el.getAttribute('data-policy-tool');
+        if (!id) return;
+        toolRules[id] = selectToPolicyValue(el.value);
+      });
+
+      return { globalRequireMcpToken, userRules, serverRules, toolRules };
+    }
+
+    async function loadTokenPolicy() {
+      const res = await fetch('/api/authorization/token-policy');
+      if (!res.ok) throw new Error('Failed to load token policy');
+      const payload = await res.json();
+      tokenPolicyState = {
+        globalRequireMcpToken: payload?.data?.globalRequireMcpToken !== false,
+        userRules: payload?.data?.userRules || {},
+        serverRules: payload?.data?.serverRules || {},
+        toolRules: payload?.data?.toolRules || {}
+      };
+      renderTokenPolicyTree();
+    }
+
+    async function saveTokenPolicy() {
+      const body = collectTokenPolicyPayload();
+      const res = await fetch('/api/authorization/token-policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Failed to save token policy');
+      tokenPolicyState = {
+        globalRequireMcpToken: payload?.data?.globalRequireMcpToken !== false,
+        userRules: payload?.data?.userRules || {},
+        serverRules: payload?.data?.serverRules || {},
+        toolRules: payload?.data?.toolRules || {}
+      };
+      renderTokenPolicyTree();
     }
 
     async function loadConfig() {
@@ -357,12 +665,7 @@
         '6mo': 24 * 180
       };
       const ttlHours = neverExpires ? null : (presetToHours[ttlPreset] || 24 * 30);
-      const allowAllServers = byId('allowAllServers').checked;
-      const allTools = byId('allTools').checked;
-      const allResources = byId('allResources').checked;
-      const serverIds = getSelectedServerIds();
-      const allowedTools = allTools ? [] : getAllowedItemIds('#mcpTree input[data-kind="tool"]:checked[data-item-id]');
-      const allowedResources = allResources ? [] : getAllowedItemIds('#mcpTree input[data-kind="resource"]:checked[data-item-id]');
+      const { serverRules, toolRules, resourceRules } = computeEffectiveRules();
 
       const res = await fetch('/api/authorization/mcp-token', {
         method: 'POST',
@@ -372,12 +675,9 @@
           subjectUsername,
           neverExpires,
           ttlHours,
-          allowAllServers,
-          allowAllTools: allTools,
-          allowAllResources: allResources,
-          serverIds,
-          allowedTools,
-          allowedResources
+          serverRules,
+          toolRules,
+          resourceRules
         })
       });
       const payload = await res.json().catch(() => ({}));
@@ -397,9 +697,13 @@
     byId('refreshTokensBtn').addEventListener('click', () => {
       loadTokens().catch((error) => window.utils?.showToast?.(error.message || 'Failed to load tokens', 'error'));
     });
-    byId('allowAllServers').addEventListener('change', renderTree);
-    byId('allTools').addEventListener('change', renderTree);
-    byId('allResources').addEventListener('change', renderTree);
+    byId('saveTokenPolicyBtn').addEventListener('click', () => {
+      saveTokenPolicy()
+        .then(() => window.utils?.showToast?.('Token policy saved', 'success'))
+        .catch((error) => window.utils?.showToast?.(error.message || 'Failed to save token policy', 'error'));
+    });
+    byId('tabToken').addEventListener('click', () => setAuthorizationTab('token'));
+    byId('tabPolicy').addEventListener('click', () => setAuthorizationTab('policy'));
     byId('subjectUserSelect').addEventListener('change', renderTree);
     byId('copyTokenBtn').addEventListener('click', async () => {
       const token = byId('generatedToken').value.trim();
@@ -414,8 +718,10 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       try {
+        setAuthorizationTab('token');
         await loadConfig();
         await loadContext();
+        await loadTokenPolicy();
         await loadTokens();
         refreshCopyButtonState();
       } catch (error) {

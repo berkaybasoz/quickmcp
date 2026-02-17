@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-utils';
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
-import { IDataStore } from '../../database/datastore';
+import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
 import { createAccessToken, createRefreshToken, hashRefreshToken } from '../../auth/token-utils';
 
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -33,6 +33,51 @@ interface AuthApiDeps {
 export class AuthApi {
   constructor(private readonly deps: AuthApiDeps) {}
 
+  private normalizeTriStateRules(raw: any, workspaceId: string, prefix: string): Record<string, boolean | null> {
+    const input = raw && typeof raw === 'object' ? raw : {};
+    const out: Record<string, boolean | null> = {};
+    for (const [key, value] of Object.entries(input)) {
+      const id = String(key || '').trim();
+      if (!id || !id.startsWith(prefix === 'server' ? `${workspaceId}__` : `${workspaceId}__`)) continue;
+      if (value === true || value === 'allow' || value === 'true' || value === 1 || value === '1') out[id] = true;
+      else if (value === false || value === 'deny' || value === 'false' || value === -1 || value === '-1') out[id] = false;
+      else out[id] = null;
+    }
+    return out;
+  }
+
+  private normalizePolicyMap(
+    raw: any,
+    kind: 'user' | 'server' | 'tool',
+    workspaceId: string,
+    usersInWorkspace: Set<string>
+  ): Record<string, boolean | null> {
+    const input = raw && typeof raw === 'object' ? raw : {};
+    const out: Record<string, boolean | null> = {};
+    for (const [key, value] of Object.entries(input)) {
+      const id = String(key || '').trim();
+      if (!id) continue;
+
+      if (kind === 'user' && !usersInWorkspace.has(id)) continue;
+      if ((kind === 'server' || kind === 'tool') && !id.startsWith(`${workspaceId}__`)) continue;
+
+      if (value === true || value === 'allow' || value === 'true' || value === 1 || value === '1') out[id] = true;
+      else if (value === false || value === 'deny' || value === 'false' || value === 0 || value === '0') out[id] = false;
+      else out[id] = null;
+    }
+    return out;
+  }
+
+  private applyPolicyMap(
+    store: IDataStore,
+    scopeType: McpTokenPolicyScope,
+    map: Record<string, boolean | null>
+  ): void {
+    for (const [id, decision] of Object.entries(map)) {
+      store.setMcpTokenPolicy(scopeType, id, decision);
+    }
+  }
+
   registerRoutes(app: express.Express): void {
     app.get('/api/auth/me', this.getMe);
     app.get('/api/auth/roles', this.getRoles);
@@ -40,6 +85,8 @@ export class AuthApi {
 
     app.get('/api/authorization/config', this.getAuthorizationConfig);
     app.get('/api/authorization/context', this.getAuthorizationContext);
+    app.get('/api/authorization/token-policy', this.getAuthorizationTokenPolicy);
+    app.post('/api/authorization/token-policy', this.updateAuthorizationTokenPolicy);
     app.get('/api/authorization/servers', this.getAuthorizationServers);
     app.post('/api/authorization/servers/:id', this.updateAuthorizationServer);
     app.post('/api/authorization/mcp-token', this.createAuthorizationMcpToken);
@@ -173,6 +220,86 @@ export class AuthApi {
     }
   };
 
+  private getAuthorizationTokenPolicy = (req: AuthenticatedRequest, res: express.Response): void => {
+    const actor = this.deps.requireAdminApi(req, res);
+    if (!actor) return;
+
+    try {
+      const store = this.deps.ensureDataStore();
+      const users = store.getAllUsersByWorkspace(actor.workspaceId).map((u) => u.username);
+      const servers = store.getAllServersByOwner(actor.workspaceId).map((s) => s.id);
+      const tools = servers.flatMap((serverId) => store.getToolsForServer(serverId).map((t) => `${serverId}__${t.name}`));
+
+      const globalPolicy = store.getMcpTokenPolicy('global', '*');
+      const userPolicies = store.listMcpTokenPolicies('user');
+      const serverPolicies = store.listMcpTokenPolicies('server');
+      const toolPolicies = store.listMcpTokenPolicies('tool');
+
+      const userRules: Record<string, boolean | null> = {};
+      const serverRules: Record<string, boolean | null> = {};
+      const toolRules: Record<string, boolean | null> = {};
+
+      for (const username of users) userRules[username] = null;
+      for (const id of servers) serverRules[id] = null;
+      for (const id of tools) toolRules[id] = null;
+
+      userPolicies
+        .filter((p) => users.includes(p.scopeId))
+        .forEach((p) => { userRules[p.scopeId] = p.requireMcpToken; });
+      serverPolicies
+        .filter((p) => p.scopeId.startsWith(`${actor.workspaceId}__`))
+        .forEach((p) => { serverRules[p.scopeId] = p.requireMcpToken; });
+      toolPolicies
+        .filter((p) => p.scopeId.startsWith(`${actor.workspaceId}__`))
+        .forEach((p) => { toolRules[p.scopeId] = p.requireMcpToken; });
+
+      res.json({
+        success: true,
+        data: {
+          globalRequireMcpToken: globalPolicy ? globalPolicy.requireMcpToken : true,
+          userRules,
+          serverRules,
+          toolRules
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to load token policy' });
+    }
+  };
+
+  private updateAuthorizationTokenPolicy = (req: AuthenticatedRequest, res: express.Response): void => {
+    const actor = this.deps.requireAdminApi(req, res);
+    if (!actor) return;
+
+    try {
+      const store = this.deps.ensureDataStore();
+      const users = store.getAllUsersByWorkspace(actor.workspaceId).map((u) => u.username);
+      const usersSet = new Set(users);
+
+      const globalRequireMcpToken = req.body?.globalRequireMcpToken !== false;
+      const userRules = this.normalizePolicyMap(req.body?.userRules, 'user', actor.workspaceId, usersSet);
+      const serverRules = this.normalizePolicyMap(req.body?.serverRules, 'server', actor.workspaceId, usersSet);
+      const toolRules = this.normalizePolicyMap(req.body?.toolRules, 'tool', actor.workspaceId, usersSet);
+
+      store.setMcpTokenPolicy('global', '*', globalRequireMcpToken);
+      this.applyPolicyMap(store, 'user', userRules);
+      this.applyPolicyMap(store, 'server', serverRules);
+      this.applyPolicyMap(store, 'tool', toolRules);
+
+      res.json({
+        success: true,
+        data: {
+          globalRequireMcpToken,
+          userRules,
+          serverRules,
+          toolRules
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to update token policy' });
+    }
+  };
+
   private updateAuthorizationServer = (req: AuthenticatedRequest, res: express.Response): void => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
@@ -228,21 +355,24 @@ export class AuthApi {
     const neverExpires = req.body?.neverExpires === true;
     const rawTtlHours = Number(req.body?.ttlHours);
     const ttlHours = neverExpires ? null : (Number.isFinite(rawTtlHours) && rawTtlHours > 0 ? Math.min(rawTtlHours, 24 * 3650) : 24 * 30);
-    const allowAllServers = req.body?.allowAllServers === true;
-    const allowAllTools = req.body?.allowAllTools !== false;
-    const allowAllResources = req.body?.allowAllResources !== false;
+    const serverRules = this.normalizeTriStateRules(req.body?.serverRules, ctx.workspaceId, 'server');
+    const toolRules = this.normalizeTriStateRules(req.body?.toolRules, ctx.workspaceId, 'tool');
+    const resourceRules = this.normalizeTriStateRules(req.body?.resourceRules, ctx.workspaceId, 'resource');
 
-    const serverIdsInput = Array.isArray(req.body?.serverIds) ? req.body.serverIds : [];
-    const serverIds = allowAllServers
-      ? []
-      : serverIdsInput.map((v: any) => String(v || '').trim()).filter((v: string) => v.length > 0 && v.startsWith(`${ctx.workspaceId}__`));
+    // Backward-compatible fields derived from tri-state maps.
+    const serverAllows = Object.entries(serverRules).filter(([, v]) => v === true).map(([k]) => k);
+    const serverDenies = Object.entries(serverRules).filter(([, v]) => v === false).map(([k]) => k);
+    const toolAllows = Object.entries(toolRules).filter(([, v]) => v === true).map(([k]) => k);
+    const toolDenies = Object.entries(toolRules).filter(([, v]) => v === false).map(([k]) => k);
+    const resourceAllows = Object.entries(resourceRules).filter(([, v]) => v === true).map(([k]) => k);
+    const resourceDenies = Object.entries(resourceRules).filter(([, v]) => v === false).map(([k]) => k);
 
-    const allowedTools = (Array.isArray(req.body?.allowedTools) ? req.body.allowedTools : [])
-      .map((v: any) => String(v || '').trim())
-      .filter((v: string) => v.length > 0);
-    const allowedResources = (Array.isArray(req.body?.allowedResources) ? req.body.allowedResources : [])
-      .map((v: any) => String(v || '').trim())
-      .filter((v: string) => v.length > 0);
+    const allowAllServers = serverAllows.length === 0 && serverDenies.length === 0;
+    const allowAllTools = toolAllows.length === 0 && toolDenies.length === 0;
+    const allowAllResources = resourceAllows.length === 0 && resourceDenies.length === 0;
+    const serverIds = serverAllows;
+    const allowedTools = toolAllows;
+    const allowedResources = resourceAllows;
 
     const tokenPack = this.deps.createMcpToken(
       subjectUser.username,
@@ -265,6 +395,9 @@ export class AuthApi {
       serverIds,
       allowedTools,
       allowedResources,
+      serverRules,
+      toolRules,
+      resourceRules,
       neverExpires,
       expiresAt: tokenPack.expiresAt
     });
@@ -304,7 +437,10 @@ export class AuthApi {
         revokedAt: t.revokedAt,
         allowAllServers: t.allowAllServers,
         allowAllTools: t.allowAllTools,
-        allowAllResources: t.allowAllResources
+        allowAllResources: t.allowAllResources,
+        serverRules: t.serverRules || {},
+        toolRules: t.toolRules || {},
+        resourceRules: t.resourceRules || {}
       }));
 
     res.json({ success: true, data: { tokens } });
@@ -336,7 +472,10 @@ export class AuthApi {
         revokedAt: token.revokedAt,
         allowAllServers: token.allowAllServers,
         allowAllTools: token.allowAllTools,
-        allowAllResources: token.allowAllResources
+        allowAllResources: token.allowAllResources,
+        serverRules: token.serverRules || {},
+        toolRules: token.toolRules || {},
+        resourceRules: token.resourceRules || {}
       }
     });
   };
