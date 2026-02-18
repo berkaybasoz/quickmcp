@@ -72,9 +72,7 @@ function initializeManageServersPage() {
     const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
     if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
         collapseBtn.addEventListener('click', () => {
-            const current = localStorage.getItem('rightPanelCollapsed') === 'true';
-            localStorage.setItem('rightPanelCollapsed', String(!current));
-            applyRightPanelCollapsedState();
+            setRightPanelCollapsed(!isRightPanelCollapsed());
         });
         collapseBtn.dataset.listenerAttached = 'true';
     }
@@ -1789,26 +1787,7 @@ async function viewServer(serverId) {
     // If overlay drawer exists (Manage page), open it immediately with loading state
     const overlayPanel = document.getElementById('server-details-panel');
     if (overlayPanel) {
-        overlayPanel.innerHTML = `
-            <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
-                        <i class="fas fa-wrench text-white"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-slate-900 font-bold tracking-tight text-lg">Server Details</h2>
-                        <p class="text-slate-500 text-xs leading-none font-medium">Loading…</p>
-                    </div>
-                </div>
-                <button onclick="closeServerDetailsPanel()" class="text-slate-400 hover:text-slate-600">
-                    <i class="fas fa-times text-lg"></i>
-                </button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-6 text-slate-600 text-sm">
-                <div class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> Fetching server details…</div>
-            </div>
-        `;
-        console.log('🔍 Opening details overlay (loading state)');
+        setRightPanelCollapsed(false);
         overlayPanel.classList.remove('hidden');
         overlayPanel.classList.remove('translate-x-full');
         overlayPanel.style.transform = 'translateX(0)';
@@ -1886,8 +1865,6 @@ async function viewServer(serverId) {
 function showServerDetailsPanel(serverData, serverIdArg) {
     const panel = document.getElementById('server-details-panel');
     if (!panel) return;
-    try { localStorage.setItem('rightPanelCollapsed','false'); } catch {}
-    panel.classList.remove('collapsed');
 
     const config = serverData?.config || {};
     const tools = config.tools || [];
@@ -1898,7 +1875,7 @@ function showServerDetailsPanel(serverData, serverIdArg) {
     const serverId = serverIdArg || serverData.id || serverData.config?.name || 'unknown';
 
     const inner = `
-        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-left\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
+        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-right\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
                     <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">
                         <i class=\"fas fa-wrench text-white\"></i>
                     </div>
@@ -2012,13 +1989,10 @@ function showServerDetailsPanel(serverData, serverIdArg) {
         const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
         if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
             collapseBtn.addEventListener('click', () => {
-                const current = localStorage.getItem('rightPanelCollapsed') === 'true';
-                localStorage.setItem('rightPanelCollapsed', String(!current));
-                applyRightPanelCollapsedState();
+                setRightPanelCollapsed(!isRightPanelCollapsed());
             });
             collapseBtn.dataset.listenerAttached = 'true';
         }
-        applyRightPanelCollapsedState();
     } catch {}
     // Slide in overlay drawer (no blur, on top of list)
     console.log('🔍 Showing details overlay');
@@ -2026,6 +2000,7 @@ function showServerDetailsPanel(serverData, serverIdArg) {
     panel.classList.remove('translate-x-full');
     panel.style.transform = 'translateX(0)';
     panel.style.display = 'flex';
+    setRightPanelCollapsed(false);
 }
 
 function closeServerDetailsPanel() {
@@ -2061,6 +2036,15 @@ function applyRightPanelCollapsedState() {
         const miniRow = panel.querySelector('#rightPanelMiniRow');
         if (miniRow) miniRow.classList.add('hidden');
     }
+}
+
+function isRightPanelCollapsed() {
+    return localStorage.getItem('rightPanelCollapsed') === 'true';
+}
+
+function setRightPanelCollapsed(collapsed) {
+    try { localStorage.setItem('rightPanelCollapsed', collapsed ? 'true' : 'false'); } catch {}
+    applyRightPanelCollapsedState();
 }
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
