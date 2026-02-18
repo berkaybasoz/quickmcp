@@ -6,7 +6,13 @@
       if (!response.ok) return null;
       const payload = await response.json();
       const mode = payload?.data?.authMode;
-      return typeof mode === 'string' ? mode : null;
+      const deployMode = payload?.data?.deployMode;
+      const usersEnabled = payload?.data?.usersEnabled;
+      return {
+        authMode: typeof mode === 'string' ? mode : null,
+        deployMode: typeof deployMode === 'string' ? deployMode : '',
+        usersEnabled: usersEnabled !== false
+      };
     } catch {
       return null;
     }
@@ -167,8 +173,11 @@
       root.style.width = '3rem';
     }
 
-    const authMode = await resolveAuthMode();
+    const authCfg = await resolveAuthMode();
+    const authMode = authCfg?.authMode || null;
+    const deployMode = (authCfg?.deployMode || '').toUpperCase();
     const showAuthManagement = authMode !== 'NONE';
+    const showUsers = showAuthManagement && authCfg?.usersEnabled !== false && deployMode !== 'SAAS';
 
     const html = `
       <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
@@ -198,7 +207,7 @@
         ${navItem('/manage-servers', 'fa-server', 'Manage Servers', 'Edit & Control', isActive('/manage-servers'))}
         ${navItem('/test-servers', 'fa-vial', 'Test Servers', 'Verify functionality', isActive('/test-servers'))}
         ${showAuthManagement ? navItem('/authorization', 'fa-key', 'Authorization', 'MCP token policy', isActive('/authorization'), 'bg-amber-100 text-amber-700 group-hover:bg-amber-200') : ''}
-        ${showAuthManagement ? navItem('/users', 'fa-users', 'Users', 'User management', isActive('/users'), 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200') : ''}
+        ${showUsers ? navItem('/users', 'fa-users', 'Users', 'User management', isActive('/users'), 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200') : ''}
         ${navItem('/how-to-use', 'fa-book', 'How to Use', 'Documentation & Guide', isActive('/how-to-use'))}
       </div>
 

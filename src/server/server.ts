@@ -39,6 +39,7 @@ app.use(cors());
 app.use(express.json());
 
 const dataProvider = getDataProvider();
+const deployMode = String(process.env.DEPLOY_MODE || 'ONPREM').trim().toUpperCase();
 const authMode = resolveAuthMode();
 const authCookieSecret = getAuthCookieSecret();
 const authDefaultUsername = getAuthDefaultUsername();
@@ -112,7 +113,7 @@ const getAuthenticatedUser = authUtils.getAuthenticatedUser.bind(authUtils);
 const resolveAuthContext = authUtils.resolveAuthContext.bind(authUtils);
 const requireAdminApi = authUtils.requireAdminApi.bind(authUtils);
 const applyAuthenticatedRequestContextAsync = authUtils.applyAuthenticatedRequestContextAsync.bind(authUtils);
-const configApi = new ConfigApi(authMode, authProperty.providerUrl);
+const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode);
 const healthApi = new HealthApi();
 const directoryApi = new DirectoryApi();
 const parseApi = new ParseApi(parser);
@@ -139,6 +140,7 @@ const databaseApi = new DatabaseApi({ publicDir });
 const mcpApi = new McpApi({ generatedServers });
 const indexApi = new IndexApi({ publicDir });
 const authApi = new AuthApi({
+  deployMode,
   authMode,
   authAdminUsers,
   authCookieSecret,

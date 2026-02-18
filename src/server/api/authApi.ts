@@ -9,6 +9,7 @@ import { AuthProperty } from './authProperty';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
 interface AuthApiDeps {
+  deployMode: string;
   authMode: AuthMode;
   authAdminUsers: LiteAdminUser[];
   authCookieSecret: string;
@@ -34,6 +35,10 @@ interface AuthApiDeps {
 
 export class AuthApi {
   constructor(private readonly deps: AuthApiDeps) {}
+
+  private isSaasMode(): boolean {
+    return String(this.deps.deployMode || '').trim().toUpperCase() === 'SAAS';
+  }
 
   private resolveAppBaseUrl(req: express.Request): string {
     const configured = this.deps.getAuthProperty().appBaseUrl.trim();
@@ -170,6 +175,10 @@ export class AuthApi {
   };
 
   private getUsers = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    if (this.isSaasMode()) {
+      res.status(404).json({ success: false, error: 'Users API is not available in SAAS mode' });
+      return;
+    }
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
     try {
@@ -528,6 +537,10 @@ export class AuthApi {
   };
 
   private createUser = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    if (this.isSaasMode()) {
+      res.status(404).json({ success: false, error: 'User management is not available in SAAS mode' });
+      return;
+    }
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -569,6 +582,10 @@ export class AuthApi {
   };
 
   private updateUserRole = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    if (this.isSaasMode()) {
+      res.status(404).json({ success: false, error: 'User management is not available in SAAS mode' });
+      return;
+    }
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -836,6 +853,10 @@ export class AuthApi {
   };
 
   private getUsersPage = (_req: express.Request, res: express.Response): void => {
+    if (this.isSaasMode()) {
+      res.status(404).send('Not Found');
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'users.html'));
   };
 

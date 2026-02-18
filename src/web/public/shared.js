@@ -322,7 +322,7 @@ function positionUserMenu(menu, anchorEl) {
 
 function renderUserMenu(menu) {
     const signedInLabel = currentUserName || 'Guest';
-    const showLogout = currentAuthMode === 'LITE';
+    const showLogout = currentAuthMode !== 'NONE';
 
     menu.innerHTML = `
         <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 mb-2">
