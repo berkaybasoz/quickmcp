@@ -4,7 +4,7 @@ export class ServerUtils {
   constructor(private readonly dataStore: IDataStore) {}
 
   async getAllTools(): Promise<any[]> {
-    const tools = this.dataStore.getAllTools();
+    const tools = await this.dataStore.getAllTools();
     return tools.map((tool) => ({
       name: `${tool.server_id}__${tool.name}`,
       description: `[${tool.server_id}] ${tool.description}`,
@@ -13,7 +13,7 @@ export class ServerUtils {
   }
 
   async getAllResources(): Promise<any[]> {
-    const resources = this.dataStore.getAllResources();
+    const resources = await this.dataStore.getAllResources();
     return resources.map((resource) => ({
       name: `${resource.server_id}__${resource.name}`,
       description: `[${resource.server_id}] ${resource.description}`,
@@ -21,8 +21,8 @@ export class ServerUtils {
     }));
   }
 
-  parseQualifiedName(name: string, kind: 'tool' | 'resource'): [string, string] {
-    const allServerIds = this.dataStore.getAllServers().map((s) => s.id);
+  async parseQualifiedName(name: string, kind: 'tool' | 'resource'): Promise<[string, string]> {
+    const allServerIds = (await this.dataStore.getAllServers()).map((s) => s.id);
     const matchingServerIds = allServerIds
       .filter((serverId) => name.startsWith(`${serverId}__`))
       .sort((a, b) => b.length - a.length);
@@ -44,12 +44,12 @@ export class ServerUtils {
     return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
   }
 
-  parseToolName(toolName: string): [string, string] {
+  async parseToolName(toolName: string): Promise<[string, string]> {
     return this.parseQualifiedName(toolName, 'tool');
   }
 
-  getTool(serverId: string, toolName: string): ToolDefinition {
-    const tools = this.dataStore.getToolsForServer(serverId);
+  async getTool(serverId: string, toolName: string): Promise<ToolDefinition> {
+    const tools = await this.dataStore.getToolsForServer(serverId);
     const tool = tools.find((t) => t.name === toolName);
     if (!tool) {
       throw new Error(`Tool not found: ${serverId}__${toolName}`);
@@ -57,8 +57,8 @@ export class ServerUtils {
     return tool;
   }
 
-  getServerConfig(serverId: string): any {
-    const serverConfig = this.dataStore.getServer(serverId);
+  async getServerConfig(serverId: string): Promise<any> {
+    const serverConfig = await this.dataStore.getServer(serverId);
     if (!serverConfig) {
       throw new Error(`Server not found: ${serverId}`);
     }

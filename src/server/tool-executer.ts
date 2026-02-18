@@ -13,9 +13,9 @@ export class ToolExecuter {
 
   async executeTool(toolName: string, args: any): Promise<any> {
     try {
-      const [serverId, actualToolName] = this.serverUtils.parseToolName(toolName);
-      const tool = this.serverUtils.getTool(serverId, actualToolName);
-      const serverConfig = this.serverUtils.getServerConfig(serverId);
+      const [serverId, actualToolName] = await this.serverUtils.parseToolName(toolName);
+      const tool = await this.serverUtils.getTool(serverId, actualToolName);
+      const serverConfig = await this.serverUtils.getServerConfig(serverId);
       const queryConfig = this.serverUtils.parseQueryConfig(tool.sqlQuery);
 
       if (queryConfig?.type === DataSourceType.Rest) return await this.executeRestCall(queryConfig, args);

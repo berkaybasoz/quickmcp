@@ -24,7 +24,8 @@ export function safeCreateDataStore(options?: SafeCreateDataStoreOptions): IData
       getMcpTokenPolicy: () => null,
       listMcpTokenPolicies: () => [],
       setMcpTokenPolicy: () => {},
-      close: () => {}
+      close: () => {},
+      getStats: () => ({ servers: 0, tools: 0, resources: 0 })
     } as unknown as IDataStore;
   }
 }

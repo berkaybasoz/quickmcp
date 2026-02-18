@@ -27,6 +27,7 @@ import { DatabaseApi } from './api/databaseApi';
 import { McpApi } from './api/mcpApi';
 import { IndexApi } from './api/indexApi';
 import { PortUtils } from './port-utils';
+import { getAuthProperty } from './api/authProperty';
 
 const app = express();
 type Request = express.Request;
@@ -44,6 +45,7 @@ const authDefaultUsername = getAuthDefaultUsername();
 const authAdminUsers = parseAuthAdminUsers();
 const authAccessTtlSec = getAuthAccessTtlSeconds();
 const authRefreshTtlSec = getAuthRefreshTtlSeconds();
+const authProperty = getAuthProperty(process.env);
 
 validateAuthDataProviderCompatibility(dataProvider, authMode);
 
@@ -99,7 +101,7 @@ const getUserRole = authUtils.getUserRole.bind(authUtils);
 const parseCookies = authUtils.parseCookies.bind(authUtils);
 const setCookie = authUtils.setCookie.bind(authUtils);
 const clearCookie = authUtils.clearCookie.bind(authUtils);
-const seedLiteAdmins = authUtils.seedLiteAdmins.bind(authUtils);
+const seedLiteAdminsAsync = authUtils.seedLiteAdminsAsync.bind(authUtils);
 const getEffectiveUsername = authUtils.getEffectiveUsername.bind(authUtils);
 const publicDir = authUtils.resolvePublicDir(__dirname);
 const applyNoneModeAuth = authUtils.applyNoneModeAuth.bind(authUtils);
@@ -109,8 +111,8 @@ const isPublicPath = authUtils.isPublicPath.bind(authUtils);
 const getAuthenticatedUser = authUtils.getAuthenticatedUser.bind(authUtils);
 const resolveAuthContext = authUtils.resolveAuthContext.bind(authUtils);
 const requireAdminApi = authUtils.requireAdminApi.bind(authUtils);
-const applyAuthenticatedRequestContext = authUtils.applyAuthenticatedRequestContext.bind(authUtils);
-const configApi = new ConfigApi(authMode);
+const applyAuthenticatedRequestContextAsync = authUtils.applyAuthenticatedRequestContextAsync.bind(authUtils);
+const configApi = new ConfigApi(authMode, authProperty.providerUrl);
 const healthApi = new HealthApi();
 const directoryApi = new DirectoryApi();
 const parseApi = new ParseApi(parser);
@@ -156,11 +158,12 @@ const authApi = new AuthApi({
   parseCookies,
   setCookie,
   clearCookie,
-  getAuthenticatedUser
+  getAuthenticatedUser,
+  getAuthProperty: () => authProperty
 });
 const portUtils = new PortUtils(process.env);
 
-function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   if (isNoneMode()) {
     applyNoneModeAuth(req);
     next();
@@ -172,7 +175,7 @@ function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunc
     return;
   }
 
-  if (!applyAuthenticatedRequestContext(req, res)) {
+  if (!await applyAuthenticatedRequestContextAsync(req, res)) {
     return;
   }
   next();
@@ -239,13 +242,13 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
   });
 }
 
-try {
-  seedLiteAdmins();
-} catch (error) {
+seedLiteAdminsAsync().catch((error) => {
   console.error('Failed to seed admin users:', error);
-}
+});
 
-app.use(authMiddleware);
+app.use((req, res, next) => {
+  authMiddleware(req as AuthenticatedRequest, res, next).catch(next);
+});
 app.use(express.static(publicDir));
 
 configApi.registerRoutes(app);
@@ -266,6 +269,11 @@ console.log('[quickmcp] startup config');
 console.log(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
 console.log(`[quickmcp] AUTH_MODE=${authMode}`);
 console.log(`[quickmcp] DATA_PROVIDER=${dataProvider}`);
+if (authMode === 'SUPABASE_GOOGLE') {
+  console.log(`[quickmcp] SUPABASE_URL=${authProperty.providerUrl || '(unset)'}`);
+  console.log(`[quickmcp] SUPABASE_ANON_KEY=${authProperty.publicKey ? '(set)' : '(unset)'}`);
+  console.log(`[quickmcp] APP_BASE_URL=${authProperty.appBaseUrl}`);
+}
 console.log(`[quickmcp] PORT=${PORT}`);
 console.log(`[quickmcp] MCP_PORT=${MCP_PORT}`);
 

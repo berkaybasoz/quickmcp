@@ -44,7 +44,7 @@ export class MCPServerGenerator {
       //console.log('📄 Server config created:', JSON.stringify(serverConfig, null, 2));
 
       // Save server to SQLite database only
-      this.dataStore.saveServer(serverConfig);
+      await this.dataStore.saveServer(serverConfig);
       //console.log(`✅ Server config saved to SQLite database: ${serverId}`);
 
       // Generate and save tools
@@ -236,7 +236,7 @@ export class MCPServerGenerator {
         //console.log('✅ Generated data tools:', tools.length);
       }
       if (tools.length > 0) {
-        this.dataStore.saveTools(tools);
+        await this.dataStore.saveTools(tools);
         //console.log(`✅ Generated ${tools.length} tools for server ${serverId}`);
       }
 
@@ -245,7 +245,7 @@ export class MCPServerGenerator {
       if (shouldGenerateResources(parsedData, sourceConfig)) {
         resources = this.generateResourcesForData(serverId, parsedData as ParsedData, sourceConfig);
         if (resources.length > 0) {
-          this.dataStore.saveResources(resources);
+          await this.dataStore.saveResources(resources);
           //console.log(`✅ Generated ${resources.length} resources for server ${serverId}`);
         }
       }
@@ -7823,19 +7823,19 @@ export class MCPServerGenerator {
   }
 
   // Public methods for management
-  getAllServers(): ServerConfig[] {
+  getAllServers(): any {
     return this.dataStore.getAllServers();
   }
 
-  getAllServersByOwner(ownerUsername: string): ServerConfig[] {
+  getAllServersByOwner(ownerUsername: string): any {
     return this.dataStore.getAllServersByOwner(ownerUsername);
   }
 
-  getServer(serverId: string): ServerConfig | null {
+  getServer(serverId: string): any {
     return this.dataStore.getServer(serverId);
   }
 
-  getServerForOwner(serverId: string, ownerUsername: string): ServerConfig | null {
+  getServerForOwner(serverId: string, ownerUsername: string): any {
     return this.dataStore.getServerForOwner(serverId, ownerUsername);
   }
 
@@ -7844,23 +7844,23 @@ export class MCPServerGenerator {
     console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
   }
 
-  getAllTools(): ToolDefinition[] {
+  getAllTools(): any {
     return this.dataStore.getAllTools();
   }
 
-  getToolsForServer(serverId: string): ToolDefinition[] {
+  getToolsForServer(serverId: string): any {
     return this.dataStore.getToolsForServer(serverId);
   }
 
-  getAllResources(): ResourceDefinition[] {
+  getAllResources(): any {
     return this.dataStore.getAllResources();
   }
 
-  getResourcesForServer(serverId: string): ResourceDefinition[] {
+  getResourcesForServer(serverId: string): any {
     return this.dataStore.getResourcesForServer(serverId);
   }
 
-  getStats(): { servers: number; tools: number; resources: number } {
+  getStats(): any {
     return this.dataStore.getStats();
   }
 

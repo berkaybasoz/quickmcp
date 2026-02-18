@@ -4,6 +4,7 @@ import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
 import { createAccessToken, createRefreshToken, hashRefreshToken } from '../../auth/token-utils';
+import { AuthProperty } from './authProperty';
 
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
@@ -28,10 +29,35 @@ interface AuthApiDeps {
   setCookie: (res: express.Response, name: string, value: string, maxAgeSec: number) => void;
   clearCookie: (res: express.Response, name: string) => void;
   getAuthenticatedUser: (req: express.Request) => string | null;
+  getAuthProperty: () => AuthProperty;
 }
 
 export class AuthApi {
   constructor(private readonly deps: AuthApiDeps) {}
+
+  private resolveAppBaseUrl(req: express.Request): string {
+    const configured = this.deps.getAuthProperty().appBaseUrl.trim();
+    const host = (req.get('x-forwarded-host') || req.get('host') || '').trim();
+    const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').trim();
+    const requestOrigin = host ? `${proto}://${host}` : '';
+
+    if (!configured) return requestOrigin;
+    if (!requestOrigin) return configured;
+
+    const requestHost = host.toLowerCase();
+    const isLocalRequest = requestHost.startsWith('localhost:') || requestHost.startsWith('127.0.0.1:');
+
+    try {
+      const configuredHost = new URL(configured).host.toLowerCase();
+      if (isLocalRequest && configuredHost !== requestHost) {
+        return requestOrigin;
+      }
+    } catch {
+      return requestOrigin;
+    }
+
+    return configured;
+  }
 
   private normalizeTriStateRules(raw: any, workspaceId: string, prefix: string): Record<string, boolean | null> {
     const input = raw && typeof raw === 'object' ? raw : {};
@@ -97,6 +123,8 @@ export class AuthApi {
     app.post('/api/auth/users', this.createUser);
     app.patch('/api/auth/users/:username/role', this.updateUserRole);
     app.post('/api/auth/login', this.login);
+    app.get('/api/auth/supabase/start', this.supabaseStart);
+    app.post('/api/auth/supabase/session', this.supabaseSession);
     app.post('/api/auth/refresh', this.refresh);
     app.post('/api/auth/logout', this.logout);
 
@@ -105,7 +133,7 @@ export class AuthApi {
     app.get('/authorization', this.getAuthorizationPage);
   }
 
-  private getMe = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getMe = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -123,7 +151,7 @@ export class AuthApi {
     });
   };
 
-  private getRoles = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getRoles = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -141,7 +169,7 @@ export class AuthApi {
     });
   };
 
-  private getUsers = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getUsers = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
     try {
@@ -152,7 +180,7 @@ export class AuthApi {
     }
   };
 
-  private getAuthorizationConfig = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationConfig = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -169,7 +197,7 @@ export class AuthApi {
     });
   };
 
-  private getAuthorizationContext = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationContext = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -197,7 +225,7 @@ export class AuthApi {
     }
   };
 
-  private getAuthorizationServers = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationServers = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -222,7 +250,7 @@ export class AuthApi {
     }
   };
 
-  private getAuthorizationTokenPolicy = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -269,7 +297,7 @@ export class AuthApi {
     }
   };
 
-  private updateAuthorizationTokenPolicy = (req: AuthenticatedRequest, res: express.Response): void => {
+  private updateAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -302,7 +330,7 @@ export class AuthApi {
     }
   };
 
-  private updateAuthorizationServer = (req: AuthenticatedRequest, res: express.Response): void => {
+  private updateAuthorizationServer = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -330,7 +358,7 @@ export class AuthApi {
     }
   };
 
-  private createAuthorizationMcpToken = (req: AuthenticatedRequest, res: express.Response): void => {
+  private createAuthorizationMcpToken = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -418,7 +446,7 @@ export class AuthApi {
     });
   };
 
-  private getAuthorizationTokens = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationTokens = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -448,7 +476,7 @@ export class AuthApi {
     res.json({ success: true, data: { tokens } });
   };
 
-  private getAuthorizationTokenById = (req: AuthenticatedRequest, res: express.Response): void => {
+  private getAuthorizationTokenById = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -482,7 +510,7 @@ export class AuthApi {
     });
   };
 
-  private deleteAuthorizationToken = (req: AuthenticatedRequest, res: express.Response): void => {
+  private deleteAuthorizationToken = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -499,7 +527,7 @@ export class AuthApi {
     res.json({ success: true });
   };
 
-  private createUser = (req: AuthenticatedRequest, res: express.Response): void => {
+  private createUser = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -540,7 +568,7 @@ export class AuthApi {
     }
   };
 
-  private updateUserRole = (req: AuthenticatedRequest, res: express.Response): void => {
+  private updateUserRole = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const actor = this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
@@ -564,13 +592,13 @@ export class AuthApi {
     res.json({ success: true, data: { user: { username: targetUsername, workspaceId: actor.workspaceId, role } } });
   };
 
-  private login = (req: express.Request, res: express.Response): void => {
+  private login = async (req: express.Request, res: express.Response): Promise<void> => {
     if (this.deps.authMode === 'NONE') {
       res.status(400).json({ success: false, error: 'Login is disabled when AUTH_MODE=NONE' });
       return;
     }
     if (this.deps.authMode === 'SUPABASE_GOOGLE') {
-      res.status(501).json({ success: false, error: 'SUPABASE_GOOGLE auth flow is not implemented in this build' });
+      res.status(400).json({ success: false, error: 'Use Google Sign-In for SUPABASE_GOOGLE mode' });
       return;
     }
 
@@ -609,20 +637,7 @@ export class AuthApi {
     }
     if (!authenticatedWorkspaceId) authenticatedWorkspaceId = authenticatedUsername;
 
-    const accessToken = createAccessToken(
-      authenticatedUsername,
-      this.deps.authCookieSecret,
-      this.deps.authAccessTtlSec,
-      authenticatedWorkspaceId,
-      authenticatedRole
-    );
-    const refreshToken = createRefreshToken();
-    const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
-    const refreshExpiresAt = new Date(Date.now() + this.deps.authRefreshTtlSec * 1000).toISOString();
-
-    this.deps.ensureDataStore().saveRefreshToken(refreshTokenHash, authenticatedUsername, refreshExpiresAt);
-    this.deps.setCookie(res, this.deps.accessCookieName, accessToken, this.deps.authAccessTtlSec);
-    this.deps.setCookie(res, this.deps.refreshCookieName, refreshToken, this.deps.authRefreshTtlSec);
+    this.issueSession(res, authenticatedUsername, authenticatedWorkspaceId, authenticatedRole);
 
     res.json({
       success: true,
@@ -635,9 +650,125 @@ export class AuthApi {
     });
   };
 
-  private refresh = (req: express.Request, res: express.Response): void => {
-    if (this.deps.authMode !== 'LITE') {
-      res.status(400).json({ success: false, error: 'Refresh endpoint is only available when AUTH_MODE=LITE' });
+  private issueSession(
+    res: express.Response,
+    username: string,
+    workspaceId: string,
+    role: AppUserRole
+  ): void {
+    const accessToken = createAccessToken(
+      username,
+      this.deps.authCookieSecret,
+      this.deps.authAccessTtlSec,
+      workspaceId,
+      role
+    );
+    const refreshToken = createRefreshToken();
+    const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
+    const refreshExpiresAt = new Date(Date.now() + this.deps.authRefreshTtlSec * 1000).toISOString();
+
+    this.deps.ensureDataStore().saveRefreshToken(refreshTokenHash, username, refreshExpiresAt);
+    this.deps.setCookie(res, this.deps.accessCookieName, accessToken, this.deps.authAccessTtlSec);
+    this.deps.setCookie(res, this.deps.refreshCookieName, refreshToken, this.deps.authRefreshTtlSec);
+  }
+
+  private normalizeSupabaseUsername(email?: string, userId?: string): string {
+    const raw = String(email || '').trim().toLowerCase();
+    if (raw) {
+      const local = raw.split('@')[0] || raw;
+      const sanitized = local.replace(/[^a-z0-9._-]/g, '_').slice(0, 64);
+      if (sanitized.length >= 3) return sanitized;
+    }
+    const fallback = String(userId || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '_').slice(0, 64);
+    return fallback || 'user';
+  }
+
+  private resolveSupabaseRole(username: string, email?: string): AppUserRole {
+    const authProperty = this.deps.getAuthProperty();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const isAdminEmail = authProperty.adminEmails.some((v) => v.toLowerCase() === normalizedEmail);
+    const isLegacyAdmin = this.deps.authAdminUsers.some((u) => u.username === username || u.username === normalizedEmail);
+    return (isAdminEmail || isLegacyAdmin) ? 'admin' : 'user';
+  }
+
+  private supabaseStart = (req: express.Request, res: express.Response): Promise<void> => {
+    const authProperty = this.deps.getAuthProperty();
+    if (this.deps.authMode !== 'SUPABASE_GOOGLE') {
+      res.status(400).json({ success: false, error: 'Supabase login is only available when AUTH_MODE=SUPABASE_GOOGLE' });
+      return;
+    }
+    if (!authProperty.providerUrl) {
+      res.status(500).json({ success: false, error: 'SUPABASE_URL is not configured' });
+      return;
+    }
+
+    const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/';
+    const appBaseUrl = this.resolveAppBaseUrl(req);
+    const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?supabase=callback&next=${encodeURIComponent(next)}`;
+    const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+    res.redirect(authorizeUrl);
+  };
+
+  private supabaseSession = async (req: express.Request, res: express.Response): Promise<void> => {
+    const authProperty = this.deps.getAuthProperty();
+    if (this.deps.authMode !== 'SUPABASE_GOOGLE') {
+      res.status(400).json({ success: false, error: 'Supabase session endpoint is only available when AUTH_MODE=SUPABASE_GOOGLE' });
+      return;
+    }
+    if (!authProperty.providerUrl || !authProperty.publicKey) {
+      res.status(500).json({ success: false, error: 'SUPABASE_URL or SUPABASE_ANON_KEY is not configured' });
+      return;
+    }
+
+    const accessToken = typeof req.body?.accessToken === 'string' ? req.body.accessToken.trim() : '';
+    if (!accessToken) {
+      res.status(400).json({ success: false, error: 'accessToken is required' });
+      return;
+    }
+
+    try {
+      const userRes = await fetch(`${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/user`, {
+        headers: {
+          apikey: authProperty.publicKey,
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      const userPayload: any = await userRes.json().catch(() => ({}));
+      if (!userRes.ok || !userPayload?.id) {
+        res.status(401).json({ success: false, error: userPayload?.msg || userPayload?.error_description || 'Invalid Supabase access token' });
+        return;
+      }
+
+      const email = typeof userPayload?.email === 'string' ? userPayload.email : '';
+      const username = this.normalizeSupabaseUsername(email, userPayload?.id);
+      const workspaceId = username;
+      const role = this.resolveSupabaseRole(username, email);
+
+      this.deps.ensureDataStore().upsertUser(
+        username,
+        this.deps.hashPassword(`supabase:${userPayload.id}`),
+        role,
+        workspaceId
+      );
+      this.issueSession(res, username, workspaceId, role);
+
+      res.json({
+        success: true,
+        data: {
+          username,
+          workspaceId,
+          role,
+          isAdmin: role === 'admin'
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to validate Supabase session' });
+    }
+  };
+
+  private refresh = async (req: express.Request, res: express.Response): Promise<void> => {
+    if (this.deps.authMode === 'NONE') {
+      res.status(400).json({ success: false, error: 'Refresh endpoint is not available when AUTH_MODE=NONE' });
       return;
     }
 
@@ -680,7 +811,7 @@ export class AuthApi {
     res.json({ success: true, data: { username: record.username } });
   };
 
-  private logout = (req: express.Request, res: express.Response): void => {
+  private logout = async (req: express.Request, res: express.Response): Promise<void> => {
     const cookies = this.deps.parseCookies(req);
     const refreshToken = cookies[this.deps.refreshCookieName];
     if (refreshToken) {

@@ -28,15 +28,15 @@ export class DynamicMCPExecutor {
 
   async readResource(resourceName: string): Promise<any> {
     try {
-      const [serverId, actualResourceName] = this.serverUtils.parseQualifiedName(resourceName, 'resource');
+      const [serverId, actualResourceName] = await this.serverUtils.parseQualifiedName(resourceName, 'resource');
 
-      const resources = this.dataStore.getResourcesForServer(serverId);
+      const resources = await this.dataStore.getResourcesForServer(serverId);
       const resource = resources.find((r) => r.name === actualResourceName);
       if (!resource) {
         throw new Error(`Resource not found: ${resourceName}`);
       }
 
-      const serverConfig = this.dataStore.getServer(serverId);
+      const serverConfig = await this.dataStore.getServer(serverId);
       if (!serverConfig) {
         throw new Error(`Server not found: ${serverId}`);
       }
@@ -63,15 +63,15 @@ export class DynamicMCPExecutor {
     }
   }
 
-  getStats(): any {
+  async getStats(): Promise<any> {
     return {
-      ...this.dataStore.getStats(),
+      ...(await this.dataStore.getStats()),
       activeConnections: this.toolExecuter.getActiveConnectionsCount()
     };
   }
 
   async close(): Promise<void> {
     await this.toolExecuter.closeConnections();
-    this.dataStore.close();
+    await this.dataStore.close();
   }
 }

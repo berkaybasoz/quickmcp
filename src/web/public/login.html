@@ -10,9 +10,9 @@
 <body class="h-screen flex items-center justify-center bg-slate-100 text-slate-900">
   <div class="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-6">
     <h1 class="text-xl font-semibold mb-1">QuickMCP Login</h1>
-    <p class="text-sm text-slate-500 mb-6">LITE auth mode is enabled. Sign in to continue.</p>
+    <p id="loginModeText" class="text-sm text-slate-500 mb-6">Sign in to continue.</p>
 
-    <form id="loginForm" class="space-y-4">
+    <form id="loginForm" class="space-y-4 hidden">
       <div>
         <label for="username" class="block text-sm font-medium mb-1">Username</label>
         <input id="username" type="text" required class="input w-full" autocomplete="username">
@@ -24,16 +24,90 @@
       <p id="errorText" class="text-sm text-red-600 hidden"></p>
       <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2">Login</button>
     </form>
+
+    <div id="supabaseLogin" class="hidden space-y-3">
+      <button id="googleLoginBtn" type="button" class="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-800 rounded-lg px-4 py-2 flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-4 h-4" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12S17.4 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.5-5.3l-6.2-5.2c-2.1 1.6-4.7 2.5-7.3 2.5-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.7 39.6 16.3 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.5l6.2 5.2C36.9 38.9 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+      <p class="text-xs text-slate-500">Google sign-in is handled by Supabase.</p>
+    </div>
   </div>
 
   <script>
     const form = document.getElementById('loginForm');
     const errorText = document.getElementById('errorText');
+    const loginModeText = document.getElementById('loginModeText');
+    const supabaseLogin = document.getElementById('supabaseLogin');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+
+    function showError(message) {
+      errorText.textContent = message || 'Login failed';
+      errorText.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorText.classList.add('hidden');
+      errorText.textContent = '';
+    }
+
+    async function completeSupabaseLoginFromHash() {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const accessToken = params.get('access_token');
+      if (!accessToken) return false;
+
+      const response = await fetch('/api/auth/supabase/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken })
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ error: 'Supabase login failed' }));
+        throw new Error(body.error || 'Supabase login failed');
+      }
+
+      const next = new URLSearchParams(window.location.search).get('next');
+      window.location.replace(next && next.startsWith('/') ? next : '/');
+      return true;
+    }
+
+    async function initLoginMode() {
+      const configRes = await fetch('/api/auth/config');
+      const config = await configRes.json().catch(() => ({}));
+      const authMode = config?.data?.authMode || 'LITE';
+
+      if (authMode === 'SUPABASE_GOOGLE') {
+        loginModeText.textContent = 'SUPABASE_GOOGLE mode is enabled. Sign in with Google to continue.';
+        supabaseLogin.classList.remove('hidden');
+        form.classList.add('hidden');
+
+        try {
+          const handled = await completeSupabaseLoginFromHash();
+          if (handled) return;
+        } catch (error) {
+          showError(error.message || 'Supabase login failed');
+        }
+
+        googleLoginBtn.addEventListener('click', () => {
+          const currentPath = window.location.pathname + window.location.search;
+          window.location.href = `/api/auth/supabase/start?next=${encodeURIComponent(currentPath === '/login' ? '/' : currentPath)}`;
+        });
+        return;
+      }
+
+      loginModeText.textContent = 'LITE auth mode is enabled. Sign in to continue.';
+      form.classList.remove('hidden');
+      supabaseLogin.classList.add('hidden');
+    }
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      errorText.classList.add('hidden');
-      errorText.textContent = '';
+      hideError();
 
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
@@ -52,10 +126,11 @@
 
         window.location.href = '/';
       } catch (error) {
-        errorText.textContent = error.message || 'Login failed';
-        errorText.classList.remove('hidden');
+        showError(error.message || 'Login failed');
       }
     });
+
+    initLoginMode().catch((error) => showError(error.message || 'Failed to initialize login'));
   </script>
 </body>
 </html>

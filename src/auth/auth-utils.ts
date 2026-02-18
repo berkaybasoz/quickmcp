@@ -3,6 +3,7 @@ import express from 'express';
 import fsSync from 'fs';
 import path from 'path';
 import { IDataStore } from '../database/datastore';
+import { createAsyncDataStore, IAsyncDataStore } from '../database/async-datastore';
 import { AuthMode, LiteAdminUser } from '../config/auth-config';
 import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from './token-utils';
 
@@ -27,6 +28,7 @@ export interface AuthUtilsConfig {
   authAdminUsers: LiteAdminUser[];
   cookieSecure: boolean;
   ensureDataStore: () => IDataStore;
+  ensureDataStoreAsync?: () => IAsyncDataStore;
 }
 
 export type McpIdentity = {
@@ -66,6 +68,7 @@ export class AuthUtils {
   private readonly authAdminUsers: LiteAdminUser[];
   private readonly cookieSecure: boolean;
   private readonly ensureDataStore: () => IDataStore;
+  private readonly ensureDataStoreAsync: () => IAsyncDataStore;
 
   constructor(config: AuthUtilsConfig) {
     this.authMode = config.authMode;
@@ -78,6 +81,9 @@ export class AuthUtils {
     this.authAdminUsers = config.authAdminUsers;
     this.cookieSecure = config.cookieSecure;
     this.ensureDataStore = config.ensureDataStore;
+    this.ensureDataStoreAsync = config.ensureDataStoreAsync
+      ? config.ensureDataStoreAsync
+      : () => createAsyncDataStore(this.ensureDataStore());
   }
 
   normalizeUsername(value: unknown): string {
@@ -249,7 +255,7 @@ export class AuthUtils {
   }
 
   tryRefreshAuth(req: express.Request, res: express.Response): string | null {
-    if (this.authMode !== 'LITE') {
+    if (this.authMode === 'NONE') {
       return null;
     }
 
@@ -347,6 +353,146 @@ export class AuthUtils {
 
     req.authUser = effectiveUser;
     const ctx = this.resolveAuthContext(req, res);
+    if (ctx) {
+      req.authWorkspace = ctx.workspaceId;
+      req.authRole = ctx.role;
+    }
+    return true;
+  }
+
+  async getUserRoleAsync(username: string, workspaceId?: string): Promise<AppUserRole> {
+    if (!username) return 'user';
+    if (this.authMode === 'NONE') return 'admin';
+
+    try {
+      const user = workspaceId
+        ? await this.ensureDataStoreAsync().getUserInWorkspace(username, workspaceId)
+        : await this.ensureDataStoreAsync().getUser(username);
+      if (user?.role === 'admin') return 'admin';
+    } catch {}
+
+    return this.authAdminUsers.some((item) => item.username === username) ? 'admin' : 'user';
+  }
+
+  async seedLiteAdminsAsync(): Promise<void> {
+    if (this.authMode !== 'LITE') return;
+    if (this.authAdminUsers.length === 0) return;
+
+    const store = this.ensureDataStoreAsync();
+    for (const admin of this.authAdminUsers) {
+      const username = this.normalizeUsername(admin.username);
+      if (!username || !admin.password) continue;
+      await store.upsertUser(username, this.hashPassword(admin.password), 'admin', username);
+    }
+  }
+
+  async tryRefreshAuthAsync(req: express.Request, res: express.Response): Promise<string | null> {
+    if (this.authMode === 'NONE') {
+      return null;
+    }
+
+    const cookies = this.parseCookies(req);
+    const refreshToken = cookies[this.refreshCookieName];
+    if (!refreshToken) {
+      return null;
+    }
+
+    const refreshTokenHash = hashRefreshToken(refreshToken, this.authCookieSecret);
+    const store = this.ensureDataStoreAsync();
+    const record = await store.getRefreshToken(refreshTokenHash);
+    if (!record) {
+      return null;
+    }
+
+    if (record.revokedAt || new Date(record.expiresAt).getTime() <= Date.now()) {
+      if (!record.revokedAt) {
+        await store.revokeRefreshToken(refreshTokenHash);
+      }
+      this.clearCookie(res, this.accessCookieName);
+      this.clearCookie(res, this.refreshCookieName);
+      return null;
+    }
+
+    await store.revokeRefreshToken(refreshTokenHash);
+    const newRefreshToken = createRefreshToken();
+    const newRefreshHash = hashRefreshToken(newRefreshToken, this.authCookieSecret);
+    const refreshExpiresAt = new Date(Date.now() + this.authRefreshTtlSec * 1000).toISOString();
+    await store.saveRefreshToken(newRefreshHash, record.username, refreshExpiresAt);
+
+    const refreshedUser = await store.getUser(record.username);
+    const refreshedWorkspaceId = refreshedUser?.workspaceId || record.username;
+    const refreshedRole = refreshedUser?.role || await this.getUserRoleAsync(record.username, refreshedWorkspaceId);
+    const newAccessToken = createAccessToken(
+      record.username,
+      this.authCookieSecret,
+      this.authAccessTtlSec,
+      refreshedWorkspaceId,
+      refreshedRole
+    );
+    this.setCookie(res, this.accessCookieName, newAccessToken, this.authAccessTtlSec);
+    this.setCookie(res, this.refreshCookieName, newRefreshToken, this.authRefreshTtlSec);
+    return record.username;
+  }
+
+  async resolveAuthContextAsync(
+    req: express.Request & { authUser?: string },
+    res?: express.Response
+  ): Promise<AuthContext | null> {
+    if (this.authMode === 'NONE') {
+      return this.getNoneModeAuthContext();
+    }
+
+    const username = req.authUser
+      || this.getAuthenticatedUser(req)
+      || (res ? await this.tryRefreshAuthAsync(req, res) : null)
+      || '';
+    if (!username) return null;
+
+    const payload = (() => {
+      const cookies = this.parseCookies(req);
+      const accessToken = cookies[this.accessCookieName];
+      return accessToken ? verifyAccessToken(accessToken, this.authCookieSecret) : null;
+    })();
+
+    const user = await this.ensureDataStoreAsync().getUser(username);
+    const workspaceId = (payload?.ws || user?.workspaceId || username).trim();
+    const role = await this.getUserRoleAsync(username, workspaceId);
+    return { username, workspaceId, role };
+  }
+
+  async requireAdminApiAsync(
+    req: express.Request & { authUser?: string },
+    res: express.Response
+  ): Promise<AuthContext | null> {
+    const ctx = await this.resolveAuthContextAsync(req, res);
+    if (!ctx) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return null;
+    }
+    if (ctx.role !== 'admin') {
+      res.status(403).json({ success: false, error: 'Admin role is required' });
+      return null;
+    }
+    return ctx;
+  }
+
+  async applyAuthenticatedRequestContextAsync(
+    req: express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole },
+    res: express.Response
+  ): Promise<boolean> {
+    const username = this.getAuthenticatedUser(req);
+    const effectiveUser = username || await this.tryRefreshAuthAsync(req, res);
+    if (!effectiveUser) {
+      if (req.path.startsWith('/api/')) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+      } else {
+        res.redirect('/login');
+      }
+      return false;
+    }
+
+    req.authUser = effectiveUser;
+    const ctx = await this.resolveAuthContextAsync(req, res);
     if (ctx) {
       req.authWorkspace = ctx.workspaceId;
       req.authRole = ctx.role;
