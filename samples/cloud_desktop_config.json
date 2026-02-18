@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "quickmcp": {
+      "command": "npx", 
+      "args": ["-y", "@softtechai/quickmcp"]
+    },
+    "quickmcp-local": {
+      "command": "/opt/homebrew/bin/node", 
+      "args": ["/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"]
+    }
+  }
+}

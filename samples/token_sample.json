@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "quickmcp-local": {
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"
+      ],
+      "env": {
+          "QUICKMCP_TOKEN": "eyJqdGkiOiJmOGE3ODE2Yi1lMTUwLTQ4ZjYtYWY3MC05ZmVhYWExMGIxZWMiLCJzdWIiOiJhZG1pbiIsIndzIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJ0eXAiOiJxdWlja21jcC1tY3AiLCJpYXQiOjE3NzEzMzAwNDJ9.GrDCbbx-sx6CnMWbpnqN9gRYl7UwpI1M7gPCTPnpHsw"
+      }
+    }
+  },
+  "preferences": {
+    "menuBarEnabled": false,
+    "quickEntryShortcut": "off",
+    "sidebarMode": "chat",
+    "coworkScheduledTasksEnabled": false
+  }
+}
+

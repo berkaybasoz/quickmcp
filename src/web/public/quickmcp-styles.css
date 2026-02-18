@@ -1,0 +1,399 @@
+/* Archdraw Custom Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Modern Color Palette */
+  --color-primary: 59 130 246; /* blue-500 */
+  --color-primary-dark: 37 99 235; /* blue-600 */
+  --color-secondary: 99 102 241; /* indigo-500 */
+  --color-accent: 16 185 129; /* emerald-500 */
+  --color-warning: 245 158 11; /* amber-500 */
+  --color-danger: 239 68 68; /* red-500 */
+  
+  /* Neutral Colors */
+  --color-gray-50: 248 250 252;
+  --color-gray-100: 241 245 249;
+  --color-gray-200: 226 232 240;
+  --color-gray-300: 203 213 225;
+  --color-gray-400: 148 163 184;
+  --color-gray-500: 100 116 139;
+  --color-gray-600: 71 85 105;
+  --color-gray-700: 51 65 85;
+  --color-gray-800: 30 41 59;
+  --color-gray-900: 15 23 42;
+  
+  /* Background Colors */
+  --bg-primary: rgb(255 255 255);
+  --bg-secondary: rgb(248 250 252);
+  --bg-tertiary: rgb(241 245 249);
+  
+  /* Text Colors */
+  --text-primary: rgb(15 23 42);
+  --text-secondary: rgb(51 65 85);
+  --text-tertiary: rgb(100 116 139);
+  
+  /* Border & Shadow */
+  --border-color: rgb(226 232 240);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+html {
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variation-settings: normal;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  overflow-x: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Modern Scrollbar */
+.scrollbar-modern {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 3px;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
+}
+
+.dark .scrollbar-modern {
+  scrollbar-color: rgb(75 85 99) transparent;
+}
+
+.dark .scrollbar-modern::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99);
+}
+
+.dark .scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128);
+}
+
+/* Glass effect */
+.glass {
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.dark .glass {
+  background: rgba(31, 41, 55, 0.8);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Hide settings cog icon globally if present */
+#openSettingsModal { display: none !important; }
+
+/* Card Styles */
+.card {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem; /* rounded-xl */
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .card {
+  background-color: var(--color-gray-800);
+  border-color: var(--color-gray-700);
+}
+
+.card-hover {
+  transition: all 0.3s;
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-0.25rem); /* -translate-y-1 */
+}
+
+/* Input Styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem; /* px-4 py-3 */
+  font-size: 0.875rem; /* text-sm */
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0.75rem; /* rounded-xl */
+  background-color: transparent;
+  color: var(--color-gray-900);
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgb(59 130 246); /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.dark .input {
+  border-color: var(--color-gray-600);
+  color: var(--color-gray-100);
+}
+
+.dark .input:focus {
+  border-color: rgb(96 165 250); /* blue-400 */
+}
+
+/* Collapsed sidebar icon layout (common across pages) */
+#sidebar.collapsed .nav-item { 
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 3rem !important;   /* 48px clickable square */
+  height: 3rem !important;
+  padding: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  gap: 0 !important;
+  cursor: pointer;
+}
+#sidebar.collapsed .nav-item.card-hover:hover { transform: none !important; box-shadow: none !important; }
+#sidebar.collapsed .nav-item .flex-1 { display: none !important; }
+
+#sidebar.collapsed .nav-item > .relative {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.5rem !important;  /* 40px inner icon container */
+  height: 2.5rem !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+#sidebar.collapsed .nav-item > .relative > div {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 !important;         /* ensure square */
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  background: transparent !important;      /* background drawn via ::before */
+  border: 1px solid #e2e8f0 !important;    /* subtle outer border */
+  border-radius: 0.5rem !important;        /* rounded */
+  box-shadow: none !important;             /* no glow/shadow */
+  overflow: hidden !important;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+/* Inner background with padding between border and fill */
+#sidebar.collapsed .nav-item > .relative > div::before {
+  content: '';
+  position: absolute;
+  inset: 3px;                               /* padding between border and background */
+  border-radius: 0.375rem;                   /* slightly smaller than outer radius */
+  background: #f1f5f9;                       /* default light fill */
+  transition: background-color 120ms ease;
+}
+#sidebar.collapsed .nav-item i { font-size: 1.05rem !important; line-height: 1 !important; }
+
+#sidebar.collapsed #sidebarHeaderMain { display: none !important; }
+#sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
+#sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
+#sidebar.collapsed #closeSidebar { display: none !important; }
+
+#sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
+#sidebar #sidebarCollapseBtn i { font-size: 1rem; }
+
+/* Center collapsed nav within the narrow sidebar */
+#sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+#sidebar.collapsed > div:first-child { padding: 0.25rem !important; } /* shrink header padding so ">>" fits */
+#sidebar.collapsed #sidebarCollapseBtn { width: 2rem !important; height: 2rem !important; } /* smaller button in collapsed */
+#sidebar.collapsed #sidebarNavList { 
+  padding-left: 0 !important; 
+  padding-right: 0 !important; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+}
+/* Reduce vertical spacing between collapsed icons (0px) */
+#sidebar.collapsed #sidebarNavList > a { margin-top: 0 !important; margin-bottom: 0 !important; }
+/* Override Tailwind's space-y-* margins */
+#sidebar.collapsed #sidebarNavList > :not([hidden]) ~ :not([hidden]) { 
+  margin-top: 0 !important; 
+  margin-bottom: 0 !important; 
+}
+
+/* Collapsed icon colors per item (distinct colors, no bg) */
+#sidebar.collapsed a[href="/"] i { color: #2563eb !important; }            /* blue-600 */
+#sidebar.collapsed a[href="/manage-servers"] i { color: #10b981 !important; } /* emerald-500 */
+#sidebar.collapsed a[href="/test-servers"] i { color: #7c3aed !important; }   /* violet-600 */
+#sidebar.collapsed a[href="/authorization"] i { color: #d97706 !important; } /* amber-600 */
+#sidebar.collapsed a[href="/users"] i { color: #059669 !important; } /* emerald-600 */
+#sidebar.collapsed a[href="/how-to-use"] i { color: #f59e0b !important; }     /* amber-500 */
+
+/* Tint inner background by icon color */
+#sidebar.collapsed a[href="/"] .relative > div::before { background: rgba(37, 99, 235, 0.14) !important; }          /* blue tint */
+#sidebar.collapsed a[href="/manage-servers"] .relative > div::before { background: rgba(16, 185, 129, 0.14) !important; } /* emerald tint */
+#sidebar.collapsed a[href="/test-servers"] .relative > div::before { background: rgba(124, 58, 237, 0.14) !important; }   /* violet tint */
+#sidebar.collapsed a[href="/authorization"] .relative > div::before { background: rgba(217, 119, 6, 0.16) !important; } /* amber tint */
+#sidebar.collapsed a[href="/users"] .relative > div::before { background: rgba(5, 150, 105, 0.16) !important; } /* emerald tint */
+#sidebar.collapsed a[href="/how-to-use"] .relative > div::before { background: rgba(245, 158, 11, 0.18) !important; }     /* amber tint */
+
+/* Hover states: stronger tint + border highlight + slight scale */
+#sidebar.collapsed a[href="/"]:hover .relative > div { border-color: #93c5fd !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/"]:hover .relative > div::before { background: rgba(37, 99, 235, 0.24) !important; }
+
+#sidebar.collapsed a[href="/manage-servers"]:hover .relative > div { border-color: #6ee7b7 !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/manage-servers"]:hover .relative > div::before { background: rgba(16, 185, 129, 0.22) !important; }
+
+#sidebar.collapsed a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/test-servers"]:hover .relative > div::before { background: rgba(124, 58, 237, 0.22) !important; }
+
+#sidebar.collapsed a[href="/authorization"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/authorization"]:hover .relative > div::before { background: rgba(217, 119, 6, 0.26) !important; }
+
+#sidebar.collapsed a[href="/users"]:hover .relative > div { border-color: #6ee7b7 !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/users"]:hover .relative > div::before { background: rgba(5, 150, 105, 0.24) !important; }
+
+#sidebar.collapsed a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; transform: scale(1.03); }
+#sidebar.collapsed a[href="/how-to-use"]:hover .relative > div::before { background: rgba(245, 158, 11, 0.28) !important; }
+
+/* Expanded sidebar: match collapsed colors for icons + tints */
+#sidebar:not(.collapsed) #sidebarNavList a .relative > div {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease, color 120ms ease;
+}
+#sidebar:not(.collapsed) a[href="/"] i { color: #2563eb !important; }
+#sidebar:not(.collapsed) a[href="/manage-servers"] i { color: #10b981 !important; }
+#sidebar:not(.collapsed) a[href="/test-servers"] i { color: #7c3aed !important; }
+#sidebar:not(.collapsed) a[href="/authorization"] i { color: #d97706 !important; }
+#sidebar:not(.collapsed) a[href="/users"] i { color: #059669 !important; }
+#sidebar:not(.collapsed) a[href="/how-to-use"] i { color: #f59e0b !important; }
+#sidebar:not(.collapsed) a[href="/"] .relative > div { background: rgba(37, 99, 235, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/manage-servers"] .relative > div { background: rgba(16, 185, 129, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/test-servers"] .relative > div { background: rgba(124, 58, 237, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/authorization"] .relative > div { background: rgba(217, 119, 6, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/users"] .relative > div { background: rgba(5, 150, 105, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/how-to-use"] .relative > div { background: rgba(245, 158, 11, 0.14) !important; }
+#sidebar:not(.collapsed) a[href="/"]:hover .relative > div { border-color: #93c5fd !important; background: rgba(37, 99, 235, 0.24) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/manage-servers"]:hover .relative > div { border-color: #6ee7b7 !important; background: rgba(16, 185, 129, 0.22) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/test-servers"]:hover .relative > div { border-color: #c4b5fd !important; background: rgba(124, 58, 237, 0.22) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/authorization"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(217, 119, 6, 0.24) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/users"]:hover .relative > div { border-color: #6ee7b7 !important; background: rgba(5, 150, 105, 0.24) !important; transform: translateY(-1px); }
+#sidebar:not(.collapsed) a[href="/how-to-use"]:hover .relative > div { border-color: #fcd34d !important; background: rgba(245, 158, 11, 0.24) !important; transform: translateY(-1px); }
+
+/* AppBar New Server button: enforce single, consistent style across pages */
+#headerNewServerBtn {
+  padding: 0.5rem 1rem !important; /* py-2 px-4 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+  font-size: 0.875rem !important; /* text-sm */
+  line-height: 1.25rem !important;
+}
+/* Hide any legacy per-page New Server buttons that lack the shared id */
+header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerBtn) {
+  display: none !important;
+}
+
+/* Avoid first-paint sidebar flicker before sidebar.js mounts content */
+#sidebar:not([data-ready="1"]) {
+  visibility: hidden !important;
+}
+
+/* Right details panel collapsed state */
+#server-details-panel.collapsed { width: 3rem !important; overflow: hidden; }
+#server-details-panel.collapsed #serverDetailsHeaderRow { justify-content: center !important; padding: 0.25rem !important; }
+#server-details-panel.collapsed #rightPanelCollapseBtn { display: inline-flex !important; color: #94a3b8 !important; }
+#server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
+#server-details-panel.collapsed #rightPanelMiniRow { display: flex !important; }
+#server-details-panel.collapsed #serverDetailsMiniIcon { width: 2.5rem !important; height: 2.5rem !important; position: relative; background: transparent !important; border: 1px solid #e2e8f0 !important; border-radius: 0.5rem !important; display: inline-flex; align-items: center; justify-content: center; }
+#server-details-panel.collapsed #serverDetailsMiniIcon::before { content: ''; position: absolute; inset: 3px; border-radius: 0.375rem; background: rgba(124, 58, 237, 0.14); }
+#server-details-panel.collapsed #serverDetailsMiniIcon:hover { border-color: #c4b5fd !important; }
+#server-details-panel.collapsed #serverDetailsMiniIcon:hover::before { background: rgba(124, 58, 237, 0.22); }
+#server-details-panel.collapsed #serverDetailsMiniIcon i { color: #7c3aed !important; font-size: 1.05rem; line-height: 1; }
+#server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
+#server-details-panel.collapsed .flex-1 { display: none !important; }
+#server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; }
+#server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Right details rail (exact, consistent) */
+.details-rail {
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff; /* match panel */
+  border-left: 1px solid #e2e8f0; /* slate-200 */
+  pointer-events: none; /* let content click through except buttons */
+}
+.details-rail .rail-group { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+.details-rail .rail-btn {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; /* 8px */
+  background: #ffffff; /* match rail */
+  border: 1px solid #e2e8f0;
+  color: #475569; /* slate-600 */
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.details-rail .rail-btn:hover { border-color: #93c5fd; color: #2563eb; }
+.details-rail .rail-btn.danger { color: #dc2626; }
+.details-rail .rail-btn.danger:hover { border-color: #fecaca; color: #dc2626; }

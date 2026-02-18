@@ -5,7 +5,6 @@ dist/
 node_modules/
 
 # Environment files
-.env
 .env.local
 .env.development.local
 .env.test.local
@@ -73,3 +72,6 @@ dist/web/server.js.map
 dist/web/server.d.ts.map
 dist/web/server.js
 dist/web/server.js.map
+
+node_modules/
+.env.test.full

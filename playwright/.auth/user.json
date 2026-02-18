@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "quickmcp_access",
+      "value": "eyJzdWIiOiJhZG1pbiIsIndzIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NzEzMzkxNjYsImV4cCI6MTc3MTM0MDk2Nn0.ZmMs8ltEUNmYB3kWspWkZl6ikWTutagExPNMxv54b4o",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1771340966.51022,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "quickmcp_refresh",
+      "value": "NeN9V24eUSv6DJZ5ADcB-RZouyjDFDAHuI72IEgSF5At7heNf-s9G4gx7UOmaMD9",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1773931166.510406,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

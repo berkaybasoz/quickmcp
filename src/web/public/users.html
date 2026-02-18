@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP - Users</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="quickmcp-styles.css">
+  <script>tailwind.config = { darkMode: 'class' };</script>
+</head>
+<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+  <header class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+          <i class="fas fa-rocket text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+          <p class="text-xs text-slate-500 font-medium">Server Generator</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md" data-user-avatar>G</div>
+      <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
+
+    <main class="flex-1 overflow-y-auto p-8">
+      <div class="max-w-6xl mx-auto space-y-6">
+        <section class="card p-6">
+          <h2 class="text-2xl font-bold text-slate-900">Users</h2>
+          <p class="text-slate-600 mt-2">Only users with the <span class="font-semibold">Admin</span> role can add new users.</p>
+          <p id="viewerInfo" class="text-sm text-slate-500 mt-3"></p>
+        </section>
+
+        <section id="createUserCard" class="card p-6 hidden">
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">Add User</h3>
+          <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-3" autocomplete="off">
+            <input id="newUsername" class="input" placeholder="username" minlength="3" maxlength="64" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <input id="newPassword" type="password" class="input" placeholder="password (min 6)" minlength="6" required autocomplete="new-password">
+            <select id="newRole" class="input">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 font-medium">Create</button>
+          </form>
+          <p id="createUserMessage" class="text-sm mt-3 hidden"></p>
+        </section>
+
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">User List</h3>
+            <button id="refreshUsersBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600 text-sm">Refresh</button>
+          </div>
+          <div id="usersTableWrap" class="overflow-x-auto"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="sidebar.js"></script>
+  <script>
+    let currentUser = null;
+
+    function setMessage(message, type) {
+      const el = document.getElementById('createUserMessage');
+      el.textContent = message;
+      el.classList.remove('hidden', 'text-green-700', 'text-red-600');
+      el.classList.add(type === 'success' ? 'text-green-700' : 'text-red-600');
+    }
+
+    function renderUsers(users) {
+      const root = document.getElementById('usersTableWrap');
+      if (!users.length) {
+        root.innerHTML = '<p class="text-sm text-slate-500">No users found.</p>';
+        return;
+      }
+
+      root.innerHTML = `
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left border-b border-slate-200">
+              <th class="py-2 pr-4 font-semibold text-slate-700">Username</th>
+              <th class="py-2 pr-4 font-semibold text-slate-700">Workspace</th>
+              <th class="py-2 pr-4 font-semibold text-slate-700">Role</th>
+              <th class="py-2 pr-4 font-semibold text-slate-700">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map((u) => `
+              <tr class="border-b border-slate-100">
+                <td class="py-2 pr-4 text-slate-800">${u.username}</td>
+                <td class="py-2 pr-4 text-slate-600">${u.workspaceId || '-'}</td>
+                <td class="py-2 pr-4">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold ${u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}">${u.role}</span>
+                </td>
+                <td class="py-2 pr-4 text-slate-600">${u.createdAt || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function loadViewer() {
+      const res = await fetch('/api/auth/me');
+      if (!res.ok) throw new Error('Unauthorized');
+      const payload = await res.json();
+      currentUser = payload?.data || {};
+      document.getElementById('viewerInfo').textContent = `Signed in as ${currentUser.username} (${currentUser.role || 'user'})`;
+      if (currentUser.isAdmin) {
+        document.getElementById('createUserCard').classList.remove('hidden');
+      }
+    }
+
+    async function loadUsers() {
+      const root = document.getElementById('usersTableWrap');
+      root.innerHTML = '<p class="text-sm text-slate-500">Loading users...</p>';
+      const res = await fetch('/api/auth/users');
+      if (res.status === 403) {
+        root.innerHTML = '<p class="text-sm text-amber-700">You do not have permission to view users.</p>';
+        return;
+      }
+      if (!res.ok) throw new Error('Failed to load users');
+      const payload = await res.json();
+      renderUsers(payload?.data?.users || []);
+    }
+
+    async function createUser(event) {
+      event.preventDefault();
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const role = document.getElementById('newRole').value;
+
+      const res = await fetch('/api/auth/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, role })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Failed to create user');
+      }
+
+      document.getElementById('createUserForm').reset();
+      setMessage(`User "${username}" created.`, 'success');
+      await loadUsers();
+    }
+
+    document.getElementById('refreshUsersBtn').addEventListener('click', () => {
+      loadUsers().catch((error) => {
+        document.getElementById('usersTableWrap').innerHTML = `<p class="text-sm text-red-600">${error.message || 'Failed to load users.'}</p>`;
+      });
+    });
+
+    document.getElementById('createUserForm').addEventListener('submit', async (event) => {
+      try {
+        await createUser(event);
+      } catch (error) {
+        setMessage(error.message || 'Failed to create user.', 'error');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const userEl = document.getElementById('newUsername');
+        const passEl = document.getElementById('newPassword');
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
+        await loadViewer();
+        await loadUsers();
+      } catch (error) {
+        document.getElementById('usersTableWrap').innerHTML = `<p class="text-sm text-red-600">${error.message || 'Failed to load users.'}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

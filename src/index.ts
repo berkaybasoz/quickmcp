@@ -1,4 +1,5 @@
-import './web/server';
+import 'dotenv/config';
+import './server/server';
 
 export * from './types';
 export * from './parsers';

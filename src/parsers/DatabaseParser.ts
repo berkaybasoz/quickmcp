@@ -3,17 +3,18 @@ import { Client as PgClient } from 'pg';
 import sqlite3 from 'sqlite3';
 import * as sql from 'mssql';
 import { DatabaseConnection, ParsedData } from '../types';
+import { DataSourceType } from '../types';
 
 export class DatabaseParser {
   async parse(connection: DatabaseConnection, tableName?: string): Promise<ParsedData[]> {
     switch (connection.type) {
-      case 'mysql':
+      case DataSourceType.MySQL:
         return this.parseMySql(connection, tableName);
-      case 'postgresql':
+      case DataSourceType.PostgreSQL:
         return this.parsePostgreSql(connection, tableName);
-      case 'sqlite':
+      case DataSourceType.SQLite:
         return this.parseSqlite(connection, tableName);
-      case 'mssql':
+      case DataSourceType.MSSQL:
         return this.parseMsSql(connection, tableName);
       default:
         throw new Error(`Unsupported database type: ${connection.type}`);
@@ -22,13 +23,13 @@ export class DatabaseParser {
 
   async getTables(connection: DatabaseConnection): Promise<string[]> {
     switch (connection.type) {
-      case 'mysql':
+      case DataSourceType.MySQL:
         return this.getMySqlTables(connection);
-      case 'postgresql':
+      case DataSourceType.PostgreSQL:
         return this.getPostgreSqlTables(connection);
-      case 'sqlite':
+      case DataSourceType.SQLite:
         return this.getSqliteTables(connection);
-      case 'mssql':
+      case DataSourceType.MSSQL:
         return this.getMsSqlTables(connection);
       default:
         throw new Error(`Unsupported database type: ${connection.type}`);

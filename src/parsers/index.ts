@@ -5,32 +5,40 @@ export { DatabaseParser } from './DatabaseParser';
 import { CsvParser } from './CsvParser';
 import { ExcelParser } from './ExcelParser';
 import { DatabaseParser } from './DatabaseParser';
-import { DataSource, ParsedData } from '../types';
+import { DataSource, DataSourceType, ParsedData, CsvDataSource, ExcelDataSource, JsonDataSource, CurlDataSource, isDatabase } from '../types';
+
+type AnyDataSource = DataSource | CsvDataSource | ExcelDataSource | JsonDataSource | CurlDataSource;
 
 export class DataSourceParser {
   private csvParser = new CsvParser();
   private excelParser = new ExcelParser();
   private databaseParser = new DatabaseParser();
 
-  async parse(dataSource: DataSource): Promise<ParsedData[]> {
+  async parse(dataSource: AnyDataSource): Promise<ParsedData[]> {
+    if (isDatabase(dataSource.type)) {
+      if (!dataSource.connection) throw new Error('Database connection required for database parsing');
+      return await this.databaseParser.parse(dataSource.connection);
+    }
+
     switch (dataSource.type) {
-      case 'csv':
-        if (!dataSource.filePath) throw new Error('File path required for CSV parsing');
-        const csvData = await this.csvParser.parse(dataSource.filePath);
+      case DataSourceType.CSV: {
+        const csvSource = dataSource as CsvDataSource;
+        const csvData = await this.csvParser.parse(csvSource.filePath);
         return [csvData];
+      }
 
-      case 'excel':
-        if (!dataSource.filePath) throw new Error('File path required for Excel parsing');
-        const excelData = await this.excelParser.parse(dataSource.filePath);
+      case DataSourceType.Excel: {
+        const excelSource = dataSource as ExcelDataSource;
+        const excelData = await this.excelParser.parse(excelSource.filePath);
         return [excelData];
+      }
 
-      case 'database':
-        if (!dataSource.connection) throw new Error('Database connection required for database parsing');
-        return await this.databaseParser.parse(dataSource.connection);
-
-      case 'json':
-        if (!dataSource.data) throw new Error('Data required for JSON parsing');
-        return this.parseJsonData(dataSource.data);
+      case DataSourceType.JSON: {
+        const jsonSource = dataSource as JsonDataSource;
+        if (!jsonSource.data) 
+          throw new Error('Data required for JSON parsing');
+        return this.parseJsonData(jsonSource.data);
+      }
 
       default:
         throw new Error(`Unsupported data source type: ${dataSource.type}`);
