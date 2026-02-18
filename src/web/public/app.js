@@ -6,6 +6,44 @@ let currentWizardStep = 1;
 let allServers = [];
 let serverSearchTimer = null;
 
+function getPanelToggleIconSvg() {
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 flex-shrink-0" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+        <path d="M9 3v18"></path>
+      </svg>
+    `;
+}
+
+function setRightPanelCollapseIcon() {
+    const iconWrap = document.getElementById('rightPanelCollapseIcon');
+    if (!iconWrap) return;
+    iconWrap.innerHTML = getPanelToggleIconSvg();
+}
+
+function bindRightPanelMiniExpand(panel) {
+    if (!panel) return;
+    const miniIcon = panel.querySelector('#serverDetailsMiniIcon');
+    const miniRow = panel.querySelector('#rightPanelMiniRow');
+    if (!miniIcon || miniIcon.dataset.listenerAttached === 'true') return;
+    miniIcon.style.cursor = 'pointer';
+    miniIcon.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setRightPanelCollapsed(false);
+    });
+    miniIcon.dataset.listenerAttached = 'true';
+    if (miniRow && miniRow.dataset.listenerAttached !== 'true') {
+        miniRow.style.cursor = 'pointer';
+        miniRow.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setRightPanelCollapsed(false);
+        });
+        miniRow.dataset.listenerAttached = 'true';
+    }
+}
+
 function initializeManageServersPage() {
     const panel = document.getElementById('server-details-panel');
     if (!panel) return;
@@ -22,10 +60,10 @@ function initializeManageServersPage() {
 
     // Populate with placeholder. This will be overwritten when a server is viewed.
     panel.innerHTML = `
-        <div id="serverDetailsHeaderRow" class="p-6 border-b border-slate-200 bg-white flex items-center justify-between">
+        <div id="serverDetailsHeaderRow" class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <button id="rightPanelCollapseBtn" class="text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center" title="Collapse panel">
-                    <i class="fas fa-angles-left"></i>
+                <button id="rightPanelCollapseBtn" class="text-slate-400 hover:text-slate-600 inline-flex items-center justify-center leading-none" title="Collapse panel">
+                    <span id="rightPanelCollapseIcon" class="inline-flex items-center justify-center"></span>
                 </button>
                 <div id="serverDetailsHeaderMain" class="flex items-center gap-3">
                     <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25">
@@ -66,15 +104,27 @@ function initializeManageServersPage() {
             miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"><i class="fas fa-wrench"></i></div>';
             headerRowEl.insertAdjacentElement('afterend', miniRow);
         }
+        bindRightPanelMiniExpand(panel);
     } catch {}
 
-    // Add listener for the new button
-    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
-    if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
-        collapseBtn.addEventListener('click', () => {
-            setRightPanelCollapsed(!isRightPanelCollapsed());
+    // One delegated click handler for all right-panel toggle controls
+    if (!panel.dataset.toggleDelegationAttached) {
+        panel.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('#rightPanelCollapseBtn')) {
+                event.preventDefault();
+                event.stopPropagation();
+                setRightPanelCollapsed(!isRightPanelCollapsed());
+                return;
+            }
+            if (target.closest('#serverDetailsMiniIcon') || target.closest('#rightPanelMiniRow')) {
+                event.preventDefault();
+                event.stopPropagation();
+                setRightPanelCollapsed(false);
+            }
         });
-        collapseBtn.dataset.listenerAttached = 'true';
+        panel.dataset.toggleDelegationAttached = 'true';
     }
     
     // Apply the visual state
@@ -1880,7 +1930,7 @@ function showServerDetailsPanel(serverData, serverIdArg) {
     const serverId = serverIdArg || serverData.id || serverData.config?.name || 'unknown';
 
     const inner = `
-        <div id=\"serverDetailsHeaderRow\" class=\"p-4 border-b border-slate-200 bg-white flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 mr-2 inline-flex items-center justify-center\" title=\"Collapse panel\">\n                    <i class=\"fas fa-angles-right\"></i>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
+        <div id=\"serverDetailsHeaderRow\" class=\"p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50 flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 inline-flex items-center justify-center leading-none\" title=\"Collapse panel\">\n                    <span id=\"rightPanelCollapseIcon\" class=\"inline-flex items-center justify-center\"></span>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
                     <div class=\"w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/25\">
                         <i class=\"fas fa-wrench text-white\"></i>
                     </div>
@@ -1984,21 +2034,13 @@ function showServerDetailsPanel(serverData, serverIdArg) {
             const miniRow = document.createElement('div');
             miniRow.id = 'rightPanelMiniRow';
             miniRow.className = 'hidden flex items-center justify-center py-2';
-            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 relative"><i class="fas fa-wrench"></i>';
+            miniRow.innerHTML = '<div id="serverDetailsMiniIcon" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 relative"><i class="fas fa-wrench"></i></div>';
             headerRowEl.insertAdjacentElement('afterend', miniRow);
         }
+        bindRightPanelMiniExpand(panel);
     } catch {}
     // Horizontal icon bar rendered above Tools; no right vertical rail
-    // Bind collapse button and apply stored state
-    try {
-        const collapseBtn = panel.querySelector('#rightPanelCollapseBtn');
-        if (collapseBtn && !collapseBtn.dataset.listenerAttached) {
-            collapseBtn.addEventListener('click', () => {
-                setRightPanelCollapsed(!isRightPanelCollapsed());
-            });
-            collapseBtn.dataset.listenerAttached = 'true';
-        }
-    } catch {}
+    // Toggle controls are delegated from initializeManageServersPage
     // Slide in overlay drawer (no blur, on top of list)
     console.log('🔍 Showing details overlay');
     panel.classList.remove('hidden');
@@ -2019,27 +2061,27 @@ function applyRightPanelCollapsedState() {
     const panel = document.getElementById('server-details-panel');
     if (!panel) return;
     const collapsed = localStorage.getItem('rightPanelCollapsed') === 'true';
-    const collapseBtn = panel.querySelector('#rightPanelCollapseBtn i');
     const headerRow = panel.querySelector('#serverDetailsHeaderRow');
     const scrollArea = panel.querySelector('.flex-1.overflow-y-auto');
+    setRightPanelCollapseIcon();
     if (collapsed) {
         panel.classList.add('collapsed');
         panel.style.width = '3rem';
-        // Swapped: show « when collapsed (angles-left)
-        if (collapseBtn) collapseBtn.className = 'fas fa-angles-left';
         if (headerRow) headerRow.classList.add('justify-center');
         if (scrollArea) scrollArea.classList.add('hidden');
         const miniRow = panel.querySelector('#rightPanelMiniRow');
         if (miniRow) miniRow.classList.remove('hidden');
+        const btn = panel.querySelector('#rightPanelCollapseBtn');
+        if (btn) btn.setAttribute('title', 'Expand panel');
     } else {
         panel.classList.remove('collapsed');
         panel.style.width = '';
-        // Swapped: show » when expanded (angles-right)
-        if (collapseBtn) collapseBtn.className = 'fas fa-angles-right';
         if (headerRow) headerRow.classList.remove('justify-center');
         if (scrollArea) scrollArea.classList.remove('hidden');
         const miniRow = panel.querySelector('#rightPanelMiniRow');
         if (miniRow) miniRow.classList.add('hidden');
+        const btn = panel.querySelector('#rightPanelCollapseBtn');
+        if (btn) btn.setAttribute('title', 'Collapse panel');
     }
 }
 
@@ -8359,7 +8401,7 @@ function applySidebarCollapsedState() {
     if (collapsed) {
         sidebar.classList.add('collapsed');
         // Collapsed: show only menu icons (centered, colored) and the » button; hide Navigation texts
-        sidebar.style.width = '4rem';
+        sidebar.style.width = '3rem';
         const headerRow = document.getElementById('sidebarHeaderRow');
         const headerMain = document.getElementById('sidebarHeaderMain');
         const collapseBtn = document.getElementById('sidebarCollapseBtn');
