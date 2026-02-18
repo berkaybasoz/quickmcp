@@ -39,6 +39,21 @@
     `;
   }
 
+  function getSidebarPanelIconSvg() {
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 flex-shrink-0" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+        <path d="M9 3v18"></path>
+      </svg>
+    `;
+  }
+
+  function setSidebarCollapseIcon() {
+    const iconWrap = document.getElementById('sidebarCollapseIcon');
+    if (!iconWrap) return;
+    iconWrap.innerHTML = getSidebarPanelIconSvg();
+  }
+
   function applySidebarCollapsedState() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -47,14 +62,12 @@
     if (collapsed) {
       sidebar.classList.add('collapsed');
       sidebar.style.width = '3rem';
-      const icon = collapseBtn?.querySelector('i');
-      if (icon) icon.className = 'fas fa-angles-right';
+      setSidebarCollapseIcon();
       if (collapseBtn) collapseBtn.title = 'Expand sidebar';
     } else {
       sidebar.classList.remove('collapsed');
       sidebar.style.width = '';
-      const icon = collapseBtn?.querySelector('i');
-      if (icon) icon.className = 'fas fa-angles-left';
+      setSidebarCollapseIcon();
       if (collapseBtn) collapseBtn.title = 'Collapse sidebar';
     }
   }
@@ -113,6 +126,7 @@
       collapseBtn.dataset.bound = 'true';
       collapseBtn.addEventListener('click', (event) => {
         event.preventDefault();
+        event.stopPropagation();
         const current = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
         try { localStorage.setItem('sidebarCollapsed', (!current).toString()); } catch {}
         applySidebarCollapsedState();
@@ -123,7 +137,10 @@
       headerRow.dataset.bound = 'true';
       headerRow.addEventListener('click', (event) => {
         if (!sidebar.classList.contains('collapsed')) return;
-        if (event.target?.closest && event.target.closest('#sidebarCollapseBtn')) return;
+        const clickedToggle = Array.isArray(event.composedPath?.())
+          ? event.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
+          : !!(event.target?.closest && event.target.closest('#sidebarCollapseBtn'));
+        if (clickedToggle) return;
         try { localStorage.setItem('sidebarCollapsed', 'false'); } catch {}
         applySidebarCollapsedState();
       });
@@ -167,7 +184,7 @@
           </div>
           <div class="flex items-center gap-2">
             <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
-              <i class="fas fa-angles-left"></i>
+              <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
             </button>
             <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
               <i class="fas fa-times"></i>
@@ -189,17 +206,17 @@
     `;
 
     root.innerHTML = html;
-    // Update collapse icon direction immediately
-    if (preferCollapsed) {
-      const icon = root.querySelector('#sidebarCollapseBtn i');
-      if (icon) icon.className = 'fas fa-angles-right';
-    }
+    setSidebarCollapseIcon();
     wireSidebarInteractions();
     root.setAttribute('data-ready', '1');
   }
 
-  // auto-render on DOMContentLoaded
-  document.addEventListener('DOMContentLoaded', renderSidebar);
+  // auto-render (works both before and after DOMContentLoaded)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderSidebar);
+  } else {
+    renderSidebar();
+  }
 
   // expose for manual calls if needed
   window.renderSidebar = renderSidebar;

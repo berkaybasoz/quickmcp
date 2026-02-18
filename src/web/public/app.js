@@ -240,22 +240,30 @@ function setupEventListeners() {
 
     // Collapsible left sidebar toggle
     const leftToggle = document.getElementById('sidebarCollapseBtn');
-    if (leftToggle) {
-        leftToggle.addEventListener('click', () => {
+    if (leftToggle && leftToggle.dataset.bound !== 'true') {
+        leftToggle.dataset.bound = 'true';
+        leftToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
             const current = localStorage.getItem('sidebarCollapsed') === 'true';
             localStorage.setItem('sidebarCollapsed', (!current).toString());
             applySidebarCollapsedState();
         });
         // Also make the entire header row clickable to expand when collapsed
         const headerRow = document.getElementById('sidebarHeaderRow');
-        headerRow?.addEventListener('click', (e) => {
-            if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
-                // Prevent double handling when clicking the button itself
-                if ((e.target.closest && e.target.closest('#sidebarCollapseBtn'))) return;
-                localStorage.setItem('sidebarCollapsed', 'false');
-                applySidebarCollapsedState();
-            }
-        });
+        if (headerRow && headerRow.dataset.bound !== 'true') {
+            headerRow.dataset.bound = 'true';
+            headerRow.addEventListener('click', (e) => {
+                if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
+                    // Prevent double handling when clicking the button itself
+                    const clickedToggle = Array.isArray(e.composedPath?.())
+                        ? e.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
+                        : !!(e.target.closest && e.target.closest('#sidebarCollapseBtn'));
+                    if (clickedToggle) return;
+                    localStorage.setItem('sidebarCollapsed', 'false');
+                    applySidebarCollapsedState();
+                }
+            });
+        }
     }
 
 
