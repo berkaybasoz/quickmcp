@@ -19,8 +19,8 @@ interface AuthApiDeps {
   accessCookieName: string;
   refreshCookieName: string;
   publicDir: string;
-  resolveAuthContext: (req: AuthenticatedRequest, res?: express.Response) => AuthContext | null;
-  requireAdminApi: (req: AuthenticatedRequest, res: express.Response) => AuthContext | null;
+  resolveAuthContext: (req: AuthenticatedRequest, res?: express.Response) => Promise<AuthContext | null>;
+  requireAdminApi: (req: AuthenticatedRequest, res: express.Response) => Promise<AuthContext | null>;
   ensureDataStore: () => IDataStore;
   normalizeUsername: (value: unknown) => string;
   createMcpToken: (username: string, workspaceId: string, role: AppUserRole, ttlSec?: number) => CreateMcpTokenResult;
@@ -104,10 +104,12 @@ export class AuthApi {
     store: IDataStore,
     scopeType: McpTokenPolicyScope,
     map: Record<string, boolean | null>
-  ): void {
+  ): Promise<void> {
+    const writes: Promise<void>[] = [];
     for (const [id, decision] of Object.entries(map)) {
-      store.setMcpTokenPolicy(scopeType, id, decision);
+      writes.push(store.setMcpTokenPolicy(scopeType, id, decision));
     }
+    return Promise.all(writes).then(() => undefined);
   }
 
   registerRoutes(app: express.Express): void {
@@ -140,7 +142,7 @@ export class AuthApi {
   }
 
   private getMe = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -150,7 +152,7 @@ export class AuthApi {
     const payload = accessToken ? verifyAccessToken(accessToken, this.deps.authCookieSecret) : null;
     let storeUser: any = null;
     try {
-      storeUser = this.deps.ensureDataStore().getUser(ctx.username);
+      storeUser = await this.deps.ensureDataStore().getUser(ctx.username);
     } catch {}
     const createdDate = payload?.createdDate || storeUser?.createdAt || '';
     const lastSignInDate = payload?.lastSignInDate || (payload?.iat ? new Date(payload.iat * 1000).toISOString() : '');
@@ -172,7 +174,7 @@ export class AuthApi {
   };
 
   private getRoles = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -194,10 +196,10 @@ export class AuthApi {
       res.status(404).json({ success: false, error: 'Users API is not available in SAAS mode' });
       return;
     }
-    const actor = this.deps.requireAdminApi(req, res);
+    const actor = await this.deps.requireAdminApi(req, res);
     if (!actor) return;
     try {
-      const users = this.deps.ensureDataStore().getAllUsersByWorkspace(actor.workspaceId);
+      const users = await this.deps.ensureDataStore().getAllUsersByWorkspace(actor.workspaceId);
       res.json({ success: true, data: { users, requestedBy: actor.username, workspaceId: actor.workspaceId } });
     } catch (error) {
       res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to load users' });
@@ -205,7 +207,7 @@ export class AuthApi {
   };
 
   private getAuthorizationConfig = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -222,7 +224,7 @@ export class AuthApi {
   };
 
   private getAuthorizationContext = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -230,18 +232,20 @@ export class AuthApi {
 
     try {
       const store = this.deps.ensureDataStore();
+      const workspaceUsers = await store.getAllUsersByWorkspace(ctx.workspaceId);
       const users = (ctx.role === 'admin'
-        ? store.getAllUsersByWorkspace(ctx.workspaceId)
-        : store.getAllUsersByWorkspace(ctx.workspaceId).filter((u) => u.username === ctx.username)
+        ? workspaceUsers
+        : workspaceUsers.filter((u) => u.username === ctx.username)
       ).map((u) => ({ username: u.username, role: u.role }));
 
-      const servers = store.getAllServersByOwner(ctx.workspaceId).map((server) => {
-        const tools = store.getToolsForServer(server.id).map((t) => `${server.id}__${t.name}`);
-        const resources = store.getResourcesForServer(server.id).map((r) => `${server.id}__${r.name}`);
+      const serverRows = await store.getAllServersByOwner(ctx.workspaceId);
+      const servers = await Promise.all(serverRows.map(async (server) => {
+        const tools = (await store.getToolsForServer(server.id)).map((t) => `${server.id}__${t.name}`);
+        const resources = (await store.getResourcesForServer(server.id)).map((r) => `${server.id}__${r.name}`);
         const rawType = (server.sourceConfig as any)?.type;
         const type = typeof rawType === 'string' ? rawType : 'unknown';
         return { id: server.id, name: server.name, type, tools, resources };
-      });
+      }));
 
       res.json({ success: true, data: { workspaceId: ctx.workspaceId, users, servers } });
     } catch (error) {
@@ -250,7 +254,7 @@ export class AuthApi {
   };
 
   private getAuthorizationServers = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -258,16 +262,16 @@ export class AuthApi {
 
     try {
       const store = this.deps.ensureDataStore();
-      const servers = store.getAllServersByOwner(ctx.workspaceId);
-      const data = servers.map((server) => {
-        const cfg = store.getServerAuthConfig(server.id);
+      const servers = await store.getAllServersByOwner(ctx.workspaceId);
+      const data = await Promise.all(servers.map(async (server) => {
+        const cfg = await store.getServerAuthConfig(server.id);
         return {
           id: server.id,
           name: server.name,
           ownerUsername: server.ownerUsername,
           requireMcpToken: cfg ? cfg.requireMcpToken : true
         };
-      });
+      }));
       res.json({ success: true, data: { servers: data } });
     } catch (error) {
       res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to load authorization settings' });
@@ -275,19 +279,20 @@ export class AuthApi {
   };
 
   private getAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const actor = this.deps.requireAdminApi(req, res);
+    const actor = await this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
     try {
       const store = this.deps.ensureDataStore();
-      const users = store.getAllUsersByWorkspace(actor.workspaceId).map((u) => u.username);
-      const servers = store.getAllServersByOwner(actor.workspaceId).map((s) => s.id);
-      const tools = servers.flatMap((serverId) => store.getToolsForServer(serverId).map((t) => `${serverId}__${t.name}`));
+      const users = (await store.getAllUsersByWorkspace(actor.workspaceId)).map((u) => u.username);
+      const servers = (await store.getAllServersByOwner(actor.workspaceId)).map((s) => s.id);
+      const toolsByServer = await Promise.all(servers.map((serverId) => store.getToolsForServer(serverId)));
+      const tools = servers.flatMap((serverId, index) => toolsByServer[index].map((t) => `${serverId}__${t.name}`));
 
-      const globalPolicy = store.getMcpTokenPolicy('global', '*');
-      const userPolicies = store.listMcpTokenPolicies('user');
-      const serverPolicies = store.listMcpTokenPolicies('server');
-      const toolPolicies = store.listMcpTokenPolicies('tool');
+      const globalPolicy = await store.getMcpTokenPolicy('global', '*');
+      const userPolicies = await store.listMcpTokenPolicies('user');
+      const serverPolicies = await store.listMcpTokenPolicies('server');
+      const toolPolicies = await store.listMcpTokenPolicies('tool');
 
       const userRules: Record<string, boolean | null> = {};
       const serverRules: Record<string, boolean | null> = {};
@@ -322,12 +327,12 @@ export class AuthApi {
   };
 
   private updateAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const actor = this.deps.requireAdminApi(req, res);
+    const actor = await this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
     try {
       const store = this.deps.ensureDataStore();
-      const users = store.getAllUsersByWorkspace(actor.workspaceId).map((u) => u.username);
+      const users = (await store.getAllUsersByWorkspace(actor.workspaceId)).map((u) => u.username);
       const usersSet = new Set(users);
 
       const globalRequireMcpToken = req.body?.globalRequireMcpToken !== false;
@@ -335,10 +340,10 @@ export class AuthApi {
       const serverRules = this.normalizePolicyMap(req.body?.serverRules, 'server', actor.workspaceId, usersSet);
       const toolRules = this.normalizePolicyMap(req.body?.toolRules, 'tool', actor.workspaceId, usersSet);
 
-      store.setMcpTokenPolicy('global', '*', globalRequireMcpToken);
-      this.applyPolicyMap(store, 'user', userRules);
-      this.applyPolicyMap(store, 'server', serverRules);
-      this.applyPolicyMap(store, 'tool', toolRules);
+      await store.setMcpTokenPolicy('global', '*', globalRequireMcpToken);
+      await this.applyPolicyMap(store, 'user', userRules);
+      await this.applyPolicyMap(store, 'server', serverRules);
+      await this.applyPolicyMap(store, 'tool', toolRules);
 
       res.json({
         success: true,
@@ -355,7 +360,7 @@ export class AuthApi {
   };
 
   private updateAuthorizationServer = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -370,12 +375,12 @@ export class AuthApi {
 
     try {
       const store = this.deps.ensureDataStore();
-      const server = store.getServerForOwner(serverId, ctx.workspaceId);
+      const server = await store.getServerForOwner(serverId, ctx.workspaceId);
       if (!server) {
         res.status(404).json({ success: false, error: 'Server not found for current user' });
         return;
       }
-      store.setServerAuthConfig(serverId, requireMcpToken);
+      await store.setServerAuthConfig(serverId, requireMcpToken);
       res.json({ success: true, data: { serverId, requireMcpToken } });
     } catch (error) {
       res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Failed to update authorization settings' });
@@ -383,7 +388,7 @@ export class AuthApi {
   };
 
   private createAuthorizationMcpToken = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
@@ -400,7 +405,7 @@ export class AuthApi {
       res.status(403).json({ success: false, error: 'Only admin can generate token for other users' });
       return;
     }
-    const subjectUser = store.getUserInWorkspace(subjectUsername, ctx.workspaceId);
+    const subjectUser = await store.getUserInWorkspace(subjectUsername, ctx.workspaceId);
     if (!subjectUser) {
       res.status(404).json({ success: false, error: 'Selected user is not in this workspace' });
       return;
@@ -435,7 +440,7 @@ export class AuthApi {
       ttlHours ? ttlHours * 3600 : undefined
     );
 
-    store.createMcpToken({
+    await store.createMcpToken({
       id: tokenPack.tokenId,
       tokenName,
       workspaceId: subjectUser.workspaceId,
@@ -471,14 +476,14 @@ export class AuthApi {
   };
 
   private getAuthorizationTokens = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
 
-    const tokens = this.deps.ensureDataStore()
-      .getMcpTokensByWorkspace(ctx.workspaceId)
+    const tokens = (await this.deps.ensureDataStore()
+      .getMcpTokensByWorkspace(ctx.workspaceId))
       .filter((t) => ctx.role === 'admin' || t.subjectUsername === ctx.username)
       .map((t) => ({
         id: t.id,
@@ -501,13 +506,13 @@ export class AuthApi {
   };
 
   private getAuthorizationTokenById = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
 
-    const token = this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
+    const token = await this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
     if (!token || token.workspaceId !== ctx.workspaceId || (ctx.role !== 'admin' && token.subjectUsername !== ctx.username)) {
       res.status(404).json({ success: false, error: 'Token not found' });
       return;
@@ -535,19 +540,19 @@ export class AuthApi {
   };
 
   private deleteAuthorizationToken = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const ctx = this.deps.resolveAuthContext(req, res);
+    const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
 
-    const token = this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
+    const token = await this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
     if (!token || token.workspaceId !== ctx.workspaceId || (ctx.role !== 'admin' && token.subjectUsername !== ctx.username)) {
       res.status(404).json({ success: false, error: 'Token not found' });
       return;
     }
 
-    this.deps.ensureDataStore().revokeMcpToken(token.id);
+    await this.deps.ensureDataStore().revokeMcpToken(token.id);
     res.json({ success: true });
   };
 
@@ -556,7 +561,7 @@ export class AuthApi {
       res.status(404).json({ success: false, error: 'User management is not available in SAAS mode' });
       return;
     }
-    const actor = this.deps.requireAdminApi(req, res);
+    const actor = await this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
     const username = this.deps.normalizeUsername(req.body?.username);
@@ -579,11 +584,11 @@ export class AuthApi {
 
     try {
       const store = this.deps.ensureDataStore();
-      if (store.getUserInWorkspace(username, actor.workspaceId)) {
+      if (await store.getUserInWorkspace(username, actor.workspaceId)) {
         res.status(409).json({ success: false, error: `User "${username}" already exists` });
         return;
       }
-      store.createUser(username, this.deps.hashPassword(password), role, actor.workspaceId);
+      await store.createUser(username, this.deps.hashPassword(password), role, actor.workspaceId);
       res.status(201).json({
         success: true,
         data: {
@@ -601,7 +606,7 @@ export class AuthApi {
       res.status(404).json({ success: false, error: 'User management is not available in SAAS mode' });
       return;
     }
-    const actor = this.deps.requireAdminApi(req, res);
+    const actor = await this.deps.requireAdminApi(req, res);
     if (!actor) return;
 
     const targetUsername = this.deps.normalizeUsername(req.params.username);
@@ -614,13 +619,13 @@ export class AuthApi {
     }
 
     const store = this.deps.ensureDataStore();
-    const target = store.getUserInWorkspace(targetUsername, actor.workspaceId);
+    const target = await store.getUserInWorkspace(targetUsername, actor.workspaceId);
     if (!target) {
       res.status(404).json({ success: false, error: 'User not found in current workspace' });
       return;
     }
 
-    store.updateUserRole(targetUsername, actor.workspaceId, role);
+    await store.updateUserRole(targetUsername, actor.workspaceId, role);
     res.json({ success: true, data: { user: { username: targetUsername, workspaceId: actor.workspaceId, role } } });
   };
 
@@ -645,7 +650,7 @@ export class AuthApi {
     let authenticatedWorkspaceId = '';
     let authenticatedRole: AppUserRole = 'user';
     try {
-      const storeUser = this.deps.ensureDataStore().getUser(username);
+      const storeUser = await this.deps.ensureDataStore().getUser(username);
       if (storeUser && this.deps.verifyPassword(password, storeUser.passwordHash)) {
         authenticatedUsername = storeUser.username;
         authenticatedWorkspaceId = storeUser.workspaceId || storeUser.username;
@@ -656,7 +661,7 @@ export class AuthApi {
           authenticatedUsername = legacyAdmin.username;
           authenticatedWorkspaceId = legacyAdmin.username;
           authenticatedRole = 'admin';
-          this.deps.ensureDataStore().upsertUser(legacyAdmin.username, this.deps.hashPassword(legacyAdmin.password), 'admin', legacyAdmin.username);
+          await this.deps.ensureDataStore().upsertUser(legacyAdmin.username, this.deps.hashPassword(legacyAdmin.password), 'admin', legacyAdmin.username);
         }
       }
     } catch (error) {
@@ -669,7 +674,7 @@ export class AuthApi {
     }
     if (!authenticatedWorkspaceId) authenticatedWorkspaceId = authenticatedUsername;
 
-    this.issueSession(res, authenticatedUsername, authenticatedWorkspaceId, authenticatedRole, {
+    await this.issueSession(res, authenticatedUsername, authenticatedWorkspaceId, authenticatedRole, {
       displayName: authenticatedUsername
     });
 
@@ -684,13 +689,13 @@ export class AuthApi {
     });
   };
 
-  private issueSession(
+  private async issueSession(
     res: express.Response,
     username: string,
     workspaceId: string,
     role: AppUserRole,
     profile?: { displayName?: string; email?: string; avatarUrl?: string; createdDate?: string; lastSignInDate?: string }
-  ): void {
+  ): Promise<void> {
     const accessToken = createAccessToken(
       username,
       this.deps.authCookieSecret,
@@ -707,7 +712,7 @@ export class AuthApi {
     const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
     const refreshExpiresAt = new Date(Date.now() + this.deps.authRefreshTtlSec * 1000).toISOString();
 
-    this.deps.ensureDataStore().saveRefreshToken(refreshTokenHash, username, refreshExpiresAt);
+    await this.deps.ensureDataStore().saveRefreshToken(refreshTokenHash, username, refreshExpiresAt);
     this.deps.setCookie(res, this.deps.accessCookieName, accessToken, this.deps.authAccessTtlSec);
     this.deps.setCookie(res, this.deps.refreshCookieName, refreshToken, this.deps.authRefreshTtlSec);
   }
@@ -812,13 +817,13 @@ export class AuthApi {
       const workspaceId = username;
       const role = this.resolveSupabaseRole(username, email);
 
-      this.deps.ensureDataStore().upsertUser(
+      await this.deps.ensureDataStore().upsertUser(
         username,
         this.deps.hashPassword(`supabase:${userPayload.id}`),
         role,
         workspaceId
       );
-      this.issueSession(res, username, workspaceId, role, {
+      await this.issueSession(res, username, workspaceId, role, {
         displayName: displayName || username,
         email,
         avatarUrl,
@@ -858,22 +863,22 @@ export class AuthApi {
     }
 
     const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
-    const record = this.deps.ensureDataStore().getRefreshToken(refreshTokenHash);
+    const record = await this.deps.ensureDataStore().getRefreshToken(refreshTokenHash);
     if (!record || record.revokedAt || new Date(record.expiresAt).getTime() <= Date.now()) {
-      if (record && !record.revokedAt) this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
+      if (record && !record.revokedAt) await this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
       this.deps.clearCookie(res, this.deps.accessCookieName);
       this.deps.clearCookie(res, this.deps.refreshCookieName);
       res.status(401).json({ success: false, error: 'Refresh token is invalid or expired' });
       return;
     }
 
-    this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
+    await this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
     const newRefreshToken = createRefreshToken();
     const newRefreshHash = hashRefreshToken(newRefreshToken, this.deps.authCookieSecret);
     const refreshExpiresAt = new Date(Date.now() + this.deps.authRefreshTtlSec * 1000).toISOString();
-    this.deps.ensureDataStore().saveRefreshToken(newRefreshHash, record.username, refreshExpiresAt);
+    await this.deps.ensureDataStore().saveRefreshToken(newRefreshHash, record.username, refreshExpiresAt);
 
-    const refreshedUser = this.deps.ensureDataStore().getUser(record.username);
+    const refreshedUser = await this.deps.ensureDataStore().getUser(record.username);
     const refreshedWorkspaceId = refreshedUser?.workspaceId || record.username;
     const refreshedRole = (refreshedUser?.role || this.deps.getUserRole(record.username, refreshedWorkspaceId)) as AppUserRole;
     const newAccessToken = createAccessToken(
@@ -899,7 +904,7 @@ export class AuthApi {
     const refreshToken = cookies[this.deps.refreshCookieName];
     if (refreshToken) {
       const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
-      this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
+      await this.deps.ensureDataStore().revokeRefreshToken(refreshTokenHash);
     }
     this.deps.clearCookie(res, this.deps.accessCookieName);
     this.deps.clearCookie(res, this.deps.refreshCookieName);

@@ -7823,48 +7823,48 @@ export class MCPServerGenerator {
   }
 
   // Public methods for management
-  getAllServers(): any {
+  async getAllServers(): Promise<any> {
     return this.dataStore.getAllServers();
   }
 
-  getAllServersByOwner(ownerUsername: string): any {
+  async getAllServersByOwner(ownerUsername: string): Promise<any> {
     return this.dataStore.getAllServersByOwner(ownerUsername);
   }
 
-  getServer(serverId: string): any {
+  async getServer(serverId: string): Promise<any> {
     return this.dataStore.getServer(serverId);
   }
 
-  getServerForOwner(serverId: string, ownerUsername: string): any {
+  async getServerForOwner(serverId: string, ownerUsername: string): Promise<any> {
     return this.dataStore.getServerForOwner(serverId, ownerUsername);
   }
 
-  deleteServer(serverId: string): void {
-    this.dataStore.deleteServer(serverId);
+  async deleteServer(serverId: string): Promise<void> {
+    await this.dataStore.deleteServer(serverId);
     console.log(`🗑️ Deleted server from SQLite database: ${serverId}`);
   }
 
-  getAllTools(): any {
+  async getAllTools(): Promise<any> {
     return this.dataStore.getAllTools();
   }
 
-  getToolsForServer(serverId: string): any {
+  async getToolsForServer(serverId: string): Promise<any> {
     return this.dataStore.getToolsForServer(serverId);
   }
 
-  getAllResources(): any {
+  async getAllResources(): Promise<any> {
     return this.dataStore.getAllResources();
   }
 
-  getResourcesForServer(serverId: string): any {
+  async getResourcesForServer(serverId: string): Promise<any> {
     return this.dataStore.getResourcesForServer(serverId);
   }
 
-  getStats(): any {
+  async getStats(): Promise<any> {
     return this.dataStore.getStats();
   }
 
-  close(): void {
-    this.dataStore.close();
+  async close(): Promise<void> {
+    await this.dataStore.close();
   }
 }

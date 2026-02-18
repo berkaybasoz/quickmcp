@@ -130,7 +130,7 @@ export class GenerateApi {
           });
         }
     
-        const existsForOwner = ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername);
+        const existsForOwner = await ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername);
         if (existsForOwner) {
           return res.status(400).json({
             success: false,
@@ -735,8 +735,8 @@ export class GenerateApi {
     
         if (result.success) {
           // Get counts for display
-          const tools = ensureGenerator().getToolsForServer(serverId);
-          const resources = ensureGenerator().getResourcesForServer(serverId);
+          const tools = await ensureGenerator().getToolsForServer(serverId);
+          const resources = await ensureGenerator().getResourcesForServer(serverId);
     
           res.json({
             success: true,

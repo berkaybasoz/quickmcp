@@ -17,10 +17,10 @@ export class NameApi {
     app.get('/api/check-tool-name/:toolName', this.checkToolName);
   }
 
-  private checkServerName = (req: express.Request, res: express.Response): void => {
+  private checkServerName = async (req: express.Request, res: express.Response): Promise<void> => {
     const ownerUsername = this.deps.getEffectiveUsername(req as AuthenticatedRequest);
     const serverName = req.params.name;
-    const isAvailable = !this.deps.ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername);
+    const isAvailable = !(await this.deps.ensureDataStore().serverNameExistsForOwner(serverName, ownerUsername));
 
     res.json({
       success: true,
@@ -36,11 +36,9 @@ export class NameApi {
     const ownerUsername = this.deps.getEffectiveUsername(req);
     try {
       const store = this.deps.ensureDataStore();
-      const allServers = store.getAllServersByOwner(ownerUsername);
-      const isTaken = allServers.some((server) => {
-        const tools = store.getToolsForServer(server.id);
-        return tools.some((tool) => tool.name === toolName);
-      });
+      const allServers = await store.getAllServersByOwner(ownerUsername);
+      const toolsByServer = await Promise.all(allServers.map((server) => store.getToolsForServer(server.id)));
+      const isTaken = toolsByServer.some((tools) => tools.some((tool) => tool.name === toolName));
       res.json({ success: true, available: !isTaken });
     } catch (error) {
       console.error(`Error checking tool name '${toolName}':`, error);

@@ -106,47 +106,47 @@ export interface McpTokenCreateInput {
 }
 
 export interface IDataStore {
-  saveServer(server: ServerConfig): void;
-  getServer(serverId: string): ServerConfig | null;
-  getServerForOwner(serverId: string, ownerUsername: string): ServerConfig | null;
-  getAllServers(): ServerConfig[];
-  getAllServersByOwner(ownerUsername: string): ServerConfig[];
-  serverNameExistsForOwner(serverName: string, ownerUsername: string): boolean;
-  deleteServer(serverId: string): void;
+  saveServer(server: ServerConfig): Promise<void>;
+  getServer(serverId: string): Promise<ServerConfig | null>;
+  getServerForOwner(serverId: string, ownerUsername: string): Promise<ServerConfig | null>;
+  getAllServers(): Promise<ServerConfig[]>;
+  getAllServersByOwner(ownerUsername: string): Promise<ServerConfig[]>;
+  serverNameExistsForOwner(serverName: string, ownerUsername: string): Promise<boolean>;
+  deleteServer(serverId: string): Promise<void>;
 
-  saveTools(tools: ToolDefinition[]): void;
-  getToolsForServer(serverId: string): ToolDefinition[];
-  getAllTools(): ToolDefinition[];
+  saveTools(tools: ToolDefinition[]): Promise<void>;
+  getToolsForServer(serverId: string): Promise<ToolDefinition[]>;
+  getAllTools(): Promise<ToolDefinition[]>;
 
-  saveResources(resources: ResourceDefinition[]): void;
-  getResourcesForServer(serverId: string): ResourceDefinition[];
-  getAllResources(): ResourceDefinition[];
+  saveResources(resources: ResourceDefinition[]): Promise<void>;
+  getResourcesForServer(serverId: string): Promise<ResourceDefinition[]>;
+  getAllResources(): Promise<ResourceDefinition[]>;
 
-  saveRefreshToken(tokenHash: string, username: string, expiresAt: string): void;
-  getRefreshToken(tokenHash: string): RefreshTokenRecord | null;
-  revokeRefreshToken(tokenHash: string): void;
-  revokeAllRefreshTokensForUser(username: string): void;
+  saveRefreshToken(tokenHash: string, username: string, expiresAt: string): Promise<void>;
+  getRefreshToken(tokenHash: string): Promise<RefreshTokenRecord | null>;
+  revokeRefreshToken(tokenHash: string): Promise<void>;
+  revokeAllRefreshTokensForUser(username: string): Promise<void>;
 
-  getUser(username: string): UserRecord | null;
-  getUserInWorkspace(username: string, workspaceId: string): UserRecord | null;
-  getAllUsers(): Array<Omit<UserRecord, 'passwordHash'>>;
-  getAllUsersByWorkspace(workspaceId: string): Array<Omit<UserRecord, 'passwordHash'>>;
-  createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): void;
-  upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): void;
-  updateUserRole(username: string, workspaceId: string, role: UserRole): void;
+  getUser(username: string): Promise<UserRecord | null>;
+  getUserInWorkspace(username: string, workspaceId: string): Promise<UserRecord | null>;
+  getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>>;
+  getAllUsersByWorkspace(workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>>;
+  createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void>;
+  upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void>;
+  updateUserRole(username: string, workspaceId: string, role: UserRole): Promise<void>;
 
-  getServerAuthConfig(serverId: string): ServerAuthConfig | null;
-  setServerAuthConfig(serverId: string, requireMcpToken: boolean): void;
-  getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): McpTokenPolicyRecord | null;
-  listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): McpTokenPolicyRecord[];
-  setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): void;
+  getServerAuthConfig(serverId: string): Promise<ServerAuthConfig | null>;
+  setServerAuthConfig(serverId: string, requireMcpToken: boolean): Promise<void>;
+  getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): Promise<McpTokenPolicyRecord | null>;
+  listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): Promise<McpTokenPolicyRecord[]>;
+  setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): Promise<void>;
 
-  createMcpToken(input: McpTokenCreateInput): void;
-  getMcpTokenByHash(tokenHash: string): McpTokenRecord | null;
-  getMcpTokenById(id: string): McpTokenRecord | null;
-  getMcpTokensByWorkspace(workspaceId: string): McpTokenRecord[];
-  revokeMcpToken(id: string): void;
+  createMcpToken(input: McpTokenCreateInput): Promise<void>;
+  getMcpTokenByHash(tokenHash: string): Promise<McpTokenRecord | null>;
+  getMcpTokenById(id: string): Promise<McpTokenRecord | null>;
+  getMcpTokensByWorkspace(workspaceId: string): Promise<McpTokenRecord[]>;
+  revokeMcpToken(id: string): Promise<void>;
 
-  close(): void;
-  getStats(): { servers: number; tools: number; resources: number };
+  close(): Promise<void>;
+  getStats(): Promise<{ servers: number; tools: number; resources: number }>;
 }

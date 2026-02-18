@@ -172,7 +172,7 @@ export class SQLiteManager implements IDataStore {
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_token_policies_scope ON mcp_token_policies(scope_type)`);
   }
 
-  saveServer(server: ServerConfig): void {
+  async saveServer(server: ServerConfig): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO servers (id, name, version, owner_username, source_config, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -206,42 +206,42 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  getServer(serverId: string): ServerConfig | null {
+  async getServer(serverId: string): Promise<ServerConfig | null> {
     const stmt = this.db.prepare('SELECT * FROM servers WHERE id = ?');
     const row = stmt.get(serverId) as any;
     return row ? this.mapServerRow(row) : null;
   }
 
-  getServerForOwner(serverId: string, ownerUsername: string): ServerConfig | null {
+  async getServerForOwner(serverId: string, ownerUsername: string): Promise<ServerConfig | null> {
     const stmt = this.db.prepare('SELECT * FROM servers WHERE id = ? AND owner_username = ?');
     const row = stmt.get(serverId, ownerUsername) as any;
     return row ? this.mapServerRow(row) : null;
   }
 
-  getAllServers(): ServerConfig[] {
+  async getAllServers(): Promise<ServerConfig[]> {
     const stmt = this.db.prepare('SELECT * FROM servers ORDER BY created_at DESC');
     const rows = stmt.all() as any[];
     return rows.map((row) => this.mapServerRow(row));
   }
 
-  getAllServersByOwner(ownerUsername: string): ServerConfig[] {
+  async getAllServersByOwner(ownerUsername: string): Promise<ServerConfig[]> {
     const stmt = this.db.prepare('SELECT * FROM servers WHERE owner_username = ? ORDER BY created_at DESC');
     const rows = stmt.all(ownerUsername) as any[];
     return rows.map((row) => this.mapServerRow(row));
   }
 
-  serverNameExistsForOwner(serverName: string, ownerUsername: string): boolean {
+  async serverNameExistsForOwner(serverName: string, ownerUsername: string): Promise<boolean> {
     const stmt = this.db.prepare('SELECT COUNT(*) as count FROM servers WHERE name = ? AND owner_username = ?');
     const row = stmt.get(serverName, ownerUsername) as any;
     return (row?.count || 0) > 0;
   }
 
-  deleteServer(serverId: string): void {
+  async deleteServer(serverId: string): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM servers WHERE id = ?');
     stmt.run(serverId);
   }
 
-  saveTools(tools: ToolDefinition[]): void {
+  async saveTools(tools: ToolDefinition[]): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO tools (server_id, name, description, input_schema, sql_query, operation)
       VALUES (?, ?, ?, ?, ?, ?)
@@ -263,7 +263,7 @@ export class SQLiteManager implements IDataStore {
     transaction(tools);
   }
 
-  getToolsForServer(serverId: string): ToolDefinition[] {
+  async getToolsForServer(serverId: string): Promise<ToolDefinition[]> {
     const stmt = this.db.prepare('SELECT * FROM tools WHERE server_id = ?');
     const rows = stmt.all(serverId) as any[];
 
@@ -277,7 +277,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  getAllTools(): ToolDefinition[] {
+  async getAllTools(): Promise<ToolDefinition[]> {
     const stmt = this.db.prepare('SELECT * FROM tools ORDER BY server_id, name');
     const rows = stmt.all() as any[];
 
@@ -291,7 +291,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  saveResources(resources: ResourceDefinition[]): void {
+  async saveResources(resources: ResourceDefinition[]): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO resources (server_id, name, description, uri_template, sql_query)
       VALUES (?, ?, ?, ?, ?)
@@ -312,7 +312,7 @@ export class SQLiteManager implements IDataStore {
     transaction(resources);
   }
 
-  getResourcesForServer(serverId: string): ResourceDefinition[] {
+  async getResourcesForServer(serverId: string): Promise<ResourceDefinition[]> {
     const stmt = this.db.prepare('SELECT * FROM resources WHERE server_id = ?');
     const rows = stmt.all(serverId) as any[];
 
@@ -325,7 +325,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  getAllResources(): ResourceDefinition[] {
+  async getAllResources(): Promise<ResourceDefinition[]> {
     const stmt = this.db.prepare('SELECT * FROM resources ORDER BY server_id, name');
     const rows = stmt.all() as any[];
 
@@ -338,7 +338,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  saveRefreshToken(tokenHash: string, username: string, expiresAt: string): void {
+  async saveRefreshToken(tokenHash: string, username: string, expiresAt: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO refresh_tokens (token_hash, username, expires_at, created_at, revoked_at)
       VALUES (?, ?, ?, CURRENT_TIMESTAMP, NULL)
@@ -346,7 +346,7 @@ export class SQLiteManager implements IDataStore {
     stmt.run(tokenHash, username, expiresAt);
   }
 
-  getRefreshToken(tokenHash: string): RefreshTokenRecord | null {
+  async getRefreshToken(tokenHash: string): Promise<RefreshTokenRecord | null> {
     const stmt = this.db.prepare('SELECT * FROM refresh_tokens WHERE token_hash = ?');
     const row = stmt.get(tokenHash) as any;
     if (!row) {
@@ -362,7 +362,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  revokeRefreshToken(tokenHash: string): void {
+  async revokeRefreshToken(tokenHash: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE refresh_tokens
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
@@ -371,7 +371,7 @@ export class SQLiteManager implements IDataStore {
     stmt.run(tokenHash);
   }
 
-  revokeAllRefreshTokensForUser(username: string): void {
+  async revokeAllRefreshTokensForUser(username: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE refresh_tokens
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
@@ -380,7 +380,7 @@ export class SQLiteManager implements IDataStore {
     stmt.run(username);
   }
 
-  getUser(username: string): UserRecord | null {
+  async getUser(username: string): Promise<UserRecord | null> {
     const stmt = this.db.prepare('SELECT * FROM users WHERE username = ?');
     const row = stmt.get(username) as any;
     if (!row) {
@@ -397,7 +397,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  getUserInWorkspace(username: string, workspaceId: string): UserRecord | null {
+  async getUserInWorkspace(username: string, workspaceId: string): Promise<UserRecord | null> {
     const stmt = this.db.prepare('SELECT * FROM users WHERE username = ? AND workspace_id = ?');
     const row = stmt.get(username, workspaceId) as any;
     if (!row) {
@@ -413,7 +413,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  getAllUsers(): Array<Omit<UserRecord, 'passwordHash'>> {
+  async getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
     const stmt = this.db.prepare('SELECT username, workspace_id, role, created_at, updated_at FROM users ORDER BY username');
     const rows = stmt.all() as any[];
     return rows.map((row) => ({
@@ -425,7 +425,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  getAllUsersByWorkspace(workspaceId: string): Array<Omit<UserRecord, 'passwordHash'>> {
+  async getAllUsersByWorkspace(workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
     const stmt = this.db.prepare('SELECT username, workspace_id, role, created_at, updated_at FROM users WHERE workspace_id = ? ORDER BY username');
     const rows = stmt.all(workspaceId) as any[];
     return rows.map((row) => ({
@@ -437,7 +437,7 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): void {
+  async createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO users (username, workspace_id, password_hash, role, created_at, updated_at)
       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -445,7 +445,7 @@ export class SQLiteManager implements IDataStore {
     stmt.run(username, workspaceId, passwordHash, role);
   }
 
-  upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): void {
+  async upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO users (username, workspace_id, password_hash, role, created_at, updated_at)
       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -458,7 +458,7 @@ export class SQLiteManager implements IDataStore {
     stmt.run(username, workspaceId, passwordHash, role);
   }
 
-  updateUserRole(username: string, workspaceId: string, role: UserRole): void {
+  async updateUserRole(username: string, workspaceId: string, role: UserRole): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE users
       SET role = ?, updated_at = CURRENT_TIMESTAMP
@@ -467,8 +467,8 @@ export class SQLiteManager implements IDataStore {
     stmt.run(role, username, workspaceId);
   }
 
-  getServerAuthConfig(serverId: string): ServerAuthConfig | null {
-    const policy = this.getMcpTokenPolicy('server', serverId);
+  async getServerAuthConfig(serverId: string): Promise<ServerAuthConfig | null> {
+    const policy = await this.getMcpTokenPolicy('server', serverId);
     if (policy) {
       return {
         serverId,
@@ -489,7 +489,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  setServerAuthConfig(serverId: string, requireMcpToken: boolean): void {
+  async setServerAuthConfig(serverId: string, requireMcpToken: boolean): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO server_auth_config (server_id, require_mcp_token, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -510,7 +510,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): McpTokenPolicyRecord | null {
+  async getMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string): Promise<McpTokenPolicyRecord | null> {
     const stmt = this.db.prepare(`
       SELECT scope_type, scope_id, require_mcp_token, updated_at
       FROM mcp_token_policies
@@ -520,7 +520,7 @@ export class SQLiteManager implements IDataStore {
     return row ? this.mapMcpTokenPolicyRow(row) : null;
   }
 
-  listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): McpTokenPolicyRecord[] {
+  async listMcpTokenPolicies(scopeType?: McpTokenPolicyScope): Promise<McpTokenPolicyRecord[]> {
     const stmt = scopeType
       ? this.db.prepare(`
           SELECT scope_type, scope_id, require_mcp_token, updated_at
@@ -537,7 +537,7 @@ export class SQLiteManager implements IDataStore {
     return rows.map((row) => this.mapMcpTokenPolicyRow(row));
   }
 
-  setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): void {
+  async setMcpTokenPolicy(scopeType: McpTokenPolicyScope, scopeId: string, requireMcpToken: boolean | null): Promise<void> {
     if (!scopeId) return;
     if (requireMcpToken === null) {
       const del = this.db.prepare('DELETE FROM mcp_token_policies WHERE scope_type = ? AND scope_id = ?');
@@ -579,7 +579,7 @@ export class SQLiteManager implements IDataStore {
     };
   }
 
-  createMcpToken(input: McpTokenCreateInput): void {
+  async createMcpToken(input: McpTokenCreateInput): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO mcp_tokens (
         id, token_name, workspace_id, subject_username, created_by, token_hash, token_value,
@@ -611,25 +611,25 @@ export class SQLiteManager implements IDataStore {
     );
   }
 
-  getMcpTokenByHash(tokenHash: string): McpTokenRecord | null {
+  async getMcpTokenByHash(tokenHash: string): Promise<McpTokenRecord | null> {
     const stmt = this.db.prepare('SELECT * FROM mcp_tokens WHERE token_hash = ?');
     const row = stmt.get(tokenHash) as any;
     return row ? this.mapMcpTokenRow(row) : null;
   }
 
-  getMcpTokenById(id: string): McpTokenRecord | null {
+  async getMcpTokenById(id: string): Promise<McpTokenRecord | null> {
     const stmt = this.db.prepare('SELECT * FROM mcp_tokens WHERE id = ?');
     const row = stmt.get(id) as any;
     return row ? this.mapMcpTokenRow(row) : null;
   }
 
-  getMcpTokensByWorkspace(workspaceId: string): McpTokenRecord[] {
+  async getMcpTokensByWorkspace(workspaceId: string): Promise<McpTokenRecord[]> {
     const stmt = this.db.prepare('SELECT * FROM mcp_tokens WHERE workspace_id = ? ORDER BY created_at DESC');
     const rows = stmt.all(workspaceId) as any[];
     return rows.map((row) => this.mapMcpTokenRow(row));
   }
 
-  revokeMcpToken(id: string): void {
+  async revokeMcpToken(id: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE mcp_tokens
       SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
@@ -638,11 +638,11 @@ export class SQLiteManager implements IDataStore {
     stmt.run(id);
   }
 
-  close(): void {
+  async close(): Promise<void> {
     this.db.close();
   }
 
-  getStats(): { servers: number; tools: number; resources: number } {
+  async getStats(): Promise<{ servers: number; tools: number; resources: number }> {
     const serversCount = this.db.prepare('SELECT COUNT(*) as count FROM servers').get() as any;
     const toolsCount = this.db.prepare('SELECT COUNT(*) as count FROM tools').get() as any;
     const resourcesCount = this.db.prepare('SELECT COUNT(*) as count FROM resources').get() as any;

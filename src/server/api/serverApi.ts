@@ -44,18 +44,18 @@ export class ServerApi {
     app.get('/how-to-use', this.getHowToUsePage);
   }
 
-  private listServers = (req: AuthenticatedRequest, res: express.Response): void => {
+  private listServers = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ownerUsername = this.deps.getEffectiveUsername(req);
     const gen = this.deps.ensureGenerator();
-    const allServers = gen.getAllServersByOwner(ownerUsername);
-    const servers = allServers.map((server) => {
+    const allServers = await gen.getAllServersByOwner(ownerUsername);
+    const servers = await Promise.all(allServers.map(async (server) => {
       // Prefer persisted source_config from SQLite to avoid stale/partial objects
-      const persisted = this.deps.ensureDataStore().getServer(server.id);
+      const persisted = await this.deps.ensureDataStore().getServer(server.id);
       const rawType = (persisted?.sourceConfig as any)?.type || (server as any)?.sourceConfig?.type || 'unknown';
       const type = typeof rawType === 'string' ? rawType : 'unknown';
       const version = persisted?.version || (server as any)?.version || '1.0.0';
-      const tools = gen.getToolsForServer(server.id);
-      const resources = gen.getResourcesForServer(server.id);
+      const tools = await gen.getToolsForServer(server.id);
+      const resources = await gen.getResourcesForServer(server.id);
       const finalType = type;
       return {
         id: server.id,
@@ -68,14 +68,14 @@ export class ServerApi {
         resourcesCount: resources.length,
         promptsCount: 0
       };
-    });
+    }));
 
     res.json({ success: true, data: servers });
   };
 
-  private getServerDetails = (req: AuthenticatedRequest, res: express.Response): express.Response | void => {
+  private getServerDetails = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     const ownerUsername = this.deps.getEffectiveUsername(req);
-    const server = this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+    const server = await this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
 
     if (!server) {
       return res.status(404).json({
@@ -85,11 +85,12 @@ export class ServerApi {
     }
 
     const gen = this.deps.ensureGenerator();
-    const tools = gen.getToolsForServer(server.id);
-    const resources = gen.getResourcesForServer(server.id);
+    const tools = await gen.getToolsForServer(server.id);
+    const resources = await gen.getResourcesForServer(server.id);
     const rawType = (server.sourceConfig as any)?.type || 'unknown';
     const finalType = typeof rawType === 'string' ? rawType : 'unknown';
-    const version = server.version || this.deps.ensureDataStore().getServer(server.id)?.version || '1.0.0';
+    const persisted = await this.deps.ensureDataStore().getServer(server.id);
+    const version = server.version || persisted?.version || '1.0.0';
 
     res.json({
       success: true,
@@ -122,7 +123,7 @@ export class ServerApi {
       const ownerUsername = this.deps.getEffectiveUsername(req);
       const limit = parseInt(req.query.limit as string, 10) || 10;
 
-      const server = this.deps.ensureGenerator().getServerForOwner(serverId, ownerUsername);
+      const server = await this.deps.ensureGenerator().getServerForOwner(serverId, ownerUsername);
       if (!server) {
         return res.status(404).json({
           success: false,
@@ -131,7 +132,7 @@ export class ServerApi {
       }
 
       const executor = new DynamicMCPExecutor();
-      const tools = this.deps.ensureGenerator().getToolsForServer(serverId);
+      const tools = await this.deps.ensureGenerator().getToolsForServer(serverId);
       const selectTool = tools.find((tool) => tool.operation === 'SELECT');
 
       if (!selectTool) {
@@ -167,7 +168,7 @@ export class ServerApi {
   private testServer = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     try {
       const ownerUsername = this.deps.getEffectiveUsername(req);
-      const server = this.deps.ensureDataStore().getServerForOwner(req.params.id, ownerUsername);
+      const server = await this.deps.ensureDataStore().getServerForOwner(req.params.id, ownerUsername);
       if (!server) {
         return res.status(404).json({
           success: false,
@@ -175,7 +176,7 @@ export class ServerApi {
         });
       }
 
-      const tools = this.deps.ensureDataStore().getToolsForServer(req.params.id);
+      const tools = await this.deps.ensureDataStore().getToolsForServer(req.params.id);
       const { runAll, testType, toolName, parameters } = req.body;
 
       if (testType === 'tools/call' && toolName) {
@@ -286,7 +287,7 @@ export class ServerApi {
 
       const trimmedName = newName.trim();
       const sqlite = this.deps.ensureDataStore();
-      const existingServer = sqlite.getServerForOwner(serverId, ownerUsername);
+      const existingServer = await sqlite.getServerForOwner(serverId, ownerUsername);
       if (!existingServer) {
         console.log(`❌ Server with ID "${serverId}" not found`);
         return res.status(404).json({
@@ -295,7 +296,7 @@ export class ServerApi {
         });
       }
 
-      const allServers = sqlite.getAllServersByOwner(ownerUsername);
+      const allServers = await sqlite.getAllServersByOwner(ownerUsername);
       const serverWithSameName = allServers.find((s) => s.name === trimmedName && s.id !== serverId);
       if (serverWithSameName) {
         console.log(`❌ Server name "${trimmedName}" is already taken by ID: ${serverWithSameName.id}`);
@@ -306,7 +307,7 @@ export class ServerApi {
       }
 
       existingServer.name = trimmedName;
-      sqlite.saveServer(existingServer);
+      await sqlite.saveServer(existingServer);
 
       console.log(`✅ Successfully renamed server ${serverId} to "${trimmedName}"`);
 
@@ -332,7 +333,7 @@ export class ServerApi {
       const ownerUsername = this.deps.getEffectiveUsername(req);
       console.log(`Attempting to delete server with ID: ${serverId}`);
 
-      const existingServer = this.deps.ensureGenerator().getServerForOwner(serverId, ownerUsername);
+      const existingServer = await this.deps.ensureGenerator().getServerForOwner(serverId, ownerUsername);
       if (!existingServer) {
         console.log(`Server with ID "${serverId}" not found in database`);
         return res.status(404).json({
@@ -341,7 +342,7 @@ export class ServerApi {
         });
       }
 
-      this.deps.ensureGenerator().deleteServer(serverId);
+      await this.deps.ensureGenerator().deleteServer(serverId);
       console.log(`Deleted server "${serverId}" from JSON database`);
 
       const serverInfo = this.deps.generatedServers.get(serverId);
@@ -365,7 +366,7 @@ export class ServerApi {
   private startRuntimeServer = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     try {
       const ownerUsername = this.deps.getEffectiveUsername(req);
-      const server = this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+      const server = await this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
       if (!server) {
         return res.status(404).json({ success: false, error: 'Server not found' });
       }
@@ -406,9 +407,9 @@ export class ServerApi {
     }
   };
 
-  private stopRuntimeServer = (req: AuthenticatedRequest, res: express.Response): express.Response | void => {
+  private stopRuntimeServer = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     const ownerUsername = this.deps.getEffectiveUsername(req);
-    const server = this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+    const server = await this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
     if (!server) {
       return res.status(404).json({ success: false, error: 'Server not found' });
     }
@@ -430,9 +431,9 @@ export class ServerApi {
     res.json({ success: true });
   };
 
-  private exportServer = (req: AuthenticatedRequest, res: express.Response): express.Response | void => {
+  private exportServer = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     const ownerUsername = this.deps.getEffectiveUsername(req);
-    const server = this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
+    const server = await this.deps.ensureGenerator().getServerForOwner(req.params.id, ownerUsername);
     if (!server) {
       return res.status(404).json({ success: false, error: 'Server not found' });
     }

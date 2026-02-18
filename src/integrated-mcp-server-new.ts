@@ -71,8 +71,8 @@ export class IntegratedMCPServer {
     this.setupWebRoutes();
   }
 
-  private parseQualifiedName(name: string): [string, string] {
-    const allServerIds = this.authStore.getAllServers().map((s) => s.id);
+  private async parseQualifiedName(name: string): Promise<[string, string]> {
+    const allServerIds = (await this.authStore.getAllServers()).map((s) => s.id);
     const matchingServerIds = allServerIds
       .filter((serverId) => name.startsWith(`${serverId}__`))
       .sort((a, b) => b.length - a.length);
@@ -93,36 +93,44 @@ export class IntegratedMCPServer {
     return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
   }
 
-  private getAuthorizedTools(tools: any[]): any[] {
+  private async getAuthorizedTools(tools: any[]): Promise<any[]> {
     if (this.mcpAuthMode === 'NONE') return tools;
-    return tools.filter((tool) => {
+    const out: any[] = [];
+    for (const tool of tools) {
       try {
-        const [serverId, toolName] = this.parseQualifiedName(String(tool.name || ''));
-        return isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName);
+        const [serverId, toolName] = await this.parseQualifiedName(String(tool.name || ''));
+        if (isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName)) {
+          out.push(tool);
+        }
       } catch {
-        return false;
+        // ignore unauthorized/invalid
       }
-    });
+    }
+    return out;
   }
 
-  private getAuthorizedResources(resources: any[]): any[] {
+  private async getAuthorizedResources(resources: any[]): Promise<any[]> {
     if (this.mcpAuthMode === 'NONE') return resources;
-    return resources.filter((resource) => {
+    const out: any[] = [];
+    for (const resource of resources) {
       try {
         const fullName = String(resource.name || '');
-        const [serverId, resourceName] = this.parseQualifiedName(fullName);
-        return isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, resourceName);
+        const [serverId, resourceName] = await this.parseQualifiedName(fullName);
+        if (isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, resourceName)) {
+          out.push(resource);
+        }
       } catch {
-        return false;
+        // ignore unauthorized/invalid
       }
-    });
+    }
+    return out;
   }
 
   private setupHandlers(): void {
     // List tools - dynamically from SQLite
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       try {
-        const tools = this.getAuthorizedTools(await this.executor.getAllTools());
+        const tools = await this.getAuthorizedTools(await this.executor.getAllTools());
         console.error(`📋 Listed ${tools.length} dynamic tools`);
 
         return { tools };
@@ -135,7 +143,7 @@ export class IntegratedMCPServer {
     // List resources - dynamically from SQLite
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       try {
-        const resources = this.getAuthorizedResources(await this.executor.getAllResources());
+        const resources = await this.getAuthorizedResources(await this.executor.getAllResources());
         //console.log(`📂 Listed ${resources.length} dynamic resources`);
 
         return { resources };
@@ -151,7 +159,7 @@ export class IntegratedMCPServer {
         const { name, arguments: args } = request.params;
         //console.log(`🔧 Executing dynamic tool: ${name}`);
         if (this.mcpAuthMode !== 'NONE') {
-          const [serverId, toolName] = this.parseQualifiedName(name);
+          const [serverId, toolName] = await this.parseQualifiedName(name);
           const allowed = isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName);
           if (!allowed) {
             throw new McpError(ErrorCode.InvalidRequest, 'Unauthorized: tool is not allowed by token policy');
@@ -186,7 +194,7 @@ export class IntegratedMCPServer {
         // Extract resource name from URI (e.g., "serverId__resourceName://list" -> "serverId__resourceName")
         const resourceName = uri.split('://')[0];
         if (this.mcpAuthMode !== 'NONE') {
-          const [serverId, actualResourceName] = this.parseQualifiedName(resourceName);
+          const [serverId, actualResourceName] = await this.parseQualifiedName(resourceName);
           const allowed = isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, actualResourceName);
           if (!allowed) {
             throw new McpError(ErrorCode.InvalidRequest, 'Unauthorized: resource is not allowed by token policy');
@@ -266,7 +274,7 @@ export class IntegratedMCPServer {
             break;
 
           case 'tools/list':
-            const tools = this.getAuthorizedTools(await this.executor.getAllTools());
+            const tools = await this.getAuthorizedTools(await this.executor.getAllTools());
             response = {
               jsonrpc: '2.0',
               id: messageData.id,
@@ -275,7 +283,7 @@ export class IntegratedMCPServer {
             break;
 
           case 'resources/list':
-            const resources = this.getAuthorizedResources(await this.executor.getAllResources());
+            const resources = await this.getAuthorizedResources(await this.executor.getAllResources());
             response = {
               jsonrpc: '2.0',
               id: messageData.id,
@@ -285,7 +293,7 @@ export class IntegratedMCPServer {
 
           case 'tools/call':
             if (this.mcpAuthMode !== 'NONE') {
-              const [serverId, toolName] = this.parseQualifiedName(messageData.params.name);
+              const [serverId, toolName] = await this.parseQualifiedName(messageData.params.name);
               const allowed = isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName);
               if (!allowed) {
                 throw new Error('Unauthorized: tool is not allowed by token policy');
@@ -313,7 +321,7 @@ export class IntegratedMCPServer {
             const uri = messageData.params.uri;
             const resourceName = uri.split('://')[0];
             if (this.mcpAuthMode !== 'NONE') {
-              const [serverId, actualResourceName] = this.parseQualifiedName(resourceName);
+              const [serverId, actualResourceName] = await this.parseQualifiedName(resourceName);
               const allowed = isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, actualResourceName);
               if (!allowed) {
                 throw new Error('Unauthorized: resource is not allowed by token policy');
