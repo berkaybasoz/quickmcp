@@ -265,38 +265,36 @@ indexApi.registerRoutes(app);
 
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 
-console.log('[quickmcp] startup config');
-console.log(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
-console.log(`[quickmcp] AUTH_MODE=${authMode}`);
-console.log(`[quickmcp] DATA_PROVIDER=${dataProvider}`);
-if (authMode === 'SUPABASE_GOOGLE') {
-  console.log(`[quickmcp] SUPABASE_URL=${authProperty.providerUrl || '(unset)'}`);
-  console.log(`[quickmcp] SUPABASE_ANON_KEY=${authProperty.publicKey ? '(set)' : '(unset)'}`);
-  console.log(`[quickmcp] APP_BASE_URL=${authProperty.appBaseUrl}`);
-}
-console.log(`[quickmcp] PORT=${PORT}`);
-console.log(`[quickmcp] MCP_PORT=${MCP_PORT}`);
-
-// Initialize integrated MCP server (optional in environments without native deps)
-let integratedMCPServer: IntegratedMCPServer | null = null;
-try {
-  integratedMCPServer = new IntegratedMCPServer();
-} catch (error) {
-  console.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
-}
-
-app.listen(PORT, async () => {
-  //console.error(`🌐 MCP Server Generator running on http://localhost:${PORT}`);
-
-  // Start integrated MCP server
-  if (integratedMCPServer) {
-    try {
-      await integratedMCPServer.start(MCP_PORT);
-      // Configuration info is now available in the How to Use page
-    } catch (error) {
-      console.error('❌ Failed to start integrated MCP server:', error);
-    }
+export function startServer(): void {
+  console.log('[quickmcp] startup config');
+  console.log(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
+  console.log(`[quickmcp] AUTH_MODE=${authMode}`);
+  console.log(`[quickmcp] DATA_PROVIDER=${dataProvider}`);
+  if (authMode === 'SUPABASE_GOOGLE') {
+    console.log(`[quickmcp] SUPABASE_URL=${authProperty.providerUrl || '(unset)'}`);
+    console.log(`[quickmcp] SUPABASE_ANON_KEY=${authProperty.publicKey ? '(set)' : '(unset)'}`);
+    console.log(`[quickmcp] APP_BASE_URL=${authProperty.appBaseUrl}`);
   }
-});
+  console.log(`[quickmcp] PORT=${PORT}`);
+  console.log(`[quickmcp] MCP_PORT=${MCP_PORT}`);
+
+  // Initialize integrated MCP server (optional in environments without native deps)
+  let integratedMCPServer: IntegratedMCPServer | null = null;
+  try {
+    integratedMCPServer = new IntegratedMCPServer();
+  } catch (error) {
+    console.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
+  }
+
+  app.listen(PORT, async () => {
+    if (integratedMCPServer) {
+      try {
+        await integratedMCPServer.start(MCP_PORT);
+      } catch (error) {
+        console.error('❌ Failed to start integrated MCP server:', error);
+      }
+    }
+  });
+}
 
 export default app;

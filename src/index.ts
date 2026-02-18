@@ -1,5 +1,7 @@
 import 'dotenv/config';
-import './server/server';
+import { startServer } from './server/server';
+
+startServer();
 
 export * from './types';
 export * from './parsers';
