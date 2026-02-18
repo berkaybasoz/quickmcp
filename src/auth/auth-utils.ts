@@ -216,12 +216,21 @@ export class AuthUtils {
   }
 
   resolvePublicDir(currentDir: string): string {
-    const distPublicDir = path.join(currentDir, 'public');
-    const distWebPublicDir = path.join(currentDir, '..', 'web', 'public');
-    const srcPublicDir = path.join(currentDir, '..', '..', 'src', 'web', 'public');
-    if (fsSync.existsSync(srcPublicDir)) return srcPublicDir;
-    if (fsSync.existsSync(distPublicDir)) return distPublicDir;
-    return distWebPublicDir;
+    const candidates = [
+      path.join(process.cwd(), 'src', 'web', 'public'),
+      path.join(process.cwd(), 'dist', 'web', 'public'),
+      path.join(currentDir, 'public'),
+      path.join(currentDir, '..', 'web', 'public'),
+      path.join(currentDir, '..', '..', 'src', 'web', 'public')
+    ];
+
+    for (const dir of candidates) {
+      if (fsSync.existsSync(dir)) {
+        return dir;
+      }
+    }
+
+    return candidates[0];
   }
 
   buildServerId(ownerUsername: string, serverName: string): string {
