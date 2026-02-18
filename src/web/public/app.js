@@ -1218,15 +1218,20 @@ function displayServers(servers) {
         const derivedType = server.type || (typeof server.description === 'string' && (server.description.match(/\(([^)]+)\)/)?.[1] || '')) || '';
         const safeType = derivedType || 'unknown';
         const iconMeta = getServerTypeIconMeta(safeType);
+        const isWebPageLike = ['webpage', 'webhook'].includes(String(safeType).toLowerCase());
+        const iconHtml = isWebPageLike
+            ? `<div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+                    <i class="fas fa-rocket text-lg"></i>
+               </div>`
+            : (iconMeta.image
+                ? `<img src="${iconMeta.image}" alt="${safeType}" class="w-6 h-6 object-contain" />`
+                : `<i class="fas ${iconMeta.icon} text-sm"></i>`);
         return `
         <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
             <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="hidden md:inline-flex w-8 h-8 items-center justify-center rounded-lg shadow-sm ${iconMeta.bg} ${iconMeta.text}">
-                        ${iconMeta.image
-                            ? `<img src="${iconMeta.image}" alt="${safeType}" class="w-6 h-6 object-contain" />`
-                            : `<i class="fas ${iconMeta.icon} text-sm"></i>`
-                        }
+                    <span class="hidden md:inline-flex ${isWebPageLike ? '' : `w-8 h-8 rounded-lg shadow-sm ${iconMeta.bg} ${iconMeta.text}`} items-center justify-center">
+                        ${iconHtml}
                     </span>
                     <span id="server-name-${server.id}" ondblclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" class="font-semibold text-slate-900 truncate cursor-pointer" title="${server.name}">${server.name}</span>
                 </div>
@@ -8566,8 +8571,8 @@ function displayWebpagePreview(dataSource) {
         <div class="space-y-4">
             <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-globe text-2xl"></i>
+                    <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25 flex-shrink-0">
+                        <i class="fas fa-rocket text-lg"></i>
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-indigo-900 text-lg mb-2">Web Page Server Configuration</h3>

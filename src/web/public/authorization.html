@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuickMCP - Authorization</title>
+
+    <link rel="icon" type="image/png" href="/images/app/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="quickmcp-styles.css">
@@ -276,7 +278,8 @@
     function getMcpTypeIcon(type) {
       const t = String(type || '').toLowerCase();
       if (['mysql', 'postgresql', 'postgres', 'mssql', 'oracle', 'sqlite', 'mongodb', 'database'].includes(t)) return 'fa-database';
-      if (['rest', 'graphql', 'soap', 'rss', 'webpage', 'curl'].includes(t)) return 'fa-globe';
+      if (t === 'webpage' || t === 'webhook') return 'fa-rocket';
+      if (['rest', 'graphql', 'soap', 'rss', 'curl'].includes(t)) return 'fa-globe';
       if (['docker', 'kubernetes', 'openshift', 'elasticsearch', 'opensearch', 'prometheus', 'grafana'].includes(t)) return 'fa-cubes';
       if (['slack', 'discord', 'telegram', 'whatsappbusiness', 'x', 'facebook', 'instagram', 'tiktok', 'linkedin', 'reddit', 'youtube', 'threads'].includes(t)) return 'fa-comments';
       if (['openai', 'claude', 'gemini', 'grok', 'falai', 'huggingface', 'llama', 'deepseek', 'azureopenai', 'mistral', 'cohere', 'perplexity', 'together', 'fireworks', 'groq', 'openrouter'].includes(t)) return 'fa-brain';
