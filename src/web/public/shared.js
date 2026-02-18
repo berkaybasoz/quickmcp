@@ -209,6 +209,7 @@ function isNoTableDataSource(type) {
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
     updateUserAvatar();
+    initBrandHomeLink();
 
     const openBtn = document.getElementById('openSidebar');
     if (openBtn) {
@@ -230,6 +231,31 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', handleResize);
     handleResize();
 });
+
+function initBrandHomeLink() {
+    const titleEls = document.querySelectorAll('header h1');
+    titleEls.forEach((titleEl) => {
+        const text = (titleEl.textContent || '').trim().toLowerCase();
+        if (!text.includes('quickmcp')) return;
+        const brand = titleEl.closest('div.flex.items-center.gap-3');
+        if (!brand || brand.dataset.homeBound === 'true') return;
+
+        brand.dataset.homeBound = 'true';
+        brand.classList.add('cursor-pointer');
+        brand.setAttribute('role', 'link');
+        brand.setAttribute('tabindex', '0');
+        brand.setAttribute('aria-label', 'Go to home page');
+
+        const goHome = () => { window.location.href = '/'; };
+        brand.addEventListener('click', goHome);
+        brand.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                goHome();
+            }
+        });
+    });
+}
 
 async function updateUserAvatar() {
     const avatarEls = document.querySelectorAll('[data-user-avatar]');
