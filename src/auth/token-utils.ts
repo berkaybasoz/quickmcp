@@ -25,6 +25,11 @@ export interface AccessTokenPayload {
   sub: string;
   ws?: string;
   role?: string;
+  displayName?: string;
+  email?: string;
+  avatarUrl?: string;
+  createdDate?: string;
+  lastSignInDate?: string;
   exp: number;
   iat: number;
 }
@@ -45,13 +50,23 @@ export function createAccessToken(
   secret: string,
   ttlSeconds: number,
   workspaceId?: string,
-  role?: string
+  role?: string,
+  displayName?: string,
+  email?: string,
+  avatarUrl?: string,
+  createdDate?: string,
+  lastSignInDate?: string
 ): string {
   const nowSec = Math.floor(Date.now() / 1000);
   const payload: AccessTokenPayload = {
     sub: username,
     ws: workspaceId,
     role,
+    displayName,
+    email,
+    avatarUrl,
+    createdDate,
+    lastSignInDate,
     iat: nowSec,
     exp: nowSec + ttlSeconds
   };

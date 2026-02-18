@@ -1,9 +1,10 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-utils';
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
-import { createAccessToken, createRefreshToken, hashRefreshToken } from '../../auth/token-utils';
+import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from '../../auth/token-utils';
 import { AuthProperty } from './authProperty';
 
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -144,12 +145,26 @@ export class AuthApi {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
+    const cookies = this.deps.parseCookies(req);
+    const accessToken = cookies[this.deps.accessCookieName];
+    const payload = accessToken ? verifyAccessToken(accessToken, this.deps.authCookieSecret) : null;
+    let storeUser: any = null;
+    try {
+      storeUser = this.deps.ensureDataStore().getUser(ctx.username);
+    } catch {}
+    const createdDate = payload?.createdDate || storeUser?.createdAt || '';
+    const lastSignInDate = payload?.lastSignInDate || (payload?.iat ? new Date(payload.iat * 1000).toISOString() : '');
     res.json({
       success: true,
       data: {
         username: ctx.username,
+        displayName: payload?.displayName || ctx.username,
         workspaceId: ctx.workspaceId,
         authMode: this.deps.authMode,
+        email: payload?.email || '',
+        avatarUrl: payload?.avatarUrl || '',
+        createdDate,
+        lastSignInDate,
         role: ctx.role,
         isAdmin: ctx.role === 'admin'
       }
@@ -654,7 +669,9 @@ export class AuthApi {
     }
     if (!authenticatedWorkspaceId) authenticatedWorkspaceId = authenticatedUsername;
 
-    this.issueSession(res, authenticatedUsername, authenticatedWorkspaceId, authenticatedRole);
+    this.issueSession(res, authenticatedUsername, authenticatedWorkspaceId, authenticatedRole, {
+      displayName: authenticatedUsername
+    });
 
     res.json({
       success: true,
@@ -671,14 +688,20 @@ export class AuthApi {
     res: express.Response,
     username: string,
     workspaceId: string,
-    role: AppUserRole
+    role: AppUserRole,
+    profile?: { displayName?: string; email?: string; avatarUrl?: string; createdDate?: string; lastSignInDate?: string }
   ): void {
     const accessToken = createAccessToken(
       username,
       this.deps.authCookieSecret,
       this.deps.authAccessTtlSec,
       workspaceId,
-      role
+      role,
+      profile?.displayName || username,
+      profile?.email,
+      profile?.avatarUrl,
+      profile?.createdDate,
+      profile?.lastSignInDate
     );
     const refreshToken = createRefreshToken();
     const refreshTokenHash = hashRefreshToken(refreshToken, this.deps.authCookieSecret);
@@ -692,9 +715,15 @@ export class AuthApi {
   private normalizeSupabaseUsername(email?: string, userId?: string): string {
     const raw = String(email || '').trim().toLowerCase();
     if (raw) {
-      const local = raw.split('@')[0] || raw;
-      const sanitized = local.replace(/[^a-z0-9._-]/g, '_').slice(0, 64);
-      if (sanitized.length >= 3) return sanitized;
+      const localPart = (raw.split('@')[0] || '').trim().toLowerCase();
+      const normalizedLocal = localPart.replace(/[^a-z0-9._-]/g, '_');
+      const shortHash = crypto.createHash('sha1').update(raw).digest('hex').slice(0, 8);
+      const maxBaseLen = 64 - (shortHash.length + 1);
+      const fallbackBase = raw.replace(/[^a-z0-9._-]/g, '_');
+      const baseSource = normalizedLocal.length >= 3 ? normalizedLocal : fallbackBase;
+      const base = baseSource.slice(0, Math.max(3, maxBaseLen));
+      const candidate = `${base}_${shortHash}`;
+      if (candidate.length >= 3) return candidate.slice(0, 64);
     }
     const fallback = String(userId || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '_').slice(0, 64);
     return fallback || 'user';
@@ -757,6 +786,28 @@ export class AuthApi {
       }
 
       const email = typeof userPayload?.email === 'string' ? userPayload.email : '';
+      const avatarUrl = typeof userPayload?.user_metadata?.avatar_url === 'string'
+        ? userPayload.user_metadata.avatar_url
+        : '';
+      const displayNameRaw = userPayload?.user_metadata?.full_name
+        || userPayload?.user_metadata?.name
+        || userPayload?.user_metadata?.preferred_username
+        || '';
+      const displayName = String(displayNameRaw || '').trim();
+      const createdDate = typeof userPayload?.created_at === 'string'
+        ? userPayload.created_at
+        : (typeof userPayload?.createdAt === 'string'
+          ? userPayload.createdAt
+          : (typeof userPayload?.identities?.[0]?.created_at === 'string'
+            ? userPayload.identities[0].created_at
+            : ''));
+      const lastSignInDate = typeof userPayload?.last_sign_in_at === 'string'
+        ? userPayload.last_sign_in_at
+        : (typeof userPayload?.lastSignInAt === 'string'
+          ? userPayload.lastSignInAt
+          : (typeof userPayload?.identities?.[0]?.last_sign_in_at === 'string'
+            ? userPayload.identities[0].last_sign_in_at
+            : new Date().toISOString()));
       const username = this.normalizeSupabaseUsername(email, userPayload?.id);
       const workspaceId = username;
       const role = this.resolveSupabaseRole(username, email);
@@ -767,7 +818,13 @@ export class AuthApi {
         role,
         workspaceId
       );
-      this.issueSession(res, username, workspaceId, role);
+      this.issueSession(res, username, workspaceId, role, {
+        displayName: displayName || username,
+        email,
+        avatarUrl,
+        createdDate,
+        lastSignInDate
+      });
 
       res.json({
         success: true,
@@ -791,6 +848,10 @@ export class AuthApi {
 
     const cookies = this.deps.parseCookies(req);
     const refreshToken = cookies[this.deps.refreshCookieName];
+    const currentAccessToken = cookies[this.deps.accessCookieName];
+    const currentPayload = currentAccessToken
+      ? verifyAccessToken(currentAccessToken, this.deps.authCookieSecret)
+      : null;
     if (!refreshToken) {
       res.status(401).json({ success: false, error: 'Missing refresh token' });
       return;
@@ -820,7 +881,12 @@ export class AuthApi {
       this.deps.authCookieSecret,
       this.deps.authAccessTtlSec,
       refreshedWorkspaceId,
-      refreshedRole
+      refreshedRole,
+      currentPayload?.displayName || record.username,
+      currentPayload?.email,
+      currentPayload?.avatarUrl,
+      currentPayload?.createdDate,
+      currentPayload?.lastSignInDate
     );
 
     this.deps.setCookie(res, this.deps.accessCookieName, newAccessToken, this.deps.authAccessTtlSec);

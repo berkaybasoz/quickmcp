@@ -1,6 +1,13 @@
 // Shared utility functions for QuickMCP
 let currentUserName = 'Guest';
+let currentUserDisplayName = 'Guest';
 let currentAuthMode = 'NONE';
+let currentUserRole = 'user';
+let currentUserWorkspace = '';
+let currentUserEmail = '';
+let currentUserAvatarUrl = '';
+let currentCreatedDate = '';
+let currentLastSignInDate = '';
 let userMenuAnchor = null;
 
 // DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
@@ -340,12 +347,22 @@ async function updateUserAvatar() {
         }
 
         const payload = await response.json();
-        const username = payload?.data?.username;
-        const authMode = payload?.data?.authMode;
+        const data = payload?.data || {};
+        const username = data?.username;
+        const authMode = data?.authMode;
         currentAuthMode = typeof authMode === 'string' ? authMode : 'NONE';
+        currentUserRole = typeof data?.role === 'string' ? data.role : 'user';
+        currentUserWorkspace = typeof data?.workspaceId === 'string' ? data.workspaceId : '';
+        currentUserEmail = typeof data?.email === 'string' ? data.email : '';
+        currentUserAvatarUrl = typeof data?.avatarUrl === 'string' ? data.avatarUrl : '';
+        currentCreatedDate = typeof data?.createdDate === 'string' ? data.createdDate : '';
+        currentLastSignInDate = typeof data?.lastSignInDate === 'string' ? data.lastSignInDate : '';
         currentUserName = (typeof username === 'string' && username.trim().length > 0)
             ? username.trim()
             : 'Guest';
+        currentUserDisplayName = (typeof data?.displayName === 'string' && data.displayName.trim().length > 0)
+            ? data.displayName.trim()
+            : currentUserName;
         const initial = (typeof username === 'string' && username.trim().length > 0)
             ? username.trim().charAt(0).toUpperCase()
             : 'G';
@@ -384,7 +401,10 @@ function initializeUserMenu() {
     });
 
     if (!document.body.dataset.userMenuGlobalBound) {
-        document.addEventListener('click', () => closeUserMenu());
+        document.addEventListener('click', () => {
+            closeUserMenu();
+            closeUserSettings();
+        });
         document.addEventListener('click', (event) => {
             const target = event.target;
             if (!(target instanceof Element)) return;
@@ -417,7 +437,7 @@ function positionUserMenu(menu, anchorEl) {
 }
 
 function renderUserMenu(menu) {
-    const signedInLabel = currentUserName || 'Guest';
+    const signedInLabel = currentUserDisplayName || currentUserName || 'Guest';
     const showLogout = currentAuthMode !== 'NONE';
 
     menu.innerHTML = `
@@ -426,7 +446,7 @@ function renderUserMenu(menu) {
             <div class="text-sm font-semibold text-slate-800">${signedInLabel}</div>
         </div>
         <button type="button" id="userMenuOptionsBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
-            Options
+            Settings
         </button>
         ${showLogout ? `
         <button type="button" id="userMenuLogoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">
@@ -435,11 +455,11 @@ function renderUserMenu(menu) {
         ` : ''}
     `;
 
-    const optionsBtn = menu.querySelector('#userMenuOptionsBtn');
-    if (optionsBtn) {
-        optionsBtn.addEventListener('click', (event) => {
+    const settingsBtn = menu.querySelector('#userMenuOptionsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', (event) => {
             event.stopPropagation();
-            window.utils?.showToast?.('Options panel will be added soon.', 'info');
+            openUserSettings(userMenuAnchor);
             closeUserMenu();
         });
     }
@@ -475,6 +495,143 @@ function closeUserMenu() {
     if (!menu) return;
     menu.classList.add('hidden');
     userMenuAnchor = null;
+}
+
+function getOrCreateUserSettingsPanel() {
+    let panel = document.getElementById('userSettingsPanel');
+    if (panel) return panel;
+
+    const modal = document.createElement('div');
+    modal.id = 'userSettingsModal';
+    modal.className = 'hidden fixed inset-0 z-[121] bg-slate-900/45 backdrop-blur-[1px] flex items-center justify-center p-4';
+    modal.addEventListener('click', () => closeUserSettings());
+
+    panel = document.createElement('div');
+    panel.id = 'userSettingsPanel';
+    panel.className = 'w-[42rem] max-w-[96vw] rounded-2xl border border-slate-200 bg-white shadow-2xl p-0 overflow-hidden';
+    panel.addEventListener('click', (event) => event.stopPropagation());
+
+    modal.appendChild(panel);
+    document.body.appendChild(modal);
+    return panel;
+}
+
+function renderSettingsTabContent(activeTab = 'account') {
+    const initial = currentUserName && currentUserName !== 'Guest'
+        ? currentUserName.charAt(0).toUpperCase()
+        : 'G';
+    const avatarHtml = currentUserAvatarUrl
+        ? `<img src="${currentUserAvatarUrl}" alt="User avatar" class="w-14 h-14 rounded-full object-cover border border-slate-200">`
+        : `<div class="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-xl font-bold">${initial}</div>`;
+
+    if (activeTab === 'account') {
+        const formatDateValue = (value) => {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return value;
+            return d.toLocaleString();
+        };
+
+        const authModeValue = (() => {
+            if (currentAuthMode === 'SUPABASE_GOOGLE') {
+                return `
+                  <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" aria-hidden="true" class="-ml-0.5 mt-0.5">
+                      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12S17.4 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+                      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/>
+                      <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.5-5.3l-6.2-5.2c-2.1 1.6-4.7 2.5-7.3 2.5-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.7 39.6 16.3 44 24 44z"/>
+                      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.5l6.2 5.2C36.9 38.9 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+                    </svg>
+                    Google
+                  </span>
+                `;
+            }
+            if (currentAuthMode === 'LITE') {
+                return `<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Lite</span>`;
+            }
+            return `<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">${currentAuthMode || '-'}</span>`;
+        })();
+
+        const emailLine = currentUserEmail
+            ? `<div class="text-sm text-slate-500 mt-1">${currentUserEmail}</div>`
+            : '';
+
+        const infoItem = (label, value, isHtml = false) => `
+          <div>
+            <div class="text-xs uppercase tracking-wide text-slate-400 font-semibold">${label}</div>
+            <div class="text-sm font-semibold text-slate-800 mt-1">${isHtml ? value : (value || '-')}</div>
+          </div>
+        `;
+
+        return `
+          <div class="space-y-5">
+            <div class="flex items-center gap-4 pb-1">
+              ${avatarHtml}
+              <div>
+                <div class="text-base font-semibold text-slate-900 leading-tight">${currentUserDisplayName || currentUserName || 'Guest'}</div>
+                ${emailLine}
+              </div>
+            </div>
+            <div class="grid grid-cols-1 gap-4 text-sm">
+              ${infoItem('Username', currentUserName || '-')}
+              ${currentUserEmail ? infoItem('Email', currentUserEmail) : ''}
+              ${infoItem('Role', currentUserRole || '-')}
+              ${infoItem('Workspace', currentUserWorkspace || '-')}
+              ${infoItem('created_date', formatDateValue(currentCreatedDate))}
+              ${infoItem('last_sign_in_date', formatDateValue(currentLastSignInDate))}
+              ${infoItem('Sign In', authModeValue, true)}
+            </div>
+          </div>
+        `;
+    }
+
+    return `<div class="text-sm text-slate-600">No content.</div>`;
+}
+
+function renderUserSettingsPanel(activeTab = 'account') {
+    const panel = getOrCreateUserSettingsPanel();
+    const tabButtonClass = (tab) => (
+        `w-full text-left px-3 py-2 rounded-lg text-sm ${activeTab === tab ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'}`
+    );
+
+    panel.innerHTML = `
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+        <h3 class="text-base font-semibold text-slate-900">Settings</h3>
+        <button id="closeUserSettingsBtn" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="flex min-h-[24rem]">
+        <div class="w-40 border-r border-slate-200 p-3 bg-slate-50/50">
+          <button id="settingsTabAccount" class="${tabButtonClass('account')}">Account</button>
+        </div>
+        <div class="flex-1 p-5 bg-white overflow-auto">
+          ${renderSettingsTabContent(activeTab)}
+        </div>
+      </div>
+    `;
+
+    const closeBtn = panel.querySelector('#closeUserSettingsBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closeUserSettings());
+    }
+    const accountTab = panel.querySelector('#settingsTabAccount');
+    if (accountTab) {
+        accountTab.addEventListener('click', () => renderUserSettingsPanel('account'));
+    }
+}
+
+function openUserSettings(anchorEl) {
+    const panel = getOrCreateUserSettingsPanel();
+    renderUserSettingsPanel('account');
+    const modal = document.getElementById('userSettingsModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeUserSettings() {
+    const modal = document.getElementById('userSettingsModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
 }
 
 // Handle responsive behavior
