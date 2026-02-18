@@ -208,6 +208,7 @@ function isNoTableDataSource(type) {
 
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', function() {
+    renderSharedAppBar();
     updateUserAvatar();
     initBrandHomeLink();
 
@@ -231,6 +232,63 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', handleResize);
     handleResize();
 });
+
+function getAppBarSubtitle() {
+    const p = (window.location.pathname || '/').replace(/\/$/, '') || '/';
+    if (p === '/') return 'Server Generator';
+    if (p === '/manage-servers') return 'Manage Servers';
+    if (p === '/test-servers') return 'Test Servers';
+    if (p === '/authorization') return 'Authorization';
+    if (p === '/users') return 'Users';
+    if (p === '/how-to-use') return 'How to Use';
+    if (p === '/database-tables') return 'Database Tables';
+    if (p === '/roles') return 'Roles';
+    return 'Server Generator';
+}
+
+function renderSharedAppBar() {
+    const header = document.querySelector('header');
+    if (!header || header.dataset.commonAppBar === 'true') return;
+
+    header.dataset.commonAppBar = 'true';
+    header.className = 'backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
+
+    const subtitle = getAppBarSubtitle();
+    header.innerHTML = `
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <i class="fas fa-rocket text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
+            <p class="text-xs text-slate-500 font-medium">${subtitle}</p>
+          </div>
+        </div>
+        <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
+        <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
+          <button id="headerNewServerBtn" onclick="window.location.href='/'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+            <i class="fas fa-plus"></i>
+            <span>New Server</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
+          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span>System Online</span>
+        </div>
+        <button class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
+          <i class="fas fa-bell"></i>
+          <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md" data-user-avatar>G</div>
+        <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    `;
+}
 
 function initBrandHomeLink() {
     const titleEls = document.querySelectorAll('header h1');
