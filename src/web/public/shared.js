@@ -235,6 +235,19 @@ async function updateUserAvatar() {
     const avatarEls = document.querySelectorAll('[data-user-avatar]');
     if (!avatarEls.length) return;
 
+    const renderAnonymousAvatar = () => {
+        avatarEls.forEach((el) => {
+            el.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="20" height="20" aria-label="Anonymous user" role="img">
+                <circle cx="32" cy="24" r="12" fill="rgba(255,255,255,0.95)"/>
+                <path d="M12 52C12 42.0589 20.0589 34 30 34H34C43.9411 34 52 42.0589 52 52V56H12V52Z" fill="rgba(255,255,255,0.95)"/>
+              </svg>
+            `;
+        });
+    };
+
+    renderAnonymousAvatar();
+
     try {
         const response = await fetch('/api/auth/me');
         if (!response.ok) {
@@ -258,7 +271,6 @@ async function updateUserAvatar() {
         });
         initializeUserMenu();
     } catch {
-        // Keep static fallback avatar letter.
         initializeUserMenu();
     }
 }
