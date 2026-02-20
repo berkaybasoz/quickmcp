@@ -301,6 +301,17 @@
       font-weight: 400;
     }
 
+    .type-cursor {
+      display: inline-block;
+      margin-left: 2px;
+      color: var(--accent);
+      animation: blink 1s steps(1, end) infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
     .hero-subtitle {
       font-size: 18px;
       color: var(--text-secondary);
@@ -917,7 +928,7 @@
         AI-Powered MCP Server Generator
       </span>
       <h1 class="hero-title">
-        Now your AI can <span class="highlight">connect</span> to <span class="serif">anything</span>
+        <span id="hero-type-part-1"></span><span class="highlight" id="hero-type-part-2"></span><span id="hero-type-part-3"></span><span class="serif" id="hero-type-part-4"></span><span class="type-cursor" aria-hidden="true">|</span>
       </h1>
       <p class="hero-subtitle">
         Generate MCP servers from APIs and databases. Connect Claude, Cursor, and other AI tools to your entire stack in minutes.
@@ -1453,6 +1464,43 @@
   </footer>
   <script>
     (() => {
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const parts = [
+        { id: 'hero-type-part-1', text: 'Now your AI can ' },
+        { id: 'hero-type-part-2', text: 'connect' },
+        { id: 'hero-type-part-3', text: ' to ' },
+        { id: 'hero-type-part-4', text: 'anything' }
+      ];
+
+      if (reduceMotion) {
+        parts.forEach((part) => {
+          const el = document.getElementById(part.id);
+          if (el) el.textContent = part.text;
+        });
+      } else {
+        const queue = parts
+          .map((part) => {
+            const el = document.getElementById(part.id);
+            if (el) el.textContent = '';
+            return { ...part, el, index: 0 };
+          })
+          .filter((part) => part.el);
+
+        let partIndex = 0;
+        const speedMs = 55;
+
+        const tick = () => {
+          if (partIndex >= queue.length) return;
+          const current = queue[partIndex];
+          current.index += 1;
+          current.el.textContent = current.text.slice(0, current.index);
+          if (current.index >= current.text.length) partIndex += 1;
+          setTimeout(tick, speedMs);
+        };
+
+        tick();
+      }
+
       const left = document.getElementById('server-tech-marquee-left');
       const right = document.getElementById('server-tech-marquee-right');
       if (!left || !right) return;
