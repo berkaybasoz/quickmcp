@@ -270,6 +270,7 @@
 
     .plan .btn {
       width: 100%;
+      margin-top: 24px;
       margin-bottom: 18px;
     }
 
@@ -294,10 +295,33 @@
     }
 
     .fine-note {
-      margin-top: 8px;
+      margin: 6px auto 72px;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
       text-align: center;
+    }
+
+    .fine-note i {
+      color: var(--accent);
+    }
+
+    .fine-note a {
+      text-decoration: none;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .fine-note a:hover {
+      text-decoration: underline;
     }
 
     @media (max-width: 900px) {
@@ -410,12 +434,12 @@
           <div class="price">US$0</div>
           <div class="price-note">/ month</div>
         </div>
-        <a href="/login" class="btn btn-ghost" style="border:1px solid var(--line);">Get started for free</a>
         <ul>
           <li><i class="fas fa-check"></i><span>10 free credits every month</span></li>
           <li><i class="fas fa-check"></i><span>Access to core app connectors</span></li>
           <li><i class="fas fa-check"></i><span>Community support</span></li>
         </ul>
+        <a href="/login" class="btn btn-ghost" style="border:1px solid var(--line);">Get started for free</a>
       </article>
 
       <article class="plan featured">
@@ -426,13 +450,13 @@
           <div class="price" id="proPrice">US$29</div>
           <div class="price-note" id="proPriceNote">/ month</div>
         </div>
-        <a href="/login" class="btn btn-primary">Go Pro</a>
         <ul>
           <li><i class="fas fa-check"></i><span><strong id="proCredits">2500</strong> monthly credits included</span></li>
           <li><i class="fas fa-check"></i><span>All integrations and workflow tooling</span></li>
           <li><i class="fas fa-check"></i><span>Priority support</span></li>
           <li><i class="fas fa-check"></i><span>Usage analytics and team visibility</span></li>
         </ul>
+        <a href="/login" class="btn btn-primary">Go Pro</a>
       </article>
 
       <article class="plan">
@@ -440,18 +464,20 @@
         <p class="plan-desc">For enterprise deployments and advanced governance.</p>
         <div class="price-row">
           <div class="price">Custom</div>
-          <div class="price-note">contact us</div>
         </div>
-        <a href="mailto:quickmcp@gmail.com" class="btn btn-ghost" style="border:1px solid var(--line);">Contact us</a>
         <ul>
           <li><i class="fas fa-check"></i><span>Custom credit and volume packages</span></li>
           <li><i class="fas fa-check"></i><span>SSO, RBAC, and enterprise controls</span></li>
           <li><i class="fas fa-check"></i><span>Dedicated support and onboarding</span></li>
           <li><i class="fas fa-check"></i><span>Private deployment options</span></li>
         </ul>
+        <a href="mailto:quickmcp@gmail.com" class="btn btn-ghost" style="border:1px solid var(--line);">Contact us</a>
       </article>
     </section>
-    <p class="fine-note">Need a tailored plan? Email <a href="mailto:quickmcp@gmail.com">quickmcp@gmail.com</a>.</p>
+    <p class="fine-note">
+      <i class="fas fa-envelope-open-text" aria-hidden="true"></i>
+      Need a tailored plan? Talk to us at <a href="mailto:quickmcp@gmail.com">quickmcp@gmail.com</a>
+    </p>
   </main>
 
   <script>
