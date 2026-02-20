@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP Pricing</title>
+  <link rel="icon" type="image/png" href="/images/app/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f3f7ff;
+      --card: #ffffff;
+      --line: #dbe6f7;
+      --text: #1f2937;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-bg: rgba(37, 99, 235, 0.08);
+      --shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--text);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-menu-toggle,
+    .nav-mobile-menu {
+      display: none;
+    }
+
+    @media (min-width: 901px) {
+      .nav-menu-toggle,
+      .nav-mobile-menu {
+        display: none !important;
+      }
+      .nav-get-started-desktop {
+        display: inline-flex !important;
+      }
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 18px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: var(--text);
+    }
+
+    .hero {
+      padding: 56px 0 26px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: clamp(34px, 8vw, 62px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+
+    .hero h1 .serif {
+      font-family: "Newsreader", Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 660px;
+      margin: 0 auto;
+    }
+
+    .billing-toggle {
+      margin: 28px auto 16px;
+      width: fit-content;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      display: flex;
+      gap: 6px;
+    }
+
+    .billing-option {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .billing-option.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .discount {
+      text-align: center;
+      color: #0f766e;
+      font-weight: 600;
+      margin-bottom: 34px;
+      font-size: 14px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+      padding-bottom: 80px;
+    }
+
+    .plan {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .plan.featured {
+      border-color: rgba(37, 99, 235, 0.4);
+      box-shadow: 0 14px 36px rgba(37, 99, 235, 0.16);
+      position: relative;
+    }
+
+    .badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .plan-name {
+      font-size: 24px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .plan-desc {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 18px;
+      min-height: 42px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 18px;
+      min-height: 50px;
+    }
+
+    .price {
+      font-size: 38px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+    }
+
+    .price-note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .plan .btn {
+      width: 100%;
+      margin-bottom: 18px;
+    }
+
+    .plan ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .plan li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .plan li i {
+      color: #16a34a;
+      margin-top: 2px;
+    }
+
+    .fine-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .nav {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-actions {
+        margin-left: auto;
+      }
+
+      .nav-actions .btn-ghost,
+      .nav-get-started-desktop {
+        display: none;
+      }
+
+      .nav-menu-toggle {
+        display: inline-flex;
+        padding: 10px 12px;
+      }
+
+      .nav-menu-toggle .label {
+        display: none;
+      }
+
+      .nav-mobile-menu {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .nav-mobile-menu.open {
+        display: grid;
+      }
+
+      .nav-mobile-link {
+        text-decoration: none;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 2px;
+      }
+
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="/landing" class="logo">
+        <span class="logo-icon"><i class="fas fa-rocket"></i></span>
+        <span class="logo-text">QuickMCP</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="/landing#prompts" class="nav-link">Use Cases</a>
+        <a href="/landing#how" class="nav-link">How It Works</a>
+        <a href="/landing#integrations" class="nav-link">Integrations</a>
+        <a href="/pricing" class="nav-link active">Pricing</a>
+        <a href="/landing#faq" class="nav-link">FAQ</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="/login" class="btn btn-ghost">Sign In</a>
+        <a href="/login" class="btn btn-primary nav-get-started-desktop">Get Started</a>
+        <button type="button" id="navMenuToggle" class="btn btn-primary nav-menu-toggle" aria-expanded="false" aria-controls="navMobileMenu">
+          <span class="label">Menu</span>
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <div id="navMobileMenu" class="nav-mobile-menu">
+        <a href="/login" class="nav-mobile-link">Sign In</a>
+        <a href="/landing#prompts" class="nav-mobile-link">Use Cases</a>
+        <a href="/landing#how" class="nav-mobile-link">How It Works</a>
+        <a href="/landing#integrations" class="nav-mobile-link">Integrations</a>
+        <a href="/pricing" class="nav-mobile-link">Pricing</a>
+        <a href="/landing#faq" class="nav-mobile-link">FAQ</a>
+      </div>
+    </nav>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Start free, <span class="serif">grow</span> as you go</h1>
+      <p>Flexible plans for teams building MCP-powered workflows across apps, APIs, databases, and enterprise systems.</p>
+      <div class="billing-toggle" role="tablist" aria-label="Billing period">
+        <button type="button" id="monthlyBtn" class="billing-option active" aria-selected="true">Monthly</button>
+        <button type="button" id="annualBtn" class="billing-option" aria-selected="false">Annually</button>
+      </div>
+      <div class="discount">20% Off on an annual subscription</div>
+    </section>
+
+    <section class="pricing-grid">
+      <article class="plan">
+        <h2 class="plan-name">Something</h2>
+        <p class="plan-desc">For individual builders and early experiments.</p>
+        <div class="price-row">
+          <div class="price">US$0</div>
+          <div class="price-note">/ month</div>
+        </div>
+        <a href="/login" class="btn btn-ghost" style="border:1px solid var(--line);">Get started for free</a>
+        <ul>
+          <li><i class="fas fa-check"></i><span>10 free credits every month</span></li>
+          <li><i class="fas fa-check"></i><span>Access to core app connectors</span></li>
+          <li><i class="fas fa-check"></i><span>Community support</span></li>
+        </ul>
+      </article>
+
+      <article class="plan featured">
+        <span class="badge">Most Popular</span>
+        <h2 class="plan-name">Anything</h2>
+        <p class="plan-desc">For growing teams shipping real automations.</p>
+        <div class="price-row">
+          <div class="price" id="proPrice">US$29</div>
+          <div class="price-note" id="proPriceNote">/ month</div>
+        </div>
+        <a href="/login" class="btn btn-primary">Go Pro</a>
+        <ul>
+          <li><i class="fas fa-check"></i><span><strong id="proCredits">2500</strong> monthly credits included</span></li>
+          <li><i class="fas fa-check"></i><span>All integrations and workflow tooling</span></li>
+          <li><i class="fas fa-check"></i><span>Priority support</span></li>
+          <li><i class="fas fa-check"></i><span>Usage analytics and team visibility</span></li>
+        </ul>
+      </article>
+
+      <article class="plan">
+        <h2 class="plan-name">Everything</h2>
+        <p class="plan-desc">For enterprise deployments and advanced governance.</p>
+        <div class="price-row">
+          <div class="price">Custom</div>
+          <div class="price-note">contact us</div>
+        </div>
+        <a href="mailto:quickmcp@gmail.com" class="btn btn-ghost" style="border:1px solid var(--line);">Contact us</a>
+        <ul>
+          <li><i class="fas fa-check"></i><span>Custom credit and volume packages</span></li>
+          <li><i class="fas fa-check"></i><span>SSO, RBAC, and enterprise controls</span></li>
+          <li><i class="fas fa-check"></i><span>Dedicated support and onboarding</span></li>
+          <li><i class="fas fa-check"></i><span>Private deployment options</span></li>
+        </ul>
+      </article>
+    </section>
+    <p class="fine-note">Need a tailored plan? Email <a href="mailto:quickmcp@gmail.com">quickmcp@gmail.com</a>.</p>
+  </main>
+
+  <script>
+    (() => {
+      const navMenuToggle = document.getElementById('navMenuToggle');
+      const navMobileMenu = document.getElementById('navMobileMenu');
+      if (navMenuToggle && navMobileMenu) {
+        navMenuToggle.addEventListener('click', () => {
+          const isOpen = navMobileMenu.classList.toggle('open');
+          navMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navMobileMenu.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 900) {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      const monthlyBtn = document.getElementById('monthlyBtn');
+      const annualBtn = document.getElementById('annualBtn');
+      const proPrice = document.getElementById('proPrice');
+      const proPriceNote = document.getElementById('proPriceNote');
+      const proCredits = document.getElementById('proCredits');
+
+      const setBilling = (billing) => {
+        const isAnnual = billing === 'annual';
+        monthlyBtn.classList.toggle('active', !isAnnual);
+        annualBtn.classList.toggle('active', isAnnual);
+        monthlyBtn.setAttribute('aria-selected', isAnnual ? 'false' : 'true');
+        annualBtn.setAttribute('aria-selected', isAnnual ? 'true' : 'false');
+
+        if (isAnnual) {
+          proPrice.textContent = 'US$23';
+          proPriceNote.textContent = '/ month, billed yearly';
+          proCredits.textContent = '2500';
+        } else {
+          proPrice.textContent = 'US$29';
+          proPriceNote.textContent = '/ month';
+          proCredits.textContent = '2500';
+        }
+      };
+
+      monthlyBtn.addEventListener('click', () => setBilling('monthly'));
+      annualBtn.addEventListener('click', () => setBilling('annual'));
+    })();
+  </script>
+</body>
+</html>

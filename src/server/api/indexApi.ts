@@ -15,6 +15,7 @@ export class IndexApi {
   registerRoutes(app: express.Express): void {
     app.get('/', this.serveRoot);
     app.get('/landing', this.serveLanding);
+    app.get('/pricing', this.servePricing);
     // Keep this route last: it catches all unmatched routes.
     app.get('*', this.serveApp);
   }
@@ -35,6 +36,10 @@ export class IndexApi {
       return;
     }
     res.sendFile(path.join(this.deps.publicDir, 'landing.html'));
+  };
+
+  private servePricing = (_req: express.Request, res: express.Response): void => {
+    res.sendFile(path.join(this.deps.publicDir, 'pricing.html'));
   };
 
   private serveApp = (_req: express.Request, res: express.Response): void => {
