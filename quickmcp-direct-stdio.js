@@ -100,42 +100,82 @@ const mcpIdentity = verifiedMcpPayload ? {
   role: String(verifiedMcpPayload.role || 'user')
 } : null;
 const mcpTokenHash = mcpToken ? crypto.createHash('sha256').update(mcpToken).digest('hex') : '';
-const getCurrentMcpTokenRecord = () => getMcpTokenRecordFromStore(dataStore, mcpAuthMode, mcpTokenHash);
-const isMcpAuthorizedGlobally = () => {
-  const tokenRecord = getCurrentMcpTokenRecord();
+const getCurrentMcpTokenRecord = async () => {
+  if (!mcpTokenHash) return null;
+  try {
+    if (typeof dataStore.getMcpTokenByHash === 'function') {
+      return await dataStore.getMcpTokenByHash(mcpTokenHash);
+    }
+  } catch (_) {}
+  return getMcpTokenRecordFromStore(dataStore, mcpAuthMode, mcpTokenHash);
+};
+const isMcpAuthorizedGlobally = async () => {
+  const tokenRecord = await getCurrentMcpTokenRecord();
   return isMcpAuthorizedGloballyFromUtils(mcpAuthMode, mcpIdentity, tokenRecord);
 };
-const isServerAuthorized = (serverId) => {
-  // If a token is explicitly provided, it must be valid and active even when
-  // a server is configured as token-optional. This prevents revoked tokens
-  // from continuing to authorize requests.
-  if (mcpAuthMode !== 'NONE' && hasProvidedMcpToken && !isMcpAuthorizedGlobally()) {
-    return false;
-  }
-  const tokenRecord = getCurrentMcpTokenRecord();
+const getServerRequireMcpToken = async (serverId) => {
+  if (mcpAuthMode === 'NONE') return false;
+  let requireToken = true;
+  const owner = String(serverId || '').includes('__') ? String(serverId).split('__')[0] : '';
+  try {
+    if (typeof dataStore.getMcpTokenPolicy === 'function') {
+      const globalCfg = await dataStore.getMcpTokenPolicy('global', '*');
+      if (globalCfg) requireToken = globalCfg.requireMcpToken !== false;
+      if (owner) {
+        const userCfg = await dataStore.getMcpTokenPolicy('user', owner);
+        if (userCfg) requireToken = userCfg.requireMcpToken !== false;
+      }
+      const serverCfg = await dataStore.getMcpTokenPolicy('server', serverId);
+      if (serverCfg) return serverCfg.requireMcpToken !== false;
+    }
+    if (typeof dataStore.getServerAuthConfig === 'function') {
+      const legacyCfg = await dataStore.getServerAuthConfig(serverId);
+      if (legacyCfg) return legacyCfg.requireMcpToken !== false;
+    }
+  } catch (_) {}
+  return requireToken;
+};
+const isServerAuthorized = async (serverId) => {
+  if (mcpAuthMode === 'NONE') return true;
+  if (hasProvidedMcpToken && !(await isMcpAuthorizedGlobally())) return false;
+  const requireToken = await getServerRequireMcpToken(serverId);
+  if (!requireToken) return true;
+  const tokenRecord = await getCurrentMcpTokenRecord();
   return isServerAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId);
 };
-const isToolAuthorized = (serverId, toolName) => {
-  const tokenRecord = getCurrentMcpTokenRecord();
+const isToolAuthorized = async (serverId, toolName) => {
+  if (mcpAuthMode === 'NONE') return true;
+  let requireToken = await getServerRequireMcpToken(serverId);
+  try {
+    if (typeof dataStore.getMcpTokenPolicy === 'function') {
+      const toolCfg = await dataStore.getMcpTokenPolicy('tool', `${serverId}__${toolName}`);
+      if (toolCfg) requireToken = toolCfg.requireMcpToken !== false;
+    }
+  } catch (_) {}
+  if (!requireToken) return true;
+  const tokenRecord = await getCurrentMcpTokenRecord();
   return isToolAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, toolName);
 };
-const isResourceAuthorized = (serverId, resourceName) => {
-  const tokenRecord = getCurrentMcpTokenRecord();
+const isResourceAuthorized = async (serverId, resourceName) => {
+  if (!(await isServerAuthorized(serverId))) return false;
+  const tokenRecord = await getCurrentMcpTokenRecord();
   return isResourceAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, resourceName);
 };
-const startupAuthError = hasProvidedMcpToken && !isMcpAuthorizedGlobally()
-  ? 'Unauthorized user: MCP token is invalid, revoked, expired, or not valid for this workspace.'
-  : null;
+const getStartupAuthError = async () => {
+  if (!hasProvidedMcpToken) return null;
+  const isAuthorized = await isMcpAuthorizedGlobally();
+  return isAuthorized ? null : 'Unauthorized user: MCP token is invalid, revoked, expired, or not valid for this workspace.';
+};
 
 console.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
 console.error(`[QuickMCP] MCP token present: ${mcpIdentity ? 'yes' : 'no'}`);
-if (startupAuthError) {
-  console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
-}
+void getStartupAuthError().then((err) => {
+  if (err) console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
+}).catch(() => {});
 
-function resolveToolByFullName(fullName) {
+async function resolveToolByFullName(fullName) {
   try {
-    const tools = dataStore.getAllTools();
+    const tools = await dataStore.getAllTools();
     return tools.find((tool) => `${tool.server_id}__${tool.name}` === fullName) || null;
   } catch {
     return null;
@@ -291,6 +331,7 @@ async function handleMessage(message) {
 
   let response;
 
+  const startupAuthError = await getStartupAuthError();
   if (startupAuthError && message.method !== 'initialize' && message.method !== 'notifications/initialized') {
     response = {
       jsonrpc: '2.0',
@@ -326,8 +367,13 @@ async function handleMessage(message) {
 
     case 'tools/list':
       try {
-        const tools = dataStore.getAllTools();
-        const authorizedTools = tools.filter((tool) => isToolAuthorized(tool.server_id, tool.name));
+        const tools = await dataStore.getAllTools();
+        const authorizedTools = [];
+        for (const tool of tools) {
+          if (await isToolAuthorized(tool.server_id, tool.name)) {
+            authorizedTools.push(tool);
+          }
+        }
         console.error(`[QuickMCP] Got ${tools.length} tools from datasource, authorized=${authorizedTools.length}`);
         const formattedTools = authorizedTools.map(tool => ({
           name: `${tool.server_id}__${tool.name}`,
@@ -353,8 +399,13 @@ async function handleMessage(message) {
 
     case 'resources/list':
       try {
-        const resources = dataStore.getAllResources();
-        const authorizedResources = resources.filter((resource) => isResourceAuthorized(resource.server_id, resource.name));
+        const resources = await dataStore.getAllResources();
+        const authorizedResources = [];
+        for (const resource of resources) {
+          if (await isResourceAuthorized(resource.server_id, resource.name)) {
+            authorizedResources.push(resource);
+          }
+        }
         const formattedResources = authorizedResources.map(resource => ({
           name: `${resource.server_id}__${resource.name}`,
           description: `[${resource.server_id}] ${resource.description}`,
@@ -391,11 +442,11 @@ async function handleMessage(message) {
         console.error(`[QuickMCP] Arguments:`, JSON.stringify(message.params.arguments));
 
         const requestedToolName = message?.params?.name || '';
-        const resolvedTool = resolveToolByFullName(requestedToolName);
+        const resolvedTool = await resolveToolByFullName(requestedToolName);
         const requestedServerId = resolvedTool ? resolvedTool.server_id : String(requestedToolName).split('__')[0];
 
         const requestedToolShortName = resolvedTool ? resolvedTool.name : String(requestedToolName).split('__').slice(1).join('__');
-        if (!isToolAuthorized(requestedServerId, requestedToolShortName)) {
+        if (!(await isToolAuthorized(requestedServerId, requestedToolShortName))) {
           response = {
             jsonrpc: '2.0',
             id: message.id,
@@ -422,7 +473,7 @@ async function handleMessage(message) {
             let baseUrl = restSpec.baseUrl;
             try {
               if (!baseUrl && dataStore.getServer) {
-                const srv = dataStore.getServer(serverId);
+                const srv = await dataStore.getServer(serverId);
                 baseUrl = srv && srv.sourceConfig && srv.sourceConfig.baseUrl;
               }
             } catch (_) {}
