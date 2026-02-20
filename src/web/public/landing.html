@@ -209,6 +209,22 @@
       gap: 16px;
     }
 
+    .nav-menu-toggle,
+    .nav-mobile-menu {
+      display: none;
+    }
+
+    @media (min-width: 901px) {
+      .nav-menu-toggle,
+      .nav-mobile-menu {
+        display: none !important;
+      }
+
+      .nav-get-started-desktop {
+        display: inline-flex !important;
+      }
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -846,6 +862,55 @@
         display: none;
       }
 
+      .nav {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .nav-actions {
+        margin-left: auto;
+      }
+
+      .nav-actions .btn-ghost,
+      .nav-get-started-desktop {
+        display: none;
+      }
+
+      .nav-menu-toggle {
+        display: inline-flex;
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+
+      .nav-menu-toggle .label {
+        display: none;
+      }
+
+      .nav-mobile-menu {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .nav-mobile-menu.open {
+        display: grid;
+      }
+
+      .nav-mobile-link {
+        text-decoration: none;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 2px;
+      }
+
+      .nav-mobile-link:hover {
+        color: var(--text);
+      }
+
       .steps-grid {
         grid-template-columns: 1fr;
         gap: 32px;
@@ -915,7 +980,19 @@
 
       <div class="nav-actions">
         <a href="/login" class="btn btn-ghost">Sign In</a>
-        <a href="/login" class="btn btn-primary">Get Started</a>
+        <a href="/login" class="btn btn-primary nav-get-started-desktop">Get Started</a>
+        <button type="button" id="navMenuToggle" class="btn btn-primary nav-menu-toggle" aria-expanded="false" aria-controls="navMobileMenu">
+          <span class="label">Menu</span>
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <div id="navMobileMenu" class="nav-mobile-menu">
+        <a href="/login" class="nav-mobile-link">Sign In</a>
+        <a href="#prompts" class="nav-mobile-link">Use Cases</a>
+        <a href="#how" class="nav-mobile-link">How It Works</a>
+        <a href="#integrations" class="nav-mobile-link">Integrations</a>
+        <a href="#faq" class="nav-mobile-link">FAQ</a>
       </div>
     </nav>
   </div>
@@ -1464,6 +1541,29 @@
   </footer>
   <script>
     (() => {
+      const navMenuToggle = document.getElementById('navMenuToggle');
+      const navMobileMenu = document.getElementById('navMobileMenu');
+      if (navMenuToggle && navMobileMenu) {
+        navMenuToggle.addEventListener('click', () => {
+          const isOpen = navMobileMenu.classList.toggle('open');
+          navMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navMobileMenu.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 900) {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
       const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const parts = [
         { id: 'hero-type-part-1', text: 'Now your AI can ' },
