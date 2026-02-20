@@ -234,14 +234,14 @@
       <p id="loginModeText" class="login-subtitle">Sign in to continue.</p>
       <p id="errorText" class="error-text hidden"></p>
 
-      <form id="loginForm" class="space-y-4 hidden">
+      <form id="loginForm" class="space-y-4 hidden" autocomplete="off">
         <div>
           <label for="username" class="login-label">Username</label>
-          <input id="username" type="text" required class="login-input" autocomplete="username">
+          <input id="username" type="text" required class="login-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
         </div>
         <div>
           <label for="password" class="login-label">Password</label>
-          <input id="password" type="password" required class="login-input" autocomplete="current-password">
+          <input id="password" type="password" required class="login-input" autocomplete="new-password">
         </div>
         <button type="submit" class="login-btn">Login</button>
       </form>
@@ -267,6 +267,8 @@
     const loginModeText = document.getElementById('loginModeText');
     const supabaseLogin = document.getElementById('supabaseLogin');
     const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
 
     function showError(message) {
       errorText.textContent = message || 'Login failed';
@@ -353,6 +355,11 @@
     });
 
     initLoginMode().catch((error) => showError(error.message || 'Failed to initialize login'));
+
+    window.addEventListener('pageshow', () => {
+      if (usernameInput) usernameInput.value = '';
+      if (passwordInput) passwordInput.value = '';
+    });
   </script>
 </body>
 </html>
