@@ -911,12 +911,13 @@ export class AuthApi {
     res.json({ success: true });
   };
 
-  private getLoginPage = (req: express.Request, res: express.Response): void => {
+  private getLoginPage = async (req: express.Request, res: express.Response): Promise<void> => {
     if (this.deps.authMode === 'NONE') {
       res.redirect('/');
       return;
     }
-    if (this.deps.getAuthenticatedUser(req)) {
+    const ctx = await this.deps.resolveAuthContext(req as AuthenticatedRequest, res);
+    if (ctx) {
       res.redirect('/');
       return;
     }

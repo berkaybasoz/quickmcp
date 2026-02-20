@@ -138,7 +138,11 @@ const nameApi = new NameApi({
 });
 const databaseApi = new DatabaseApi({ publicDir });
 const mcpApi = new McpApi({ generatedServers });
-const indexApi = new IndexApi({ publicDir });
+const indexApi = new IndexApi({
+  publicDir,
+  authMode,
+  resolveAuthContext
+});
 const authApi = new AuthApi({
   deployMode,
   authMode,
@@ -251,7 +255,7 @@ seedLiteAdminsAsync().catch((error) => {
 app.use((req, res, next) => {
   authMiddleware(req as AuthenticatedRequest, res, next).catch(next);
 });
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, { index: false }));
 
 configApi.registerRoutes(app);
 healthApi.registerRoutes(app);

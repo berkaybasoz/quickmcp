@@ -339,9 +339,18 @@ async function updateUserAvatar() {
 
     renderAnonymousAvatar();
 
+    const shouldRedirectToLogin = () => {
+        const path = (window.location.pathname || '').toLowerCase();
+        return path !== '/login' && path !== '/landing' && path !== '/';
+    };
+
     try {
         const response = await fetch('/api/auth/me');
         if (!response.ok) {
+            if (shouldRedirectToLogin()) {
+                window.location.href = '/login';
+                return;
+            }
             initializeUserMenu();
             return;
         }
@@ -372,6 +381,10 @@ async function updateUserAvatar() {
         });
         initializeUserMenu();
     } catch {
+        if (shouldRedirectToLogin()) {
+            window.location.href = '/login';
+            return;
+        }
         initializeUserMenu();
     }
 }

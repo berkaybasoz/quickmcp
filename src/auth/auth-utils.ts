@@ -215,6 +215,7 @@ export class AuthUtils {
   isPublicPath(pathname: string): boolean {
     if (pathname.startsWith('/api/auth')) return true;
     if (pathname === '/login') return true;
+    if (pathname === '/' || pathname === '/landing') return true;
     if (pathname.startsWith('/images/')) return true;
     if (
       pathname.endsWith('.js') ||
@@ -333,6 +334,13 @@ export class AuthUtils {
     })();
 
     const user = await this.ensureDataStore().getUser(username);
+    if (!user) {
+      if (res) {
+        this.clearCookie(res, this.accessCookieName);
+        this.clearCookie(res, this.refreshCookieName);
+      }
+      return null;
+    }
     const workspaceId = (payload?.ws || user?.workspaceId || username).trim();
     const role = await this.getUserRoleAsync(username, workspaceId);
     return { username, workspaceId, role };
@@ -371,10 +379,16 @@ export class AuthUtils {
 
     req.authUser = effectiveUser;
     const ctx = await this.resolveAuthContextAsync(req, res);
-    if (ctx) {
-      req.authWorkspace = ctx.workspaceId;
-      req.authRole = ctx.role;
+    if (!ctx) {
+      if (req.path.startsWith('/api/')) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+      } else {
+        res.redirect('/login');
+      }
+      return false;
     }
+    req.authWorkspace = ctx.workspaceId;
+    req.authRole = ctx.role;
     return true;
   }
 

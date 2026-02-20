@@ -1,5 +1,7 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { startServer } from './server/server';
+
+dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || '.env' });
 
 startServer();
 
