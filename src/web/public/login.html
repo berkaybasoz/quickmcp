@@ -5,41 +5,261 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuickMCP Login</title>
 
-    <link rel="icon" type="image/png" href="/images/app/favicon.png">
+  <link rel="icon" type="image/png" href="/images/app/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="quickmcp-styles.css">
+  <style>
+    :root {
+      --bg: #f4f7ff;
+      --ink: #0f172a;
+      --muted: #4b5563;
+      --line: #dbe3f3;
+      --brand: #2f6df6;
+      --brand-strong: #1d4ed8;
+      --panel: #ffffff;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 18%, rgba(47, 109, 246, 0.22), transparent 36%),
+        radial-gradient(circle at 86% 90%, rgba(45, 212, 191, 0.16), transparent 42%),
+        var(--bg);
+    }
+
+    .login-wrap {
+      width: min(980px, 94vw);
+      min-height: 620px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .login-brand {
+      background:
+        linear-gradient(160deg, #0f172a 0%, #1e3a8a 58%, #2563eb 100%);
+      color: #fff;
+      padding: 44px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 32px;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .login-brand::before {
+      content: '';
+      position: absolute;
+      inset: auto -40px -80px auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.14);
+      filter: blur(10px);
+      z-index: -1;
+    }
+
+    .login-badge {
+      width: fit-content;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 18px;
+    }
+
+    .login-brand h1 {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(30px, 5vw, 44px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      font-weight: 800;
+    }
+
+    .login-brand p {
+      color: rgba(255, 255, 255, 0.82);
+      max-width: 34ch;
+      font-size: 15px;
+      line-height: 1.55;
+      margin-top: 14px;
+    }
+
+    .login-points {
+      display: grid;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .login-point {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .login-panel {
+      background: var(--panel);
+      padding: 44px 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .login-title {
+      font-size: 29px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .login-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .login-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .login-input:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.14);
+    }
+
+    .login-btn {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(100deg, var(--brand), var(--brand-strong));
+      color: #fff;
+      font-weight: 600;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: transform .15s ease, filter .2s ease;
+    }
+
+    .login-btn:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    .oauth-btn {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-weight: 500;
+      color: #0f172a;
+      transition: border-color .2s, background .2s;
+    }
+
+    .oauth-btn:hover {
+      border-color: #bfcbec;
+      background: #f8fbff;
+    }
+
+    .error-text {
+      color: #dc2626;
+      font-size: 13px;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+
+    @media (max-width: 920px) {
+      .login-wrap {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+      .login-brand {
+        padding: 28px 26px;
+      }
+      .login-panel {
+        padding: 28px 22px;
+      }
+    }
+  </style>
 </head>
-<body class="h-screen flex items-center justify-center bg-slate-100 text-slate-900">
-  <div class="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-    <h1 class="text-xl font-semibold mb-1">QuickMCP Login</h1>
-    <p id="loginModeText" class="text-sm text-slate-500 mb-6">Sign in to continue.</p>
-
-    <form id="loginForm" class="space-y-4 hidden">
+<body class="h-screen flex items-center justify-center p-4">
+  <main class="login-wrap">
+    <section class="login-brand">
       <div>
-        <label for="username" class="block text-sm font-medium mb-1">Username</label>
-        <input id="username" type="text" required class="input w-full" autocomplete="username">
+        <div class="login-badge">QuickMCP Workspace Access</div>
+        <h1>Connect data and tools, then let AI execute safely.</h1>
+        <p>Secure sign-in for your MCP workspace. Use your account to manage databases, brokers, APIs, and production-ready integrations.</p>
       </div>
-      <div>
-        <label for="password" class="block text-sm font-medium mb-1">Password</label>
-        <input id="password" type="password" required class="input w-full" autocomplete="current-password">
+      <div class="login-points">
+        <div class="login-point">Structured MCP actions for real workflows</div>
+        <div class="login-point">Role-based access and token policies</div>
+        <div class="login-point">Works across app and database connectors</div>
       </div>
-      <p id="errorText" class="text-sm text-red-600 hidden"></p>
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2">Login</button>
-    </form>
+    </section>
 
-    <div id="supabaseLogin" class="hidden space-y-3">
-      <button id="googleLoginBtn" type="button" class="w-full bg-white border border-slate-300 hover:border-slate-400 text-slate-800 rounded-lg px-4 py-2 flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-4 h-4" aria-hidden="true">
+    <section class="login-panel">
+      <h2 class="login-title">Sign in</h2>
+      <p id="loginModeText" class="login-subtitle">Sign in to continue.</p>
+      <p id="errorText" class="error-text hidden"></p>
+
+      <form id="loginForm" class="space-y-4 hidden" autocomplete="off">
+        <div>
+          <label for="username" class="login-label">Username</label>
+          <input id="username" type="text" required class="login-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="password" class="login-label">Password</label>
+          <input id="password" type="password" required class="login-input" autocomplete="new-password">
+        </div>
+        <button type="submit" class="login-btn">Login</button>
+      </form>
+
+      <div id="supabaseLogin" class="hidden space-y-3">
+        <button id="googleLoginBtn" type="button" class="oauth-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-4 h-4" aria-hidden="true">
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12S17.4 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
           <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/>
           <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.5-5.3l-6.2-5.2c-2.1 1.6-4.7 2.5-7.3 2.5-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.7 39.6 16.3 44 24 44z"/>
           <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.5l6.2 5.2C36.9 38.9 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
-        </svg>
-        <span>Continue with Google</span>
-      </button>
-      <p class="text-xs text-slate-500">Google sign-in is handled by Supabase.</p>
-    </div>
-  </div>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+        <p class="text-xs text-slate-500">Google sign-in is handled by Supabase.</p>
+      </div>
+    </section>
+  </main>
 
   <script>
     const form = document.getElementById('loginForm');
@@ -47,6 +267,8 @@
     const loginModeText = document.getElementById('loginModeText');
     const supabaseLogin = document.getElementById('supabaseLogin');
     const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
 
     function showError(message) {
       errorText.textContent = message || 'Login failed';
@@ -133,6 +355,11 @@
     });
 
     initLoginMode().catch((error) => showError(error.message || 'Failed to initialize login'));
+
+    window.addEventListener('pageshow', () => {
+      if (usernameInput) usernameInput.value = '';
+      if (passwordInput) passwordInput.value = '';
+    });
   </script>
 </body>
 </html>
