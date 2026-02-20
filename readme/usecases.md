@@ -1,0 +1,3 @@
+1- Veri tabananındaki tablo, view, stored procedure ile anında mcp oluşturup verilerimizi analiz edebilirim. Müşterilerden gelen şikayetleri email ile bağlayıp, veri tabanındaki bilgiler sorunu çözdürüp müşteriye geri bildirim verebilirim.
+2- Veri tabanı(MS-SQL, Oracle, PostgreSQL, MySQL), message broker(Kafka, Pulsar, RabbitMQ), in memory data grid(Redis, Hazelcast) sorunlarını MCP üzerinden sorup adminlik kavramına ihtiyacım olmadan bulabilirim. En yavaş istek ne, tps'im ne, nerelerde index yok, lag var mı gibi.
+3- Sosyal medya gibi forumlarda en popüler konular arasında ürün analizi yapıp, bu ay trend olan renk ve kombinleri analiz edip ona göre ürün çıkartabilirim.
