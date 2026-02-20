@@ -3,690 +3,1161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuickMCP</title>
+  <title>QuickMCP - AI-Powered MCP Server Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
-      --bg: #f7f9fc;
-      --bg-soft: #ffffffcc;
-      --card: #ffffffd9;
-      --line: #dbe4ef;
-      --text: #17212e;
-      --muted: #5f6e82;
-      --brand: #1d66ff;
-      --brand-soft: #eff4ff;
-      --shadow: 0 24px 50px rgba(28, 48, 80, 0.08);
+      --bg: #FBFAF9;
+      --bg-soft: #FFFFFF;
+      --card: #FFFFFF;
+      --line: #E8E4E0;
+      --text: #282625;
+      --text-secondary: #565151;
+      --muted: #8F8B8B;
+      --accent: #FF6B00;
+      --accent-soft: #FFB366;
+      --accent-bg: rgba(255, 107, 0, 0.06);
+      --shadow-sm: 0 2px 8px rgba(40, 38, 37, 0.04);
+      --shadow: 0 8px 32px rgba(40, 38, 37, 0.08);
+      --shadow-lg: 0 24px 64px rgba(40, 38, 37, 0.12);
     }
 
-    * { box-sizing: border-box; }
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
       background: var(--bg);
       color: var(--text);
-      font-family: "Manrope", sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
       overflow-x: hidden;
+      line-height: 1.5;
     }
 
-    .live-bg {
+    /* Background Effects */
+    .bg-effects {
       position: fixed;
       inset: 0;
       z-index: 0;
       pointer-events: none;
       overflow: hidden;
-      background:
-        radial-gradient(1200px 900px at 15% 8%, #ffffff 0%, #f3f7ff 45%, #eef3fb 70%, #e9eff9 100%);
     }
 
-    .orb {
+    .gradient-orb {
       position: absolute;
-      border-radius: 999px;
-      filter: blur(26px);
-      opacity: 0.42;
-      animation: float 16s ease-in-out infinite;
-    }
-    .orb.one {
-      width: 420px;
-      height: 420px;
-      top: -120px;
-      left: -40px;
-      background: linear-gradient(180deg, #ffffff, #dbe8ff);
-    }
-    .orb.two {
-      width: 520px;
-      height: 520px;
-      top: 26%;
-      right: -150px;
-      background: linear-gradient(180deg, #f8fcff, #d9e6ff);
-      animation-delay: -6s;
-    }
-    .orb.three {
-      width: 390px;
-      height: 390px;
-      bottom: -130px;
-      left: 36%;
-      background: linear-gradient(180deg, #ffffff, #dde8f8);
-      animation-delay: -10s;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
     }
 
-    .mesh {
-      position: absolute;
-      inset: -15% -10%;
-      background-image:
-        linear-gradient(rgba(40, 70, 130, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(40, 70, 130, 0.08) 1px, transparent 1px);
-      background-size: 32px 32px;
-      mask-image: radial-gradient(ellipse at center, black 34%, transparent 76%);
-      animation: drift 24s linear infinite;
-      opacity: 0.4;
+    .gradient-orb.one {
+      width: 600px;
+      height: 600px;
+      top: -200px;
+      right: -100px;
+      background: linear-gradient(180deg, var(--accent) 0%, transparent 70%);
+      opacity: 0.15;
     }
 
-    @keyframes float {
-      0%, 100% { transform: translate3d(0, 0, 0); }
-      50% { transform: translate3d(0, 22px, 0); }
+    .gradient-orb.two {
+      width: 500px;
+      height: 500px;
+      top: 40%;
+      left: -150px;
+      background: linear-gradient(180deg, var(--accent-soft) 0%, transparent 70%);
+      opacity: 0.1;
     }
-    @keyframes drift {
-      from { transform: translate3d(0, 0, 0); }
-      to { transform: translate3d(-32px, -32px, 0); }
+
+    .gradient-orb.three {
+      width: 400px;
+      height: 400px;
+      bottom: -100px;
+      right: 20%;
+      background: var(--text);
+      opacity: 0.03;
     }
+
+    /* Layout */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+    }
+
+    .logo-text {
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-ghost {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .btn-ghost:hover {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1a1918;
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 16px rgba(255, 107, 0, 0.3);
+    }
+
+    .btn-accent:hover {
+      background: #e56200;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--accent-bg);
+      border: 1px solid rgba(255, 107, 0, 0.15);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .hero-badge i {
+      font-size: 12px;
+    }
+
+    .hero-title {
+      font-size: clamp(42px, 8vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-title .highlight {
+      color: var(--accent);
+    }
+
+    .hero-title .serif {
+      font-family: "Newsreader", Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hero-actions .btn {
+      padding: 14px 28px;
+      font-size: 15px;
+    }
+
+    /* Prompt Cards Section */
+    .prompts-section {
+      padding: 40px 0 80px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .prompt-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prompt-card:hover {
+      border-color: rgba(255, 107, 0, 0.3);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .prompt-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .prompt-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .prompt-icon.gmail { background: #EA4335; color: white; }
+    .prompt-icon.slack { background: #4A154B; color: white; }
+    .prompt-icon.notion { background: #000000; color: white; }
+    .prompt-icon.calendar { background: #4285F4; color: white; }
+    .prompt-icon.database { background: #10B981; color: white; }
+    .prompt-icon.api { background: #8B5CF6; color: white; }
+
+    .prompt-meta {
+      flex: 1;
+    }
+
+    .prompt-app {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .prompt-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .prompt-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .prompt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .prompt-users {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .prompt-users i {
+      color: var(--accent);
+    }
+
+    .prompt-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: var(--text);
+      color: white;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .prompt-cta:hover {
+      background: var(--accent);
+      transform: translateX(2px);
+    }
+
+    .prompt-cta i {
+      font-size: 11px;
+      transition: transform 0.2s;
+    }
+
+    .prompt-cta:hover i {
+      transform: translateX(3px);
+    }
+
+    /* How It Works Section */
+    .how-section {
+      padding: 80px 0;
+      background: var(--bg-soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 48px;
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 56px;
+      height: 56px;
+      background: var(--accent);
+      color: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(255, 107, 0, 0.25);
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Integrations Section */
+    .integrations-section {
+      padding: 80px 0;
+    }
+
+    .integrations-wrap {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      overflow: hidden;
+    }
+
+    .integrations-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .integrations-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .integrations-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    .marquee-container {
+      overflow: hidden;
+      mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+    }
+
+    .marquee-row {
+      padding: 8px 0;
+    }
+
+    .marquee {
+      display: flex;
+      width: max-content;
+      gap: 12px;
+    }
+
+    .marquee.left {
+      animation: marquee-left 50s linear infinite;
+    }
+
+    .marquee.right {
+      animation: marquee-right 45s linear infinite;
+    }
+
     @keyframes marquee-left {
       from { transform: translateX(0); }
       to { transform: translateX(-50%); }
     }
+
     @keyframes marquee-right {
       from { transform: translateX(-50%); }
       to { transform: translateX(0); }
     }
-    @keyframes caret-blink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
 
-    .page {
-      position: relative;
-      z-index: 1;
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 26px 18px 96px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 42px;
-      position: relative;
-      z-index: 80;
-    }
-
-    .logo {
-      text-decoration: none;
+    .integration-chip {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-    }
-    .brand-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: #2563eb;
-      color: #fff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
-      font-size: 16px;
-    }
-    .brand-text {
-      line-height: 1.1;
-    }
-    .brand-title {
-      color: #1f2937;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      font-size: 20px;
-      margin: 0;
-    }
-    .brand-sub {
-      color: #64748b;
-      font-size: 12px;
+      padding: 10px 18px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-size: 14px;
       font-weight: 600;
-      margin: 2px 0 0;
-    }
-
-    .menu {
-      position: relative;
-      z-index: 90;
-    }
-    .menu-btn {
-      height: 42px;
-      border-radius: 12px;
-      border: 1px solid #cfd9e7;
-      background: #fff;
-      padding: 0 14px;
-      font-family: "Manrope", sans-serif;
-      font-weight: 700;
-      color: #1c2a3f;
-      cursor: pointer;
-    }
-    .menu-panel {
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      width: 220px;
-      background: #fff;
-      border: 1px solid #d6e0ee;
-      border-radius: 12px;
-      padding: 8px;
-      box-shadow: var(--shadow);
-      display: none;
-      z-index: 100;
-    }
-    .menu.open .menu-panel { display: block; }
-    .menu-link {
-      display: block;
-      text-decoration: none;
       color: var(--text);
-      border-radius: 9px;
-      padding: 10px 12px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .menu-link:hover { background: #f4f8ff; }
-
-    .hero {
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: var(--bg-soft);
-      backdrop-filter: blur(8px);
-      box-shadow: var(--shadow);
-      padding: 36px;
-      margin-bottom: 34px;
+      white-space: nowrap;
+      transition: all 0.2s;
     }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid #d8e1ef;
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #4e5f78;
-      background: #fff;
+    .integration-chip:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
     }
 
-    h1 {
-      margin: 18px 0 10px;
-      font-size: clamp(36px, 7vw, 74px);
-      line-height: 0.96;
-      letter-spacing: -0.045em;
-    }
-    .typewriter {
-      display: inline-block;
-      min-height: 1.1em;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: normal;
-    }
-    .typewriter .typed-em {
-      font-family: "Instrument Serif", serif;
-      font-style: italic;
-      font-weight: 400;
-      letter-spacing: -0.012em;
-    }
-    .typewriter::after {
-      content: "";
-      display: inline-block;
-      width: 2px;
-      height: 0.95em;
-      margin-left: 6px;
-      vertical-align: -0.08em;
-      background: #1d66ff;
-      animation: caret-blink 1s step-end infinite;
-    }
-    .typewriter.done::after {
-      animation: none;
-      opacity: 0;
-    }
-
-    .lead {
-      max-width: 760px;
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .nowrap { white-space: nowrap; }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .btn {
-      text-decoration: none;
-      height: 44px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 16px;
-      font-weight: 700;
-      font-size: 14px;
-      border: 1px solid transparent;
-    }
-    .btn.primary {
-      color: #fff;
-      background: var(--brand);
-      box-shadow: 0 14px 28px rgba(29, 102, 255, 0.24);
-    }
-    .btn.ghost {
-      color: #1f2b3f;
-      border-color: #cfdaea;
-      background: #fff;
-    }
-
-    .section {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      padding: 28px;
-      margin-bottom: 24px;
-    }
-
-    .section h2 {
-      margin: 0 0 6px;
-      font-size: clamp(28px, 4.8vw, 48px);
-      line-height: 1.02;
-      letter-spacing: -0.04em;
-    }
-
-    .section-sub {
-      margin: 0 0 22px;
-      color: var(--muted);
-      font-size: 16px;
-    }
-
-    .usecase-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-    .usecase {
-      border: 1px solid #d5deeb;
-      border-radius: 14px;
-      padding: 16px;
-      background: #fff;
-    }
-    .usecase strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 17px;
-      letter-spacing: -0.01em;
-    }
-    .usecase p {
-      margin: 0;
-      color: #5f6f83;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .works-head {
-      margin-bottom: 18px;
-    }
-    .works-wrap {
-      overflow: hidden;
-      border-radius: 16px;
-      border: 1px solid #d7e1ed;
-      background: #fff;
-      padding: 10px 0;
-    }
-    .marquee {
-      display: flex;
-      width: max-content;
-      will-change: transform;
-    }
-    .marquee.left { animation: marquee-left 44s linear infinite; }
-    .marquee.right { animation: marquee-right 42s linear infinite; }
-    .marquee-row + .marquee-row { margin-top: 10px; }
-    .chip {
-      flex: 0 0 auto;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-right: 10px;
-      border: 1px solid #d9e2ee;
-      border-radius: 999px;
-      background: #f9fbff;
-      height: 42px;
-      padding: 0 14px 0 10px;
-      font-size: 14px;
-      font-weight: 700;
-      color: #2a3b55;
-    }
-    .chip img {
-      width: 20px;
-      height: 20px;
+    .integration-chip img {
+      width: 22px;
+      height: 22px;
       border-radius: 6px;
       object-fit: contain;
     }
 
-    .faq-title { margin-bottom: 18px !important; }
-    .faq-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    .faq-item {
-      border: 1px solid #d6dfeb;
-      border-radius: 12px;
-      background: #fff;
-      overflow: hidden;
-    }
-    .faq-item summary {
-      list-style: none;
-      cursor: pointer;
-      color: #273952;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 14px;
-      position: relative;
-      user-select: none;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-right: 36px;
-    }
-    .faq-item summary::-webkit-details-marker { display: none; }
-    .faq-item summary::after {
-      content: '+';
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #5f6f83;
-      font-size: 18px;
-      line-height: 1;
-    }
-    .faq-item[open] summary::after { content: '-'; }
-    .faq-body {
-      padding: 0 14px 14px;
-      color: #5f6f83;
-      font-size: 14px;
-      line-height: 1.55;
-      border-top: 1px solid #e7edf5;
-      margin-top: 0;
-      padding-top: 12px;
-    }
-    .support {
-      margin-top: 14px;
-      border: 1px dashed #c7d5e7;
-      border-radius: 12px;
-      padding: 13px 14px;
-      background: #f8fbff;
-      color: #54667f;
-      font-size: 14px;
-      line-height: 1.55;
+    /* FAQ Section */
+    .faq-section {
+      padding: 80px 0;
+      background: var(--bg-soft);
+      border-top: 1px solid var(--line);
     }
 
-    @media (max-width: 980px) {
-      .usecase-grid { grid-template-columns: 1fr; }
-      .faq-grid { grid-template-columns: 1fr; }
-      .hero, .section { padding: 22px; }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .faq-item:hover {
+      border-color: rgba(255, 107, 0, 0.2);
+    }
+
+    .faq-item[open] {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .faq-item summary {
+      list-style: none;
+      padding: 20px 24px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-item summary::after {
+      content: '+';
+      font-size: 20px;
+      color: var(--muted);
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+
+    .faq-item[open] summary::after {
+      content: '-';
+      color: var(--accent);
+    }
+
+    .faq-answer {
+      padding: 0 24px 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 80px 0;
+    }
+
+    .cta-card {
+      background: var(--text);
+      border-radius: 24px;
+      padding: 64px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 400px;
+      height: 400px;
+      background: var(--accent);
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-title {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 800;
+      color: white;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .cta-actions .btn-accent {
+      background: var(--accent);
+      padding: 16px 32px;
+      font-size: 16px;
+    }
+
+    .cta-actions .btn-ghost {
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 16px 32px;
+      font-size: 16px;
+    }
+
+    .cta-actions .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .footer-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .nav-links {
+        display: none;
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prompt-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-card {
+        padding: 40px 24px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .hero {
+        padding: 48px 0 40px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .hero-actions .btn {
+        width: 100%;
+      }
+
+      .cta-actions {
+        flex-direction: column;
+      }
+
+      .cta-actions .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="live-bg" aria-hidden="true">
-    <div class="orb one"></div>
-    <div class="orb two"></div>
-    <div class="orb three"></div>
-    <div class="mesh"></div>
+  <!-- Background Effects -->
+  <div class="bg-effects" aria-hidden="true">
+    <div class="gradient-orb one"></div>
+    <div class="gradient-orb two"></div>
+    <div class="gradient-orb three"></div>
   </div>
 
-  <main class="page">
-    <header class="topbar">
-      <a class="logo" href="/landing">
-        <span class="brand-icon" aria-hidden="true">
-          <i class="fas fa-rocket"></i>
+  <!-- Navigation -->
+  <div class="container">
+    <nav class="nav">
+      <a href="/landing" class="logo">
+        <span class="logo-icon">
+          <i class="fas fa-bolt"></i>
         </span>
-        <span class="brand-text">
-          <p class="brand-title">QuickMCP</p>
-          <p class="brand-sub">Server Generator</p>
-        </span>
+        <span class="logo-text">QuickMCP</span>
       </a>
-      <div class="menu" id="menu">
-        <button id="menuBtn" type="button" class="menu-btn" aria-expanded="false">Get Started ▾</button>
-        <div class="menu-panel" role="menu" aria-label="Get Started menu">
-          <a class="menu-link" href="/login">Sign in</a>
-        </div>
-      </div>
-    </header>
 
-    <section class="hero">
-      <span class="eyebrow">Build MCP servers in minutes</span>
-      <h1><span id="typewriterText" class="typewriter"></span></h1>
-      <p class="lead nowrap">
-        Generate tools from APIs and databases, test instantly, and ship production-ready MCP integrations from one workspace.
+      <div class="nav-links">
+        <a href="#prompts" class="nav-link">Use Cases</a>
+        <a href="#how" class="nav-link">How It Works</a>
+        <a href="#integrations" class="nav-link">Integrations</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="/login" class="btn btn-ghost">Sign In</a>
+        <a href="/login" class="btn btn-primary">Get Started</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero-badge">
+        <i class="fas fa-sparkles"></i>
+        AI-Powered MCP Server Generator
+      </span>
+      <h1 class="hero-title">
+        Now your AI can <span class="highlight">connect</span> to <span class="serif">anything</span>
+      </h1>
+      <p class="hero-subtitle">
+        Generate MCP servers from APIs and databases. Connect Claude, Cursor, and other AI tools to your entire stack in minutes.
       </p>
       <div class="hero-actions">
-        <a class="btn primary" href="/login">Get Started</a>
-        <a class="btn ghost" href="#usecases">Explore Usecases</a>
+        <a href="/login" class="btn btn-accent">
+          <i class="fas fa-rocket"></i>
+          Start Building Free
+        </a>
+        <a href="#prompts" class="btn btn-ghost">
+          Explore Use Cases
+          <i class="fas fa-arrow-right"></i>
+        </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section id="usecases" class="section">
-      <h2>Explore Usecases</h2>
-      <p class="section-sub">Ready-made patterns you can adapt in seconds.</p>
-      <div class="usecase-grid">
-        <article class="usecase">
-          <strong>Customer Ops Copilot</strong>
-          <p>Connect CRM + ticketing + Slack and let agents trigger verified actions with context-rich MCP tools.</p>
-        </article>
-        <article class="usecase">
-          <strong>Data Team Command Center</strong>
-          <p>Expose safe SQL operations from PostgreSQL/MSSQL and run controlled analyses through Claude or Cursor.</p>
-        </article>
-        <article class="usecase">
-          <strong>Workflow Orchestrator</strong>
-          <p>Bridge N8N, GitHub, and messaging apps so one prompt can coordinate multi-step automations end-to-end.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="works-head">
-        <h2>Works with anything you use</h2>
+  <!-- Prompt Cards Section -->
+  <section id="prompts" class="prompts-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Popular Prompts</span>
+        <h2 class="section-title">Connect apps, automation happens</h2>
+        <p class="section-subtitle">Real prompts that work. Try them with your AI assistant.</p>
       </div>
 
-      <div class="works-wrap" aria-label="Technology marquee">
-        <div class="marquee-row">
-          <div class="marquee left">
-            <span class="chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
-            <span class="chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
-            <span class="chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
-            <span class="chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
-            <span class="chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
-            <span class="chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
-            <span class="chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
-            <span class="chip"><img src="/images/app/windsorf.png" alt="Windsorf">Windsorf</span>
-            <span class="chip"><img src="/images/app/intellij.png" alt="Intellij">Intellij</span>
-            <span class="chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
-            <span class="chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
-            <span class="chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
-            <span class="chip"><img src="/images/app/zededitor.png" alt="ZedEditor">ZedEditor</span>
-            <span class="chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
-            <span class="chip"><img src="/images/app/make.png" alt="Make">Make</span>
-            <span class="chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
-            <span class="chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
-            <span class="chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
-            <span class="chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
-            <span class="chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
-            <span class="chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
-            <span class="chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
-            <span class="chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
-            <span class="chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
-            <span class="chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
-            <span class="chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
-            <span class="chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
-            <span class="chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
-            <span class="chip"><img src="/images/app/windsorf.png" alt="Windsorf">Windsorf</span>
-            <span class="chip"><img src="/images/app/intellij.png" alt="Intellij">Intellij</span>
-            <span class="chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
-            <span class="chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
-            <span class="chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
-            <span class="chip"><img src="/images/app/zededitor.png" alt="ZedEditor">ZedEditor</span>
-            <span class="chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
-            <span class="chip"><img src="/images/app/make.png" alt="Make">Make</span>
-            <span class="chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
-            <span class="chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
-            <span class="chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
-            <span class="chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
-            <span class="chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
-            <span class="chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
+      <div class="prompt-grid">
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon gmail">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Gmail Integration</div>
+              <div class="prompt-title">Send emails with Gmail</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Draft and send an email to my team about tomorrow's meeting, include the agenda from my notes."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              892+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
           </div>
         </div>
 
-        <div class="marquee-row">
-          <div class="marquee right">
-            <span class="chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
-            <span class="chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
-            <span class="chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
-            <span class="chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
-            <span class="chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
-            <span class="chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
-            <span class="chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
-            <span class="chip"><img src="/images/app/windsorf.png" alt="Windsorf">Windsorf</span>
-            <span class="chip"><img src="/images/app/intellij.png" alt="Intellij">Intellij</span>
-            <span class="chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
-            <span class="chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
-            <span class="chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
-            <span class="chip"><img src="/images/app/zededitor.png" alt="ZedEditor">ZedEditor</span>
-            <span class="chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
-            <span class="chip"><img src="/images/app/make.png" alt="Make">Make</span>
-            <span class="chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
-            <span class="chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
-            <span class="chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
-            <span class="chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
-            <span class="chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
-            <span class="chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
-            <span class="chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
-            <span class="chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
-            <span class="chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
-            <span class="chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
-            <span class="chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
-            <span class="chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
-            <span class="chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
-            <span class="chip"><img src="/images/app/windsorf.png" alt="Windsorf">Windsorf</span>
-            <span class="chip"><img src="/images/app/intellij.png" alt="Intellij">Intellij</span>
-            <span class="chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
-            <span class="chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
-            <span class="chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
-            <span class="chip"><img src="/images/app/zededitor.png" alt="ZedEditor">ZedEditor</span>
-            <span class="chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
-            <span class="chip"><img src="/images/app/make.png" alt="Make">Make</span>
-            <span class="chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
-            <span class="chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
-            <span class="chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
-            <span class="chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
-            <span class="chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
-            <span class="chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon slack">
+              <i class="fab fa-slack"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Slack Integration</div>
+              <div class="prompt-title">Post updates to Slack</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Post a summary of today's completed tasks to the #dev channel with relevant mentions."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              1.2k+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon database">
+              <i class="fas fa-database"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">PostgreSQL Integration</div>
+              <div class="prompt-title">Query your database</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Show me all users who signed up last week and their subscription status from the database."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              756+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon notion">
+              <i class="fas fa-book"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Notion Integration</div>
+              <div class="prompt-title">Update Notion pages</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Create a new page in my Projects database with today's meeting notes and action items."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              634+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon calendar">
+              <i class="fas fa-calendar"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Google Calendar</div>
+              <div class="prompt-title">Manage calendar events</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Schedule a 30-minute sync with Sarah next week, find a time that works for both of us."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              543+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon api">
+              <i class="fas fa-code"></i>
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Custom API</div>
+              <div class="prompt-title">Connect any REST API</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Fetch the latest analytics from our internal API and create a summary report."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              421+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try Prompt
+              <i class="fas fa-arrow-right"></i>
+            </a>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section">
-      <h2 class="faq-title">Got something on your mind?</h2>
+  <!-- How It Works Section -->
+  <section id="how" class="how-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">How It Works</span>
+        <h2 class="section-title">Three steps to AI automation</h2>
+        <p class="section-subtitle">From zero to production MCP server in minutes.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Connect your source</h3>
+          <p class="step-desc">Link APIs, databases, or third-party services. We support REST, GraphQL, PostgreSQL, MySQL, and more.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Generate MCP tools</h3>
+          <p class="step-desc">QuickMCP automatically creates type-safe tools with proper schemas. Test them instantly in our playground.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Deploy & use</h3>
+          <p class="step-desc">Get your MCP server endpoint. Connect it to Claude, Cursor, or any MCP-compatible AI assistant.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Integrations Section -->
+  <section id="integrations" class="integrations-section">
+    <div class="container">
+      <div class="integrations-wrap">
+        <div class="integrations-header">
+          <h2 class="integrations-title">Works with your entire stack</h2>
+          <p class="integrations-subtitle">Connect the tools you already use and love.</p>
+        </div>
+
+        <div class="marquee-container">
+          <div class="marquee-row">
+            <div class="marquee left">
+              <span class="integration-chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
+              <span class="integration-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+              <span class="integration-chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
+              <span class="integration-chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
+              <span class="integration-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+              <span class="integration-chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
+              <span class="integration-chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
+              <span class="integration-chip"><img src="/images/app/windsorf.png" alt="Windsurf">Windsurf</span>
+              <span class="integration-chip"><img src="/images/app/intellij.png" alt="IntelliJ">IntelliJ</span>
+              <span class="integration-chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
+              <span class="integration-chip"><img src="/images/app/zededitor.png" alt="Zed">Zed</span>
+              <span class="integration-chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
+              <span class="integration-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+              <span class="integration-chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
+              <span class="integration-chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
+              <span class="integration-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+              <span class="integration-chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
+              <span class="integration-chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
+              <span class="integration-chip"><img src="/images/app/windsorf.png" alt="Windsurf">Windsurf</span>
+              <span class="integration-chip"><img src="/images/app/intellij.png" alt="IntelliJ">IntelliJ</span>
+              <span class="integration-chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
+              <span class="integration-chip"><img src="/images/app/zededitor.png" alt="Zed">Zed</span>
+            </div>
+          </div>
+
+          <div class="marquee-row">
+            <div class="marquee right">
+              <span class="integration-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+              <span class="integration-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+              <span class="integration-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+              <span class="integration-chip"><img src="/images/app/microsoftteams.png" alt="Teams">Teams</span>
+              <span class="integration-chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
+              <span class="integration-chip"><img src="/images/app/make.png" alt="Make">Make</span>
+              <span class="integration-chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
+              <span class="integration-chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
+              <span class="integration-chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
+              <span class="integration-chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
+              <span class="integration-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+              <span class="integration-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+              <span class="integration-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+              <span class="integration-chip"><img src="/images/app/microsoftteams.png" alt="Teams">Teams</span>
+              <span class="integration-chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
+              <span class="integration-chip"><img src="/images/app/make.png" alt="Make">Make</span>
+              <span class="integration-chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
+              <span class="integration-chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
+              <span class="integration-chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
+              <span class="integration-chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="faq-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">FAQ</span>
+        <h2 class="section-title">Got questions?</h2>
+        <p class="section-subtitle">Everything you need to know about QuickMCP.</p>
+      </div>
+
       <div class="faq-grid">
-        <details class="faq-item"><summary>What is QuickMCP and how does it work?</summary><div class="faq-body">QuickMCP connects apps and data sources, then exposes them as structured actions your AI assistant can use safely through MCP.</div></details>
-        <details class="faq-item"><summary>How do I get started with QuickMCP?</summary><div class="faq-body">Create an account, connect your first tool or database, generate actions, and test them from your client in minutes.</div></details>
-        <details class="faq-item"><summary>What can I use QuickMCP for?</summary><div class="faq-body">You can automate workflows, query systems, trigger app actions, and orchestrate cross-tool tasks from one interface.</div></details>
-        <details class="faq-item"><summary>What is Composio? How is it related to QuickMCP?</summary><div class="faq-body">Composio provides the integration foundation. QuickMCP uses that layer to make MCP-ready tools easier to create and manage.</div></details>
-        <details class="faq-item"><summary>How secure is my data with Composio?</summary><div class="faq-body">Access is controlled with auth and token policies, and integrations are scoped to only the resources you allow.</div></details>
-        <details class="faq-item"><summary>How is my data handled during processing?</summary><div class="faq-body">Data is processed for requested actions and policy checks; you can restrict scopes and permissions per integration.</div></details>
-        <details class="faq-item"><summary>Do I need technical skills to set up QuickMCP?</summary><div class="faq-body">Basic setup is no-code friendly, while advanced users can customize generated tools and server behavior deeply.</div></details>
-        <details class="faq-item"><summary>Can I use multiple apps at the same time?</summary><div class="faq-body">Yes. You can connect and orchestrate multiple services in one workflow and call them from the same MCP session.</div></details>
-        <details class="faq-item"><summary>Is QuickMCP free to use? What are the limits?</summary><div class="faq-body">Plan limits depend on your deployment and account setup. You can start with core features and scale as needed.</div></details>
-        <details class="faq-item"><summary>What if my app isn't supported?</summary><div class="faq-body">You can still integrate unsupported tools using custom API/database connectors and extend behavior with generated MCP actions.</div></details>
-        <details class="faq-item"><summary>How do I get help if something goes wrong?</summary><div class="faq-body">Reach support via email or chat and share your setup details; the team can help diagnose auth, connector, and runtime issues quickly.</div></details>
+        <details class="faq-item">
+          <summary>What is QuickMCP and how does it work?</summary>
+          <div class="faq-answer">QuickMCP connects your apps and data sources, then exposes them as structured actions your AI assistant can use safely through MCP (Model Context Protocol).</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>How do I get started?</summary>
+          <div class="faq-answer">Create an account, connect your first tool or database, generate actions, and test them from your AI client in minutes. No coding required for basic setups.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>What can I connect to QuickMCP?</summary>
+          <div class="faq-answer">You can connect REST APIs, GraphQL endpoints, PostgreSQL, MySQL, MSSQL databases, and integrate with 100+ apps through our Composio integration layer.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Which AI assistants are supported?</summary>
+          <div class="faq-answer">QuickMCP works with any MCP-compatible AI assistant including Claude Desktop, Cursor, VSCode with Claude extension, and other tools that support the MCP protocol.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Is my data secure?</summary>
+          <div class="faq-answer">Yes. Access is controlled with authentication and token policies. Integrations are scoped to only the resources you explicitly allow. Your credentials are encrypted at rest.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Do I need coding skills?</summary>
+          <div class="faq-answer">Basic setup is no-code friendly. For advanced customization, you can modify generated tools and server behavior using TypeScript or Python.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Can I use multiple integrations together?</summary>
+          <div class="faq-answer">Yes. You can connect and orchestrate multiple services in one workflow and call them from the same MCP session for complex automations.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>What if my app isn't supported?</summary>
+          <div class="faq-answer">You can integrate any app using custom API connectors or database connections. QuickMCP generates MCP tools from any REST API specification.</div>
+        </details>
       </div>
-      <p class="support">
-        You can email support@composio.dev or use the support chat button on the right side of the website for instant help.
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-card">
+        <div class="cta-content">
+          <h2 class="cta-title">Ready to connect your AI to everything?</h2>
+          <p class="cta-subtitle">Start building your MCP servers today. No credit card required.</p>
+          <div class="cta-actions">
+            <a href="/login" class="btn btn-accent">
+              <i class="fas fa-rocket"></i>
+              Get Started Free
+            </a>
+            <a href="mailto:support@quickmcp.com" class="btn btn-ghost">
+              Contact Sales
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-text">
+        Built with <span style="color: var(--accent);">&#10084;</span> by QuickMCP Team &middot;
+        <a href="mailto:support@quickmcp.com">support@quickmcp.com</a>
       </p>
-    </section>
-  </main>
-
-  <script>
-    (function () {
-      var menu = document.getElementById('menu');
-      var button = document.getElementById('menuBtn');
-      if (!menu || !button) return;
-
-      function setOpen(open) {
-        menu.classList.toggle('open', open);
-        button.setAttribute('aria-expanded', open ? 'true' : 'false');
-      }
-
-      button.addEventListener('click', function () {
-        setOpen(!menu.classList.contains('open'));
-      });
-
-      document.addEventListener('click', function (event) {
-        if (!menu.contains(event.target)) setOpen(false);
-      });
-    })();
-
-    (function () {
-      var el = document.getElementById('typewriterText');
-      if (!el) return;
-      var segments = [
-        { text: 'Automate your stack with ' },
-        { text: 'no-friction', className: 'typed-em' },
-        { text: ' MCP workflows.' }
-      ];
-      var fullLen = segments.reduce(function (sum, seg) { return sum + seg.text.length; }, 0);
-      var i = 0;
-      var speedMs = 36;
-      function esc(s) {
-        return s
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-      }
-      function render(count) {
-        var remaining = count;
-        var html = '';
-        for (var idx = 0; idx < segments.length; idx += 1) {
-          var seg = segments[idx];
-          if (remaining <= 0) break;
-          var part = seg.text.slice(0, remaining);
-          remaining -= part.length;
-          if (seg.className) {
-            html += '<span class="' + seg.className + '">' + esc(part) + '</span>';
-          } else {
-            html += esc(part);
-          }
-        }
-        el.innerHTML = html;
-      }
-      function tick() {
-        i += 1;
-        render(i);
-        if (i < fullLen) {
-          setTimeout(tick, speedMs);
-        } else {
-          el.classList.add('done');
-        }
-      }
-      tick();
-    })();
-  </script>
+    </div>
+  </footer>
 </body>
 </html>
