@@ -99,6 +99,10 @@
       from { transform: translateX(-50%); }
       to { transform: translateX(0); }
     }
+    @keyframes caret-blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
 
     .page {
       position: relative;
@@ -222,11 +226,32 @@
       line-height: 0.96;
       letter-spacing: -0.045em;
     }
-    h1 em {
+    .typewriter {
+      display: inline-block;
+      min-height: 1.1em;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    .typewriter .typed-em {
       font-family: "Instrument Serif", serif;
       font-style: italic;
       font-weight: 400;
       letter-spacing: -0.012em;
+    }
+    .typewriter::after {
+      content: "";
+      display: inline-block;
+      width: 2px;
+      height: 0.95em;
+      margin-left: 6px;
+      vertical-align: -0.08em;
+      background: #1d66ff;
+      animation: caret-blink 1s step-end infinite;
+    }
+    .typewriter.done::after {
+      animation: none;
+      opacity: 0;
     }
 
     .lead {
@@ -327,8 +352,8 @@
       width: max-content;
       will-change: transform;
     }
-    .marquee.left { animation: marquee-left 24s linear infinite; }
-    .marquee.right { animation: marquee-right 22s linear infinite; }
+    .marquee.left { animation: marquee-left 44s linear infinite; }
+    .marquee.right { animation: marquee-right 42s linear infinite; }
     .marquee-row + .marquee-row { margin-top: 10px; }
     .chip {
       flex: 0 0 auto;
@@ -352,19 +377,52 @@
       object-fit: contain;
     }
 
+    .faq-title { margin-bottom: 18px !important; }
     .faq-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px 14px;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }
     .faq-item {
       border: 1px solid #d6dfeb;
       border-radius: 12px;
       background: #fff;
-      padding: 13px 14px;
+      overflow: hidden;
+    }
+    .faq-item summary {
+      list-style: none;
+      cursor: pointer;
       color: #273952;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
+      padding: 14px;
+      position: relative;
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 36px;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #5f6f83;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .faq-item[open] summary::after { content: '-'; }
+    .faq-body {
+      padding: 0 14px 14px;
+      color: #5f6f83;
+      font-size: 14px;
+      line-height: 1.55;
+      border-top: 1px solid #e7edf5;
+      margin-top: 0;
+      padding-top: 12px;
     }
     .support {
       margin-top: 14px;
@@ -406,14 +464,14 @@
       <div class="menu" id="menu">
         <button id="menuBtn" type="button" class="menu-btn" aria-expanded="false">Get Started ▾</button>
         <div class="menu-panel" role="menu" aria-label="Get Started menu">
-          <a class="menu-link" href="/login">Sign in to dashboard</a>
+          <a class="menu-link" href="/login">Sign in</a>
         </div>
       </div>
     </header>
 
     <section class="hero">
       <span class="eyebrow">Build MCP servers in minutes</span>
-      <h1>Automate your stack with <em>no-friction</em> MCP workflows.</h1>
+      <h1><span id="typewriterText" class="typewriter"></span></h1>
       <p class="lead nowrap">
         Generate tools from APIs and databases, test instantly, and ship production-ready MCP integrations from one workspace.
       </p>
@@ -545,19 +603,19 @@
     </section>
 
     <section class="section">
-      <h2>Got something on your mind?</h2>
+      <h2 class="faq-title">Got something on your mind?</h2>
       <div class="faq-grid">
-        <div class="faq-item">What is Rube and how does it work?</div>
-        <div class="faq-item">How do I get started with Rube?</div>
-        <div class="faq-item">What can I use Rube for?</div>
-        <div class="faq-item">What is Composio? How is it related to Rube?</div>
-        <div class="faq-item">How secure is my data with Composio?</div>
-        <div class="faq-item">How is my data handled during processing?</div>
-        <div class="faq-item">Do I need technical skills to set up Rube?</div>
-        <div class="faq-item">Can I use multiple apps at the same time?</div>
-        <div class="faq-item">Is Rube free to use? What are the limits?</div>
-        <div class="faq-item">What if my app isn't supported?</div>
-        <div class="faq-item">How do I get help if something goes wrong?</div>
+        <details class="faq-item"><summary>What is QuickMCP and how does it work?</summary><div class="faq-body">QuickMCP connects apps and data sources, then exposes them as structured actions your AI assistant can use safely through MCP.</div></details>
+        <details class="faq-item"><summary>How do I get started with QuickMCP?</summary><div class="faq-body">Create an account, connect your first tool or database, generate actions, and test them from your client in minutes.</div></details>
+        <details class="faq-item"><summary>What can I use QuickMCP for?</summary><div class="faq-body">You can automate workflows, query systems, trigger app actions, and orchestrate cross-tool tasks from one interface.</div></details>
+        <details class="faq-item"><summary>What is Composio? How is it related to QuickMCP?</summary><div class="faq-body">Composio provides the integration foundation. QuickMCP uses that layer to make MCP-ready tools easier to create and manage.</div></details>
+        <details class="faq-item"><summary>How secure is my data with Composio?</summary><div class="faq-body">Access is controlled with auth and token policies, and integrations are scoped to only the resources you allow.</div></details>
+        <details class="faq-item"><summary>How is my data handled during processing?</summary><div class="faq-body">Data is processed for requested actions and policy checks; you can restrict scopes and permissions per integration.</div></details>
+        <details class="faq-item"><summary>Do I need technical skills to set up QuickMCP?</summary><div class="faq-body">Basic setup is no-code friendly, while advanced users can customize generated tools and server behavior deeply.</div></details>
+        <details class="faq-item"><summary>Can I use multiple apps at the same time?</summary><div class="faq-body">Yes. You can connect and orchestrate multiple services in one workflow and call them from the same MCP session.</div></details>
+        <details class="faq-item"><summary>Is QuickMCP free to use? What are the limits?</summary><div class="faq-body">Plan limits depend on your deployment and account setup. You can start with core features and scale as needed.</div></details>
+        <details class="faq-item"><summary>What if my app isn't supported?</summary><div class="faq-body">You can still integrate unsupported tools using custom API/database connectors and extend behavior with generated MCP actions.</div></details>
+        <details class="faq-item"><summary>How do I get help if something goes wrong?</summary><div class="faq-body">Reach support via email or chat and share your setup details; the team can help diagnose auth, connector, and runtime issues quickly.</div></details>
       </div>
       <p class="support">
         You can email support@composio.dev or use the support chat button on the right side of the website for instant help.
@@ -583,6 +641,51 @@
       document.addEventListener('click', function (event) {
         if (!menu.contains(event.target)) setOpen(false);
       });
+    })();
+
+    (function () {
+      var el = document.getElementById('typewriterText');
+      if (!el) return;
+      var segments = [
+        { text: 'Automate your stack with ' },
+        { text: 'no-friction', className: 'typed-em' },
+        { text: ' MCP workflows.' }
+      ];
+      var fullLen = segments.reduce(function (sum, seg) { return sum + seg.text.length; }, 0);
+      var i = 0;
+      var speedMs = 36;
+      function esc(s) {
+        return s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+      function render(count) {
+        var remaining = count;
+        var html = '';
+        for (var idx = 0; idx < segments.length; idx += 1) {
+          var seg = segments[idx];
+          if (remaining <= 0) break;
+          var part = seg.text.slice(0, remaining);
+          remaining -= part.length;
+          if (seg.className) {
+            html += '<span class="' + seg.className + '">' + esc(part) + '</span>';
+          } else {
+            html += esc(part);
+          }
+        }
+        el.innerHTML = html;
+      }
+      function tick() {
+        i += 1;
+        render(i);
+        if (i < fullLen) {
+          setTimeout(tick, speedMs);
+        } else {
+          el.classList.add('done');
+        }
+      }
+      tick();
     })();
   </script>
 </body>
