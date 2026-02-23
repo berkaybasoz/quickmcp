@@ -93,7 +93,11 @@ export class AuthApi {
 
     try {
       const configuredHost = new URL(configured).host.toLowerCase();
+      const isLocalConfigured = configuredHost.startsWith('localhost:') || configuredHost.startsWith('127.0.0.1:');
       if (isLocalRequest && configuredHost !== requestHost) {
+        return requestOrigin;
+      }
+      if (!isLocalRequest && isLocalConfigured) {
         return requestOrigin;
       }
     } catch {

@@ -34,7 +34,7 @@ export function getAuthProperty(env: NodeJS.ProcessEnv = process.env): AuthPrope
     .split(',')
     .map((v) => v.trim())
     .filter((v) => v.length > 0);
-  const appBaseUrl = (env.APP_BASE_URL || '').trim() || `http://localhost:${env.PORT || 3000}`;
+  const appBaseUrl = (env.APP_BASE_URL || '').trim();
 
   return new AuthProperty(
     new SupabaseAuthProperty(
