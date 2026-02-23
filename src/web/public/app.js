@@ -246,7 +246,6 @@ function setupEventListeners() {
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
     document.getElementById('runTransportTestBtn')?.addEventListener('click', () => runTransportTests(false));
-    document.getElementById('runAllTransportTestsBtn')?.addEventListener('click', () => runTransportTests(true));
     
     // Test type change handler
     document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
@@ -1715,12 +1714,6 @@ function nextMcpRequestId() {
 }
 
 async function resolveMcpTransportBaseUrl() {
-    const portInput = document.getElementById('transportMcpPort');
-    const manualPort = portInput?.value?.trim();
-    if (manualPort) {
-        return `${window.location.protocol}//${window.location.hostname}:${manualPort}`;
-    }
-
     if (mcpTransportBaseUrlCache) return mcpTransportBaseUrlCache;
 
     try {
@@ -1731,9 +1724,6 @@ async function resolveMcpTransportBaseUrl() {
             mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.hostname}:${mcpPort}`;
         } else {
             mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
-        }
-        if (portInput && !portInput.value && mcpPort) {
-            portInput.placeholder = String(mcpPort);
         }
     } catch {
         mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
@@ -1763,6 +1753,21 @@ async function postJsonRpc(url, message, extra = {}) {
     return payload;
 }
 
+function extractServerToolsFromList(listPayload, serverId) {
+    const tools = Array.isArray(listPayload?.result?.tools) ? listPayload.result.tools : [];
+    const prefix = `${serverId}__`;
+    return tools
+        .map((tool) => ({
+            name: String(tool?.name || ''),
+            description: String(tool?.description || '')
+        }))
+        .filter((tool) => tool.name.startsWith(prefix))
+        .map((tool) => ({
+            name: tool.name.slice(prefix.length),
+            description: tool.description
+        }));
+}
+
 async function testStdioTransport(baseUrl) {
     const init = await postJsonRpc(`${baseUrl}/api/mcp-stdio`, {
         jsonrpc: '2.0',
@@ -1779,7 +1784,7 @@ async function testStdioTransport(baseUrl) {
     return {
         transport: 'stdio',
         protocolVersion: init?.result?.protocolVersion || 'unknown',
-        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+        listPayload: list
     };
 }
 
@@ -1830,7 +1835,7 @@ async function testSseTransport(baseUrl) {
     return {
         transport: 'sse',
         protocolVersion: init?.result?.protocolVersion || 'unknown',
-        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+        listPayload: list
     };
 }
 
@@ -1850,7 +1855,7 @@ async function testStreamableHttpTransport(baseUrl) {
     return {
         transport: 'streamable-http',
         protocolVersion: init?.result?.protocolVersion || 'unknown',
-        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+        listPayload: list
     };
 }
 
@@ -1883,7 +1888,7 @@ async function testWebSocketTransport(baseUrl) {
         };
 
         let protocolVersion = 'unknown';
-        let toolsCount = 0;
+        let listPayload = null;
         ws.onmessage = (event) => {
             try {
                 const payload = JSON.parse(event.data);
@@ -1896,12 +1901,12 @@ async function testWebSocketTransport(baseUrl) {
                     protocolVersion = payload?.result?.protocolVersion || 'unknown';
                     expected.delete(payload.id);
                 } else if (kind === 'tools/list') {
-                    toolsCount = Array.isArray(payload?.result?.tools) ? payload.result.tools.length : 0;
+                    listPayload = payload;
                     expected.delete(payload.id);
                 }
 
                 if (expected.size === 0) {
-                    finish(null, { transport: 'websocket', protocolVersion, toolsCount });
+                    finish(null, { transport: 'websocket', protocolVersion, listPayload });
                 }
             } catch (error) {
                 finish(error);
@@ -1925,52 +1930,124 @@ async function runTransportTests(runAll = false) {
     const resultsDiv = document.getElementById('test-results');
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
-    const selectedTransport = document.getElementById('transportType')?.value || 'stdio';
+    const selectedTransport = document.getElementById('transportType')?.value || 'all';
+    const shouldRunAll = runAll || selectedTransport === 'all';
+    const transports = shouldRunAll ? ['stdio', 'sse', 'streamable-http', 'websocket'] : [selectedTransport];
 
     loading?.classList.remove('hidden');
-    if (loading) loading.textContent = runAll ? 'Running all transport tests...' : `Running ${selectedTransport} transport test...`;
+    if (loading) loading.textContent = shouldRunAll ? 'Running all transport tests...' : `Running ${selectedTransport} transport test...`;
     resultsDiv?.classList.add('hidden');
     noResults?.classList.add('hidden');
     errorDiv?.classList.add('hidden');
 
-    const transports = runAll ? ['stdio', 'sse', 'streamable-http', 'websocket'] : [selectedTransport];
-
     try {
         const baseUrl = await resolveMcpTransportBaseUrl();
-        const summary = [];
+        const serverResponse = await fetch(`/api/servers/${serverId}`);
+        const serverPayload = await serverResponse.json();
+        if (!serverPayload?.success || !serverPayload?.data?.config) {
+            throw new Error('Failed to load selected server details');
+        }
+        const serverName = serverPayload.data.config.name || serverId;
+        const expectedTools = Array.isArray(serverPayload.data.config.tools)
+            ? serverPayload.data.config.tools.map((tool) => ({
+                name: String(tool?.name || ''),
+                description: String(tool?.description || '')
+            })).filter((tool) => tool.name)
+            : [];
+        const transportResults = [];
 
         for (const transport of transports) {
             const startedAt = Date.now();
             try {
-                let result;
-                if (transport === 'stdio') result = await testStdioTransport(baseUrl);
-                else if (transport === 'sse') result = await testSseTransport(baseUrl);
-                else if (transport === 'streamable-http') result = await testStreamableHttpTransport(baseUrl);
-                else result = await testWebSocketTransport(baseUrl);
+                let data;
+                if (transport === 'stdio') data = await testStdioTransport(baseUrl);
+                else if (transport === 'sse') data = await testSseTransport(baseUrl);
+                else if (transport === 'streamable-http') data = await testStreamableHttpTransport(baseUrl);
+                else data = await testWebSocketTransport(baseUrl);
 
-                summary.push({ transport, passed: true, duration: Date.now() - startedAt, ...result });
+                transportResults.push({
+                    transport,
+                    status: 'success',
+                    description: `MCP ${transport.toUpperCase()} initialize + tools/list`,
+                    result: 'Transport request flow successful',
+                    duration: Date.now() - startedAt,
+                    protocolVersion: data?.protocolVersion || 'unknown',
+                    listedTools: extractServerToolsFromList(data?.listPayload, serverId)
+                });
             } catch (error) {
-                summary.push({ transport, passed: false, duration: Date.now() - startedAt, error: error?.message || String(error) });
+                transportResults.push({
+                    transport,
+                    status: 'error',
+                    description: `MCP ${transport.toUpperCase()} initialize + tools/list`,
+                    error: error?.message || String(error),
+                    duration: Date.now() - startedAt
+                });
             }
         }
 
-        let output = `=== MCP Transport Test Results ===\\n`;
-        output += `Target MCP endpoint: ${baseUrl}\\n`;
-        output += `Server selected: ${serverId}\\n\\n`;
+        let output = '';
+        transportResults.forEach((result) => {
+            const prettyTransport = result.transport === 'streamable-http' ? 'streamable_http' : result.transport;
+            const listedMap = new Map((result.listedTools || []).map((tool) => [tool.name, tool]));
+            const toolsToReport = expectedTools.length > 0
+                ? expectedTools
+                : Array.from(listedMap.values());
+            const toolRows = toolsToReport.map((tool) => {
+                const listed = listedMap.get(tool.name);
+                if (result.status !== 'success') {
+                    return {
+                        tool: tool.name,
+                        description: tool.description || listed?.description || 'No description',
+                        status: 'error',
+                        error: result.error
+                    };
+                }
+                if (listed) {
+                    return {
+                        tool: tool.name,
+                        description: tool.description || listed.description || 'No description',
+                        status: 'success',
+                        result: 'Tool is listed via transport'
+                    };
+                }
+                return {
+                    tool: tool.name,
+                    description: tool.description || 'No description',
+                    status: 'error',
+                    error: 'Tool not returned by transport tools/list'
+                };
+            });
 
-        summary.forEach((item) => {
-            output += `${item.passed ? '✅ PASS' : '❌ FAIL'} ${item.transport} (${item.duration}ms)\\n`;
-            if (item.passed) {
-                output += `   Protocol: ${item.protocolVersion || 'n/a'}\\n`;
-                output += `   Tools Listed: ${item.toolsCount ?? 0}\\n`;
+            const successCount = toolRows.filter((row) => row.status === 'success').length;
+            const failedCount = toolRows.filter((row) => row.status === 'error').length;
+
+            output += `=== Test Results for ${serverName} (${prettyTransport}) ===\n`;
+            output += `Total Tools: ${toolRows.length}\n`;
+            output += `Tests Run: ${toolRows.length}\n`;
+            output += `✅ Success: ${successCount} | ❌ Failed: ${failedCount}\n\n`;
+
+            toolRows.forEach((row) => {
+                const rowStatus = row.status === 'success' ? '✅ PASS' : '❌ FAIL';
+                output += `${rowStatus} ${row.tool}\n`;
+                output += `   Description: ${row.description}\n`;
+                if (row.status === 'success') {
+                    output += `   Result: ${row.result}\n`;
+                } else {
+                    output += `   Error: ${row.error}\n`;
+                }
+                output += '\n';
+            });
+
+            if (result.status === 'success') {
+                output += `Transport Protocol: ${result.protocolVersion}\n`;
+                output += `Transport Duration: ${result.duration}ms\n`;
+                output += `Tools Returned by Transport: ${(result.listedTools || []).length}\n`;
             } else {
-                output += `   Error: ${item.error || 'Unknown error'}\\n`;
+                output += `Transport Error: ${result.error}\n`;
+                output += `Transport Duration: ${result.duration}ms\n`;
             }
-            output += '\\n';
+            output += '\n';
         });
-
-        const passCount = summary.filter((x) => x.passed).length;
-        output += `Summary: ${passCount}/${summary.length} passed\\n`;
 
         if (resultsDiv) {
             resultsDiv.textContent = output;
