@@ -596,6 +596,43 @@
                             </div>
                         </div>
 
+                        <!-- MCP Transport Tests -->
+                        <div class="card lg:col-span-2">
+                            <div class="p-6 border-b border-slate-200/60 bg-slate-50/50">
+                                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fas fa-network-wired text-emerald-500"></i> MCP Transport Tests
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1">Test stdio, SSE, Streamable HTTP, and WebSocket transports with shared MCP auth/policy.</p>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Transport</label>
+                                        <select id="transportType" class="input">
+                                            <option value="stdio">STDIO</option>
+                                            <option value="sse">SSE</option>
+                                            <option value="streamable-http">Streamable HTTP</option>
+                                            <option value="websocket">WebSocket</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Target MCP Port</label>
+                                        <input id="transportMcpPort" class="input" placeholder="auto (from config)" />
+                                    </div>
+                                    <div class="flex items-end gap-3">
+                                        <button id="runTransportTestBtn"
+                                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
+                                            <i class="fas fa-play mr-2"></i> Run Selected
+                                        </button>
+                                        <button id="runAllTransportTestsBtn"
+                                            class="flex-1 bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
+                                            <i class="fas fa-list-check mr-2"></i> Run All
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Results -->
                         <div class="card mt-8">
                             <div

@@ -113,7 +113,6 @@ const getAuthenticatedUser = authUtils.getAuthenticatedUser.bind(authUtils);
 const resolveAuthContext = authUtils.resolveAuthContextAsync.bind(authUtils);
 const requireAdminApi = authUtils.requireAdminApiAsync.bind(authUtils);
 const applyAuthenticatedRequestContextAsync = authUtils.applyAuthenticatedRequestContextAsync.bind(authUtils);
-const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode);
 const healthApi = new HealthApi();
 const directoryApi = new DirectoryApi();
 const parseApi = new ParseApi(parser);
@@ -168,7 +167,8 @@ const authApi = new AuthApi({
   getAuthProperty: () => authProperty
 });
 const portUtils = new PortUtils(process.env);
-
+const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
+const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode, MCP_PORT);
 async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   if (isNoneMode()) {
     applyNoneModeAuth(req);
@@ -268,8 +268,6 @@ databaseApi.registerRoutes(app);
 mcpApi.registerRoutes(app);
 authApi.registerRoutes(app);
 indexApi.registerRoutes(app);
-
-const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 
 export function startServer(): void {
   console.log('[quickmcp] startup config');

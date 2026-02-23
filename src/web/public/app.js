@@ -245,6 +245,8 @@ function setupEventListeners() {
     document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
+    document.getElementById('runTransportTestBtn')?.addEventListener('click', () => runTransportTests(false));
+    document.getElementById('runAllTransportTestsBtn')?.addEventListener('click', () => runTransportTests(true));
     
     // Test type change handler
     document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
@@ -1700,6 +1702,287 @@ async function runCustomTest() {
         noResults?.classList.remove('hidden');
     } finally {
         loading?.classList.add('hidden');
+    }
+}
+
+let mcpTransportBaseUrlCache = null;
+
+function nextMcpRequestId() {
+    if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID();
+    }
+    return `mcp-fback-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function resolveMcpTransportBaseUrl() {
+    const portInput = document.getElementById('transportMcpPort');
+    const manualPort = portInput?.value?.trim();
+    if (manualPort) {
+        return `${window.location.protocol}//${window.location.hostname}:${manualPort}`;
+    }
+
+    if (mcpTransportBaseUrlCache) return mcpTransportBaseUrlCache;
+
+    try {
+        const response = await fetch('/api/auth/config');
+        const result = await response.json();
+        const mcpPort = result?.data?.mcpPort || result?.data?.mcpDefaultPort;
+        if (mcpPort) {
+            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.hostname}:${mcpPort}`;
+        } else {
+            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
+        }
+        if (portInput && !portInput.value && mcpPort) {
+            portInput.placeholder = String(mcpPort);
+        }
+    } catch {
+        mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
+    }
+
+    return mcpTransportBaseUrlCache;
+}
+
+async function postJsonRpc(url, message, extra = {}) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(extra.headers || {})
+        },
+        body: JSON.stringify(message)
+    });
+
+    if (response.status === 204) return null;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(payload?.error?.message || payload?.message || `HTTP ${response.status}`);
+    }
+    if (payload?.error) {
+        throw new Error(payload.error.message || 'MCP error');
+    }
+    return payload;
+}
+
+async function testStdioTransport(baseUrl) {
+    const init = await postJsonRpc(`${baseUrl}/api/mcp-stdio`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(`${baseUrl}/api/mcp-stdio`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'stdio',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+    };
+}
+
+async function testSseTransport(baseUrl) {
+    const controller = new AbortController();
+    const sseResponse = await fetch(`${baseUrl}/sse`, {
+        method: 'GET',
+        headers: { 'Accept': 'text/event-stream' },
+        signal: controller.signal
+    });
+    if (!sseResponse.ok || !sseResponse.body) {
+        throw new Error(`SSE stream failed: HTTP ${sseResponse.status}`);
+    }
+
+    const reader = sseResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let endpoint = '';
+    let raw = '';
+
+    while (!endpoint) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        raw += decoder.decode(chunk.value, { stream: true });
+        const match = raw.match(/event:\\s*endpoint\\s*\\n(?:.*\\n)*?data:\\s*([^\\n]+)/);
+        if (match && match[1]) {
+            endpoint = match[1].trim();
+        }
+    }
+
+    controller.abort();
+    if (!endpoint) {
+        throw new Error('SSE endpoint event not received');
+    }
+
+    const endpointUrl = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    const init = await postJsonRpc(endpointUrl, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(endpointUrl, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'sse',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+    };
+}
+
+async function testStreamableHttpTransport(baseUrl) {
+    const init = await postJsonRpc(`${baseUrl}/mcp`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(`${baseUrl}/mcp`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'streamable-http',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        toolsCount: Array.isArray(list?.result?.tools) ? list.result.tools.length : 0
+    };
+}
+
+async function testWebSocketTransport(baseUrl) {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = baseUrl.replace(/^https?:/, wsProtocol);
+
+    const result = await new Promise((resolve, reject) => {
+        const ws = new WebSocket(`${wsHost}/ws`);
+        const expected = new Map();
+        const timeout = setTimeout(() => {
+            try { ws.close(); } catch {}
+            reject(new Error('WebSocket transport timeout'));
+        }, 10000);
+
+        const finish = (err, result) => {
+            clearTimeout(timeout);
+            try { ws.close(); } catch {}
+            if (err) reject(err);
+            else resolve(result);
+        };
+
+        ws.onopen = () => {
+            const initId = nextMcpRequestId();
+            const listId = nextMcpRequestId();
+            expected.set(initId, 'initialize');
+            expected.set(listId, 'tools/list');
+            ws.send(JSON.stringify({ jsonrpc: '2.0', id: initId, method: 'initialize', params: {} }));
+            ws.send(JSON.stringify({ jsonrpc: '2.0', id: listId, method: 'tools/list', params: {} }));
+        };
+
+        let protocolVersion = 'unknown';
+        let toolsCount = 0;
+        ws.onmessage = (event) => {
+            try {
+                const payload = JSON.parse(event.data);
+                if (payload?.error) {
+                    finish(new Error(payload.error.message || 'WebSocket MCP error'));
+                    return;
+                }
+                const kind = expected.get(payload?.id);
+                if (kind === 'initialize') {
+                    protocolVersion = payload?.result?.protocolVersion || 'unknown';
+                    expected.delete(payload.id);
+                } else if (kind === 'tools/list') {
+                    toolsCount = Array.isArray(payload?.result?.tools) ? payload.result.tools.length : 0;
+                    expected.delete(payload.id);
+                }
+
+                if (expected.size === 0) {
+                    finish(null, { transport: 'websocket', protocolVersion, toolsCount });
+                }
+            } catch (error) {
+                finish(error);
+            }
+        };
+
+        ws.onerror = () => finish(new Error('WebSocket connection failed'));
+    });
+
+    return result;
+}
+
+async function runTransportTests(runAll = false) {
+    const serverId = document.getElementById('testServerSelect')?.value;
+    if (!serverId) {
+        showError('test-error', 'Please select a server before running transport tests');
+        return;
+    }
+
+    const loading = document.getElementById('test-loading');
+    const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
+    const errorDiv = document.getElementById('test-error');
+    const selectedTransport = document.getElementById('transportType')?.value || 'stdio';
+
+    loading?.classList.remove('hidden');
+    if (loading) loading.textContent = runAll ? 'Running all transport tests...' : `Running ${selectedTransport} transport test...`;
+    resultsDiv?.classList.add('hidden');
+    noResults?.classList.add('hidden');
+    errorDiv?.classList.add('hidden');
+
+    const transports = runAll ? ['stdio', 'sse', 'streamable-http', 'websocket'] : [selectedTransport];
+
+    try {
+        const baseUrl = await resolveMcpTransportBaseUrl();
+        const summary = [];
+
+        for (const transport of transports) {
+            const startedAt = Date.now();
+            try {
+                let result;
+                if (transport === 'stdio') result = await testStdioTransport(baseUrl);
+                else if (transport === 'sse') result = await testSseTransport(baseUrl);
+                else if (transport === 'streamable-http') result = await testStreamableHttpTransport(baseUrl);
+                else result = await testWebSocketTransport(baseUrl);
+
+                summary.push({ transport, passed: true, duration: Date.now() - startedAt, ...result });
+            } catch (error) {
+                summary.push({ transport, passed: false, duration: Date.now() - startedAt, error: error?.message || String(error) });
+            }
+        }
+
+        let output = `=== MCP Transport Test Results ===\\n`;
+        output += `Target MCP endpoint: ${baseUrl}\\n`;
+        output += `Server selected: ${serverId}\\n\\n`;
+
+        summary.forEach((item) => {
+            output += `${item.passed ? '✅ PASS' : '❌ FAIL'} ${item.transport} (${item.duration}ms)\\n`;
+            if (item.passed) {
+                output += `   Protocol: ${item.protocolVersion || 'n/a'}\\n`;
+                output += `   Tools Listed: ${item.toolsCount ?? 0}\\n`;
+            } else {
+                output += `   Error: ${item.error || 'Unknown error'}\\n`;
+            }
+            output += '\\n';
+        });
+
+        const passCount = summary.filter((x) => x.passed).length;
+        output += `Summary: ${passCount}/${summary.length} passed\\n`;
+
+        if (resultsDiv) {
+            resultsDiv.textContent = output;
+            resultsDiv.classList.remove('hidden');
+        }
+        noResults?.classList.add('hidden');
+    } catch (error) {
+        showError('test-error', error?.message || String(error));
+        noResults?.classList.remove('hidden');
+    } finally {
+        loading?.classList.add('hidden');
+        if (loading) loading.textContent = 'Running...';
     }
 }
 

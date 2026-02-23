@@ -1,0 +1,1293 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e3]:
+    - link " QuickMCP" [ref=e4] [cursor=pointer]:
+      - /url: /landing
+      - generic [ref=e6]: 
+      - generic [ref=e7]: QuickMCP
+    - generic [ref=e8]:
+      - link "Use Cases" [ref=e9] [cursor=pointer]:
+        - /url: "#prompts"
+      - link "How It Works" [ref=e10] [cursor=pointer]:
+        - /url: "#how"
+      - link "Integrations" [ref=e11] [cursor=pointer]:
+        - /url: "#integrations"
+      - link "Pricing" [ref=e12] [cursor=pointer]:
+        - /url: /pricing
+      - link "FAQ" [ref=e13] [cursor=pointer]:
+        - /url: "#faq"
+    - generic [ref=e14]:
+      - link "Sign In" [ref=e15] [cursor=pointer]:
+        - /url: /login
+      - link "Get Started" [ref=e16] [cursor=pointer]:
+        - /url: /login
+      - text: 
+  - generic [ref=e18]:
+    - generic [ref=e19]: AI-Powered MCP Server Generator
+    - heading "Now your AI can connect to anything" [level=1] [ref=e20]:
+      - text: Now your AI can connect to anything
+      - generic [ref=e21]: "|"
+    - paragraph [ref=e22]: Generate MCP servers from APIs and databases. Connect Claude, Cursor, and other AI tools to your entire stack in minutes.
+    - generic [ref=e23]:
+      - link " Start Building Free" [ref=e24] [cursor=pointer]:
+        - /url: /login
+        - generic [ref=e25]: 
+        - text: Start Building Free
+      - link "Explore Use Cases " [ref=e26] [cursor=pointer]:
+        - /url: "#prompts"
+        - text: Explore Use Cases
+        - generic [ref=e27]: 
+  - generic [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e31]: Popular Prompts
+      - heading "Connect apps, automation happens" [level=2] [ref=e32]
+      - paragraph [ref=e33]: Real prompts that work. Try them with your AI assistant.
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - img "Gmail" [ref=e38]
+          - generic [ref=e39]:
+            - generic [ref=e40]: Gmail Integration
+            - generic [ref=e41]: Send emails with Gmail
+        - paragraph [ref=e42]: "\"Draft and send an email to my team about tomorrow's meeting, include the agenda from my notes.\""
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: 
+            - text: 892+ users
+          - link "Try " [ref=e46] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e47]: 
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - img "Slack" [ref=e51]
+          - generic [ref=e52]:
+            - generic [ref=e53]: Slack Integration
+            - generic [ref=e54]: Post updates to Slack
+        - paragraph [ref=e55]: "\"Post a summary of today's completed tasks to the #dev channel with relevant mentions.\""
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: 
+            - text: 1.2k+ users
+          - link "Try " [ref=e59] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e60]: 
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - img "PostgreSQL" [ref=e64]
+          - generic [ref=e65]:
+            - generic [ref=e66]: PostgreSQL Integration
+            - generic [ref=e67]: Query your database
+        - paragraph [ref=e68]: "\"Show me all users who signed up last week and their subscription status from the database.\""
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: 
+            - text: 756+ users
+          - link "Try " [ref=e72] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e73]: 
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - img "Notion" [ref=e77]
+          - generic [ref=e78]:
+            - generic [ref=e79]: Notion Integration
+            - generic [ref=e80]: Update Notion pages
+        - paragraph [ref=e81]: "\"Create a new page in my Projects database with today's meeting notes and action items.\""
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: 
+            - text: 634+ users
+          - link "Try " [ref=e85] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e86]: 
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - img "Google Calendar" [ref=e90]
+          - generic [ref=e91]:
+            - generic [ref=e92]: Google Calendar
+            - generic [ref=e93]: Manage calendar events
+        - paragraph [ref=e94]: "\"Schedule a 30-minute sync with Sarah next week, find a time that works for both of us.\""
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]: 
+            - text: 543+ users
+          - link "Try " [ref=e98] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e99]: 
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - img "Custom API" [ref=e103]
+          - generic [ref=e104]:
+            - generic [ref=e105]: Custom API
+            - generic [ref=e106]: Connect any REST API
+        - paragraph [ref=e107]: "\"Fetch the latest analytics from our internal API and create a summary report.\""
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]: 
+            - text: 421+ users
+          - link "Try " [ref=e111] [cursor=pointer]:
+            - /url: /login
+            - text: Try
+            - generic [ref=e112]: 
+  - generic [ref=e114]:
+    - generic [ref=e115]:
+      - generic [ref=e116]: How It Works
+      - heading "Three steps to AI automation" [level=2] [ref=e117]
+      - paragraph [ref=e118]: From zero to production MCP server in minutes.
+    - generic [ref=e119]:
+      - generic [ref=e120]:
+        - generic [ref=e121]: "1"
+        - heading "Connect your source" [level=3] [ref=e122]
+        - paragraph [ref=e123]: Link APIs, databases, or third-party services. We support REST, GraphQL, PostgreSQL, MySQL, and more.
+      - generic [ref=e124]:
+        - generic [ref=e125]: "2"
+        - heading "Generate MCP tools" [level=3] [ref=e126]
+        - paragraph [ref=e127]: QuickMCP automatically creates type-safe tools with proper schemas. Test them instantly in our playground.
+      - generic [ref=e128]:
+        - generic [ref=e129]: "3"
+        - heading "Deploy & use" [level=3] [ref=e130]
+        - paragraph [ref=e131]: Get your MCP server endpoint. Connect it to Claude, Cursor, or any MCP-compatible AI assistant.
+  - generic [ref=e134]:
+    - generic [ref=e135]:
+      - generic [ref=e136]: Integrations
+      - heading "Works with your entire stack" [level=2] [ref=e137]
+      - paragraph [ref=e138]: Connect the tools you already use and love.
+    - generic [ref=e139]:
+      - generic [ref=e141]:
+        - generic [ref=e142]:
+          - img "VSCode" [ref=e143]
+          - text: VSCode
+        - generic [ref=e144]:
+          - img "Claude" [ref=e145]
+          - text: Claude
+        - generic [ref=e146]:
+          - img "Cursor" [ref=e147]
+          - text: Cursor
+        - generic [ref=e148]:
+          - img "Whatsapp" [ref=e149]
+          - text: Whatsapp
+        - generic [ref=e150]:
+          - img "OpenAI" [ref=e151]
+          - text: OpenAI
+        - generic [ref=e152]:
+          - img "N8N" [ref=e153]
+          - text: N8N
+        - generic [ref=e154]:
+          - img "MCP" [ref=e155]
+          - text: MCP
+        - generic [ref=e156]:
+          - img "Windsurf" [ref=e157]
+          - text: Windsurf
+        - generic [ref=e158]:
+          - img "IntelliJ" [ref=e159]
+          - text: IntelliJ
+        - generic [ref=e160]:
+          - img "GitHub Copilot" [ref=e161]
+          - text: GitHub Copilot
+        - generic [ref=e162]:
+          - img "Zed" [ref=e163]
+          - text: Zed
+        - generic [ref=e164]:
+          - img "VSCode" [ref=e165]
+          - text: VSCode
+        - generic [ref=e166]:
+          - img "Claude" [ref=e167]
+          - text: Claude
+        - generic [ref=e168]:
+          - img "Cursor" [ref=e169]
+          - text: Cursor
+        - generic [ref=e170]:
+          - img "Whatsapp" [ref=e171]
+          - text: Whatsapp
+        - generic [ref=e172]:
+          - img "OpenAI" [ref=e173]
+          - text: OpenAI
+        - generic [ref=e174]:
+          - img "N8N" [ref=e175]
+          - text: N8N
+        - generic [ref=e176]:
+          - img "MCP" [ref=e177]
+          - text: MCP
+        - generic [ref=e178]:
+          - img "Windsurf" [ref=e179]
+          - text: Windsurf
+        - generic [ref=e180]:
+          - img "IntelliJ" [ref=e181]
+          - text: IntelliJ
+        - generic [ref=e182]:
+          - img "GitHub Copilot" [ref=e183]
+          - text: GitHub Copilot
+        - generic [ref=e184]:
+          - img "Zed" [ref=e185]
+          - text: Zed
+      - generic [ref=e187]:
+        - generic [ref=e188]:
+          - img "Slack" [ref=e189]
+          - text: Slack
+        - generic [ref=e190]:
+          - img "Telegram" [ref=e191]
+          - text: Telegram
+        - generic [ref=e192]:
+          - img "Discord" [ref=e193]
+          - text: Discord
+        - generic [ref=e194]:
+          - img "Teams" [ref=e195]
+          - text: Teams
+        - generic [ref=e196]:
+          - img "Zapier" [ref=e197]
+          - text: Zapier
+        - generic [ref=e198]:
+          - img "Make" [ref=e199]
+          - text: Make
+        - generic [ref=e200]:
+          - img "Pipedream" [ref=e201]
+          - text: Pipedream
+        - generic [ref=e202]:
+          - img "Activepieces" [ref=e203]
+          - text: Activepieces
+        - generic [ref=e204]:
+          - img "Android Studio" [ref=e205]
+          - text: Android Studio
+        - generic [ref=e206]:
+          - img "Antigravity" [ref=e207]
+          - text: Antigravity
+        - generic [ref=e208]:
+          - img "Slack" [ref=e209]
+          - text: Slack
+        - generic [ref=e210]:
+          - img "Telegram" [ref=e211]
+          - text: Telegram
+        - generic [ref=e212]:
+          - img "Discord" [ref=e213]
+          - text: Discord
+        - generic [ref=e214]:
+          - img "Teams" [ref=e215]
+          - text: Teams
+        - generic [ref=e216]:
+          - img "Zapier" [ref=e217]
+          - text: Zapier
+        - generic [ref=e218]:
+          - img "Make" [ref=e219]
+          - text: Make
+        - generic [ref=e220]:
+          - img "Pipedream" [ref=e221]
+          - text: Pipedream
+        - generic [ref=e222]:
+          - img "Activepieces" [ref=e223]
+          - text: Activepieces
+        - generic [ref=e224]:
+          - img "Android Studio" [ref=e225]
+          - text: Android Studio
+        - generic [ref=e226]:
+          - img "Antigravity" [ref=e227]
+          - text: Antigravity
+    - generic [ref=e228]:
+      - heading "Build MCP servers from your data and APIs" [level=3] [ref=e229]
+      - paragraph [ref=e230]: Use every source available in New Server, from databases and APIs to SaaS tools and AI platforms.
+      - generic [ref=e231]:
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - img "Airtable" [ref=e235]
+            - text: Airtable
+          - generic [ref=e236]:
+            - img "Apple Notes" [ref=e237]
+            - text: Apple Notes
+          - generic [ref=e238]:
+            - img "Apple Reminders" [ref=e239]
+            - text: Apple Reminders
+          - generic [ref=e240]:
+            - img "Asana" [ref=e241]
+            - text: Asana
+          - generic [ref=e242]:
+            - img "Azure AI" [ref=e243]
+            - text: Azure AI
+          - generic [ref=e244]:
+            - img "Bear Notes" [ref=e245]
+            - text: Bear Notes
+          - generic [ref=e246]:
+            - img "Bitbucket" [ref=e247]
+            - text: Bitbucket
+          - generic [ref=e248]:
+            - img "Claude" [ref=e249]
+            - text: Claude
+          - generic [ref=e250]:
+            - img "ClickUp" [ref=e251]
+            - text: ClickUp
+          - generic [ref=e252]:
+            - img "Cohere" [ref=e253]
+            - text: Cohere
+          - generic [ref=e254]:
+            - img "Confluence" [ref=e255]
+            - text: Confluence
+          - generic [ref=e256]:
+            - img "DB2" [ref=e257]
+            - text: DB2
+          - generic [ref=e258]:
+            - img "DeepSeek" [ref=e259]
+            - text: DeepSeek
+          - generic [ref=e260]:
+            - img "Discord" [ref=e261]
+            - text: Discord
+          - generic [ref=e262]:
+            - img "Docker Hub" [ref=e263]
+            - text: Docker Hub
+          - generic [ref=e264]:
+            - img "Dropbox" [ref=e265]
+            - text: Dropbox
+          - generic [ref=e266]:
+            - img "Elasticsearch" [ref=e267]
+            - text: Elasticsearch
+          - generic [ref=e268]:
+            - img "Facebook" [ref=e269]
+            - text: Facebook
+          - generic [ref=e270]:
+            - img "Fal.ai" [ref=e271]
+            - text: Fal.ai
+          - generic [ref=e272]:
+            - img "Google Drive" [ref=e273]
+            - text: Google Drive
+          - generic [ref=e274]:
+            - img "Gemini" [ref=e275]
+            - text: Gemini
+          - generic [ref=e276]:
+            - img "GitHub" [ref=e277]
+            - text: GitHub
+          - generic [ref=e278]:
+            - img "GitLab" [ref=e279]
+            - text: GitLab
+          - generic [ref=e280]:
+            - img "Gmail" [ref=e281]
+            - text: Gmail
+          - generic [ref=e282]:
+            - img "Google Calendar" [ref=e283]
+            - text: Google Calendar
+          - generic [ref=e284]:
+            - img "Google Docs" [ref=e285]
+            - text: Google Docs
+          - generic [ref=e286]:
+            - img "Google Sheets" [ref=e287]
+            - text: Google Sheets
+          - generic [ref=e288]:
+            - img "Gradle" [ref=e289]
+            - text: Gradle
+          - generic [ref=e290]:
+            - img "Grafana" [ref=e291]
+            - text: Grafana
+          - generic [ref=e292]:
+            - img "GraphQL" [ref=e293]
+            - text: GraphQL
+          - generic [ref=e294]:
+            - img "Grok" [ref=e295]
+            - text: Grok
+          - generic [ref=e296]:
+            - img "Groq" [ref=e297]
+            - text: Groq
+          - generic [ref=e298]:
+            - img "Hazelcast" [ref=e299]
+            - text: Hazelcast
+          - generic [ref=e300]:
+            - img "Hugging Face" [ref=e301]
+            - text: Hugging Face
+          - generic [ref=e302]:
+            - img "iMessage" [ref=e303]
+            - text: iMessage
+          - generic [ref=e304]:
+            - img "Instagram" [ref=e305]
+            - text: Instagram
+          - generic [ref=e306]:
+            - img "Jenkins" [ref=e307]
+            - text: Jenkins
+          - generic [ref=e308]:
+            - img "Jira" [ref=e309]
+            - text: Jira
+          - generic [ref=e310]:
+            - img "Kafka" [ref=e311]
+            - text: Kafka
+          - generic [ref=e312]:
+            - img "Kubernetes" [ref=e313]
+            - text: Kubernetes
+          - generic [ref=e314]:
+            - img "Linear" [ref=e315]
+            - text: Linear
+          - generic [ref=e316]:
+            - img "LinkedIn" [ref=e317]
+            - text: LinkedIn
+          - generic [ref=e318]:
+            - img "Llama" [ref=e319]
+            - text: Llama
+          - generic [ref=e320]:
+            - img "Maven" [ref=e321]
+            - text: Maven
+          - generic [ref=e322]:
+            - img "Microsoft Teams" [ref=e323]
+            - text: Microsoft Teams
+          - generic [ref=e324]:
+            - img "Mistral" [ref=e325]
+            - text: Mistral
+          - generic [ref=e326]:
+            - img "Monday" [ref=e327]
+            - text: Monday
+          - generic [ref=e328]:
+            - img "SQL Server" [ref=e329]
+            - text: SQL Server
+          - generic [ref=e330]:
+            - img "MySQL" [ref=e331]
+            - text: MySQL
+          - generic [ref=e332]:
+            - img "n8n" [ref=e333]
+            - text: n8n
+          - generic [ref=e334]:
+            - img "Notion" [ref=e335]
+            - text: Notion
+          - generic [ref=e336]:
+            - img "npm" [ref=e337]
+            - text: npm
+          - generic [ref=e338]:
+            - img "NuGet" [ref=e339]
+            - text: NuGet
+          - generic [ref=e340]:
+            - img "Obsidian" [ref=e341]
+            - text: Obsidian
+          - generic [ref=e342]:
+            - img "OpenAI" [ref=e343]
+            - text: OpenAI
+          - generic [ref=e344]:
+            - img "OpenRouter" [ref=e345]
+            - text: OpenRouter
+          - generic [ref=e346]:
+            - img "OpenSearch" [ref=e347]
+            - text: OpenSearch
+          - generic [ref=e348]:
+            - img "OpenShift" [ref=e349]
+            - text: OpenShift
+          - generic [ref=e350]:
+            - img "Oracle" [ref=e351]
+            - text: Oracle
+          - generic [ref=e352]:
+            - img "Perplexity" [ref=e353]
+            - text: Perplexity
+          - generic [ref=e354]:
+            - img "PostgreSQL" [ref=e355]
+            - text: PostgreSQL
+          - generic [ref=e356]:
+            - img "Prometheus" [ref=e357]
+            - text: Prometheus
+          - generic [ref=e358]:
+            - img "Reddit" [ref=e359]
+            - text: Reddit
+          - generic [ref=e360]:
+            - img "Redis" [ref=e361]
+            - text: Redis
+          - generic [ref=e362]:
+            - img "RSS" [ref=e363]
+            - text: RSS
+          - generic [ref=e364]:
+            - img "Signal" [ref=e365]
+            - text: Signal
+          - generic [ref=e366]:
+            - img "Slack" [ref=e367]
+            - text: Slack
+          - generic [ref=e368]:
+            - img "SOAP" [ref=e369]
+            - text: SOAP
+          - generic [ref=e370]:
+            - img "SQLite" [ref=e371]
+            - text: SQLite
+          - generic [ref=e372]:
+            - img "Supabase" [ref=e373]
+            - text: Supabase
+          - generic [ref=e374]:
+            - img "Telegram" [ref=e375]
+            - text: Telegram
+          - generic [ref=e376]:
+            - img "Things3" [ref=e377]
+            - text: Things3
+          - generic [ref=e378]:
+            - img "Threads" [ref=e379]
+            - text: Threads
+          - generic [ref=e380]:
+            - img "TikTok" [ref=e381]
+            - text: TikTok
+          - generic [ref=e382]:
+            - img "Together AI" [ref=e383]
+            - text: Together AI
+          - generic [ref=e384]:
+            - img "Trello" [ref=e385]
+            - text: Trello
+          - generic [ref=e386]:
+            - img "WhatsApp" [ref=e387]
+            - text: WhatsApp
+          - generic [ref=e388]:
+            - img "X" [ref=e389]
+            - text: X
+          - generic [ref=e390]:
+            - img "YouTube" [ref=e391]
+            - text: YouTube
+          - generic [ref=e392]:
+            - img "Zoom" [ref=e393]
+            - text: Zoom
+          - generic [ref=e394]:
+            - img "Airtable" [ref=e395]
+            - text: Airtable
+          - generic [ref=e396]:
+            - img "Apple Notes" [ref=e397]
+            - text: Apple Notes
+          - generic [ref=e398]:
+            - img "Apple Reminders" [ref=e399]
+            - text: Apple Reminders
+          - generic [ref=e400]:
+            - img "Asana" [ref=e401]
+            - text: Asana
+          - generic [ref=e402]:
+            - img "Azure AI" [ref=e403]
+            - text: Azure AI
+          - generic [ref=e404]:
+            - img "Bear Notes" [ref=e405]
+            - text: Bear Notes
+          - generic [ref=e406]:
+            - img "Bitbucket" [ref=e407]
+            - text: Bitbucket
+          - generic [ref=e408]:
+            - img "Claude" [ref=e409]
+            - text: Claude
+          - generic [ref=e410]:
+            - img "ClickUp" [ref=e411]
+            - text: ClickUp
+          - generic [ref=e412]:
+            - img "Cohere" [ref=e413]
+            - text: Cohere
+          - generic [ref=e414]:
+            - img "Confluence" [ref=e415]
+            - text: Confluence
+          - generic [ref=e416]:
+            - img "DB2" [ref=e417]
+            - text: DB2
+          - generic [ref=e418]:
+            - img "DeepSeek" [ref=e419]
+            - text: DeepSeek
+          - generic [ref=e420]:
+            - img "Discord" [ref=e421]
+            - text: Discord
+          - generic [ref=e422]:
+            - img "Docker Hub" [ref=e423]
+            - text: Docker Hub
+          - generic [ref=e424]:
+            - img "Dropbox" [ref=e425]
+            - text: Dropbox
+          - generic [ref=e426]:
+            - img "Elasticsearch" [ref=e427]
+            - text: Elasticsearch
+          - generic [ref=e428]:
+            - img "Facebook" [ref=e429]
+            - text: Facebook
+          - generic [ref=e430]:
+            - img "Fal.ai" [ref=e431]
+            - text: Fal.ai
+          - generic [ref=e432]:
+            - img "Google Drive" [ref=e433]
+            - text: Google Drive
+          - generic [ref=e434]:
+            - img "Gemini" [ref=e435]
+            - text: Gemini
+          - generic [ref=e436]:
+            - img "GitHub" [ref=e437]
+            - text: GitHub
+          - generic [ref=e438]:
+            - img "GitLab" [ref=e439]
+            - text: GitLab
+          - generic [ref=e440]:
+            - img "Gmail" [ref=e441]
+            - text: Gmail
+          - generic [ref=e442]:
+            - img "Google Calendar" [ref=e443]
+            - text: Google Calendar
+          - generic [ref=e444]:
+            - img "Google Docs" [ref=e445]
+            - text: Google Docs
+          - generic [ref=e446]:
+            - img "Google Sheets" [ref=e447]
+            - text: Google Sheets
+          - generic [ref=e448]:
+            - img "Gradle" [ref=e449]
+            - text: Gradle
+          - generic [ref=e450]:
+            - img "Grafana" [ref=e451]
+            - text: Grafana
+          - generic [ref=e452]:
+            - img "GraphQL" [ref=e453]
+            - text: GraphQL
+          - generic [ref=e454]:
+            - img "Grok" [ref=e455]
+            - text: Grok
+          - generic [ref=e456]:
+            - img "Groq" [ref=e457]
+            - text: Groq
+          - generic [ref=e458]:
+            - img "Hazelcast" [ref=e459]
+            - text: Hazelcast
+          - generic [ref=e460]:
+            - img "Hugging Face" [ref=e461]
+            - text: Hugging Face
+          - generic [ref=e462]:
+            - img "iMessage" [ref=e463]
+            - text: iMessage
+          - generic [ref=e464]:
+            - img "Instagram" [ref=e465]
+            - text: Instagram
+          - generic [ref=e466]:
+            - img "Jenkins" [ref=e467]
+            - text: Jenkins
+          - generic [ref=e468]:
+            - img "Jira" [ref=e469]
+            - text: Jira
+          - generic [ref=e470]:
+            - img "Kafka" [ref=e471]
+            - text: Kafka
+          - generic [ref=e472]:
+            - img "Kubernetes" [ref=e473]
+            - text: Kubernetes
+          - generic [ref=e474]:
+            - img "Linear" [ref=e475]
+            - text: Linear
+          - generic [ref=e476]:
+            - img "LinkedIn" [ref=e477]
+            - text: LinkedIn
+          - generic [ref=e478]:
+            - img "Llama" [ref=e479]
+            - text: Llama
+          - generic [ref=e480]:
+            - img "Maven" [ref=e481]
+            - text: Maven
+          - generic [ref=e482]:
+            - img "Microsoft Teams" [ref=e483]
+            - text: Microsoft Teams
+          - generic [ref=e484]:
+            - img "Mistral" [ref=e485]
+            - text: Mistral
+          - generic [ref=e486]:
+            - img "Monday" [ref=e487]
+            - text: Monday
+          - generic [ref=e488]:
+            - img "SQL Server" [ref=e489]
+            - text: SQL Server
+          - generic [ref=e490]:
+            - img "MySQL" [ref=e491]
+            - text: MySQL
+          - generic [ref=e492]:
+            - img "n8n" [ref=e493]
+            - text: n8n
+          - generic [ref=e494]:
+            - img "Notion" [ref=e495]
+            - text: Notion
+          - generic [ref=e496]:
+            - img "npm" [ref=e497]
+            - text: npm
+          - generic [ref=e498]:
+            - img "NuGet" [ref=e499]
+            - text: NuGet
+          - generic [ref=e500]:
+            - img "Obsidian" [ref=e501]
+            - text: Obsidian
+          - generic [ref=e502]:
+            - img "OpenAI" [ref=e503]
+            - text: OpenAI
+          - generic [ref=e504]:
+            - img "OpenRouter" [ref=e505]
+            - text: OpenRouter
+          - generic [ref=e506]:
+            - img "OpenSearch" [ref=e507]
+            - text: OpenSearch
+          - generic [ref=e508]:
+            - img "OpenShift" [ref=e509]
+            - text: OpenShift
+          - generic [ref=e510]:
+            - img "Oracle" [ref=e511]
+            - text: Oracle
+          - generic [ref=e512]:
+            - img "Perplexity" [ref=e513]
+            - text: Perplexity
+          - generic [ref=e514]:
+            - img "PostgreSQL" [ref=e515]
+            - text: PostgreSQL
+          - generic [ref=e516]:
+            - img "Prometheus" [ref=e517]
+            - text: Prometheus
+          - generic [ref=e518]:
+            - img "Reddit" [ref=e519]
+            - text: Reddit
+          - generic [ref=e520]:
+            - img "Redis" [ref=e521]
+            - text: Redis
+          - generic [ref=e522]:
+            - img "RSS" [ref=e523]
+            - text: RSS
+          - generic [ref=e524]:
+            - img "Signal" [ref=e525]
+            - text: Signal
+          - generic [ref=e526]:
+            - img "Slack" [ref=e527]
+            - text: Slack
+          - generic [ref=e528]:
+            - img "SOAP" [ref=e529]
+            - text: SOAP
+          - generic [ref=e530]:
+            - img "SQLite" [ref=e531]
+            - text: SQLite
+          - generic [ref=e532]:
+            - img "Supabase" [ref=e533]
+            - text: Supabase
+          - generic [ref=e534]:
+            - img "Telegram" [ref=e535]
+            - text: Telegram
+          - generic [ref=e536]:
+            - img "Things3" [ref=e537]
+            - text: Things3
+          - generic [ref=e538]:
+            - img "Threads" [ref=e539]
+            - text: Threads
+          - generic [ref=e540]:
+            - img "TikTok" [ref=e541]
+            - text: TikTok
+          - generic [ref=e542]:
+            - img "Together AI" [ref=e543]
+            - text: Together AI
+          - generic [ref=e544]:
+            - img "Trello" [ref=e545]
+            - text: Trello
+          - generic [ref=e546]:
+            - img "WhatsApp" [ref=e547]
+            - text: WhatsApp
+          - generic [ref=e548]:
+            - img "X" [ref=e549]
+            - text: X
+          - generic [ref=e550]:
+            - img "YouTube" [ref=e551]
+            - text: YouTube
+          - generic [ref=e552]:
+            - img "Zoom" [ref=e553]
+            - text: Zoom
+        - generic [ref=e555]:
+          - generic [ref=e556]:
+            - img "Airtable" [ref=e557]
+            - text: Airtable
+          - generic [ref=e558]:
+            - img "Apple Notes" [ref=e559]
+            - text: Apple Notes
+          - generic [ref=e560]:
+            - img "Apple Reminders" [ref=e561]
+            - text: Apple Reminders
+          - generic [ref=e562]:
+            - img "Asana" [ref=e563]
+            - text: Asana
+          - generic [ref=e564]:
+            - img "Azure AI" [ref=e565]
+            - text: Azure AI
+          - generic [ref=e566]:
+            - img "Bear Notes" [ref=e567]
+            - text: Bear Notes
+          - generic [ref=e568]:
+            - img "Bitbucket" [ref=e569]
+            - text: Bitbucket
+          - generic [ref=e570]:
+            - img "Claude" [ref=e571]
+            - text: Claude
+          - generic [ref=e572]:
+            - img "ClickUp" [ref=e573]
+            - text: ClickUp
+          - generic [ref=e574]:
+            - img "Cohere" [ref=e575]
+            - text: Cohere
+          - generic [ref=e576]:
+            - img "Confluence" [ref=e577]
+            - text: Confluence
+          - generic [ref=e578]:
+            - img "DB2" [ref=e579]
+            - text: DB2
+          - generic [ref=e580]:
+            - img "DeepSeek" [ref=e581]
+            - text: DeepSeek
+          - generic [ref=e582]:
+            - img "Discord" [ref=e583]
+            - text: Discord
+          - generic [ref=e584]:
+            - img "Docker Hub" [ref=e585]
+            - text: Docker Hub
+          - generic [ref=e586]:
+            - img "Dropbox" [ref=e587]
+            - text: Dropbox
+          - generic [ref=e588]:
+            - img "Elasticsearch" [ref=e589]
+            - text: Elasticsearch
+          - generic [ref=e590]:
+            - img "Facebook" [ref=e591]
+            - text: Facebook
+          - generic [ref=e592]:
+            - img "Fal.ai" [ref=e593]
+            - text: Fal.ai
+          - generic [ref=e594]:
+            - img "Google Drive" [ref=e595]
+            - text: Google Drive
+          - generic [ref=e596]:
+            - img "Gemini" [ref=e597]
+            - text: Gemini
+          - generic [ref=e598]:
+            - img "GitHub" [ref=e599]
+            - text: GitHub
+          - generic [ref=e600]:
+            - img "GitLab" [ref=e601]
+            - text: GitLab
+          - generic [ref=e602]:
+            - img "Gmail" [ref=e603]
+            - text: Gmail
+          - generic [ref=e604]:
+            - img "Google Calendar" [ref=e605]
+            - text: Google Calendar
+          - generic [ref=e606]:
+            - img "Google Docs" [ref=e607]
+            - text: Google Docs
+          - generic [ref=e608]:
+            - img "Google Sheets" [ref=e609]
+            - text: Google Sheets
+          - generic [ref=e610]:
+            - img "Gradle" [ref=e611]
+            - text: Gradle
+          - generic [ref=e612]:
+            - img "Grafana" [ref=e613]
+            - text: Grafana
+          - generic [ref=e614]:
+            - img "GraphQL" [ref=e615]
+            - text: GraphQL
+          - generic [ref=e616]:
+            - img "Grok" [ref=e617]
+            - text: Grok
+          - generic [ref=e618]:
+            - img "Groq" [ref=e619]
+            - text: Groq
+          - generic [ref=e620]:
+            - img "Hazelcast" [ref=e621]
+            - text: Hazelcast
+          - generic [ref=e622]:
+            - img "Hugging Face" [ref=e623]
+            - text: Hugging Face
+          - generic [ref=e624]:
+            - img "iMessage" [ref=e625]
+            - text: iMessage
+          - generic [ref=e626]:
+            - img "Instagram" [ref=e627]
+            - text: Instagram
+          - generic [ref=e628]:
+            - img "Jenkins" [ref=e629]
+            - text: Jenkins
+          - generic [ref=e630]:
+            - img "Jira" [ref=e631]
+            - text: Jira
+          - generic [ref=e632]:
+            - img "Kafka" [ref=e633]
+            - text: Kafka
+          - generic [ref=e634]:
+            - img "Kubernetes" [ref=e635]
+            - text: Kubernetes
+          - generic [ref=e636]:
+            - img "Linear" [ref=e637]
+            - text: Linear
+          - generic [ref=e638]:
+            - img "LinkedIn" [ref=e639]
+            - text: LinkedIn
+          - generic [ref=e640]:
+            - img "Llama" [ref=e641]
+            - text: Llama
+          - generic [ref=e642]:
+            - img "Maven" [ref=e643]
+            - text: Maven
+          - generic [ref=e644]:
+            - img "Microsoft Teams" [ref=e645]
+            - text: Microsoft Teams
+          - generic [ref=e646]:
+            - img "Mistral" [ref=e647]
+            - text: Mistral
+          - generic [ref=e648]:
+            - img "Monday" [ref=e649]
+            - text: Monday
+          - generic [ref=e650]:
+            - img "SQL Server" [ref=e651]
+            - text: SQL Server
+          - generic [ref=e652]:
+            - img "MySQL" [ref=e653]
+            - text: MySQL
+          - generic [ref=e654]:
+            - img "n8n" [ref=e655]
+            - text: n8n
+          - generic [ref=e656]:
+            - img "Notion" [ref=e657]
+            - text: Notion
+          - generic [ref=e658]:
+            - img "npm" [ref=e659]
+            - text: npm
+          - generic [ref=e660]:
+            - img "NuGet" [ref=e661]
+            - text: NuGet
+          - generic [ref=e662]:
+            - img "Obsidian" [ref=e663]
+            - text: Obsidian
+          - generic [ref=e664]:
+            - img "OpenAI" [ref=e665]
+            - text: OpenAI
+          - generic [ref=e666]:
+            - img "OpenRouter" [ref=e667]
+            - text: OpenRouter
+          - generic [ref=e668]:
+            - img "OpenSearch" [ref=e669]
+            - text: OpenSearch
+          - generic [ref=e670]:
+            - img "OpenShift" [ref=e671]
+            - text: OpenShift
+          - generic [ref=e672]:
+            - img "Oracle" [ref=e673]
+            - text: Oracle
+          - generic [ref=e674]:
+            - img "Perplexity" [ref=e675]
+            - text: Perplexity
+          - generic [ref=e676]:
+            - img "PostgreSQL" [ref=e677]
+            - text: PostgreSQL
+          - generic [ref=e678]:
+            - img "Prometheus" [ref=e679]
+            - text: Prometheus
+          - generic [ref=e680]:
+            - img "Reddit" [ref=e681]
+            - text: Reddit
+          - generic [ref=e682]:
+            - img "Redis" [ref=e683]
+            - text: Redis
+          - generic [ref=e684]:
+            - img "RSS" [ref=e685]
+            - text: RSS
+          - generic [ref=e686]:
+            - img "Signal" [ref=e687]
+            - text: Signal
+          - generic [ref=e688]:
+            - img "Slack" [ref=e689]
+            - text: Slack
+          - generic [ref=e690]:
+            - img "SOAP" [ref=e691]
+            - text: SOAP
+          - generic [ref=e692]:
+            - img "SQLite" [ref=e693]
+            - text: SQLite
+          - generic [ref=e694]:
+            - img "Supabase" [ref=e695]
+            - text: Supabase
+          - generic [ref=e696]:
+            - img "Telegram" [ref=e697]
+            - text: Telegram
+          - generic [ref=e698]:
+            - img "Things3" [ref=e699]
+            - text: Things3
+          - generic [ref=e700]:
+            - img "Threads" [ref=e701]
+            - text: Threads
+          - generic [ref=e702]:
+            - img "TikTok" [ref=e703]
+            - text: TikTok
+          - generic [ref=e704]:
+            - img "Together AI" [ref=e705]
+            - text: Together AI
+          - generic [ref=e706]:
+            - img "Trello" [ref=e707]
+            - text: Trello
+          - generic [ref=e708]:
+            - img "WhatsApp" [ref=e709]
+            - text: WhatsApp
+          - generic [ref=e710]:
+            - img "X" [ref=e711]
+            - text: X
+          - generic [ref=e712]:
+            - img "YouTube" [ref=e713]
+            - text: YouTube
+          - generic [ref=e714]:
+            - img "Zoom" [ref=e715]
+            - text: Zoom
+          - generic [ref=e716]:
+            - img "Airtable" [ref=e717]
+            - text: Airtable
+          - generic [ref=e718]:
+            - img "Apple Notes" [ref=e719]
+            - text: Apple Notes
+          - generic [ref=e720]:
+            - img "Apple Reminders" [ref=e721]
+            - text: Apple Reminders
+          - generic [ref=e722]:
+            - img "Asana" [ref=e723]
+            - text: Asana
+          - generic [ref=e724]:
+            - img "Azure AI" [ref=e725]
+            - text: Azure AI
+          - generic [ref=e726]:
+            - img "Bear Notes" [ref=e727]
+            - text: Bear Notes
+          - generic [ref=e728]:
+            - img "Bitbucket" [ref=e729]
+            - text: Bitbucket
+          - generic [ref=e730]:
+            - img "Claude" [ref=e731]
+            - text: Claude
+          - generic [ref=e732]:
+            - img "ClickUp" [ref=e733]
+            - text: ClickUp
+          - generic [ref=e734]:
+            - img "Cohere" [ref=e735]
+            - text: Cohere
+          - generic [ref=e736]:
+            - img "Confluence" [ref=e737]
+            - text: Confluence
+          - generic [ref=e738]:
+            - img "DB2" [ref=e739]
+            - text: DB2
+          - generic [ref=e740]:
+            - img "DeepSeek" [ref=e741]
+            - text: DeepSeek
+          - generic [ref=e742]:
+            - img "Discord" [ref=e743]
+            - text: Discord
+          - generic [ref=e744]:
+            - img "Docker Hub" [ref=e745]
+            - text: Docker Hub
+          - generic [ref=e746]:
+            - img "Dropbox" [ref=e747]
+            - text: Dropbox
+          - generic [ref=e748]:
+            - img "Elasticsearch" [ref=e749]
+            - text: Elasticsearch
+          - generic [ref=e750]:
+            - img "Facebook" [ref=e751]
+            - text: Facebook
+          - generic [ref=e752]:
+            - img "Fal.ai" [ref=e753]
+            - text: Fal.ai
+          - generic [ref=e754]:
+            - img "Google Drive" [ref=e755]
+            - text: Google Drive
+          - generic [ref=e756]:
+            - img "Gemini" [ref=e757]
+            - text: Gemini
+          - generic [ref=e758]:
+            - img "GitHub" [ref=e759]
+            - text: GitHub
+          - generic [ref=e760]:
+            - img "GitLab" [ref=e761]
+            - text: GitLab
+          - generic [ref=e762]:
+            - img "Gmail" [ref=e763]
+            - text: Gmail
+          - generic [ref=e764]:
+            - img "Google Calendar" [ref=e765]
+            - text: Google Calendar
+          - generic [ref=e766]:
+            - img "Google Docs" [ref=e767]
+            - text: Google Docs
+          - generic [ref=e768]:
+            - img "Google Sheets" [ref=e769]
+            - text: Google Sheets
+          - generic [ref=e770]:
+            - img "Gradle" [ref=e771]
+            - text: Gradle
+          - generic [ref=e772]:
+            - img "Grafana" [ref=e773]
+            - text: Grafana
+          - generic [ref=e774]:
+            - img "GraphQL" [ref=e775]
+            - text: GraphQL
+          - generic [ref=e776]:
+            - img "Grok" [ref=e777]
+            - text: Grok
+          - generic [ref=e778]:
+            - img "Groq" [ref=e779]
+            - text: Groq
+          - generic [ref=e780]:
+            - img "Hazelcast" [ref=e781]
+            - text: Hazelcast
+          - generic [ref=e782]:
+            - img "Hugging Face" [ref=e783]
+            - text: Hugging Face
+          - generic [ref=e784]:
+            - img "iMessage" [ref=e785]
+            - text: iMessage
+          - generic [ref=e786]:
+            - img "Instagram" [ref=e787]
+            - text: Instagram
+          - generic [ref=e788]:
+            - img "Jenkins" [ref=e789]
+            - text: Jenkins
+          - generic [ref=e790]:
+            - img "Jira" [ref=e791]
+            - text: Jira
+          - generic [ref=e792]:
+            - img "Kafka" [ref=e793]
+            - text: Kafka
+          - generic [ref=e794]:
+            - img "Kubernetes" [ref=e795]
+            - text: Kubernetes
+          - generic [ref=e796]:
+            - img "Linear" [ref=e797]
+            - text: Linear
+          - generic [ref=e798]:
+            - img "LinkedIn" [ref=e799]
+            - text: LinkedIn
+          - generic [ref=e800]:
+            - img "Llama" [ref=e801]
+            - text: Llama
+          - generic [ref=e802]:
+            - img "Maven" [ref=e803]
+            - text: Maven
+          - generic [ref=e804]:
+            - img "Microsoft Teams" [ref=e805]
+            - text: Microsoft Teams
+          - generic [ref=e806]:
+            - img "Mistral" [ref=e807]
+            - text: Mistral
+          - generic [ref=e808]:
+            - img "Monday" [ref=e809]
+            - text: Monday
+          - generic [ref=e810]:
+            - img "SQL Server" [ref=e811]
+            - text: SQL Server
+          - generic [ref=e812]:
+            - img "MySQL" [ref=e813]
+            - text: MySQL
+          - generic [ref=e814]:
+            - img "n8n" [ref=e815]
+            - text: n8n
+          - generic [ref=e816]:
+            - img "Notion" [ref=e817]
+            - text: Notion
+          - generic [ref=e818]:
+            - img "npm" [ref=e819]
+            - text: npm
+          - generic [ref=e820]:
+            - img "NuGet" [ref=e821]
+            - text: NuGet
+          - generic [ref=e822]:
+            - img "Obsidian" [ref=e823]
+            - text: Obsidian
+          - generic [ref=e824]:
+            - img "OpenAI" [ref=e825]
+            - text: OpenAI
+          - generic [ref=e826]:
+            - img "OpenRouter" [ref=e827]
+            - text: OpenRouter
+          - generic [ref=e828]:
+            - img "OpenSearch" [ref=e829]
+            - text: OpenSearch
+          - generic [ref=e830]:
+            - img "OpenShift" [ref=e831]
+            - text: OpenShift
+          - generic [ref=e832]:
+            - img "Oracle" [ref=e833]
+            - text: Oracle
+          - generic [ref=e834]:
+            - img "Perplexity" [ref=e835]
+            - text: Perplexity
+          - generic [ref=e836]:
+            - img "PostgreSQL" [ref=e837]
+            - text: PostgreSQL
+          - generic [ref=e838]:
+            - img "Prometheus" [ref=e839]
+            - text: Prometheus
+          - generic [ref=e840]:
+            - img "Reddit" [ref=e841]
+            - text: Reddit
+          - generic [ref=e842]:
+            - img "Redis" [ref=e843]
+            - text: Redis
+          - generic [ref=e844]:
+            - img "RSS" [ref=e845]
+            - text: RSS
+          - generic [ref=e846]:
+            - img "Signal" [ref=e847]
+            - text: Signal
+          - generic [ref=e848]:
+            - img "Slack" [ref=e849]
+            - text: Slack
+          - generic [ref=e850]:
+            - img "SOAP" [ref=e851]
+            - text: SOAP
+          - generic [ref=e852]:
+            - img "SQLite" [ref=e853]
+            - text: SQLite
+          - generic [ref=e854]:
+            - img "Supabase" [ref=e855]
+            - text: Supabase
+          - generic [ref=e856]:
+            - img "Telegram" [ref=e857]
+            - text: Telegram
+          - generic [ref=e858]:
+            - img "Things3" [ref=e859]
+            - text: Things3
+          - generic [ref=e860]:
+            - img "Threads" [ref=e861]
+            - text: Threads
+          - generic [ref=e862]:
+            - img "TikTok" [ref=e863]
+            - text: TikTok
+          - generic [ref=e864]:
+            - img "Together AI" [ref=e865]
+            - text: Together AI
+          - generic [ref=e866]:
+            - img "Trello" [ref=e867]
+            - text: Trello
+          - generic [ref=e868]:
+            - img "WhatsApp" [ref=e869]
+            - text: WhatsApp
+          - generic [ref=e870]:
+            - img "X" [ref=e871]
+            - text: X
+          - generic [ref=e872]:
+            - img "YouTube" [ref=e873]
+            - text: YouTube
+          - generic [ref=e874]:
+            - img "Zoom" [ref=e875]
+            - text: Zoom
+  - generic [ref=e877]:
+    - generic [ref=e878]:
+      - generic [ref=e879]: FAQ
+      - heading "Got questions?" [level=2] [ref=e880]
+      - paragraph [ref=e881]: Everything you need to know about QuickMCP.
+    - generic [ref=e882]:
+      - group [ref=e883]:
+        - generic "What is QuickMCP and how does it work? +" [ref=e884] [cursor=pointer]
+      - group [ref=e885]:
+        - generic "How do I get started? +" [ref=e886] [cursor=pointer]
+      - group [ref=e887]:
+        - generic "What can I connect to QuickMCP? +" [ref=e888] [cursor=pointer]
+      - group [ref=e889]:
+        - generic "Which AI assistants are supported? +" [ref=e890] [cursor=pointer]
+      - group [ref=e891]:
+        - generic "Is my data secure? +" [ref=e892] [cursor=pointer]
+      - group [ref=e893]:
+        - generic "Do I need coding skills? +" [ref=e894] [cursor=pointer]
+      - group [ref=e895]:
+        - generic "Can I use multiple integrations together? +" [ref=e896] [cursor=pointer]
+      - group [ref=e897]:
+        - generic "What if my app isn't supported? +" [ref=e898] [cursor=pointer]
+  - generic [ref=e902]:
+    - heading "Ready to connect your AI to everything?" [level=2] [ref=e903]
+    - paragraph [ref=e904]: Start building your MCP servers today. No credit card required.
+    - generic [ref=e905]:
+      - link " Get Started Free" [ref=e906] [cursor=pointer]:
+        - /url: /login
+        - generic [ref=e907]: 
+        - text: Get Started Free
+      - link "Contact Sales" [ref=e908] [cursor=pointer]:
+        - /url: mailto:quickmcp@gmail.com
+  - contentinfo [ref=e909]:
+    - paragraph [ref=e911]:
+      - text: Built with ❤ by QuickMCP Team ·
+      - link "quickmcp@gmail.com" [ref=e912] [cursor=pointer]:
+        - /url: mailto:quickmcp@gmail.com
+```

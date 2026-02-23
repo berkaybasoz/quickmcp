@@ -1,5 +1,6 @@
 import express from 'express';
 import { AuthMode } from '../../config/auth-config';
+import { PortUtils } from '../port-utils';
 
 type Request = express.Request;
 type Response = express.Response;
@@ -8,7 +9,8 @@ export class ConfigApi {
   constructor(
     private readonly authMode: AuthMode,
     private readonly supabaseUrl: string = '',
-    private readonly deployMode: string = 'ONPREM'
+    private readonly deployMode: string = 'ONPREM',
+    private readonly mcpPort: number = PortUtils.DEFAULT_MCP_PORT
   ) {}
 
   registerRoutes(app: express.Express): void {
@@ -21,6 +23,8 @@ export class ConfigApi {
       data: {
         authMode: this.authMode,
         deployMode: this.deployMode,
+        mcpPort: this.mcpPort,
+        mcpDefaultPort: PortUtils.DEFAULT_MCP_PORT,
         usersEnabled: this.deployMode !== 'SAAS',
         supabaseConfigured: this.authMode !== 'SUPABASE_GOOGLE'
           ? false

@@ -4,7 +4,6 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
-const crypto = require('crypto');
 const dotenv = require('dotenv');
 
 // Load .env from script directory first (works with Claude Desktop custom CWD),
@@ -36,28 +35,18 @@ try {
   throw new Error('[QuickMCP] Missing dist/config/auth-config.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
-let verifyMcpToken;
+let DynamicMCPExecutor;
 try {
-  ({ verifyMcpToken } = require('./dist/auth/token-utils.js'));
+  ({ DynamicMCPExecutor } = require('./dist/server/dynamic-mcp-executor.js'));
 } catch (_) {
-  throw new Error('[QuickMCP] Missing dist/auth/token-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+  throw new Error('[QuickMCP] Missing dist/server/dynamic-mcp-executor.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
-let getMcpTokenRecordFromStore;
-let isMcpAuthorizedGloballyFromUtils;
-let isServerAuthorizedFromUtils;
-let isToolAuthorizedFromUtils;
-let isResourceAuthorizedFromUtils;
+let McpCoreService;
 try {
-  ({
-    getMcpTokenRecord: getMcpTokenRecordFromStore,
-    isMcpAuthorizedGlobally: isMcpAuthorizedGloballyFromUtils,
-    isServerAuthorized: isServerAuthorizedFromUtils,
-    isToolAuthorized: isToolAuthorizedFromUtils,
-    isResourceAuthorized: isResourceAuthorizedFromUtils
-  } = require('./dist/auth/auth-utils.js'));
+  ({ McpCoreService } = require('./dist/mcp-core/McpCoreService.js'));
 } catch (_) {
-  throw new Error('[QuickMCP] Missing dist/auth/auth-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+  throw new Error('[QuickMCP] Missing dist/mcp-core/McpCoreService.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
 // Parse CLI flags for convenience
@@ -87,99 +76,36 @@ if (dataDirArg) {
 }
 
 const dataStore = safeCreateDataStore({ logger: (...args) => console.error(...args) });
+const executor = new DynamicMCPExecutor();
 
 const mcpAuthMode = resolveAuthMode();
 const mcpTokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
 const mcpToken = (process.env.QUICKMCP_TOKEN || '').trim();
-const hasProvidedMcpToken = mcpToken.length > 0;
-const verifiedMcpPayload = mcpToken ? verifyMcpToken(mcpToken, mcpTokenSecret) : null;
-const mcpIdentity = verifiedMcpPayload ? {
-  tokenId: verifiedMcpPayload.jti ? String(verifiedMcpPayload.jti) : '',
-  username: String(verifiedMcpPayload.sub),
-  workspace: String(verifiedMcpPayload.ws || verifiedMcpPayload.workspace || verifiedMcpPayload.sub),
-  role: String(verifiedMcpPayload.role || 'user')
-} : null;
-const mcpTokenHash = mcpToken ? crypto.createHash('sha256').update(mcpToken).digest('hex') : '';
-const getCurrentMcpTokenRecord = async () => {
-  if (!mcpTokenHash) return null;
-  try {
-    if (typeof dataStore.getMcpTokenByHash === 'function') {
-      return await dataStore.getMcpTokenByHash(mcpTokenHash);
-    }
-  } catch (_) {}
-  return getMcpTokenRecordFromStore(dataStore, mcpAuthMode, mcpTokenHash);
-};
-const isMcpAuthorizedGlobally = async () => {
-  const tokenRecord = await getCurrentMcpTokenRecord();
-  return isMcpAuthorizedGloballyFromUtils(mcpAuthMode, mcpIdentity, tokenRecord);
-};
-const getServerRequireMcpToken = async (serverId) => {
-  if (mcpAuthMode === 'NONE') return false;
-  let requireToken = true;
-  const owner = String(serverId || '').includes('__') ? String(serverId).split('__')[0] : '';
-  try {
-    if (typeof dataStore.getMcpTokenPolicy === 'function') {
-      const globalCfg = await dataStore.getMcpTokenPolicy('global', '*');
-      if (globalCfg) requireToken = globalCfg.requireMcpToken !== false;
-      if (owner) {
-        const userCfg = await dataStore.getMcpTokenPolicy('user', owner);
-        if (userCfg) requireToken = userCfg.requireMcpToken !== false;
-      }
-      const serverCfg = await dataStore.getMcpTokenPolicy('server', serverId);
-      if (serverCfg) return serverCfg.requireMcpToken !== false;
-    }
-    if (typeof dataStore.getServerAuthConfig === 'function') {
-      const legacyCfg = await dataStore.getServerAuthConfig(serverId);
-      if (legacyCfg) return legacyCfg.requireMcpToken !== false;
-    }
-  } catch (_) {}
-  return requireToken;
-};
-const isServerAuthorized = async (serverId) => {
-  if (mcpAuthMode === 'NONE') return true;
-  if (hasProvidedMcpToken && !(await isMcpAuthorizedGlobally())) return false;
-  const requireToken = await getServerRequireMcpToken(serverId);
-  if (!requireToken) return true;
-  const tokenRecord = await getCurrentMcpTokenRecord();
-  return isServerAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId);
-};
-const isToolAuthorized = async (serverId, toolName) => {
-  if (mcpAuthMode === 'NONE') return true;
-  let requireToken = await getServerRequireMcpToken(serverId);
-  try {
-    if (typeof dataStore.getMcpTokenPolicy === 'function') {
-      const toolCfg = await dataStore.getMcpTokenPolicy('tool', `${serverId}__${toolName}`);
-      if (toolCfg) requireToken = toolCfg.requireMcpToken !== false;
-    }
-  } catch (_) {}
-  if (!requireToken) return true;
-  const tokenRecord = await getCurrentMcpTokenRecord();
-  return isToolAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, toolName);
-};
-const isResourceAuthorized = async (serverId, resourceName) => {
-  if (!(await isServerAuthorized(serverId))) return false;
-  const tokenRecord = await getCurrentMcpTokenRecord();
-  return isResourceAuthorizedFromUtils(mcpAuthMode, dataStore, mcpIdentity, tokenRecord, serverId, resourceName);
-};
-const getStartupAuthError = async () => {
-  if (!hasProvidedMcpToken) return null;
-  const isAuthorized = await isMcpAuthorizedGlobally();
-  return isAuthorized ? null : 'Unauthorized user: MCP token is invalid, revoked, expired, or not valid for this workspace.';
-};
+let startupAuthError = null;
+let mcpCore;
+try {
+  mcpCore = new McpCoreService({
+    executor,
+    authStore: dataStore,
+    authMode: mcpAuthMode,
+    tokenSecret: mcpTokenSecret,
+    defaultToken: mcpToken
+  });
+} catch (error) {
+  startupAuthError = error && error.message ? String(error.message) : 'Invalid MCP token';
+  mcpCore = new McpCoreService({
+    executor,
+    authStore: dataStore,
+    authMode: mcpAuthMode,
+    tokenSecret: mcpTokenSecret,
+    defaultToken: ''
+  });
+}
 
 console.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
-console.error(`[QuickMCP] MCP token present: ${mcpIdentity ? 'yes' : 'no'}`);
-void getStartupAuthError().then((err) => {
-  if (err) console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
-}).catch(() => {});
-
-async function resolveToolByFullName(fullName) {
-  try {
-    const tools = await dataStore.getAllTools();
-    return tools.find((tool) => `${tool.server_id}__${tool.name}` === fullName) || null;
-  } catch {
-    return null;
-  }
+console.error(`[QuickMCP] MCP token present: ${mcpToken ? 'yes' : 'no'}`);
+if (startupAuthError) {
+  console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
 }
 
 // Optionally start the Web UI (Express) like `npm run dev`
@@ -329,11 +255,8 @@ function sendMessage(message) {
 async function handleMessage(message) {
   console.error(`[QuickMCP] Received: ${message.method} (id: ${message.id})`);
 
-  let response;
-
-  const startupAuthError = await getStartupAuthError();
   if (startupAuthError && message.method !== 'initialize' && message.method !== 'notifications/initialized') {
-    response = {
+    const authErrorResponse = {
       jsonrpc: '2.0',
       id: message.id,
       error: {
@@ -341,229 +264,29 @@ async function handleMessage(message) {
         message: startupAuthError
       }
     };
-    if (response) {
-      console.error(`[QuickMCP] Sending: error`);
-      sendMessage(response);
-    }
+    console.error('[QuickMCP] Sending: auth-error');
+    sendMessage(authErrorResponse);
     return;
   }
 
-  switch (message.method) {
-    case 'initialize':
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        result: {
-          protocolVersion: '2024-11-05',
-          serverInfo: { name: 'quickmcp-direct', version: '1.0.0' },
-          capabilities: {
-            tools: { listChanged: true },
-            resources: { listChanged: true },
-            prompts: { listChanged: true }
-          }
-        }
-      };
-      break;
-
-    case 'tools/list':
-      try {
-        const tools = await dataStore.getAllTools();
-        const authorizedTools = [];
-        for (const tool of tools) {
-          if (await isToolAuthorized(tool.server_id, tool.name)) {
-            authorizedTools.push(tool);
-          }
-        }
-        console.error(`[QuickMCP] Got ${tools.length} tools from datasource, authorized=${authorizedTools.length}`);
-        const formattedTools = authorizedTools.map(tool => ({
-          name: `${tool.server_id}__${tool.name}`,
-          description: `[${tool.server_id}] ${tool.description}`,
-          inputSchema: typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : tool.inputSchema
-        }));
-        console.error(`[QuickMCP] Formatted ${formattedTools.length} tools`);
-
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { tools: formattedTools }
-        };
-      } catch (error) {
-        console.error('[QuickMCP] Error getting tools:', error);
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { tools: [] }
-        };
+  try {
+    const authContext = mcpCore.resolveAuthContextFromSources({});
+    const response = await mcpCore.processJsonRpcMessage(message, authContext);
+    if (response) {
+      console.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);
+      sendMessage(response);
+    }
+  } catch (error) {
+    const errorResponse = {
+      jsonrpc: '2.0',
+      id: message.id,
+      error: {
+        code: -32603,
+        message: `Internal error: ${error && error.message ? error.message : 'Unknown error'}`
       }
-      break;
-
-    case 'resources/list':
-      try {
-        const resources = await dataStore.getAllResources();
-        const authorizedResources = [];
-        for (const resource of resources) {
-          if (await isResourceAuthorized(resource.server_id, resource.name)) {
-            authorizedResources.push(resource);
-          }
-        }
-        const formattedResources = authorizedResources.map(resource => ({
-          name: `${resource.server_id}__${resource.name}`,
-          description: `[${resource.server_id}] ${resource.description}`,
-          uri: resource.uri_template
-        }));
-
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { resources: formattedResources }
-        };
-      } catch (error) {
-        console.error('[QuickMCP] Error getting resources:', error);
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { resources: [] }
-        };
-      }
-      break;
-
-    case 'prompts/list':
-      // Return empty prompts list for now
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        result: { prompts: [] }
-      };
-      break;
-
-    case 'tools/call':
-      try {
-        console.error(`[QuickMCP] Executing tool: ${message.params.name}`);
-        console.error(`[QuickMCP] Arguments:`, JSON.stringify(message.params.arguments));
-
-        const requestedToolName = message?.params?.name || '';
-        const resolvedTool = await resolveToolByFullName(requestedToolName);
-        const requestedServerId = resolvedTool ? resolvedTool.server_id : String(requestedToolName).split('__')[0];
-
-        const requestedToolShortName = resolvedTool ? resolvedTool.name : String(requestedToolName).split('__').slice(1).join('__');
-        if (!(await isToolAuthorized(requestedServerId, requestedToolShortName))) {
-          response = {
-            jsonrpc: '2.0',
-            id: message.id,
-            error: {
-              code: -32001,
-              message: 'Unauthorized MCP access. Set QUICKMCP_TOKEN for this user/server.'
-            }
-          };
-          break;
-        }
-
-        // REST-aware execution path: if tool.sqlQuery encodes a REST spec, call via fetch
-        try {
-          const fullName = requestedToolName;
-          const tool = resolvedTool;
-          const serverId = tool ? tool.server_id : '';
-          const toolName = tool ? tool.name : '';
-          let restSpec = null;
-          if (tool && tool.sqlQuery) {
-            try { restSpec = JSON.parse(tool.sqlQuery); } catch (_) { restSpec = null; }
-          }
-          if (restSpec && restSpec.type === 'rest') {
-            // Fill from server config or heuristics
-            let baseUrl = restSpec.baseUrl;
-            try {
-              if (!baseUrl && dataStore.getServer) {
-                const srv = await dataStore.getServer(serverId);
-                baseUrl = srv && srv.sourceConfig && srv.sourceConfig.baseUrl;
-              }
-            } catch (_) {}
-            let method = (restSpec.method || '').toUpperCase();
-            let path = restSpec.path;
-            if ((!method || !path) && tool && tool.description) {
-              const m = (tool.description.split(' ')[0] || '').toUpperCase();
-              if (!method && ['GET','POST','PUT','PATCH','DELETE'].includes(m)) method = m;
-              const p = tool.description.slice(m.length + 1);
-              if (!path && p && p.startsWith('/')) path = p;
-            }
-            if (!path) {
-              const tn = (toolName || '').replace(/^\w+_/, '');
-              if (tn) path = '/' + tn.replace(/_/g, '/');
-            }
-            if (!method) method = 'GET';
-            if (baseUrl && path) {
-              const args = message.params.arguments || {};
-              path = path.replace(/\{([^}]+)\}/g, (_, p) => {
-                const v = args[p];
-                if (v !== undefined) { delete args[p]; return encodeURIComponent(String(v)); }
-                return '';
-              });
-              let url = String(baseUrl).replace(/\/$/, '') + path;
-              const fetchOpts = { method, headers: {} };
-              if (method === 'GET' || method === 'DELETE') {
-                const qs = new URLSearchParams();
-                Object.entries(args).forEach(([k,v]) => { if (v !== undefined && v !== null) qs.append(k, String(v)); });
-                const q = qs.toString();
-                if (q) url += (url.includes('?') ? '&' : '?') + q;
-              } else {
-                fetchOpts.headers['Content-Type'] = 'application/json';
-                fetchOpts.body = JSON.stringify(args || {});
-              }
-              const resp = await fetch(url, fetchOpts);
-              const json = await resp.json().catch(() => null);
-              const out = { success: true, data: Array.isArray(json) ? json : (json ? [json] : []), rowCount: Array.isArray(json) ? json.length : (json && typeof json === 'object' ? 1 : 0) };
-              response = { jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: JSON.stringify(out, null, 2) }] } };
-              break;
-            }
-          }
-        } catch (e) {
-          console.error('[QuickMCP] REST execution precheck failed:', e && e.message);
-        }
-
-        // Fallback to DB-backed executor
-        const { DynamicMCPExecutor } = require('./dist/server/dynamic-mcp-executor.js');
-        const executor = new DynamicMCPExecutor();
-        const timeoutPromise = new Promise((_, reject) => { setTimeout(() => reject(new Error('Tool execution timeout')), 10000); });
-        const toolResult = await Promise.race([ executor.executeTool(message.params.name, message.params.arguments || {}), timeoutPromise ]);
-        console.error(`[QuickMCP] Tool result:`, JSON.stringify(toolResult, null, 2));
-        response = { jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: JSON.stringify(toolResult, null, 2) }] } };
-      } catch (error) {
-        console.error(`[QuickMCP] Tool execution error:`, error);
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          error: {
-            code: -32603,
-            message: `Tool execution failed: ${error.message}`
-          }
-        };
-      }
-      break;
-
-    case 'resources/read':
-      response = {
-        jsonrpc: '2.0',
-        id: message.id,
-        error: { code: -32601, message: 'Method not found: resources/read' }
-      };
-      break;
-
-    case 'notifications/initialized':
-      console.error('[QuickMCP] Client initialized');
-      break;
-
-    default:
-      if (message.id) {
-        response = {
-          jsonrpc: '2.0',
-          id: message.id,
-          error: { code: -32601, message: `Method not found: ${message.method}` }
-        };
-      }
-  }
-
-  if (response) {
-    console.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);
-    sendMessage(response);
+    };
+    console.error('[QuickMCP] Sending: error');
+    sendMessage(errorResponse);
   }
 }
 
@@ -645,18 +368,21 @@ process.stdin.on('data', async (data) => {
 
 process.stdin.on('end', () => {
   console.error('[QuickMCP] STDIN ended');
+  try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.error('[QuickMCP] Interrupted');
+  try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error('[QuickMCP] Terminated');
+  try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
