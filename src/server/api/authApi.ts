@@ -490,6 +490,32 @@ export class AuthApi {
       : 3600;
     const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec);
 
+    try {
+      const store = this.deps.ensureDataStore();
+      await store.createMcpToken({
+        id: tokenPack.tokenId,
+        tokenName: `oauth:${clientId || 'chatgpt'}`,
+        workspaceId: record.workspaceId,
+        subjectUsername: record.username,
+        createdBy: record.username,
+        tokenHash: tokenPack.tokenHash,
+        tokenValue: tokenPack.token,
+        allowAllServers: true,
+        allowAllTools: true,
+        allowAllResources: true,
+        serverIds: [],
+        allowedTools: [],
+        allowedResources: [],
+        serverRules: {},
+        toolRules: {},
+        resourceRules: {},
+        neverExpires: false,
+        expiresAt: tokenPack.expiresAt
+      });
+    } catch (err) {
+      logger.warn(`[oauth/token:${requestId}] failed to persist token: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Pragma', 'no-cache');
     logger.info(`[oauth/token:${requestId}] success user=${record.username} ws=${record.workspaceId}`);

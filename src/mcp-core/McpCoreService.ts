@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import {
-  getMcpTokenRecord,
   isMcpAuthorizedGlobally,
   parseServerOwner,
   McpIdentity,
@@ -8,7 +7,7 @@ import {
 } from '../auth/auth-utils';
 import { verifyMcpToken } from '../auth/token-utils';
 import { AuthMode } from '../config/auth-config';
-import { IDataStore } from '../database/datastore';
+import { IDataStore, McpTokenRecord } from '../database/datastore';
 import { DynamicMCPExecutor } from '../server/dynamic-mcp-executor';
 import { logger } from '../utils/logger';
 
@@ -44,14 +43,14 @@ export class McpCoreService {
   private readonly authStore: IDataStore;
   private readonly authMode: AuthMode;
   private readonly tokenSecret: string;
-  private readonly defaultAuthContext: McpAuthContext;
+  private readonly defaultToken: string;
 
   constructor(deps: McpCoreServiceDeps) {
     this.executor = deps.executor;
     this.authStore = deps.authStore;
     this.authMode = deps.authMode;
     this.tokenSecret = deps.tokenSecret;
-    this.defaultAuthContext = this.resolveAuthContextFromToken(deps.defaultToken || '');
+    this.defaultToken = (deps.defaultToken || '').trim();
   }
 
   parseIncomingMessage(body: any): JsonRpcMessage {
@@ -61,7 +60,7 @@ export class McpCoreService {
     throw new Error('Invalid JSON-RPC payload');
   }
 
-  resolveAuthContextFromSources(sources: AuthTokenSources): McpAuthContext {
+  async resolveAuthContextFromSources(sources: AuthTokenSources): Promise<McpAuthContext> {
     if (this.authMode === 'NONE') {
       return { identity: null, tokenRecord: null };
     }
@@ -75,12 +74,12 @@ export class McpCoreService {
       || String(sources.bodyToken || '').trim();
 
     if (!token) {
-      if (this.defaultAuthContext.identity) {
-        logger.info(`[MCP] auth: no token in request, using default token identity user=${this.defaultAuthContext.identity.username}`);
-      } else {
-        logger.info('[MCP] auth: no token in request, no default token → unauthenticated');
+      if (this.defaultToken) {
+        logger.info(`[MCP] auth: no token in request, using default token`);
+        return this.resolveAuthContextFromToken(this.defaultToken);
       }
-      return this.defaultAuthContext;
+      logger.info('[MCP] auth: no token in request, no default token → unauthenticated');
+      return { identity: null, tokenRecord: null };
     }
     return this.resolveAuthContextFromToken(token);
   }
@@ -180,7 +179,7 @@ export class McpCoreService {
     }
   }
 
-  private resolveAuthContextFromToken(rawToken: string): McpAuthContext {
+  private async resolveAuthContextFromToken(rawToken: string): Promise<McpAuthContext> {
     if (this.authMode === 'NONE') {
       return { identity: null, tokenRecord: null };
     }
@@ -203,9 +202,32 @@ export class McpCoreService {
     };
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const tokenRecord = getMcpTokenRecord(this.authStore, this.authMode, tokenHash);
+    const row = await this.authStore.getMcpTokenByHash(tokenHash);
+    const tokenRecord = this.mapToAuthRecord(row);
 
     return { identity, tokenRecord };
+  }
+
+  private mapToAuthRecord(row: McpTokenRecord | null): McpTokenAuthRecord | null {
+    if (!row) return null;
+    return {
+      id: row.id,
+      tokenName: row.tokenName,
+      workspaceId: row.workspaceId,
+      subjectUsername: row.subjectUsername,
+      allowAllServers: row.allowAllServers,
+      allowAllTools: row.allowAllTools,
+      allowAllResources: row.allowAllResources,
+      serverIds: row.serverIds,
+      allowedTools: row.allowedTools,
+      allowedResources: row.allowedResources,
+      serverRules: row.serverRules || {},
+      toolRules: row.toolRules || {},
+      resourceRules: row.resourceRules || {},
+      neverExpires: row.neverExpires,
+      expiresAt: row.expiresAt,
+      revokedAt: row.revokedAt
+    };
   }
 
   private parseQualifiedName(name: string): [string, string] {

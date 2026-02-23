@@ -46,7 +46,7 @@ export class IntegratedMCPServer {
     this.setupWebRoutes();
   }
 
-  private resolveHttpAuthContext(req: express.Request): McpAuthContext {
+  private resolveHttpAuthContext(req: express.Request): Promise<McpAuthContext> {
     return this.mcpCore.resolveAuthContextFromSources({
       authorization: String(req.headers.authorization || ''),
       xMcpToken: String(req.headers['x-mcp-token'] || ''),
@@ -55,7 +55,7 @@ export class IntegratedMCPServer {
     });
   }
 
-  private resolveWsAuthContext(req: express.Request): McpAuthContext {
+  private resolveWsAuthContext(req: express.Request): Promise<McpAuthContext> {
     let queryToken = '';
     try {
       const host = req.headers.host || 'localhost';
@@ -109,7 +109,7 @@ export class IntegratedMCPServer {
     // 1) STDIO bridge
     this.app.post('/api/mcp-stdio', express.raw({ type: '*/*' }), async (req, res) => {
       try {
-        const authContext = this.resolveHttpAuthContext(req);
+        const authContext = await this.resolveHttpAuthContext(req);
         const response = await this.executeJsonRpc(req.body, authContext);
         if (response) {
           res.json(response);
@@ -129,9 +129,9 @@ export class IntegratedMCPServer {
     });
 
     // 2) Legacy SSE transport
-    this.app.get('/sse', (req, res) => {
+    this.app.get('/sse', async (req, res) => {
       const sessionId = randomUUID();
-      const authContext = this.resolveHttpAuthContext(req);
+      const authContext = await this.resolveHttpAuthContext(req);
 
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -169,7 +169,7 @@ export class IntegratedMCPServer {
           return;
         }
 
-        const requestAuth = this.resolveHttpAuthContext(req);
+        const requestAuth = await this.resolveHttpAuthContext(req);
         const effectiveAuth = requestAuth.identity || requestAuth.tokenRecord ? requestAuth : session.authContext;
         const response = await this.executeJsonRpc(req.body, effectiveAuth);
 
@@ -205,7 +205,7 @@ export class IntegratedMCPServer {
       }
 
       try {
-        const authContext = this.resolveHttpAuthContext(req);
+        const authContext = await this.resolveHttpAuthContext(req);
         const response = await this.executeJsonRpc(req.body, authContext);
 
         if (!response) {
@@ -245,10 +245,11 @@ export class IntegratedMCPServer {
     this.wsServer = new WebSocketServer({ server: httpServer, path: '/ws' });
 
     this.wsServer.on('connection', (socket: WebSocket, req) => {
-      let sessionAuth: McpAuthContext;
-      try {
-        sessionAuth = this.resolveWsAuthContext(req as any);
-      } catch (error) {
+      let sessionAuth: McpAuthContext | null = null;
+
+      this.resolveWsAuthContext(req as any).then((auth) => {
+        sessionAuth = auth;
+      }).catch((error) => {
         socket.send(JSON.stringify({
           jsonrpc: '2.0',
           id: null,
@@ -258,10 +259,13 @@ export class IntegratedMCPServer {
           }
         }));
         socket.close();
-        return;
-      }
+      });
 
       socket.on('message', async (raw) => {
+        if (!sessionAuth) {
+          socket.send(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Auth context not yet resolved' } }));
+          return;
+        }
         let messageData: JsonRpcMessage | null = null;
         try {
           messageData = this.mcpCore.parseIncomingMessage(raw.toString());
