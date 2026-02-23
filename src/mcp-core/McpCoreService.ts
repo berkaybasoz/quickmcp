@@ -10,6 +10,7 @@ import { verifyMcpToken } from '../auth/token-utils';
 import { AuthMode } from '../config/auth-config';
 import { IDataStore } from '../database/datastore';
 import { DynamicMCPExecutor } from '../server/dynamic-mcp-executor';
+import { logger } from '../utils/logger';
 
 export type JsonRpcMessage = {
   jsonrpc?: string;
@@ -73,11 +74,28 @@ export class McpCoreService {
       || String(sources.queryToken || '').trim()
       || String(sources.bodyToken || '').trim();
 
-    if (!token) return this.defaultAuthContext;
+    if (!token) {
+      if (this.defaultAuthContext.identity) {
+        logger.info(`[MCP] auth: no token in request, using default token identity user=${this.defaultAuthContext.identity.username}`);
+      } else {
+        logger.info('[MCP] auth: no token in request, no default token → unauthenticated');
+      }
+      return this.defaultAuthContext;
+    }
     return this.resolveAuthContextFromToken(token);
   }
 
+  private describeIdentity(authContext: McpAuthContext): string {
+    if (this.authMode === 'NONE') return 'anonymous (auth=NONE)';
+    if (authContext.identity) return `user=${authContext.identity.username} workspace=${authContext.identity.workspace} role=${authContext.identity.role}`;
+    return 'unauthenticated (no valid token)';
+  }
+
   async processJsonRpcMessage(messageData: JsonRpcMessage, authContext: McpAuthContext): Promise<any | null> {
+    const method = String(messageData.method || '');
+    const who = this.describeIdentity(authContext);
+    logger.info(`[MCP] request method=${method} ${who}`);
+
     switch (messageData.method) {
       case 'initialize':
         return {
@@ -98,12 +116,21 @@ export class McpCoreService {
         };
 
       case 'tools/list': {
-        const tools = await this.getAuthorizedTools(await this.executor.getAllTools(), authContext);
+        const allTools = await this.executor.getAllTools();
+        const tools = await this.getAuthorizedTools(allTools, authContext);
+        if (tools.length === 0 && allTools.length > 0) {
+          logger.info(`[MCP] tools/list ${who} → 0/${allTools.length} tools (authorization filtered all tools)`);
+        } else {
+          const toolNames = tools.map((t: any) => String(t.name || '')).join(', ') || '(none)';
+          logger.info(`[MCP] tools/list ${who} → ${tools.length}/${allTools.length} tools: [${toolNames}]`);
+        }
         return { jsonrpc: '2.0', id: messageData.id, result: { tools } };
       }
 
       case 'resources/list': {
-        const resources = await this.getAuthorizedResources(await this.executor.getAllResources(), authContext);
+        const allResources = await this.executor.getAllResources();
+        const resources = await this.getAuthorizedResources(allResources, authContext);
+        logger.info(`[MCP] resources/list ${who} → ${resources.length}/${allResources.length} resources`);
         return { jsonrpc: '2.0', id: messageData.id, result: { resources } };
       }
 
@@ -112,6 +139,7 @@ export class McpCoreService {
 
       case 'tools/call': {
         const toolName = String(messageData.params?.name || '');
+        logger.info(`[MCP] tools/call tool=${toolName} ${who}`);
         await this.ensureToolAllowed(toolName, authContext);
         const toolResult = await this.executor.executeTool(toolName, messageData.params?.arguments || {});
         return {
