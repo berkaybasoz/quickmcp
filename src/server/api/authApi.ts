@@ -45,7 +45,6 @@ type OAuthPendingRequest = {
 };
 
 type OAuthAuthorizationCode = {
-  code: string;
   clientId: string;
   redirectUri: string;
   scope: string;
@@ -55,7 +54,6 @@ type OAuthAuthorizationCode = {
   workspaceId: string;
   role: AppUserRole;
   expiresAt: number;
-  used: boolean;
 };
 
 type OAuthClientRegistration = {
@@ -70,7 +68,6 @@ export class AuthApi {
   private readonly oauthRequestCookieName = 'quickmcp_oauth_req';
   private readonly oauthCodeTtlMs = 5 * 60 * 1000;
   private readonly oauthAccessTokenTtlSec = Number(process.env.QUICKMCP_OAUTH_ACCESS_TTL_SEC || '3600');
-  private readonly oauthCodes = new Map<string, OAuthAuthorizationCode>();
   private readonly oauthClients = new Map<string, OAuthClientRegistration>();
 
   constructor(private readonly deps: AuthApiDeps) {}
@@ -233,14 +230,35 @@ export class AuthApi {
     }
   }
 
-  private createAuthorizationCode(record: Omit<OAuthAuthorizationCode, 'code' | 'expiresAt' | 'used'>): OAuthAuthorizationCode {
-    const code = crypto.randomBytes(24).toString('base64url');
-    return {
+  private encodeOAuthCode(record: OAuthAuthorizationCode): string {
+    const encoded = this.toBase64Url(JSON.stringify(record));
+    const sig = this.signOAuthState(encoded);
+    return `${encoded}.${sig}`;
+  }
+
+  private decodeOAuthCode(code: string): OAuthAuthorizationCode | null {
+    const value = String(code || '').trim();
+    const dot = value.lastIndexOf('.');
+    if (dot <= 0 || dot >= value.length - 1) return null;
+    const encoded = value.slice(0, dot);
+    const sig = value.slice(dot + 1);
+    const expected = this.signOAuthState(encoded);
+    if (sig !== expected) return null;
+    try {
+      const parsed = JSON.parse(this.fromBase64Url(encoded));
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed as OAuthAuthorizationCode;
+    } catch {
+      return null;
+    }
+  }
+
+  private createAuthorizationCode(record: Omit<OAuthAuthorizationCode, 'expiresAt'>): string {
+    const payload: OAuthAuthorizationCode = {
       ...record,
-      code,
-      expiresAt: Date.now() + this.oauthCodeTtlMs,
-      used: false
+      expiresAt: Date.now() + this.oauthCodeTtlMs
     };
+    return this.encodeOAuthCode(payload);
   }
 
   private appendQueryParam(urlStr: string, key: string, value: string): string {
@@ -259,15 +277,6 @@ export class AuthApi {
     location = this.appendQueryParam(location, 'error_description', errorDescription);
     if (state) location = this.appendQueryParam(location, 'state', state);
     res.redirect(location);
-  }
-
-  private pruneOAuthCodes(): void {
-    const now = Date.now();
-    for (const [key, value] of this.oauthCodes.entries()) {
-      if (value.expiresAt <= now || value.used) {
-        this.oauthCodes.delete(key);
-      }
-    }
   }
 
   private getOAuthAuthorizationServerMetadata = (req: express.Request, res: express.Response): void => {
@@ -390,7 +399,7 @@ export class AuthApi {
       return;
     }
 
-    const codeRecord = this.createAuthorizationCode({
+    const code = this.createAuthorizationCode({
       clientId: pending.clientId,
       redirectUri: pending.redirectUri,
       scope: pending.scope,
@@ -400,17 +409,14 @@ export class AuthApi {
       workspaceId: ctx.workspaceId,
       role: ctx.role
     });
-    this.pruneOAuthCodes();
-    this.oauthCodes.set(codeRecord.code, codeRecord);
     this.deps.clearCookie(res, this.oauthRequestCookieName);
 
-    let location = this.appendQueryParam(pending.redirectUri, 'code', codeRecord.code);
+    let location = this.appendQueryParam(pending.redirectUri, 'code', code);
     if (pending.state) location = this.appendQueryParam(location, 'state', pending.state);
     res.redirect(location);
   };
 
   private oauthToken = async (req: express.Request, res: express.Response): Promise<void> => {
-    this.pruneOAuthCodes();
     const body = (req.body && typeof req.body === 'object') ? req.body : {};
     const grantType = String((body as any).grant_type || '').trim();
     const code = String((body as any).code || '').trim();
@@ -427,8 +433,8 @@ export class AuthApi {
       return;
     }
 
-    const record = this.oauthCodes.get(code);
-    if (!record || record.used || record.expiresAt <= Date.now()) {
+    const record = this.decodeOAuthCode(code);
+    if (!record || record.expiresAt <= Date.now()) {
       res.status(400).json({ error: 'invalid_grant', error_description: 'authorization code is invalid or expired' });
       return;
     }
@@ -454,9 +460,6 @@ export class AuthApi {
         return;
       }
     }
-
-    record.used = true;
-    this.oauthCodes.set(code, record);
 
     const ttlSec = Number.isFinite(this.oauthAccessTokenTtlSec) && this.oauthAccessTokenTtlSec > 0
       ? Math.floor(this.oauthAccessTokenTtlSec)
