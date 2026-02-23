@@ -1,6 +1,6 @@
 import express from 'express';
 import { MCPServerConfig, ParsedData } from '../../types';
-
+import { logger } from '../../utils/logger';
 type GeneratedServerInfo = {
   config: MCPServerConfig;
   serverPath: string;
@@ -104,7 +104,7 @@ export class McpApi {
               res.write(responseStr);
             }
           } catch (error) {
-            console.error('Error processing MCP message:', error);
+            logger.error('Error processing MCP message:', error);
             if (message && message.id) {
               const errorResponse = {
                 jsonrpc: '2.0',
@@ -122,17 +122,17 @@ export class McpApi {
     });
 
     req.on('end', () => {
-      console.error('MCP stdio connection ended');
+      logger.error('MCP stdio connection ended');
       res.end();
     });
 
     req.on('error', (error) => {
-      console.error('MCP stdio connection error:', error);
+      logger.error('MCP stdio connection error:', error);
       res.end();
     });
 
     req.on('close', () => {
-      console.error('MCP stdio connection closed');
+      logger.error('MCP stdio connection closed');
     });
   };
 }

@@ -5,7 +5,7 @@ import { MongoClient } from 'mongodb';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
-
+import { logger } from '../utils/logger';
 export class ToolExecuter {
   private dbConnections: Map<string, ActiveDatabaseConnection> = new Map();
 
@@ -107,7 +107,7 @@ export class ToolExecuter {
 
       return await this.executeDatabaseQuery(serverId, serverConfig, tool, args);
     } catch (error) {
-      console.error(`❌ Error executing tool ${toolName}:`, error);
+      logger.error(`❌ Error executing tool ${toolName}:`, error);
       throw error;
     }
   }
@@ -121,7 +121,7 @@ export class ToolExecuter {
       'Content-Type': 'application/json'
     };
 
-    console.error(`💬 Discord operation: ${operation}`);
+    logger.error(`💬 Discord operation: ${operation}`);
 
     try {
       let result: any = [];
@@ -263,7 +263,7 @@ export class ToolExecuter {
           throw new Error(`Unknown Discord operation: ${operation}`);
       }
 
-      console.error(`✅ Discord operation ${operation} completed successfully`);
+      logger.error(`✅ Discord operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -271,7 +271,7 @@ export class ToolExecuter {
         rowCount: Array.isArray(result) ? result.length : 1
       };
     } catch (error) {
-      console.error(`❌ Discord error:`, error);
+      logger.error(`❌ Discord error:`, error);
       return {
         success: false,
         error: `Discord error: ${error instanceof Error ? error.message : String(error)}`,
@@ -283,17 +283,17 @@ export class ToolExecuter {
 
   private async executeDockerCall(queryConfig: any, args: any): Promise<any> {
     const { dockerPath = 'docker', operation } = queryConfig;
-    console.error(`🐳 Docker operation: ${operation}`);
+    logger.error(`🐳 Docker operation: ${operation}`);
 
     const run = async (cmd: string, cmdArgs: string[], parse: 'json' | 'lines' | 'text' = 'json') => {
       const { execFile } = await import('child_process');
       return new Promise<any[]>((resolve, reject) => {
         // Debug: show command for diagnosis
-        console.error(`🐳 docker exec: ${cmd} ${cmdArgs.join(' ')}`);
+        logger.error(`🐳 docker exec: ${cmd} ${cmdArgs.join(' ')}`);
         const child = execFile(cmd, cmdArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 8000 }, (err, stdout, stderr) => {
           if (err) {
             const msg = (stderr && stderr.trim()) || err.message || 'docker command failed';
-            console.error(`🐳 docker error: ${msg}`);
+            logger.error(`🐳 docker error: ${msg}`);
             return reject(new Error(`${msg}`));
           }
           try {
@@ -360,7 +360,7 @@ export class ToolExecuter {
     };
 
     const bin = await resolveDockerBin();
-    console.error(`🐳 docker bin selected: ${bin}`);
+    logger.error(`🐳 docker bin selected: ${bin}`);
 
     try {
       // Preflight: ensure daemon reachable; provide clear error instead of generic timeout
@@ -473,7 +473,7 @@ export class ToolExecuter {
         rowCount: result.length
       };
     } catch (error) {
-      console.error('❌ Docker error:', error);
+      logger.error('❌ Docker error:', error);
       return {
         success: false,
         error: `Docker error: ${error instanceof Error ? error.message : String(error)}`,
@@ -485,16 +485,16 @@ export class ToolExecuter {
 
   private async executeKubernetesCall(queryConfig: any, args: any): Promise<any> {
     const { kubectlPath = 'kubectl', kubeconfig, namespace: defaultNamespace, operation } = queryConfig;
-    console.error(`☸️ Kubernetes operation: ${operation}`);
+    logger.error(`☸️ Kubernetes operation: ${operation}`);
 
     const run = async (cmd: string, cmdArgs: string[], parse: 'json' | 'lines' | 'text' = 'json') => {
       const { execFile } = await import('child_process');
       return new Promise<any[]>((resolve, reject) => {
-        console.error(`☸️ kubectl exec: ${cmd} ${cmdArgs.join(' ')}`);
+        logger.error(`☸️ kubectl exec: ${cmd} ${cmdArgs.join(' ')}`);
         execFile(cmd, cmdArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 8000 }, (err, stdout, stderr) => {
           if (err) {
             const msg = (stderr && stderr.trim()) || err.message || 'kubectl command failed';
-            console.error(`☸️ kubectl error: ${msg}`);
+            logger.error(`☸️ kubectl error: ${msg}`);
             return reject(new Error(`${msg}`));
           }
           try {
@@ -545,7 +545,7 @@ export class ToolExecuter {
     };
 
     const bin = await resolveKubectlBin();
-    console.error(`☸️ kubectl bin selected: ${bin}`);
+    logger.error(`☸️ kubectl bin selected: ${bin}`);
 
     const baseArgs: string[] = [];
     if (kubeconfig) {
@@ -619,7 +619,7 @@ export class ToolExecuter {
         rowCount: result.length
       };
     } catch (error) {
-      console.error('❌ Kubernetes error:', error);
+      logger.error('❌ Kubernetes error:', error);
       return {
         success: false,
         error: `Kubernetes error: ${error instanceof Error ? error.message : String(error)}`,
@@ -722,7 +722,7 @@ export class ToolExecuter {
       const dataArray = Array.isArray(result) ? result : [result];
       return { success: true, data: dataArray, rowCount: dataArray.length };
     } catch (error) {
-      console.error('❌ Elasticsearch error:', error);
+      logger.error('❌ Elasticsearch error:', error);
       return {
         success: false,
         error: `Elasticsearch error: ${error instanceof Error ? error.message : String(error)}`,
@@ -734,16 +734,16 @@ export class ToolExecuter {
 
   private async executeOpenShiftCall(queryConfig: any, args: any): Promise<any> {
     const { ocPath = 'oc', kubeconfig, namespace: defaultNamespace, operation } = queryConfig;
-    console.error(`🟥 OpenShift operation: ${operation}`);
+    logger.error(`🟥 OpenShift operation: ${operation}`);
 
     const run = async (cmd: string, cmdArgs: string[], parse: 'json' | 'lines' | 'text' = 'json') => {
       const { execFile } = await import('child_process');
       return new Promise<any[]>((resolve, reject) => {
-        console.error(`🟥 oc exec: ${cmd} ${cmdArgs.join(' ')}`);
+        logger.error(`🟥 oc exec: ${cmd} ${cmdArgs.join(' ')}`);
         execFile(cmd, cmdArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 8000 }, (err, stdout, stderr) => {
           if (err) {
             const msg = (stderr && stderr.trim()) || err.message || 'oc command failed';
-            console.error(`🟥 oc error: ${msg}`);
+            logger.error(`🟥 oc error: ${msg}`);
             return reject(new Error(`${msg}`));
           }
           try {
@@ -794,7 +794,7 @@ export class ToolExecuter {
     };
 
     const bin = await resolveOcBin();
-    console.error(`🟥 oc bin selected: ${bin}`);
+    logger.error(`🟥 oc bin selected: ${bin}`);
 
     const baseArgs: string[] = [];
     if (kubeconfig) {
@@ -858,7 +858,7 @@ export class ToolExecuter {
         rowCount: result.length
       };
     } catch (error) {
-      console.error('❌ OpenShift error:', error);
+      logger.error('❌ OpenShift error:', error);
       return {
         success: false,
         error: `OpenShift error: ${error instanceof Error ? error.message : String(error)}`,
@@ -871,7 +871,7 @@ export class ToolExecuter {
   private async executeRestCall(queryConfig: any, args: any): Promise<any> {
     const { baseUrl, method, path } = queryConfig;
     const url = `${baseUrl}${path}`;
-    console.error(`🌐 REST API call: ${method} ${url}`);
+    logger.error(`🌐 REST API call: ${method} ${url}`);
 
     const fetchOptions: any = {
       method: method || 'GET',
@@ -885,7 +885,7 @@ export class ToolExecuter {
     const response = await fetch(url, fetchOptions);
     const data = await response.json();
 
-    console.error(`✅ REST API response: ${response.status}`);
+    logger.error(`✅ REST API response: ${response.status}`);
     return {
       success: true,
       data: Array.isArray(data) ? data : [data],
@@ -895,7 +895,7 @@ export class ToolExecuter {
 
   private async executeWebpageFetch(queryConfig: any): Promise<any> {
     const url = queryConfig.url;
-    console.error(`🌐 Fetching webpage: ${url}`);
+    logger.error(`🌐 Fetching webpage: ${url}`);
 
     const response = await fetch(url);
 
@@ -905,7 +905,7 @@ export class ToolExecuter {
 
     const html = await response.text();
 
-    console.error(`✅ Fetched ${html.length} characters from ${url}`);
+    logger.error(`✅ Fetched ${html.length} characters from ${url}`);
     return {
       success: true,
       data: [{
@@ -942,7 +942,7 @@ export class ToolExecuter {
       operationName: args.operationName || undefined
     };
 
-    console.error(`🧩 GraphQL API call: POST ${baseUrl}`);
+    logger.error(`🧩 GraphQL API call: POST ${baseUrl}`);
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers,
@@ -950,7 +950,7 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ GraphQL API response: ${response.status}`);
+    logger.error(`✅ GraphQL API response: ${response.status}`);
 
     if (!response.ok || responseData?.errors) {
       return {
@@ -989,7 +989,7 @@ export class ToolExecuter {
       headers.SOAPAction = action;
     }
 
-    console.error(`🧼 SOAP API call: POST ${baseUrl}`);
+    logger.error(`🧼 SOAP API call: POST ${baseUrl}`);
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers,
@@ -997,7 +997,7 @@ export class ToolExecuter {
     });
 
     const responseText = await response.text();
-    console.error(`✅ SOAP API response: ${response.status}`);
+    logger.error(`✅ SOAP API response: ${response.status}`);
 
     if (!response.ok) {
       return {
@@ -1071,7 +1071,7 @@ export class ToolExecuter {
       return { success: false, error: 'Missing feedUrl', data: [], rowCount: 0 };
     }
 
-    console.error(`📰 RSS/Atom fetch: ${feedUrl}`);
+    logger.error(`📰 RSS/Atom fetch: ${feedUrl}`);
     const response = await fetch(feedUrl);
     const xml = await response.text();
     if (!response.ok) {
@@ -1106,7 +1106,7 @@ export class ToolExecuter {
         throw new Error('URL is missing in cURL request configuration');
     }
 
-    //console.error(`🚀 cURL Request: ${method || 'GET'} ${url}`);
+    //logger.error(`🚀 cURL Request: ${method || 'GET'} ${url}`);
 
     const fetchOptions: RequestInit = {
         method: method || 'GET',
@@ -1129,10 +1129,10 @@ export class ToolExecuter {
         responseData = await response.text();
     }
 
-    console.error(`✅ cURL Response: ${response.status}`);
+    logger.error(`✅ cURL Response: ${response.status}`);
     
     if (!response.ok) {
-        console.error(`❌ cURL request failed with status ${response.status}:`, responseData);
+        logger.error(`❌ cURL request failed with status ${response.status}:`, responseData);
         // Still return a structured response for the tool output
         return {
             success: false,
@@ -1198,7 +1198,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🐙 GitHub API call: ${method} ${url}`);
+    logger.error(`🐙 GitHub API call: ${method} ${url}`);
 
     const fetchOptions: RequestInit = {
       method: method || 'GET',
@@ -1225,10 +1225,10 @@ export class ToolExecuter {
       responseData = await response.text();
     }
 
-    console.error(`✅ GitHub API response: ${response.status}`);
+    logger.error(`✅ GitHub API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error(`❌ GitHub API error:`, responseData);
+      logger.error(`❌ GitHub API error:`, responseData);
       return {
         success: false,
         error: `GitHub API error: ${response.status}`,
@@ -1305,7 +1305,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`X API call: ${method} ${url}`);
+    logger.error(`X API call: ${method} ${url}`);
 
     const fetchOptions: RequestInit = {
       method: method || 'GET',
@@ -1330,10 +1330,10 @@ export class ToolExecuter {
       responseData = await response.text();
     }
 
-    console.error(`✅ X API response: ${response.status}`);
+    logger.error(`✅ X API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ X API error:', responseData);
+      logger.error('❌ X API error:', responseData);
       return {
         success: false,
         error: `X API error: ${response.status}`,
@@ -1378,15 +1378,15 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`📈 Prometheus API call: ${method || 'GET'} ${url}`);
+    logger.error(`📈 Prometheus API call: ${method || 'GET'} ${url}`);
 
     const response = await fetch(url, { method: method || 'GET' });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Prometheus API response: ${response.status}`);
+    logger.error(`✅ Prometheus API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Prometheus API error:', responseData);
+      logger.error('❌ Prometheus API error:', responseData);
       return {
         success: false,
         error: `Prometheus API error: ${response.status}`,
@@ -1441,7 +1441,7 @@ export class ToolExecuter {
       body = args || {};
     }
 
-    console.error(`📊 Grafana API call: ${method || 'GET'} ${url}`);
+    logger.error(`📊 Grafana API call: ${method || 'GET'} ${url}`);
 
     const response = await fetch(url, {
       method: method || 'GET',
@@ -1450,10 +1450,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Grafana API response: ${response.status}`);
+    logger.error(`✅ Grafana API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Grafana API error:', responseData);
+      logger.error('❌ Grafana API error:', responseData);
       return {
         success: false,
         error: `Grafana API error: ${response.status}`,
@@ -1602,15 +1602,15 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`📘 Facebook API call: ${method || 'GET'} ${url}`);
+    logger.error(`📘 Facebook API call: ${method || 'GET'} ${url}`);
 
     const response = await fetch(url, { method: method || 'GET' });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Facebook API response: ${response.status}`);
+    logger.error(`✅ Facebook API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Facebook API error:', responseData);
+      logger.error('❌ Facebook API error:', responseData);
       return {
         success: false,
         error: `Facebook API error: ${response.status}`,
@@ -1656,14 +1656,14 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`📸 Instagram API call: ${method || 'GET'} ${url}`);
+    logger.error(`📸 Instagram API call: ${method || 'GET'} ${url}`);
     const response = await fetch(url, { method: method || 'GET' });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Instagram API response: ${response.status}`);
+    logger.error(`✅ Instagram API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Instagram API error:', responseData);
+      logger.error('❌ Instagram API error:', responseData);
       return {
         success: false,
         error: `Instagram API error: ${response.status}`,
@@ -1703,7 +1703,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🎵 TikTok API call: ${method || 'GET'} ${url}`);
+    logger.error(`🎵 TikTok API call: ${method || 'GET'} ${url}`);
     const response = await fetch(url, {
       method: method || 'GET',
       headers: {
@@ -1712,10 +1712,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ TikTok API response: ${response.status}`);
+    logger.error(`✅ TikTok API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ TikTok API error:', responseData);
+      logger.error('❌ TikTok API error:', responseData);
       return {
         success: false,
         error: `TikTok API error: ${response.status}`,
@@ -1768,11 +1768,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `?${queryParams.join('&')}`;
       }
-      console.error(`📓 Notion API call: ${methodUpper} ${url}`);
+      logger.error(`📓 Notion API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`📓 Notion API call: ${methodUpper} ${url}`);
+      logger.error(`📓 Notion API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -1781,10 +1781,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ Notion API response: ${response.status}`);
+    logger.error(`✅ Notion API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Notion API error:', responseData);
+      logger.error('❌ Notion API error:', responseData);
       return {
         success: false,
         error: `Notion API error: ${response.status}`,
@@ -1825,10 +1825,10 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `?${queryParams.join('&')}`;
       }
-      console.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
+      logger.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper });
     } else {
-      console.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
+      logger.error(`✈️ Telegram API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers: { 'Content-Type': 'application/json' },
@@ -1837,10 +1837,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ Telegram API response: ${response.status}`);
+    logger.error(`✅ Telegram API response: ${response.status}`);
 
     if (!response.ok || responseData?.ok === false) {
-      console.error('❌ Telegram API error:', responseData);
+      logger.error('❌ Telegram API error:', responseData);
       return {
         success: false,
         error: `Telegram API error: ${response.status}`,
@@ -1901,11 +1901,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
+      logger.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
+      logger.error(`🔷 LinkedIn API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -1914,10 +1914,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ LinkedIn API response: ${response.status}`);
+    logger.error(`✅ LinkedIn API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ LinkedIn API error:', responseData);
+      logger.error('❌ LinkedIn API error:', responseData);
       return {
         success: false,
         error: `LinkedIn API error: ${response.status}`,
@@ -1978,7 +1978,7 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
+      logger.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       const formBody = new URLSearchParams();
@@ -1987,7 +1987,7 @@ export class ToolExecuter {
         formBody.append(String(key), String(value));
       }
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      console.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
+      logger.error(`🟠 Reddit API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -1996,10 +1996,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ Reddit API response: ${response.status}`);
+    logger.error(`✅ Reddit API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Reddit API error:', responseData);
+      logger.error('❌ Reddit API error:', responseData);
       return {
         success: false,
         error: `Reddit API error: ${response.status}`,
@@ -2064,7 +2064,7 @@ export class ToolExecuter {
 
     let response: Response;
     if (methodUpper === 'GET' || endpoint.startsWith('/videos/rate')) {
-      console.error(`📺 YouTube API call: ${methodUpper} ${url}`);
+      logger.error(`📺 YouTube API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
@@ -2086,7 +2086,7 @@ export class ToolExecuter {
         };
       }
 
-      console.error(`📺 YouTube API call: ${methodUpper} ${url}`);
+      logger.error(`📺 YouTube API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2095,10 +2095,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ YouTube API response: ${response.status}`);
+    logger.error(`✅ YouTube API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ YouTube API error:', responseData);
+      logger.error('❌ YouTube API error:', responseData);
       return {
         success: false,
         error: `YouTube API error: ${response.status}`,
@@ -2153,7 +2153,7 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
+      logger.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
@@ -2197,7 +2197,7 @@ export class ToolExecuter {
         };
       }
 
-      console.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
+      logger.error(`🟢 WhatsApp API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2206,10 +2206,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ WhatsApp API response: ${response.status}`);
+    logger.error(`✅ WhatsApp API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ WhatsApp API error:', responseData);
+      logger.error('❌ WhatsApp API error:', responseData);
       return {
         success: false,
         error: `WhatsApp API error: ${response.status}`,
@@ -2263,11 +2263,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🧵 Threads API call: ${methodUpper} ${url}`);
+      logger.error(`🧵 Threads API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🧵 Threads API call: ${methodUpper} ${url}`);
+      logger.error(`🧵 Threads API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2276,10 +2276,10 @@ export class ToolExecuter {
     }
 
     const responseData: any = await response.json().catch(() => null);
-    console.error(`✅ Threads API response: ${response.status}`);
+    logger.error(`✅ Threads API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Threads API error:', responseData);
+      logger.error('❌ Threads API error:', responseData);
       return {
         success: false,
         error: `Threads API error: ${response.status}`,
@@ -2323,7 +2323,7 @@ export class ToolExecuter {
       url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
     }
 
-    console.error(`🎵 Spotify API call: ${methodUpper} ${url}`);
+    logger.error(`🎵 Spotify API call: ${methodUpper} ${url}`);
     const response = await fetch(url, { method: methodUpper, headers });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -2374,11 +2374,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
+      logger.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
+      logger.error(`🔊 Sonos API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2432,7 +2432,7 @@ export class ToolExecuter {
     }
 
     const methodUpper = String(method || 'GET').toUpperCase();
-    console.error(`🎵 Shazam API call: ${methodUpper} ${url}`);
+    logger.error(`🎵 Shazam API call: ${methodUpper} ${url}`);
     const response = await fetch(url, { method: methodUpper, headers });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -2483,11 +2483,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`💡 Hue API call: ${methodUpper} ${url}`);
+      logger.error(`💡 Hue API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`💡 Hue API call: ${methodUpper} ${url}`);
+      logger.error(`💡 Hue API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2539,11 +2539,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
+      logger.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
+      logger.error(`🛏️ 8Sleep API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2600,11 +2600,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
+      logger.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
+      logger.error(`🏠 Home Assistant API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2816,11 +2816,11 @@ export class ToolExecuter {
       if (queryParams.length > 0) {
         url += `${url.includes('?') ? '&' : '?'}${queryParams.join('&')}`;
       }
-      console.error(`${label} API call: ${methodUpper} ${url}`);
+      logger.error(`${label} API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`${label} API call: ${methodUpper} ${url}`);
+      logger.error(`${label} API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2876,11 +2876,11 @@ export class ToolExecuter {
       }
       const filename = path.basename(file_path);
       form.append('file', new Blob([fileBuffer]), filename);
-      console.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
+      logger.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
       response = await fetch(url, { method: methodUpper, headers, body: form as any });
     } else {
       headers['Content-Type'] = 'application/json';
-      console.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
+      logger.error(`🤖 OpenAI-compatible API call: ${methodUpper} ${url}`);
       response = await fetch(url, {
         method: methodUpper,
         headers,
@@ -2889,7 +2889,7 @@ export class ToolExecuter {
     }
 
     const contentType = response.headers.get('content-type') || '';
-    console.error(`✅ OpenAI-compatible API response: ${response.status}`);
+    logger.error(`✅ OpenAI-compatible API response: ${response.status}`);
 
     if (contentType && !contentType.includes('application/json')) {
       const buffer = Buffer.from(await response.arrayBuffer());
@@ -2917,7 +2917,7 @@ export class ToolExecuter {
     const responseData: any = await response.json().catch(() => null);
 
     if (!response.ok) {
-      console.error('❌ OpenAI-compatible API error:', responseData);
+      logger.error('❌ OpenAI-compatible API error:', responseData);
       return {
         success: false,
         error: `API error: ${response.status}`,
@@ -2962,7 +2962,7 @@ export class ToolExecuter {
       'Content-Type': 'application/json'
     };
 
-    console.error(`🟦 Azure OpenAI API call: ${methodUpper} ${url}`);
+    logger.error(`🟦 Azure OpenAI API call: ${methodUpper} ${url}`);
     const response = await fetch(url, {
       method: methodUpper,
       headers,
@@ -2970,7 +2970,7 @@ export class ToolExecuter {
     });
 
     const contentType = response.headers.get('content-type') || '';
-    console.error(`✅ Azure OpenAI API response: ${response.status}`);
+    logger.error(`✅ Azure OpenAI API response: ${response.status}`);
 
     if (contentType && !contentType.includes('application/json')) {
       const buffer = Buffer.from(await response.arrayBuffer());
@@ -2997,7 +2997,7 @@ export class ToolExecuter {
 
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
-      console.error('❌ Azure OpenAI API error:', responseData);
+      logger.error('❌ Azure OpenAI API error:', responseData);
       return {
         success: false,
         error: `Azure API error: ${response.status}`,
@@ -3032,7 +3032,7 @@ export class ToolExecuter {
       'Content-Type': 'application/json'
     };
 
-    console.error(`🟣 Cohere API call: ${methodUpper} ${url}`);
+    logger.error(`🟣 Cohere API call: ${methodUpper} ${url}`);
     const response = await fetch(url, {
       method: methodUpper,
       headers,
@@ -3040,10 +3040,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Cohere API response: ${response.status}`);
+    logger.error(`✅ Cohere API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Cohere API error:', responseData);
+      logger.error('❌ Cohere API error:', responseData);
       return {
         success: false,
         error: `Cohere API error: ${response.status}`,
@@ -3079,7 +3079,7 @@ export class ToolExecuter {
       'Content-Type': 'application/json'
     };
 
-    console.error(`🧠 Claude API call: ${methodUpper} ${url}`);
+    logger.error(`🧠 Claude API call: ${methodUpper} ${url}`);
     const response = await fetch(url, {
       method: methodUpper,
       headers,
@@ -3087,10 +3087,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Claude API response: ${response.status}`);
+    logger.error(`✅ Claude API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Claude API error:', responseData);
+      logger.error('❌ Claude API error:', responseData);
       return {
         success: false,
         error: `Claude API error: ${response.status}`,
@@ -3124,7 +3124,7 @@ export class ToolExecuter {
     const bodyArgs: Record<string, any> = { ...(args || {}) };
     delete bodyArgs.model;
 
-    console.error(`💠 Gemini API call: ${methodUpper} ${url}`);
+    logger.error(`💠 Gemini API call: ${methodUpper} ${url}`);
     const response = await fetch(url, {
       method: methodUpper,
       headers: { 'Content-Type': 'application/json' },
@@ -3132,10 +3132,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Gemini API response: ${response.status}`);
+    logger.error(`✅ Gemini API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Gemini API error:', responseData);
+      logger.error('❌ Gemini API error:', responseData);
       return {
         success: false,
         error: `Gemini API error: ${response.status}`,
@@ -3164,7 +3164,7 @@ export class ToolExecuter {
       bodyArgs.model = defaultModel;
     }
 
-    console.error(`🦙 Ollama API call: ${methodUpper} ${url}`);
+    logger.error(`🦙 Ollama API call: ${methodUpper} ${url}`);
     const response = await fetch(url, {
       method: methodUpper,
       headers: { 'Content-Type': 'application/json' },
@@ -3172,10 +3172,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Ollama API response: ${response.status}`);
+    logger.error(`✅ Ollama API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Ollama API error:', responseData);
+      logger.error('❌ Ollama API error:', responseData);
       return {
         success: false,
         error: `Ollama API error: ${response.status}`,
@@ -3226,7 +3226,7 @@ export class ToolExecuter {
       body = JSON.stringify(args || {});
     }
 
-    console.error(`📦 Dropbox API call: ${method || 'POST'} ${url}`);
+    logger.error(`📦 Dropbox API call: ${method || 'POST'} ${url}`);
 
     const response = await fetch(url, { method: method || 'POST', headers, body });
 
@@ -3315,7 +3315,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`📝 Trello API call: ${methodUpper} ${url}`);
+    logger.error(`📝 Trello API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, {
       method: methodUpper,
@@ -3324,10 +3324,10 @@ export class ToolExecuter {
     });
     const responseData: any = await response.json().catch(() => null);
 
-    console.error(`✅ Trello API response: ${response.status}`);
+    logger.error(`✅ Trello API response: ${response.status}`);
 
     if (!response.ok) {
-      console.error('❌ Trello API error:', responseData);
+      logger.error('❌ Trello API error:', responseData);
       return {
         success: false,
         error: `Trello API error: ${response.status}`,
@@ -3385,7 +3385,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🦊 GitLab API call: ${methodUpper} ${url}`);
+    logger.error(`🦊 GitLab API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3459,7 +3459,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🧩 Bitbucket API call: ${methodUpper} ${url}`);
+    logger.error(`🧩 Bitbucket API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3540,7 +3540,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📁 Google Drive API call: ${methodUpper} ${url}`);
+    logger.error(`📁 Google Drive API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
 
@@ -3620,7 +3620,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📄 Google Sheets API call: ${methodUpper} ${url}`);
+    logger.error(`📄 Google Sheets API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3685,7 +3685,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📅 Google Calendar API call: ${methodUpper} ${url}`);
+    logger.error(`📅 Google Calendar API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3733,7 +3733,7 @@ export class ToolExecuter {
       body = JSON.stringify(payload);
     }
 
-    console.error(`📄 Google Docs API call: ${methodUpper} ${url}`);
+    logger.error(`📄 Google Docs API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3803,7 +3803,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`🧾 Airtable API call: ${methodUpper} ${url}`);
+    logger.error(`🧾 Airtable API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3883,7 +3883,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`✅ Asana API call: ${methodUpper} ${url}`);
+    logger.error(`✅ Asana API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3923,7 +3923,7 @@ export class ToolExecuter {
       variables: args.variables || undefined
     });
 
-    console.error(`🟡 Monday GraphQL call: ${url}`);
+    logger.error(`🟡 Monday GraphQL call: ${url}`);
 
     const response = await fetch(url, { method: 'POST', headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -3991,7 +3991,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`🟣 ClickUp API call: ${methodUpper} ${url}`);
+    logger.error(`🟣 ClickUp API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -4029,7 +4029,7 @@ export class ToolExecuter {
       variables: args.variables || undefined
     });
 
-    console.error(`⚫️ Linear GraphQL call: ${url}`);
+    logger.error(`⚫️ Linear GraphQL call: ${url}`);
 
     const response = await fetch(url, { method: 'POST', headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -4083,7 +4083,7 @@ export class ToolExecuter {
     };
 
     const payload = args?.input ?? {};
-    console.error(`⚡ fal.ai API call: ${String(method || 'POST').toUpperCase()} ${url}`);
+    logger.error(`⚡ fal.ai API call: ${String(method || 'POST').toUpperCase()} ${url}`);
 
     const response = await fetch(url, {
       method: (method || 'POST').toUpperCase(),
@@ -4151,7 +4151,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`🧩 n8n API call: ${methodUpper} ${url}`);
+    logger.error(`🧩 n8n API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -4225,7 +4225,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`🟢 Supabase API call: ${methodUpper} ${url}`);
+    logger.error(`🟢 Supabase API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const responseData: any = await response.json().catch(() => null);
@@ -4272,7 +4272,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📦 npm API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    logger.error(`📦 npm API call: ${String(method || 'GET').toUpperCase()} ${url}`);
     const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -4311,7 +4311,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📦 NuGet API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    logger.error(`📦 NuGet API call: ${String(method || 'GET').toUpperCase()} ${url}`);
     const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -4346,7 +4346,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`📦 Maven API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    logger.error(`📦 Maven API call: ${String(method || 'GET').toUpperCase()} ${url}`);
     const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -4385,7 +4385,7 @@ export class ToolExecuter {
       url += `${joiner}${queryParams.join('&')}`;
     }
 
-    console.error(`🧰 Gradle API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    logger.error(`🧰 Gradle API call: ${String(method || 'GET').toUpperCase()} ${url}`);
     const response = await fetch(url, { method: (method || 'GET').toUpperCase() });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -4427,7 +4427,7 @@ export class ToolExecuter {
       headers['Authorization'] = `Basic ${auth}`;
     }
 
-    console.error(`🧱 Nexus API call: ${String(method || 'GET').toUpperCase()} ${url}`);
+    logger.error(`🧱 Nexus API call: ${String(method || 'GET').toUpperCase()} ${url}`);
     const response = await fetch(url, { method: (method || 'GET').toUpperCase(), headers });
     const responseData: any = await response.json().catch(() => null);
     if (!response.ok) {
@@ -4469,7 +4469,7 @@ export class ToolExecuter {
       body = JSON.stringify(payload);
     }
 
-    console.error(`🏗️ Jenkins API call: ${methodUpper} ${url}`);
+    logger.error(`🏗️ Jenkins API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
     const contentType = response.headers.get('content-type') || '';
@@ -4522,7 +4522,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🐳 Docker Hub API call: ${methodUpper} ${url}`);
+    logger.error(`🐳 Docker Hub API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers });
     const responseData: any = await response.json().catch(() => null);
@@ -4605,7 +4605,7 @@ export class ToolExecuter {
       url += `?${queryParams.join('&')}`;
     }
 
-    console.error(`🎫 Jira API call: ${method} ${url}`);
+    logger.error(`🎫 Jira API call: ${method} ${url}`);
 
     // Temporarily disable SSL verification for corporate Jira servers with self-signed certs
     const originalTlsReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
@@ -4730,10 +4730,10 @@ export class ToolExecuter {
         responseData = await response.text();
       }
 
-      console.error(`✅ Jira API response: ${response.status}`);
+      logger.error(`✅ Jira API response: ${response.status}`);
 
       if (!response.ok) {
-        console.error(`❌ Jira API error:`, responseData);
+        logger.error(`❌ Jira API error:`, responseData);
         return {
           success: false,
           error: `Jira API error: ${response.status}`,
@@ -4863,7 +4863,7 @@ export class ToolExecuter {
       }
     }
 
-    console.error(`📚 Confluence API call: ${method} ${url}`);
+    logger.error(`📚 Confluence API call: ${method} ${url}`);
 
     const fetchOptions: RequestInit = {
       method: method || 'GET',
@@ -4949,7 +4949,7 @@ export class ToolExecuter {
       isSftp = true;
     }
 
-    console.error(`📁 ${isSftp ? 'SFTP' : 'FTP'} operation: ${operation} on ${host}:${effectivePort}`);
+    logger.error(`📁 ${isSftp ? 'SFTP' : 'FTP'} operation: ${operation} on ${host}:${effectivePort}`);
 
     if (isSftp) {
       return await this.executeSftpCall(host, effectivePort, username, password, basePath, operation, args);
@@ -4970,7 +4970,7 @@ export class ToolExecuter {
         secureOptions: secure ? { rejectUnauthorized: false } : undefined
       });
 
-      console.error(`✅ Connected to FTP server ${host}`);
+      logger.error(`✅ Connected to FTP server ${host}`);
 
       let result: any;
 
@@ -5117,7 +5117,7 @@ export class ToolExecuter {
           throw new Error(`Unknown FTP operation: ${operation}`);
       }
 
-      console.error(`✅ FTP operation ${operation} completed successfully`);
+      logger.error(`✅ FTP operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -5126,7 +5126,7 @@ export class ToolExecuter {
       };
 
     } catch (error) {
-      console.error(`❌ FTP error:`, error);
+      logger.error(`❌ FTP error:`, error);
       return {
         success: false,
         error: `FTP error: ${error instanceof Error ? error.message : String(error)}`,
@@ -5157,7 +5157,7 @@ export class ToolExecuter {
         retry_minTimeout: 2000
       });
 
-      console.error(`✅ Connected to SFTP server ${host}`);
+      logger.error(`✅ Connected to SFTP server ${host}`);
 
       let result: any;
 
@@ -5293,7 +5293,7 @@ export class ToolExecuter {
           throw new Error(`Unknown SFTP operation: ${operation}`);
       }
 
-      console.error(`✅ SFTP operation ${operation} completed successfully`);
+      logger.error(`✅ SFTP operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -5302,7 +5302,7 @@ export class ToolExecuter {
       };
 
     } catch (error) {
-      console.error(`❌ SFTP error:`, error);
+      logger.error(`❌ SFTP error:`, error);
       return {
         success: false,
         error: `SFTP error: ${error instanceof Error ? error.message : String(error)}`,
@@ -5322,7 +5322,7 @@ export class ToolExecuter {
     const path = await import('path');
     const { glob } = await import('glob');
 
-    console.error(`📂 LocalFS operation: ${operation} in ${basePath}`);
+    logger.error(`📂 LocalFS operation: ${operation} in ${basePath}`);
 
     // Resolve path relative to basePath
     const resolvePath = (p: string) => {
@@ -5541,7 +5541,7 @@ export class ToolExecuter {
           throw new Error(`Unknown LocalFS operation: ${operation}`);
       }
 
-      console.error(`✅ LocalFS operation ${operation} completed successfully`);
+      logger.error(`✅ LocalFS operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -5550,7 +5550,7 @@ export class ToolExecuter {
       };
 
     } catch (error) {
-      console.error(`❌ LocalFS error:`, error);
+      logger.error(`❌ LocalFS error:`, error);
       return {
         success: false,
         error: `LocalFS error: ${error instanceof Error ? error.message : String(error)}`,
@@ -5565,7 +5565,7 @@ export class ToolExecuter {
   private async executeEmailCall(queryConfig: any, args: any): Promise<any> {
     const { imapHost, imapPort, smtpHost, smtpPort, username, password, secure, operation } = queryConfig;
 
-    console.error(`📧 Email operation: ${operation}`);
+    logger.error(`📧 Email operation: ${operation}`);
 
     try {
       let result: any;
@@ -5879,7 +5879,7 @@ export class ToolExecuter {
         }
       }
 
-      console.error(`✅ Email operation ${operation} completed successfully`);
+      logger.error(`✅ Email operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -5888,7 +5888,7 @@ export class ToolExecuter {
       };
 
     } catch (error) {
-      console.error(`❌ Email error:`, error);
+      logger.error(`❌ Email error:`, error);
       return {
         success: false,
         error: `Email error: ${error instanceof Error ? error.message : String(error)}`,
@@ -6075,7 +6075,7 @@ export class ToolExecuter {
           throw new Error(`Unknown Slack operation: ${operation}`);
       }
 
-      console.error(`✅ Slack operation ${operation} completed successfully`);
+      logger.error(`✅ Slack operation ${operation} completed successfully`);
 
       return {
         success: true,
@@ -6084,7 +6084,7 @@ export class ToolExecuter {
       };
 
     } catch (error) {
-      console.error(`❌ Slack error:`, error);
+      logger.error(`❌ Slack error:`, error);
       return {
         success: false,
         error: `Slack error: ${error instanceof Error ? error.message : String(error)}`,
@@ -6100,7 +6100,7 @@ export class ToolExecuter {
     const dbConnection = await this.getOrCreateConnection(serverId, serverConfig.sourceConfig);
     const result = await this.executeQuery(dbConnection, tool.sqlQuery, args, tool.operation);
 
-    console.error(`✅ Executed tool ${serverId}__${tool.name} successfully`);
+    logger.error(`✅ Executed tool ${serverId}__${tool.name} successfully`);
     return {
       success: true,
       data: result,
@@ -6131,9 +6131,9 @@ export class ToolExecuter {
             await dbConnection.connection.end();
             break;
         }
-        console.error(`🔌 Closed database connection for server ${serverId}`);
+        logger.error(`🔌 Closed database connection for server ${serverId}`);
       } catch (error) {
-        console.error(`❌ Error closing connection for server ${serverId}:`, error);
+        logger.error(`❌ Error closing connection for server ${serverId}:`, error);
       }
     }
 
@@ -6162,7 +6162,7 @@ export class ToolExecuter {
               trustServerCertificate: sourceConfig.trustServerCertificate ?? true
             }
           });
-          console.error(`🔗 Connected to MSSQL database for server ${serverId}`);
+          logger.error(`🔗 Connected to MSSQL database for server ${serverId}`);
           break;
 
         case DataSourceType.MySQL:
@@ -6173,7 +6173,7 @@ export class ToolExecuter {
             user: sourceConfig.username,
             password: sourceConfig.password
           });
-          console.error(`🔗 Connected to MySQL database for server ${serverId}`);
+          logger.error(`🔗 Connected to MySQL database for server ${serverId}`);
           break;
 
         case DataSourceType.PostgreSQL:
@@ -6185,7 +6185,7 @@ export class ToolExecuter {
             password: sourceConfig.password
           });
           await connection.query('SELECT 1');
-          console.error(`🔗 Connected to PostgreSQL database for server ${serverId}`);
+          logger.error(`🔗 Connected to PostgreSQL database for server ${serverId}`);
           break;
 
         default:
@@ -6199,7 +6199,7 @@ export class ToolExecuter {
       this.dbConnections.set(serverId, dbConnection);
       return dbConnection;
     } catch (error) {
-      console.error(`❌ Failed to connect to database for server ${serverId}:`, error);
+      logger.error(`❌ Failed to connect to database for server ${serverId}:`, error);
       throw error;
     }
   }
@@ -6348,7 +6348,7 @@ export class ToolExecuter {
           throw new Error(`Unsupported database type: ${type}`);
       }
     } catch (error) {
-      console.error('❌ Database query failed:', error);
+      logger.error('❌ Database query failed:', error);
       throw error;
     }
   }

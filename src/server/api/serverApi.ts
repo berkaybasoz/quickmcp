@@ -6,7 +6,7 @@ import { IDataStore } from '../../database/datastore';
 import { AppUserRole } from '../../auth/auth-utils';
 import { DynamicMCPExecutor } from '../dynamic-mcp-executor';
 import { MCPServerConfig, ParsedData } from '../../types';
-
+import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
 type GeneratedServerInfo = {
@@ -157,7 +157,7 @@ export class ServerApi {
         });
       }
     } catch (error) {
-      console.error('Error getting server data:', error);
+      logger.error('Error getting server data:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -262,7 +262,7 @@ export class ServerApi {
         }
       });
     } catch (error) {
-      console.error('Test error:', error);
+      logger.error('Test error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -319,7 +319,7 @@ export class ServerApi {
         }
       });
     } catch (error) {
-      console.error('Rename error:', error);
+      logger.error('Rename error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -355,7 +355,7 @@ export class ServerApi {
       this.deps.generatedServers.delete(req.params.id);
       res.json({ success: true });
     } catch (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -399,7 +399,7 @@ export class ServerApi {
         }
       });
     } catch (error) {
-      console.error('Runtime start error:', error);
+      logger.error('Runtime start error:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

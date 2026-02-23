@@ -1,6 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import { MCPTestRequest, MCPTestResponse } from '../types';
-
+import { logger } from '../utils/logger';
 interface MCPMessage {
   jsonrpc: string;
   id: number;
@@ -35,16 +35,16 @@ export class MCPClient {
       });
 
       this.process.stderr?.on('data', (data) => {
-        console.error('MCP Server stderr:', data.toString());
+        logger.error('MCP Server stderr:', data.toString());
       });
 
       this.process.on('error', (error) => {
-        console.error('MCP Server process error:', error);
+        logger.error('MCP Server process error:', error);
         reject(error);
       });
 
       this.process.on('exit', (code) => {
-        console.error('MCP Server process exited with code:', code);
+        logger.error('MCP Server process exited with code:', code);
         this.isConnected = false;
       });
 
@@ -224,7 +224,7 @@ export class MCPClient {
           const message: MCPMessage = JSON.parse(messageStr);
           this.processMessage(message);
         } catch (error) {
-          console.error('Failed to parse MCP message:', messageStr, error);
+          logger.error('Failed to parse MCP message:', { raw: messageStr, error });
         }
       }
     }

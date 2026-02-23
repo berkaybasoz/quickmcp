@@ -1,7 +1,7 @@
 import { createDataStore } from '../database/factory';
 import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition } from '../database/datastore';
 import { DataSourceType, shouldGenerateResources } from '../types';
-
+import { logger } from '../utils/logger';
 interface ParsedColumn {
   name: string;
   type: string;
@@ -255,7 +255,7 @@ export class MCPServerGenerator {
         message: `Virtual MCP server '${serverId}' created successfully with ${tools.length} tools and ${resources.length} resources`
       };
     } catch (error) {
-      console.error(`❌ Error generating server ${serverId}:`, error);
+      logger.error(`❌ Error generating server ${serverId}:`, error);
       return {
         success: false,
         message: `Failed to generate server: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -299,7 +299,7 @@ export class MCPServerGenerator {
   private generateToolsForWebpage(serverId: string, sourceConfig: any): ToolDefinition[] {
     const { url, alias } = sourceConfig || {};
     if (!url) {
-      console.error('❌ No URL provided for webpage server');
+      logger.error('❌ No URL provided for webpage server');
       return [];
     }
 
@@ -431,7 +431,7 @@ export class MCPServerGenerator {
   private generateToolsForCurl(serverId: string, sourceConfig: any): ToolDefinition[] {
     const { url, method = 'GET', alias } = sourceConfig || {};
     if (!url) {
-      console.error('❌ No URL provided for cURL server');
+      logger.error('❌ No URL provided for cURL server');
       return [];
     }
 

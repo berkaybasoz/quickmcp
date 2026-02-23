@@ -6,7 +6,7 @@ import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
 import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from '../../auth/token-utils';
 import { AuthProperty } from './authProperty';
-
+import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
 interface AuthApiDeps {
@@ -995,7 +995,7 @@ export class AuthApi {
         }
       }
     } catch (error) {
-      console.error('Login datastore error:', error);
+      logger.error('Login datastore error:', error);
     }
 
     if (!authenticatedUsername) {

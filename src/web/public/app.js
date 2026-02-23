@@ -424,7 +424,7 @@ function parseCurlCommand(curlCommand) {
 
         return result;
     } catch (error) {
-        console.error('Failed to parse curl command:', error);
+        logger.error('Failed to parse curl command:', error);
         throw new Error('Failed to parse curl command. Please check the format.');
     }
 }
@@ -1180,7 +1180,7 @@ async function loadServers() {
             updateServerSearchCount(0, 0);
         }
     } catch (error) {
-        console.error('Failed to load servers:', error);
+        logger.error('Failed to load servers:', error);
         allServers = [];
         displayServers([]);
         updateServerSearchCount(0, 0);
@@ -1458,7 +1458,7 @@ async function loadTestServers() {
             select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
         }
     } catch (error) {
-        console.error('Failed to load test servers:', error);
+        logger.error('Failed to load test servers:', error);
         const select = document.getElementById('testServerSelect');
         if (select) {
             select.innerHTML = '<option value="">Error loading servers</option>';
@@ -1521,7 +1521,7 @@ async function loadToolsDropdown(serverId) {
             window.testTools = tools;
         }
     } catch (error) {
-        console.error('Failed to load tools:', error);
+        logger.error('Failed to load tools:', error);
         container.innerHTML = '<input type="text" id="testName" placeholder="Error loading tools" class="input">';
     }
 }
@@ -1569,7 +1569,7 @@ function updateParametersExample() {
             paramsTextarea.value = '{}';
         }
     } catch (error) {
-        console.error('Error generating parameter example:', error);
+        logger.error('Error generating parameter example:', error);
         paramsTextarea.value = '{}';
     }
 }
@@ -2228,7 +2228,7 @@ async function viewServer(serverId) {
                 showServerDetailsModal(result.data);
             }
         } else {
-            console.error('❌ Failed to load server details:', result.error);
+            logger.error('❌ Failed to load server details:', result.error);
             if (overlayPanel) {
                 overlayPanel.innerHTML = `
                     <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
@@ -2252,7 +2252,7 @@ async function viewServer(serverId) {
             }
         }
     } catch (error) {
-        console.error('❌ Error loading server details:', error);
+        logger.error('❌ Error loading server details:', error);
         if (overlayPanel) {
             overlayPanel.innerHTML = `
                 <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between">
@@ -2664,7 +2664,7 @@ async function exportServer(serverId) {
             link.click();
         }
     } catch (error) {
-        console.error('Export failed:', error);
+        logger.error('Export failed:', error);
     }
 }
 
@@ -2853,7 +2853,7 @@ async function confirmDeleteServer(serverId) {
     } catch (error) {
         closeDeleteLoadingModal();
         showDeleteErrorModal(error.message);
-        console.error('Delete failed:', error);
+        logger.error('Delete failed:', error);
     }
 }
 
@@ -2880,7 +2880,7 @@ async function confirmDeleteAllServers() {
     } catch (error) {
         closeDeleteAllLoadingModal();
         showDeleteErrorModal(error.message || 'Failed to delete all servers.');
-        console.error('Failed to delete all servers:', error);
+        logger.error('Failed to delete all servers:', error);
     }
 }
 
@@ -3079,7 +3079,7 @@ async function checkServerName() {
                 }
             }
         } catch (error) {
-            console.error('Error checking server name:', error);
+            logger.error('Error checking server name:', error);
         }
     }, 500);
 }
@@ -3138,7 +3138,7 @@ async function checkAlias(aliasType) {
                 }
             }
         } catch (error) {
-            console.error('Error checking tool name:', error);
+            logger.error('Error checking tool name:', error);
             validationDiv.textContent = 'Error checking tool name availability.';
             validationDiv.className = 'mt-2 text-xs text-red-600';
         } finally {
@@ -8821,7 +8821,7 @@ function startRenameServer(serverId, currentName) {
     const nameSpan = document.getElementById(`server-name-${serverId}`);
 
     if (!nameSpan) {
-        console.error('Could not find name span for server:', serverId);
+        logger.error('Could not find name span for server:', serverId);
         return;
     }
 
@@ -8908,7 +8908,7 @@ async function renameServer(serverId, newName, nameSpan, originalHtml) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Rename response error:', errorText);
+            logger.error('Rename response error:', errorText);
             try {
                 const result = JSON.parse(errorText);
                 throw new Error(result.error || `Server error: ${response.status}`);
@@ -8938,7 +8938,7 @@ async function renameServer(serverId, newName, nameSpan, originalHtml) {
             throw new Error(result.error || 'Failed to rename server');
         }
     } catch (error) {
-        console.error('Rename error:', error);
+        logger.error('Rename error:', error);
         // Restore original content on error
         nameSpan.innerHTML = originalHtml;
 
@@ -14209,7 +14209,7 @@ async function loadDirectories(path) {
         directoryPickerCurrentPath = result.currentPath;
 
     } catch (error) {
-        console.error('Failed to load directories:', error);
+        logger.error('Failed to load directories:', error);
         listEl.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl"></i><p class="mt-2">' + error.message + '</p><button type="button" onclick="loadDirectories(\'~\')" class="mt-3 text-sm text-blue-600 hover:underline">Go to Home</button></div>';
     }
 }

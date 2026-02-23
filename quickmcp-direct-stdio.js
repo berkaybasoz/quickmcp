@@ -11,11 +11,24 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
+let logger;
+try {
+  ({ logger } = require('./dist/utils/logger.js'));
+} catch (_) {
+  logger = {
+    trace: (...args) => console.error(...args),
+    debug: (...args) => console.error(...args),
+    info: (...args) => console.error(...args),
+    warn: (...args) => console.error(...args),
+    error: (...args) => console.error(...args)
+  };
+}
+
 // Secure default for direct-stdio: if caller does not provide auth/deploy mode,
 // enforce ONPREM semantics (AUTH_MODE=LITE) so MCP token checks are active.
 if (!process.env.AUTH_MODE && !process.env.DEPLOY_MODE) {
   process.env.DEPLOY_MODE = 'ONPREM';
-  console.error('[QuickMCP] AUTH_MODE/DEPLOY_MODE not provided, defaulting DEPLOY_MODE=ONPREM (AUTH_MODE=LITE)');
+  logger.error('[QuickMCP] AUTH_MODE/DEPLOY_MODE not provided, defaulting DEPLOY_MODE=ONPREM (AUTH_MODE=LITE)');
 }
 
 // Use the current working directory provided by the caller.
@@ -75,7 +88,7 @@ if (dataDirArg) {
   if (val) process.env.QUICKMCP_DATA_DIR = val;
 }
 
-const dataStore = safeCreateDataStore({ logger: (...args) => console.error(...args) });
+const dataStore = safeCreateDataStore({ logger: (...args) => logger.error(...args) });
 const executor = new DynamicMCPExecutor();
 
 const mcpAuthMode = resolveAuthMode();
@@ -102,17 +115,17 @@ try {
   });
 }
 
-console.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
-console.error(`[QuickMCP] MCP token present: ${mcpToken ? 'yes' : 'no'}`);
+logger.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
+logger.error(`[QuickMCP] MCP token present: ${mcpToken ? 'yes' : 'no'}`);
 if (startupAuthError) {
-  console.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
+  logger.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
 }
 
 // Optionally start the Web UI (Express) like `npm run dev`
 // Enable by setting QUICKMCP_ENABLE_WEB=1 (and optionally PORT, QUICKMCP_DATA_DIR)
 if (process.env.QUICKMCP_ENABLE_WEB === '1') {
   try {
-    console.error('[QuickMCP] QUICKMCP_ENABLE_WEB=1 -> starting Web UI server...');
+    logger.error('[QuickMCP] QUICKMCP_ENABLE_WEB=1 -> starting Web UI server...');
     // Ensure we run from a writable directory when invoked via npx (CWD may be '/')
     const canWrite = (dir) => {
       try { fs.accessSync(dir, fs.constants.W_OK); return true; } catch { return false; }
@@ -146,13 +159,13 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
       process.once('SIGTERM', () => { cleanup(); process.exit(0); });
     } catch (e) {
       if (e && e.code !== 'EEXIST') {
-        console.error('[QuickMCP] UI lock error (continuing without UI):', e.message || e);
+        logger.error('[QuickMCP] UI lock error (continuing without UI):', e.message || e);
       }
       // Another process holds the UI lock; skip starting UI in this process
     }
 
     if (!hasLock) {
-      console.error('[QuickMCP] UI lock held by another process; skipping Web UI in this process');
+      logger.error('[QuickMCP] UI lock held by another process; skipping Web UI in this process');
     } else {
       // Only start Web UI if preferred port is actually free.
       const probe = net.createServer();
@@ -178,7 +191,7 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
       }
     }
   } catch (e) {
-    console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
+    logger.error('[QuickMCP] Failed to start Web UI:', e && e.message);
   }
 }
 
@@ -203,7 +216,7 @@ function safeStartWebServer() {
   } catch (e) {
     // Synchronous load error
     process.removeListener('uncaughtException', handler);
-    console.error('[QuickMCP] Failed to start Web UI:', e && e.message);
+    logger.error('[QuickMCP] Failed to start Web UI:', e && e.message);
   }
   // Remove handler on next tick if nothing happened, to avoid swallowing unrelated errors later
   setImmediate(() => {
@@ -218,18 +231,18 @@ try {
   const resolvedDynExec = require.resolve('./dist/server/dynamic-mcp-executor.js');
   const mssql = require('mssql');
   const mssqlVersion = require('mssql/package.json').version;
-  console.error('[QuickMCP] Node:', process.version);
-  console.error('[QuickMCP] CWD:', process.cwd());
-  console.error('[QuickMCP] Dynamic executor path:', resolvedDynExec);
-  console.error('[QuickMCP] mssql version:', mssqlVersion);
-  console.error('[QuickMCP] mssql exports:', {
+  logger.error('[QuickMCP] Node:', process.version);
+  logger.error('[QuickMCP] CWD:', process.cwd());
+  logger.error('[QuickMCP] Dynamic executor path:', resolvedDynExec);
+  logger.error('[QuickMCP] mssql version:', mssqlVersion);
+  logger.error('[QuickMCP] mssql exports:', {
     hasDefault: !!mssql.default,
     hasConnect: typeof mssql.connect,
     typeofConnectionPool: typeof (mssql.ConnectionPool),
     keys: Object.keys(mssql).slice(0, 10)
   });
 } catch (e) {
-  console.error('[QuickMCP] Diagnostic init error:', e && e.message);
+  logger.error('[QuickMCP] Diagnostic init error:', e && e.message);
 }
 
 // Direct STDIO MCP implementation with LSP-style framing support
@@ -248,12 +261,12 @@ function sendMessage(message) {
       process.stdout.write(json + '\n');
     }
   } catch (e) {
-    console.error('[QuickMCP] Failed to send message:', e && e.message);
+    logger.error('[QuickMCP] Failed to send message:', e && e.message);
   }
 }
 
 async function handleMessage(message) {
-  console.error(`[QuickMCP] Received: ${message.method} (id: ${message.id})`);
+  logger.error(`[QuickMCP] Received: ${message.method} (id: ${message.id})`);
 
   if (startupAuthError && message.method !== 'initialize' && message.method !== 'notifications/initialized') {
     const authErrorResponse = {
@@ -264,7 +277,7 @@ async function handleMessage(message) {
         message: startupAuthError
       }
     };
-    console.error('[QuickMCP] Sending: auth-error');
+    logger.error('[QuickMCP] Sending: auth-error');
     sendMessage(authErrorResponse);
     return;
   }
@@ -273,7 +286,7 @@ async function handleMessage(message) {
     const authContext = mcpCore.resolveAuthContextFromSources({});
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
     if (response) {
-      console.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);
+      logger.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);
       sendMessage(response);
     }
   } catch (error) {
@@ -285,7 +298,7 @@ async function handleMessage(message) {
         message: `Internal error: ${error && error.message ? error.message : 'Unknown error'}`
       }
     };
-    console.error('[QuickMCP] Sending: error');
+    logger.error('[QuickMCP] Sending: error');
     sendMessage(errorResponse);
   }
 }
@@ -320,7 +333,7 @@ process.stdin.on('data', async (data) => {
       const match = /Content-Length:\s*(\d+)/i.exec(header);
       if (!match) {
         // Invalid header; drop up to headerEnd+4
-        console.error('[QuickMCP] Invalid header, dropping bytes');
+        logger.error('[QuickMCP] Invalid header, dropping bytes');
         stdinBuffer = Buffer.from(str.slice(headerEnd + 4), 'utf8');
         continue;
       }
@@ -334,12 +347,12 @@ process.stdin.on('data', async (data) => {
       try {
         if (useLspFraming === null) {
           useLspFraming = true;
-          console.error('[QuickMCP] Detected LSP framing (Content-Length)');
+          logger.error('[QuickMCP] Detected LSP framing (Content-Length)');
         }
         const message = JSON.parse(body);
         await handleMessage(message);
       } catch (e) {
-        console.error('[QuickMCP] Error parsing framed JSON:', e && e.message);
+        logger.error('[QuickMCP] Error parsing framed JSON:', e && e.message);
       }
       stdinBuffer = stdinBuffer.slice(totalLength);
       continue;
@@ -353,13 +366,13 @@ process.stdin.on('data', async (data) => {
     }
     if (useLspFraming === null) {
       useLspFraming = false;
-      console.error('[QuickMCP] Detected newline-delimited JSON framing');
+      logger.error('[QuickMCP] Detected newline-delimited JSON framing');
     }
     for (const msg of messages) {
       try {
         await handleMessage(msg);
       } catch (e) {
-        console.error('[QuickMCP] Error handling message:', e && e.message);
+        logger.error('[QuickMCP] Error handling message:', e && e.message);
       }
     }
     stdinBuffer = Buffer.from(str.slice(consumed), 'utf8');
@@ -367,25 +380,25 @@ process.stdin.on('data', async (data) => {
 });
 
 process.stdin.on('end', () => {
-  console.error('[QuickMCP] STDIN ended');
+  logger.error('[QuickMCP] STDIN ended');
   try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.error('[QuickMCP] Interrupted');
+  logger.error('[QuickMCP] Interrupted');
   try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.error('[QuickMCP] Terminated');
+  logger.error('[QuickMCP] Terminated');
   try { executor.close && executor.close(); } catch (_) {}
   try { dataStore.close && dataStore.close(); } catch (_) {}
   process.exit(0);
 });
 
 process.stdin.resume();
-console.error('QuickMCP Direct STDIO Server started...');
+logger.error('QuickMCP Direct STDIO Server started...');

@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { IDataStore, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope } from './datastore';
+import { IDataStore, LogEntry, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope } from './datastore';
 
 export class SQLiteManager implements IDataStore {
   private db: Database.Database;
@@ -162,6 +162,17 @@ export class SQLiteManager implements IDataStore {
     if (!hasToolRules) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN tool_rules_json TEXT NOT NULL DEFAULT '{}'`);
     if (!hasResourceRules) this.db.exec(`ALTER TABLE mcp_tokens ADD COLUMN resource_rules_json TEXT NOT NULL DEFAULT '{}'`);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS app_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL DEFAULT '',
+        severity TEXT NOT NULL CHECK (severity IN ('trace', 'debug', 'info', 'warn', 'error')),
+        message TEXT NOT NULL,
+        datetime TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        additional_info TEXT
+      )
+    `);
+
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_servers_owner ON servers(owner_username)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(username)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
@@ -170,6 +181,9 @@ export class SQLiteManager implements IDataStore {
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_tokens_workspace ON mcp_tokens(workspace_id)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_tokens_hash ON mcp_tokens(token_hash)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_token_policies_scope ON mcp_token_policies(scope_type)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_severity ON app_logs(severity)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_datetime ON app_logs(datetime)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_username ON app_logs(username)`);
   }
 
   async saveServer(server: ServerConfig): Promise<void> {
@@ -636,6 +650,14 @@ export class SQLiteManager implements IDataStore {
       WHERE id = ?
     `);
     stmt.run(id);
+  }
+
+  async writeLog(entry: LogEntry): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT INTO app_logs (username, severity, message, datetime, additional_info)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    stmt.run(entry.username, entry.severity, entry.message, entry.datetime, entry.additionalInfo ?? null);
   }
 
   async close(): Promise<void> {

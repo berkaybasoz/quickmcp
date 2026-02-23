@@ -1,5 +1,5 @@
 import express from 'express';
-
+import { logger } from '../../utils/logger';
 type Request = express.Request;
 type Response = express.Response;
 
@@ -39,7 +39,7 @@ export class DirectoryApi {
         directories
       });
     } catch (error) {
-      console.error('Directory listing error:', error);
+      logger.error('Directory listing error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Failed to list directories'

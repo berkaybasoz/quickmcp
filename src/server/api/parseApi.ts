@@ -14,7 +14,7 @@ import {
   isDatabase
 } from '../../types';
 import { upload } from '../../upload/upload-utils';
-
+import { logger } from '../../utils/logger';
 export class ParseApi {
   constructor(private readonly parser: DataSourceParser) {}
 
@@ -3415,7 +3415,7 @@ export class ParseApi {
           }
         });
       } catch (error) {
-        console.error('Parse error:', error);
+        logger.error('Parse error:', error);
         res.status(400).json({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'

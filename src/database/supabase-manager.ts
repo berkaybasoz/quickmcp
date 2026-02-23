@@ -1,5 +1,6 @@
 import {
   IDataStore,
+  LogEntry,
   McpTokenCreateInput,
   McpTokenPolicyRecord,
   McpTokenPolicyScope,
@@ -442,6 +443,16 @@ export class SupabaseDataStore implements IDataStore {
   async revokeMcpToken(id: string): Promise<void> {
     await this.request(`mcp_tokens?id=eq.${encodeURIComponent(id)}&revoked_at=is.null`, 'PATCH', {
       revoked_at: new Date().toISOString()
+    }, { Prefer: 'return=minimal' });
+  }
+
+  async writeLog(entry: LogEntry): Promise<void> {
+    await this.request('app_logs', 'POST', {
+      username: entry.username,
+      severity: entry.severity,
+      message: entry.message,
+      datetime: entry.datetime,
+      additional_info: entry.additionalInfo ?? null
     }, { Prefer: 'return=minimal' });
   }
 

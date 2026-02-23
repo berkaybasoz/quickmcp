@@ -131,7 +131,7 @@ function copyConfig(type) {
             btn.style.background = '';
         }, 2000);
     }).catch(err => {
-        console.error('Failed to copy: ', err);
+        logger.error('Failed to copy: ', err);
         // Fallback: select the text
         const config = document.getElementById('integratedConfig');
         const range = document.createRange();
@@ -212,7 +212,7 @@ async function loadExportServerList() {
             `;
         }
     } catch (error) {
-        console.error('Failed to load servers:', error);
+        logger.error('Failed to load servers:', error);
     }
 }
 
