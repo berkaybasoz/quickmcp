@@ -1,7 +1,7 @@
 import express from 'express';
 import { IDataStore } from '../../database/datastore';
 import { AppUserRole } from '../../auth/auth-utils';
-
+import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
 interface NameApiDeps {
@@ -41,7 +41,7 @@ export class NameApi {
       const isTaken = toolsByServer.some((tools) => tools.some((tool) => tool.name === toolName));
       res.json({ success: true, available: !isTaken });
     } catch (error) {
-      console.error(`Error checking tool name '${toolName}':`, error);
+      logger.error(`Error checking tool name '${toolName}':`, error);
       res.status(500).json({ success: false, error: 'Failed to check tool name availability' });
     }
   };

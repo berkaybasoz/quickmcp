@@ -2,7 +2,7 @@ import { createDataStore } from '../database/factory';
 import { IDataStore } from '../database/datastore';
 import { ServerUtils } from './server-utils';
 import { ToolExecuter } from './tool-executer';
-
+import { logger } from '../utils/logger';
 export class DynamicMCPExecutor {
   private dataStore: IDataStore;
   private serverUtils: ServerUtils;
@@ -49,7 +49,7 @@ export class DynamicMCPExecutor {
         'SELECT'
       );
 
-      console.error(`✅ Read resource ${resourceName} successfully`);
+      logger.error(`✅ Read resource ${resourceName} successfully`);
       return {
         contents: [{
           uri: resource.uri_template,
@@ -58,7 +58,7 @@ export class DynamicMCPExecutor {
         }]
       };
     } catch (error) {
-      console.error(`❌ Error reading resource ${resourceName}:`, error);
+      logger.error(`❌ Error reading resource ${resourceName}:`, error);
       throw error;
     }
   }

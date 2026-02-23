@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
-import { startServer } from './server/server';
 
 dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || '.env' });
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { startServer } = require('./server/server') as typeof import('./server/server');
 
 startServer();
 

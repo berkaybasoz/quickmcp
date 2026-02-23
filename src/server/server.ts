@@ -26,9 +26,10 @@ import { NameApi } from './api/nameApi';
 import { DatabaseApi } from './api/databaseApi';
 import { McpApi } from './api/mcpApi';
 import { IndexApi } from './api/indexApi';
+import { LogsApi } from './api/logsApi';
 import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
-
+import { logger } from '../utils/logger';
 const app = express();
 type Request = express.Request;
 type Response = express.Response;
@@ -167,6 +168,7 @@ const authApi = new AuthApi({
   getAuthenticatedUser,
   getAuthProperty: () => authProperty
 });
+const logsApi = new LogsApi(ensureDataStore());
 const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode, MCP_PORT);
@@ -224,7 +226,7 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
     });
 
     mcpProcess.on('error', (error) => {
-      console.error(`MCP Server ${serverId} error:`, error);
+      logger.error(`MCP Server ${serverId} error:`, error);
       reject(error);
     });
 
@@ -250,7 +252,7 @@ function startRuntimeMCPServer(serverId: string, serverPath: string): Promise<nu
 }
 
 seedLiteAdminsAsync().catch((error) => {
-  console.error('Failed to seed admin users:', error);
+  logger.error('Failed to seed admin users:', error);
 });
 
 app.use((req, res, next) => {
@@ -268,6 +270,7 @@ nameApi.registerRoutes(app);
 databaseApi.registerRoutes(app);
 mcpApi.registerRoutes(app);
 authApi.registerRoutes(app);
+logsApi.registerRoutes(app);
 indexApi.registerRoutes(app);
 
 export function startServer(): void {
@@ -288,7 +291,7 @@ export function startServer(): void {
   try {
     integratedMCPServer = new IntegratedMCPServer();
   } catch (error) {
-    console.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
+    logger.error('⚠️ Skipping IntegratedMCPServer initialization:', error instanceof Error ? error.message : error);
   }
 
   app.listen(PORT, async () => {
@@ -296,7 +299,7 @@ export function startServer(): void {
       try {
         await integratedMCPServer.start(MCP_PORT);
       } catch (error) {
-        console.error('❌ Failed to start integrated MCP server:', error);
+        logger.error('❌ Failed to start integrated MCP server:', error);
       }
     }
   });

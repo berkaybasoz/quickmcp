@@ -105,6 +105,16 @@ export interface McpTokenCreateInput {
   expiresAt: string | null;
 }
 
+export type LogSeverity = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+
+export interface LogEntry {
+  username: string;
+  severity: LogSeverity;
+  message: string;
+  datetime: string;
+  additionalInfo?: string | null;
+}
+
 export interface IDataStore {
   saveServer(server: ServerConfig): Promise<void>;
   getServer(serverId: string): Promise<ServerConfig | null>;
@@ -146,6 +156,8 @@ export interface IDataStore {
   getMcpTokenById(id: string): Promise<McpTokenRecord | null>;
   getMcpTokensByWorkspace(workspaceId: string): Promise<McpTokenRecord[]>;
   revokeMcpToken(id: string): Promise<void>;
+
+  writeLog(entry: LogEntry): Promise<void>;
 
   close(): Promise<void>;
   getStats(): Promise<{ servers: number; tools: number; resources: number }>;

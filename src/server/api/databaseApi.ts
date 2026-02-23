@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import Database from 'better-sqlite3';
-
+import { logger } from '../../utils/logger';
 interface DatabaseApiDeps {
   publicDir: string;
 }
@@ -54,7 +54,7 @@ export class DatabaseApi {
         }
       });
     } catch (error) {
-      console.error('Database tables error:', error);
+      logger.error('Database tables error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -105,7 +105,7 @@ export class DatabaseApi {
         }
       });
     } catch (error) {
-      console.error('Table details error:', error);
+      logger.error('Table details error:', error);
       res.status(400).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

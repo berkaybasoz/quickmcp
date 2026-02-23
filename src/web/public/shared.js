@@ -1,4 +1,5 @@
 // Shared utility functions for QuickMCP
+
 let currentUserName = 'Guest';
 let currentUserDisplayName = 'Guest';
 let currentAuthMode = 'NONE';
@@ -692,7 +693,7 @@ window.utils = {
             await navigator.clipboard.writeText(text);
             return true;
         } catch (err) {
-            console.error('Failed to copy text:', err);
+            logger.error('Failed to copy text:', err);
             return false;
         }
     },

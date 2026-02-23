@@ -10,7 +10,7 @@ import { createDataStore } from './database/factory';
 import { IDataStore } from './database/datastore';
 import { AuthMode, resolveAuthMode } from './config/auth-config';
 import { McpCoreService, McpAuthContext, JsonRpcMessage } from './mcp-core/McpCoreService';
-
+import { logger } from './utils/logger';
 type SseSession = {
   res: express.Response;
   authContext: McpAuthContext;
@@ -321,7 +321,7 @@ export class IntegratedMCPServer {
       await this.executor.close();
       this.authStore.close();
     } catch (error) {
-      console.error('❌ Error during cleanup:', error);
+      logger.error('❌ Error during cleanup:', error);
     }
   }
 }

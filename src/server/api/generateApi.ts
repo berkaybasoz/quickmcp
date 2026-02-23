@@ -90,7 +90,7 @@ import {
   createZoomGeneratorConfig
 } from '../../types';
 import { IDataStore } from '../../database/datastore';
-
+import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: 'admin' | 'user' };
 
 interface GenerateApiDeps {
@@ -755,7 +755,7 @@ export class GenerateApi {
           });
         }
       } catch (error) {
-        console.error('Generation error:', error);
+        logger.error('Generation error:', error);
         res.status(400).json({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
