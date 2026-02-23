@@ -34,7 +34,36 @@ interface AuthApiDeps {
   getAuthProperty: () => AuthProperty;
 }
 
+type OAuthPendingRequest = {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  scope: string;
+  codeChallenge: string;
+  codeChallengeMethod: 'S256' | 'plain';
+  createdAt: number;
+};
+
+type OAuthAuthorizationCode = {
+  code: string;
+  clientId: string;
+  redirectUri: string;
+  scope: string;
+  codeChallenge: string;
+  codeChallengeMethod: 'S256' | 'plain';
+  username: string;
+  workspaceId: string;
+  role: AppUserRole;
+  expiresAt: number;
+  used: boolean;
+};
+
 export class AuthApi {
+  private readonly oauthRequestCookieName = 'quickmcp_oauth_req';
+  private readonly oauthCodeTtlMs = 5 * 60 * 1000;
+  private readonly oauthAccessTokenTtlSec = Number(process.env.QUICKMCP_OAUTH_ACCESS_TTL_SEC || '3600');
+  private readonly oauthCodes = new Map<string, OAuthAuthorizationCode>();
+
   constructor(private readonly deps: AuthApiDeps) {}
 
   private isSaasMode(): boolean {
@@ -113,6 +142,11 @@ export class AuthApi {
   }
 
   registerRoutes(app: express.Express): void {
+    app.get('/.well-known/oauth-authorization-server', this.getOAuthAuthorizationServerMetadata);
+    app.get('/oauth/authorize', this.oauthAuthorize);
+    app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
+    app.post('/oauth/token', this.oauthToken);
+
     app.get('/api/auth/me', this.getMe);
     app.get('/api/auth/roles', this.getRoles);
     app.get('/api/auth/users', this.getUsers);
@@ -140,6 +174,246 @@ export class AuthApi {
     app.get('/users', this.getUsersPage);
     app.get('/authorization', this.getAuthorizationPage);
   }
+
+  private normalizeOAuthCodeChallengeMethod(value: string): 'S256' | 'plain' {
+    const normalized = String(value || '').trim().toUpperCase();
+    return normalized === 'PLAIN' ? 'plain' : 'S256';
+  }
+
+  private toBase64Url(input: string): string {
+    return Buffer.from(input, 'utf8').toString('base64url');
+  }
+
+  private fromBase64Url(input: string): string {
+    return Buffer.from(input, 'base64url').toString('utf8');
+  }
+
+  private signOAuthState(payloadEncoded: string): string {
+    return crypto.createHmac('sha256', this.deps.authCookieSecret).update(payloadEncoded).digest('base64url');
+  }
+
+  private encodeOAuthPendingRequest(payload: OAuthPendingRequest): string {
+    const encoded = this.toBase64Url(JSON.stringify(payload));
+    const sig = this.signOAuthState(encoded);
+    return `${encoded}.${sig}`;
+  }
+
+  private decodeOAuthPendingRequest(raw: string): OAuthPendingRequest | null {
+    const value = String(raw || '').trim();
+    const dot = value.lastIndexOf('.');
+    if (dot <= 0 || dot >= value.length - 1) return null;
+    const encoded = value.slice(0, dot);
+    const sig = value.slice(dot + 1);
+    const expected = this.signOAuthState(encoded);
+    if (sig !== expected) return null;
+    try {
+      const parsed = JSON.parse(this.fromBase64Url(encoded));
+      if (!parsed || typeof parsed !== 'object') return null;
+      return {
+        clientId: String((parsed as any).clientId || ''),
+        redirectUri: String((parsed as any).redirectUri || ''),
+        state: String((parsed as any).state || ''),
+        scope: String((parsed as any).scope || ''),
+        codeChallenge: String((parsed as any).codeChallenge || ''),
+        codeChallengeMethod: this.normalizeOAuthCodeChallengeMethod(String((parsed as any).codeChallengeMethod || 'S256')),
+        createdAt: Number((parsed as any).createdAt || 0)
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private createAuthorizationCode(record: Omit<OAuthAuthorizationCode, 'code' | 'expiresAt' | 'used'>): OAuthAuthorizationCode {
+    const code = crypto.randomBytes(24).toString('base64url');
+    return {
+      ...record,
+      code,
+      expiresAt: Date.now() + this.oauthCodeTtlMs,
+      used: false
+    };
+  }
+
+  private appendQueryParam(urlStr: string, key: string, value: string): string {
+    try {
+      const url = new URL(urlStr);
+      url.searchParams.set(key, value);
+      return url.toString();
+    } catch {
+      const sep = urlStr.includes('?') ? '&' : '?';
+      return `${urlStr}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    }
+  }
+
+  private redirectOAuthError(res: express.Response, redirectUri: string, state: string, error: string, errorDescription: string): void {
+    let location = this.appendQueryParam(redirectUri, 'error', error);
+    location = this.appendQueryParam(location, 'error_description', errorDescription);
+    if (state) location = this.appendQueryParam(location, 'state', state);
+    res.redirect(location);
+  }
+
+  private pruneOAuthCodes(): void {
+    const now = Date.now();
+    for (const [key, value] of this.oauthCodes.entries()) {
+      if (value.expiresAt <= now || value.used) {
+        this.oauthCodes.delete(key);
+      }
+    }
+  }
+
+  private getOAuthAuthorizationServerMetadata = (req: express.Request, res: express.Response): void => {
+    const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    res.json({
+      issuer,
+      authorization_endpoint: `${issuer}/oauth/authorize`,
+      token_endpoint: `${issuer}/oauth/token`,
+      response_types_supported: ['code'],
+      grant_types_supported: ['authorization_code'],
+      token_endpoint_auth_methods_supported: ['none'],
+      code_challenge_methods_supported: ['S256', 'plain']
+    });
+  };
+
+  private oauthAuthorize = (req: express.Request, res: express.Response): void => {
+    const responseType = String(req.query.response_type || '').trim();
+    const clientId = String(req.query.client_id || 'chatgpt').trim();
+    const redirectUri = String(req.query.redirect_uri || '').trim();
+    const state = String(req.query.state || '').trim();
+    const scope = String(req.query.scope || '').trim();
+    const codeChallenge = String(req.query.code_challenge || '').trim();
+    const codeChallengeMethod = this.normalizeOAuthCodeChallengeMethod(String(req.query.code_challenge_method || 'S256'));
+
+    if (responseType !== 'code') {
+      if (redirectUri) {
+        this.redirectOAuthError(res, redirectUri, state, 'unsupported_response_type', 'response_type must be code');
+      } else {
+        res.status(400).json({ error: 'unsupported_response_type', error_description: 'response_type must be code' });
+      }
+      return;
+    }
+    if (!redirectUri) {
+      res.status(400).json({ error: 'invalid_request', error_description: 'redirect_uri is required' });
+      return;
+    }
+    if (!codeChallenge) {
+      this.redirectOAuthError(res, redirectUri, state, 'invalid_request', 'code_challenge is required');
+      return;
+    }
+
+    const pending: OAuthPendingRequest = {
+      clientId,
+      redirectUri,
+      state,
+      scope,
+      codeChallenge,
+      codeChallengeMethod,
+      createdAt: Date.now()
+    };
+    const encoded = this.encodeOAuthPendingRequest(pending);
+    this.deps.setCookie(res, this.oauthRequestCookieName, encoded, 10 * 60);
+    res.redirect('/oauth/authorize/complete');
+  };
+
+  private oauthAuthorizeComplete = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    const cookies = this.deps.parseCookies(req);
+    const rawPending = cookies[this.oauthRequestCookieName];
+    const pending = this.decodeOAuthPendingRequest(rawPending || '');
+    if (!pending || !pending.redirectUri) {
+      res.status(400).json({ error: 'invalid_request', error_description: 'Missing or invalid OAuth authorization request' });
+      return;
+    }
+    if (Date.now() - pending.createdAt > 10 * 60 * 1000) {
+      this.deps.clearCookie(res, this.oauthRequestCookieName);
+      this.redirectOAuthError(res, pending.redirectUri, pending.state, 'invalid_request', 'OAuth authorization request expired');
+      return;
+    }
+
+    const ctx = await this.deps.resolveAuthContext(req, res);
+    if (!ctx) {
+      const next = '/oauth/authorize/complete';
+      res.redirect(`/login?next=${encodeURIComponent(next)}`);
+      return;
+    }
+
+    const codeRecord = this.createAuthorizationCode({
+      clientId: pending.clientId,
+      redirectUri: pending.redirectUri,
+      scope: pending.scope,
+      codeChallenge: pending.codeChallenge,
+      codeChallengeMethod: pending.codeChallengeMethod,
+      username: ctx.username,
+      workspaceId: ctx.workspaceId,
+      role: ctx.role
+    });
+    this.pruneOAuthCodes();
+    this.oauthCodes.set(codeRecord.code, codeRecord);
+    this.deps.clearCookie(res, this.oauthRequestCookieName);
+
+    let location = this.appendQueryParam(pending.redirectUri, 'code', codeRecord.code);
+    if (pending.state) location = this.appendQueryParam(location, 'state', pending.state);
+    res.redirect(location);
+  };
+
+  private oauthToken = async (req: express.Request, res: express.Response): Promise<void> => {
+    this.pruneOAuthCodes();
+    const body = (req.body && typeof req.body === 'object') ? req.body : {};
+    const grantType = String((body as any).grant_type || '').trim();
+    const code = String((body as any).code || '').trim();
+    const redirectUri = String((body as any).redirect_uri || '').trim();
+    const clientId = String((body as any).client_id || '').trim();
+    const codeVerifier = String((body as any).code_verifier || '').trim();
+
+    if (grantType !== 'authorization_code') {
+      res.status(400).json({ error: 'unsupported_grant_type', error_description: 'grant_type must be authorization_code' });
+      return;
+    }
+    if (!code) {
+      res.status(400).json({ error: 'invalid_request', error_description: 'code is required' });
+      return;
+    }
+
+    const record = this.oauthCodes.get(code);
+    if (!record || record.used || record.expiresAt <= Date.now()) {
+      res.status(400).json({ error: 'invalid_grant', error_description: 'authorization code is invalid or expired' });
+      return;
+    }
+    if (redirectUri && record.redirectUri !== redirectUri) {
+      res.status(400).json({ error: 'invalid_grant', error_description: 'redirect_uri does not match authorization request' });
+      return;
+    }
+    if (clientId && record.clientId && record.clientId !== clientId) {
+      res.status(400).json({ error: 'invalid_grant', error_description: 'client_id does not match authorization request' });
+      return;
+    }
+
+    if (record.codeChallenge) {
+      if (!codeVerifier) {
+        res.status(400).json({ error: 'invalid_request', error_description: 'code_verifier is required' });
+        return;
+      }
+      const computed = record.codeChallengeMethod === 'plain'
+        ? codeVerifier
+        : crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+      if (computed !== record.codeChallenge) {
+        res.status(400).json({ error: 'invalid_grant', error_description: 'code_verifier is invalid' });
+        return;
+      }
+    }
+
+    record.used = true;
+    this.oauthCodes.set(code, record);
+
+    const ttlSec = Number.isFinite(this.oauthAccessTokenTtlSec) && this.oauthAccessTokenTtlSec > 0
+      ? Math.floor(this.oauthAccessTokenTtlSec)
+      : 3600;
+    const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec);
+
+    res.json({
+      access_token: tokenPack.token,
+      token_type: 'Bearer',
+      expires_in: ttlSec,
+      scope: record.scope || 'mcp'
+    });
+  };
 
   private getMe = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = await this.deps.resolveAuthContext(req, res);

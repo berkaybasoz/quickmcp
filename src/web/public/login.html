@@ -348,7 +348,8 @@
           throw new Error(body.error || 'Login failed');
         }
 
-        window.location.href = '/';
+        const next = new URLSearchParams(window.location.search).get('next');
+        window.location.href = next && next.startsWith('/') ? next : '/';
       } catch (error) {
         showError(error.message || 'Login failed');
       }

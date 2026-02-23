@@ -37,6 +37,7 @@ type AuthenticatedRequest = Request & { authUser?: string; authWorkspace?: strin
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 const dataProvider = getDataProvider();
 const deployMode = String(process.env.DEPLOY_MODE || 'ONPREM').trim().toUpperCase();
