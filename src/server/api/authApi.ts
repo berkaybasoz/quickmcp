@@ -58,11 +58,20 @@ type OAuthAuthorizationCode = {
   used: boolean;
 };
 
+type OAuthClientRegistration = {
+  clientId: string;
+  redirectUris: string[];
+  clientName: string;
+  tokenEndpointAuthMethod: 'none';
+  createdAt: number;
+};
+
 export class AuthApi {
   private readonly oauthRequestCookieName = 'quickmcp_oauth_req';
   private readonly oauthCodeTtlMs = 5 * 60 * 1000;
   private readonly oauthAccessTokenTtlSec = Number(process.env.QUICKMCP_OAUTH_ACCESS_TTL_SEC || '3600');
   private readonly oauthCodes = new Map<string, OAuthAuthorizationCode>();
+  private readonly oauthClients = new Map<string, OAuthClientRegistration>();
 
   constructor(private readonly deps: AuthApiDeps) {}
 
@@ -143,6 +152,7 @@ export class AuthApi {
 
   registerRoutes(app: express.Express): void {
     app.get('/.well-known/oauth-authorization-server', this.getOAuthAuthorizationServerMetadata);
+    app.post('/oauth/register', this.oauthRegister);
     app.get('/oauth/authorize', this.oauthAuthorize);
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
     app.post('/oauth/token', this.oauthToken);
@@ -266,10 +276,49 @@ export class AuthApi {
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
+      registration_endpoint: `${issuer}/oauth/register`,
       response_types_supported: ['code'],
       grant_types_supported: ['authorization_code'],
       token_endpoint_auth_methods_supported: ['none'],
       code_challenge_methods_supported: ['S256', 'plain']
+    });
+  };
+
+  private oauthRegister = (req: express.Request, res: express.Response): void => {
+    const body = (req.body && typeof req.body === 'object') ? req.body : {};
+    const redirectUrisRaw = (body as any).redirect_uris;
+    const redirectUris = Array.isArray(redirectUrisRaw)
+      ? redirectUrisRaw.map((v: any) => String(v || '').trim()).filter(Boolean)
+      : [];
+    const clientName = String((body as any).client_name || 'QuickMCP ChatGPT Client').trim();
+
+    if (redirectUris.length === 0) {
+      res.status(400).json({ error: 'invalid_client_metadata', error_description: 'redirect_uris is required' });
+      return;
+    }
+    if (redirectUris.some((uri) => !/^https?:\/\//i.test(uri))) {
+      res.status(400).json({ error: 'invalid_redirect_uri', error_description: 'redirect_uris must be absolute URLs' });
+      return;
+    }
+
+    const clientId = `quickmcp_${crypto.randomBytes(16).toString('hex')}`;
+    const createdAt = Math.floor(Date.now() / 1000);
+    this.oauthClients.set(clientId, {
+      clientId,
+      redirectUris,
+      clientName,
+      tokenEndpointAuthMethod: 'none',
+      createdAt
+    });
+
+    res.status(201).json({
+      client_id: clientId,
+      client_id_issued_at: createdAt,
+      client_name: clientName,
+      redirect_uris: redirectUris,
+      grant_types: ['authorization_code'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'none'
     });
   };
 
@@ -293,6 +342,13 @@ export class AuthApi {
     if (!redirectUri) {
       res.status(400).json({ error: 'invalid_request', error_description: 'redirect_uri is required' });
       return;
+    }
+    if (clientId) {
+      const registeredClient = this.oauthClients.get(clientId);
+      if (registeredClient && !registeredClient.redirectUris.includes(redirectUri)) {
+        this.redirectOAuthError(res, redirectUri, state, 'invalid_request', 'redirect_uri is not registered for client_id');
+        return;
+      }
     }
     if (!codeChallenge) {
       this.redirectOAuthError(res, redirectUri, state, 'invalid_request', 'code_challenge is required');
