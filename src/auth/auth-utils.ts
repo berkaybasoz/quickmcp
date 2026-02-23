@@ -216,6 +216,13 @@ export class AuthUtils {
     if (pathname.startsWith('/api/auth')) return true;
     if (pathname.startsWith('/oauth')) return true;
     if (pathname === '/.well-known/oauth-authorization-server') return true;
+    // MCP transport endpoints must be reachable with bearer token auth,
+    // not blocked by web-session redirects to /login.
+    if (pathname === '/mcp') return true;
+    if (pathname === '/sse') return true;
+    if (pathname === '/messages') return true;
+    if (pathname === '/ws') return true;
+    if (pathname === '/api/mcp-stdio') return true;
     if (pathname === '/login') return true;
     if (pathname === '/' || pathname === '/landing' || pathname === '/pricing') return true;
     if (pathname.startsWith('/images/')) return true;
