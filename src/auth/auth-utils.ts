@@ -214,6 +214,8 @@ export class AuthUtils {
 
   isPublicPath(pathname: string): boolean {
     if (pathname.startsWith('/api/auth')) return true;
+    if (pathname.startsWith('/oauth')) return true;
+    if (pathname === '/.well-known/oauth-authorization-server') return true;
     if (pathname === '/login') return true;
     if (pathname === '/' || pathname === '/landing' || pathname === '/pricing') return true;
     if (pathname.startsWith('/images/')) return true;

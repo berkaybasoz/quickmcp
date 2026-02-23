@@ -1,369 +1,125 @@
 #!/usr/bin/env node
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ErrorCode,
-  ListPromptsRequestSchema,
-  ListResourcesRequestSchema,
-  ListToolsRequestSchema,
-  McpError,
-  ReadResourceRequestSchema,
-  GetPromptRequestSchema
-} from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
+import cors from 'cors';
+import { randomUUID } from 'node:crypto';
+import { WebSocketServer, WebSocket } from 'ws';
 import { DynamicMCPExecutor } from './server/dynamic-mcp-executor';
 import { PortUtils } from './server/port-utils';
-import crypto from 'crypto';
 import { createDataStore } from './database/factory';
 import { IDataStore } from './database/datastore';
 import { AuthMode, resolveAuthMode } from './config/auth-config';
-import { verifyMcpToken } from './auth/token-utils';
-import {
-  getMcpTokenRecord,
-  isResourceAuthorized,
-  isToolAuthorized,
-  McpIdentity,
-  McpTokenAuthRecord
-} from './auth/auth-utils';
+import { McpCoreService, McpAuthContext, JsonRpcMessage } from './mcp-core/McpCoreService';
+
+type SseSession = {
+  res: express.Response;
+  authContext: McpAuthContext;
+  keepAlive: NodeJS.Timeout;
+};
 
 export class IntegratedMCPServer {
-  private server: Server;
   private app: express.Application;
   private executor: DynamicMCPExecutor;
   private authStore: IDataStore;
   private mcpAuthMode: AuthMode;
-  private mcpIdentity: McpIdentity | null;
-  private mcpTokenRecord: McpTokenAuthRecord | null;
+  private mcpCore: McpCoreService;
+  private sseSessions = new Map<string, SseSession>();
+  private wsServer: WebSocketServer | null = null;
 
   constructor() {
     this.executor = new DynamicMCPExecutor();
     this.authStore = createDataStore();
     this.mcpAuthMode = resolveAuthMode();
-    const mcpTokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
-    const mcpToken = (process.env.QUICKMCP_TOKEN || '').trim();
-    const verifiedMcpPayload = mcpToken ? verifyMcpToken(mcpToken, mcpTokenSecret) : null;
-    this.mcpIdentity = verifiedMcpPayload ? {
-      tokenId: verifiedMcpPayload.jti ? String(verifiedMcpPayload.jti) : '',
-      username: String(verifiedMcpPayload.sub),
-      workspace: String(verifiedMcpPayload.ws || verifiedMcpPayload.workspace || verifiedMcpPayload.sub),
-      role: String(verifiedMcpPayload.role || 'user')
-    } : null;
-    const mcpTokenHash = mcpToken ? crypto.createHash('sha256').update(mcpToken).digest('hex') : '';
-    this.mcpTokenRecord = getMcpTokenRecord(this.authStore, this.mcpAuthMode, mcpTokenHash);
 
-    this.server = new Server(
-      {
-        name: 'quickmcp-integrated-server',
-        version: '1.0.0'
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {}
-        }
-      }
-    );
+    const tokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
+    const defaultToken = (process.env.QUICKMCP_TOKEN || '').trim();
+
+    this.mcpCore = new McpCoreService({
+      executor: this.executor,
+      authStore: this.authStore,
+      authMode: this.mcpAuthMode,
+      tokenSecret,
+      defaultToken
+    });
 
     this.app = express();
-    this.setupHandlers();
     this.setupWebRoutes();
   }
 
-  private async parseQualifiedName(name: string): Promise<[string, string]> {
-    const allServerIds = (await this.authStore.getAllServers()).map((s) => s.id);
-    const matchingServerIds = allServerIds
-      .filter((serverId) => name.startsWith(`${serverId}__`))
-      .sort((a, b) => b.length - a.length);
-
-    if (matchingServerIds.length > 0) {
-      const serverId = matchingServerIds[0];
-      const itemName = name.slice(serverId.length + 2);
-      if (itemName.length === 0) {
-        throw new Error(`Invalid qualified name format: ${name}`);
-      }
-      return [serverId, itemName];
-    }
-
-    const sepIndex = name.indexOf('__');
-    if (sepIndex <= 0 || sepIndex >= name.length - 2) {
-      throw new Error(`Invalid qualified name format: ${name}`);
-    }
-    return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
+  private resolveHttpAuthContext(req: express.Request): McpAuthContext {
+    return this.mcpCore.resolveAuthContextFromSources({
+      authorization: String(req.headers.authorization || ''),
+      xMcpToken: String(req.headers['x-mcp-token'] || ''),
+      queryToken: String(req.query.token || ''),
+      bodyToken: String((req.body as any)?.token || '')
+    });
   }
 
-  private async getAuthorizedTools(tools: any[]): Promise<any[]> {
-    if (this.mcpAuthMode === 'NONE') return tools;
-    const out: any[] = [];
-    for (const tool of tools) {
-      try {
-        const [serverId, toolName] = await this.parseQualifiedName(String(tool.name || ''));
-        if (isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName)) {
-          out.push(tool);
-        }
-      } catch {
-        // ignore unauthorized/invalid
-      }
-    }
-    return out;
+  private resolveWsAuthContext(req: express.Request): McpAuthContext {
+    let queryToken = '';
+    try {
+      const host = req.headers.host || 'localhost';
+      const parsed = new URL(req.url || '/', `http://${host}`);
+      queryToken = String(parsed.searchParams.get('token') || '').trim();
+    } catch {}
+
+    return this.mcpCore.resolveAuthContextFromSources({
+      authorization: String(req.headers.authorization || ''),
+      xMcpToken: String(req.headers['x-mcp-token'] || ''),
+      queryToken
+    });
   }
 
-  private async getAuthorizedResources(resources: any[]): Promise<any[]> {
-    if (this.mcpAuthMode === 'NONE') return resources;
-    const out: any[] = [];
-    for (const resource of resources) {
-      try {
-        const fullName = String(resource.name || '');
-        const [serverId, resourceName] = await this.parseQualifiedName(fullName);
-        if (isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, resourceName)) {
-          out.push(resource);
-        }
-      } catch {
-        // ignore unauthorized/invalid
-      }
-    }
-    return out;
+  private async executeJsonRpc(rawBody: any, authContext: McpAuthContext): Promise<any | null> {
+    const message = this.mcpCore.parseIncomingMessage(rawBody);
+    return await this.mcpCore.processJsonRpcMessage(message, authContext);
   }
 
-  private setupHandlers(): void {
-    // List tools - dynamically from SQLite
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      try {
-        const tools = await this.getAuthorizedTools(await this.executor.getAllTools());
-        console.error(`📋 Listed ${tools.length} dynamic tools`);
-
-        return { tools };
-      } catch (error) {
-        console.error('❌ Error listing tools:', error);
-        return { tools: [] };
-      }
-    });
-
-    // List resources - dynamically from SQLite
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      try {
-        const resources = await this.getAuthorizedResources(await this.executor.getAllResources());
-        //console.log(`📂 Listed ${resources.length} dynamic resources`);
-
-        return { resources };
-      } catch (error) {
-        console.error('❌ Error listing resources:', error);
-        return { resources: [] };
-      }
-    });
-
-    // Execute tool - dynamically via database
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      try {
-        const { name, arguments: args } = request.params;
-        //console.log(`🔧 Executing dynamic tool: ${name}`);
-        if (this.mcpAuthMode !== 'NONE') {
-          const [serverId, toolName] = await this.parseQualifiedName(name);
-          const allowed = isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName);
-          if (!allowed) {
-            throw new McpError(ErrorCode.InvalidRequest, 'Unauthorized: tool is not allowed by token policy');
-          }
-        }
-
-        const result = await this.executor.executeTool(name, args || {});
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2)
-            }
-          ]
-        };
-      } catch (error) {
-        console.error(`❌ Error executing tool ${request.params.name}:`, error);
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Failed to execute tool: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
-      }
-    });
-
-    // Read resource - dynamically via database
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      try {
-        const { uri } = request.params;
-        //console.log(`📖 Reading dynamic resource: ${uri}`);
-
-        // Extract resource name from URI (e.g., "serverId__resourceName://list" -> "serverId__resourceName")
-        const resourceName = uri.split('://')[0];
-        if (this.mcpAuthMode !== 'NONE') {
-          const [serverId, actualResourceName] = await this.parseQualifiedName(resourceName);
-          const allowed = isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, actualResourceName);
-          if (!allowed) {
-            throw new McpError(ErrorCode.InvalidRequest, 'Unauthorized: resource is not allowed by token policy');
-          }
-        }
-        const result = await this.executor.readResource(resourceName);
-
-        return result;
-      } catch (error) {
-        console.error(`❌ Error reading resource ${request.params.uri}:`, error);
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Failed to read resource: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
-      }
-    });
-
-    // Prompts - return empty for now
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      return { prompts: [] };
-    });
-
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      throw new McpError(ErrorCode.MethodNotFound, `Prompt not found: ${request.params.name}`);
-    });
+  private writeSseEvent(res: express.Response, event: string, data: any): void {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${typeof data === 'string' ? data : JSON.stringify(data)}\n\n`);
   }
 
   private setupWebRoutes(): void {
+    this.app.use(cors());
     this.app.use(express.json({ limit: '50mb' }));
     this.app.use(express.raw({ type: '*/*', limit: '50mb' }));
 
-    // Health check
-    this.app.get('/health', (req, res) => {
-      const stats = this.executor.getStats();
+    this.app.get('/health', (_req, res) => {
       res.json({
         status: 'healthy',
-        ...stats,
+        authMode: this.mcpAuthMode,
+        ...this.executor.getStats(),
         timestamp: new Date().toISOString()
       });
     });
 
-    // MCP STDIO endpoint for bridge
+    this.app.get('/api/transports', (_req, res) => {
+      res.json({
+        success: true,
+        data: {
+          stdio: '/api/mcp-stdio',
+          sse: { stream: '/sse', messages: '/messages?sessionId={sessionId}' },
+          streamableHttp: '/mcp',
+          websocket: '/ws'
+        }
+      });
+    });
+
+    // 1) STDIO bridge
     this.app.post('/api/mcp-stdio', express.raw({ type: '*/*' }), async (req, res) => {
       try {
-        let messageData: any;
-
-        if (Buffer.isBuffer(req.body)) {
-          messageData = JSON.parse(req.body.toString());
-        } else if (typeof req.body === 'string') {
-          messageData = JSON.parse(req.body);
-        } else {
-          messageData = req.body;
-        }
-
-        //console.log('🔄 Processing MCP message:', messageData.method || 'unknown');
-
-        let response: any = null;
-
-        switch (messageData.method) {
-          case 'initialize':
-            response = {
-              jsonrpc: '2.0',
-              id: messageData.id,
-              result: {
-                protocolVersion: '2024-11-05',
-                serverInfo: {
-                  name: 'quickmcp-integrated',
-                  version: '1.0.0'
-                },
-                capabilities: {
-                  tools: {},
-                  resources: {},
-                  prompts: {}
-                }
-              }
-            };
-            break;
-
-          case 'tools/list':
-            const tools = await this.getAuthorizedTools(await this.executor.getAllTools());
-            response = {
-              jsonrpc: '2.0',
-              id: messageData.id,
-              result: { tools }
-            };
-            break;
-
-          case 'resources/list':
-            const resources = await this.getAuthorizedResources(await this.executor.getAllResources());
-            response = {
-              jsonrpc: '2.0',
-              id: messageData.id,
-              result: { resources }
-            };
-            break;
-
-          case 'tools/call':
-            if (this.mcpAuthMode !== 'NONE') {
-              const [serverId, toolName] = await this.parseQualifiedName(messageData.params.name);
-              const allowed = isToolAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, toolName);
-              if (!allowed) {
-                throw new Error('Unauthorized: tool is not allowed by token policy');
-              }
-            }
-            const toolResult = await this.executor.executeTool(
-              messageData.params.name,
-              messageData.params.arguments || {}
-            );
-            response = {
-              jsonrpc: '2.0',
-              id: messageData.id,
-              result: {
-                content: [
-                  {
-                    type: 'text',
-                    text: JSON.stringify(toolResult, null, 2)
-                  }
-                ]
-              }
-            };
-            break;
-
-          case 'resources/read':
-            const uri = messageData.params.uri;
-            const resourceName = uri.split('://')[0];
-            if (this.mcpAuthMode !== 'NONE') {
-              const [serverId, actualResourceName] = await this.parseQualifiedName(resourceName);
-              const allowed = isResourceAuthorized(this.mcpAuthMode, this.authStore, this.mcpIdentity, this.mcpTokenRecord, serverId, actualResourceName);
-              if (!allowed) {
-                throw new Error('Unauthorized: resource is not allowed by token policy');
-              }
-            }
-            const resourceResult = await this.executor.readResource(resourceName);
-            response = {
-              jsonrpc: '2.0',
-              id: messageData.id,
-              result: resourceResult
-            };
-            break;
-
-          case 'notifications/initialized':
-            // No response for notifications
-            //console.log('🔔 MCP client initialized');
-            break;
-
-          default:
-            if (messageData.id) {
-              response = {
-                jsonrpc: '2.0',
-                id: messageData.id,
-                error: {
-                  code: -32601,
-                  message: `Method not found: ${messageData.method}`
-                }
-              };
-            }
-        }
-
+        const authContext = this.resolveHttpAuthContext(req);
+        const response = await this.executeJsonRpc(req.body, authContext);
         if (response) {
           res.json(response);
         } else {
           res.status(204).end();
         }
-
       } catch (error) {
-        console.error('❌ Error processing MCP message:', error);
         res.status(500).json({
           jsonrpc: '2.0',
-          id: req.body?.id,
+          id: (req.body as any)?.id,
           error: {
             code: -32603,
             message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -372,9 +128,158 @@ export class IntegratedMCPServer {
       }
     });
 
-    // Stats endpoint
-    this.app.get('/api/stats', (req, res) => {
+    // 2) Legacy SSE transport
+    this.app.get('/sse', (req, res) => {
+      const sessionId = randomUUID();
+      const authContext = this.resolveHttpAuthContext(req);
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+
+      this.writeSseEvent(res, 'endpoint', `/messages?sessionId=${encodeURIComponent(sessionId)}`);
+
+      const keepAlive = setInterval(() => {
+        res.write(': keep-alive\n\n');
+      }, 25000);
+
+      this.sseSessions.set(sessionId, { res, authContext, keepAlive });
+
+      req.on('close', () => {
+        const session = this.sseSessions.get(sessionId);
+        if (session) {
+          clearInterval(session.keepAlive);
+          this.sseSessions.delete(sessionId);
+        }
+      });
+    });
+
+    this.app.post('/messages', async (req, res) => {
+      try {
+        const sessionId = String(req.query.sessionId || '');
+        if (!sessionId) {
+          res.status(400).send('Missing sessionId');
+          return;
+        }
+
+        const session = this.sseSessions.get(sessionId);
+        if (!session) {
+          res.status(404).send('Session not found');
+          return;
+        }
+
+        const requestAuth = this.resolveHttpAuthContext(req);
+        const effectiveAuth = requestAuth.identity || requestAuth.tokenRecord ? requestAuth : session.authContext;
+        const response = await this.executeJsonRpc(req.body, effectiveAuth);
+
+        if (response) {
+          this.writeSseEvent(session.res, 'message', response);
+          res.json(response);
+          return;
+        }
+
+        res.status(204).end();
+      } catch (error) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          id: (req.body as any)?.id,
+          error: {
+            code: -32603,
+            message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }
+        });
+      }
+    });
+
+    // 3) Streamable HTTP (single endpoint)
+    this.app.all('/mcp', async (req, res) => {
+      if (req.method === 'DELETE') {
+        res.status(204).end();
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      try {
+        const authContext = this.resolveHttpAuthContext(req);
+        const response = await this.executeJsonRpc(req.body, authContext);
+
+        if (!response) {
+          res.status(204).end();
+          return;
+        }
+
+        const acceptsSse = String(req.headers.accept || '').includes('text/event-stream') || String(req.query.stream || '') === 'true';
+        if (acceptsSse) {
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache, no-transform');
+          res.setHeader('Connection', 'keep-alive');
+          this.writeSseEvent(res, 'message', response);
+          res.end();
+          return;
+        }
+
+        res.json(response);
+      } catch (error) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          id: (req.body as any)?.id,
+          error: {
+            code: -32603,
+            message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }
+        });
+      }
+    });
+
+    this.app.get('/api/stats', (_req, res) => {
       res.json(this.executor.getStats());
+    });
+  }
+
+  private setupWebSocketTransport(httpServer: any): void {
+    this.wsServer = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+    this.wsServer.on('connection', (socket: WebSocket, req) => {
+      let sessionAuth: McpAuthContext;
+      try {
+        sessionAuth = this.resolveWsAuthContext(req as any);
+      } catch (error) {
+        socket.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: null,
+          error: {
+            code: -32603,
+            message: `Auth error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }
+        }));
+        socket.close();
+        return;
+      }
+
+      socket.on('message', async (raw) => {
+        let messageData: JsonRpcMessage | null = null;
+        try {
+          messageData = this.mcpCore.parseIncomingMessage(raw.toString());
+          const response = await this.mcpCore.processJsonRpcMessage(messageData, sessionAuth);
+          if (response) {
+            socket.send(JSON.stringify(response));
+          }
+        } catch (error) {
+          socket.send(JSON.stringify({
+            jsonrpc: '2.0',
+            id: messageData?.id ?? null,
+            error: {
+              code: -32603,
+              message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }
+          }));
+        }
+      });
     });
   }
 
@@ -383,29 +288,15 @@ export class IntegratedMCPServer {
       ? port
       : new PortUtils(process.env).resolveServerPorts().mcpPort;
 
-    // Start HTTP server
-    const httpServer = this.app.listen(resolvedPort, () => {
-      //console.log(`🚀 QuickMCP Integrated Server running on http://localhost:${port}`);
+    const httpServer = this.app.listen(resolvedPort);
+    this.setupWebSocketTransport(httpServer);
 
-      const stats = this.executor.getStats();
-      //console.log(`📊 Managing ${stats.servers} virtual servers with ${stats.tools} tools and ${stats.resources} resources`);
-    });
-
-    // Setup SSE transport for MCP - skip for now due to compatibility issues
-    // const transport = new SSEServerTransport('/sse', httpServer);
-    // await this.server.connect(transport);
-
-    //console.log('✅ MCP server connected with dynamic SQLite-based execution (HTTP endpoints active)');
-
-    // Graceful shutdown
     process.on('SIGINT', async () => {
-      //console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
       await this.cleanup();
       process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
-      //console.log('\n🔄 Shutting down QuickMCP Integrated Server...');
       await this.cleanup();
       process.exit(0);
     });
@@ -413,10 +304,22 @@ export class IntegratedMCPServer {
 
   private async cleanup(): Promise<void> {
     try {
-      await this.server.close();
+      this.sseSessions.forEach((session) => {
+        clearInterval(session.keepAlive);
+        session.res.end();
+      });
+      this.sseSessions.clear();
+
+      await new Promise<void>((resolve) => {
+        if (!this.wsServer) {
+          resolve();
+          return;
+        }
+        this.wsServer.close(() => resolve());
+      });
+
       await this.executor.close();
       this.authStore.close();
-      //console.log('✅ Cleanup completed');
     } catch (error) {
       console.error('❌ Error during cleanup:', error);
     }

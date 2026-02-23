@@ -533,9 +533,22 @@
                                 </div>
                                 <div class="p-6 space-y-4">
                                     <div>
+                                        <p class="text-xs text-slate-500">Test stdio, SSE, Streamable HTTP, and WebSocket transports with shared MCP auth/policy.</p>
+                                    </div>
+                                    <div>
                                         <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select
                                             Server</label>
                                         <select id="testServerSelect" class="input"></select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Transport</label>
+                                        <select id="transportType" class="input">
+                                            <option value="all">All</option>
+                                            <option value="stdio">STDIO</option>
+                                            <option value="sse">SSE</option>
+                                            <option value="streamable-http">Streamable HTTP</option>
+                                            <option value="websocket">WebSocket</option>
+                                        </select>
                                     </div>
                                     <div class="flex gap-3">
                                         <button id="runQuickTestBtn"
@@ -548,6 +561,12 @@
                                         </button>
                                         <!-- Hidden button for app.js compatibility if needed, or just rely on these two -->
                                         <button id="runAutoTestsBtn" class="hidden"></button>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <button id="runTransportTestBtn"
+                                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
+                                            <i class="fas fa-network-wired mr-2"></i> Run Transport Test
+                                        </button>
                                     </div>
                                     <div id="test-loading" class="hidden text-center text-sm text-blue-600 py-2">
                                         Running...</div>

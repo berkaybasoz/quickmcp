@@ -245,6 +245,7 @@ function setupEventListeners() {
     document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
     document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
+    document.getElementById('runTransportTestBtn')?.addEventListener('click', () => runTransportTests(false));
     
     // Test type change handler
     document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
@@ -1700,6 +1701,365 @@ async function runCustomTest() {
         noResults?.classList.remove('hidden');
     } finally {
         loading?.classList.add('hidden');
+    }
+}
+
+let mcpTransportBaseUrlCache = null;
+
+function nextMcpRequestId() {
+    if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID();
+    }
+    return `mcp-fback-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function resolveMcpTransportBaseUrl() {
+    if (mcpTransportBaseUrlCache) return mcpTransportBaseUrlCache;
+
+    try {
+        const response = await fetch('/api/auth/config');
+        const result = await response.json();
+        const mcpPort = result?.data?.mcpPort || result?.data?.mcpDefaultPort;
+        if (mcpPort) {
+            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.hostname}:${mcpPort}`;
+        } else {
+            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
+        }
+    } catch {
+        mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
+    }
+
+    return mcpTransportBaseUrlCache;
+}
+
+async function postJsonRpc(url, message, extra = {}) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(extra.headers || {})
+        },
+        body: JSON.stringify(message)
+    });
+
+    if (response.status === 204) return null;
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(payload?.error?.message || payload?.message || `HTTP ${response.status}`);
+    }
+    if (payload?.error) {
+        throw new Error(payload.error.message || 'MCP error');
+    }
+    return payload;
+}
+
+function extractServerToolsFromList(listPayload, serverId) {
+    const tools = Array.isArray(listPayload?.result?.tools) ? listPayload.result.tools : [];
+    const prefix = `${serverId}__`;
+    return tools
+        .map((tool) => ({
+            name: String(tool?.name || ''),
+            description: String(tool?.description || '')
+        }))
+        .filter((tool) => tool.name.startsWith(prefix))
+        .map((tool) => ({
+            name: tool.name.slice(prefix.length),
+            description: tool.description
+        }));
+}
+
+async function testStdioTransport(baseUrl) {
+    const init = await postJsonRpc(`${baseUrl}/api/mcp-stdio`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(`${baseUrl}/api/mcp-stdio`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'stdio',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        listPayload: list
+    };
+}
+
+async function testSseTransport(baseUrl) {
+    const controller = new AbortController();
+    const sseResponse = await fetch(`${baseUrl}/sse`, {
+        method: 'GET',
+        headers: { 'Accept': 'text/event-stream' },
+        signal: controller.signal
+    });
+    if (!sseResponse.ok || !sseResponse.body) {
+        throw new Error(`SSE stream failed: HTTP ${sseResponse.status}`);
+    }
+
+    const reader = sseResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let endpoint = '';
+    let raw = '';
+
+    while (!endpoint) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        raw += decoder.decode(chunk.value, { stream: true });
+        const match = raw.match(/event:\\s*endpoint\\s*\\n(?:.*\\n)*?data:\\s*([^\\n]+)/);
+        if (match && match[1]) {
+            endpoint = match[1].trim();
+        }
+    }
+
+    controller.abort();
+    if (!endpoint) {
+        throw new Error('SSE endpoint event not received');
+    }
+
+    const endpointUrl = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    const init = await postJsonRpc(endpointUrl, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(endpointUrl, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'sse',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        listPayload: list
+    };
+}
+
+async function testStreamableHttpTransport(baseUrl) {
+    const init = await postJsonRpc(`${baseUrl}/mcp`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'initialize',
+        params: {}
+    });
+    const list = await postJsonRpc(`${baseUrl}/mcp`, {
+        jsonrpc: '2.0',
+        id: nextMcpRequestId(),
+        method: 'tools/list',
+        params: {}
+    });
+    return {
+        transport: 'streamable-http',
+        protocolVersion: init?.result?.protocolVersion || 'unknown',
+        listPayload: list
+    };
+}
+
+async function testWebSocketTransport(baseUrl) {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = baseUrl.replace(/^https?:/, wsProtocol);
+
+    const result = await new Promise((resolve, reject) => {
+        const ws = new WebSocket(`${wsHost}/ws`);
+        const expected = new Map();
+        const timeout = setTimeout(() => {
+            try { ws.close(); } catch {}
+            reject(new Error('WebSocket transport timeout'));
+        }, 10000);
+
+        const finish = (err, result) => {
+            clearTimeout(timeout);
+            try { ws.close(); } catch {}
+            if (err) reject(err);
+            else resolve(result);
+        };
+
+        ws.onopen = () => {
+            const initId = nextMcpRequestId();
+            const listId = nextMcpRequestId();
+            expected.set(initId, 'initialize');
+            expected.set(listId, 'tools/list');
+            ws.send(JSON.stringify({ jsonrpc: '2.0', id: initId, method: 'initialize', params: {} }));
+            ws.send(JSON.stringify({ jsonrpc: '2.0', id: listId, method: 'tools/list', params: {} }));
+        };
+
+        let protocolVersion = 'unknown';
+        let listPayload = null;
+        ws.onmessage = (event) => {
+            try {
+                const payload = JSON.parse(event.data);
+                if (payload?.error) {
+                    finish(new Error(payload.error.message || 'WebSocket MCP error'));
+                    return;
+                }
+                const kind = expected.get(payload?.id);
+                if (kind === 'initialize') {
+                    protocolVersion = payload?.result?.protocolVersion || 'unknown';
+                    expected.delete(payload.id);
+                } else if (kind === 'tools/list') {
+                    listPayload = payload;
+                    expected.delete(payload.id);
+                }
+
+                if (expected.size === 0) {
+                    finish(null, { transport: 'websocket', protocolVersion, listPayload });
+                }
+            } catch (error) {
+                finish(error);
+            }
+        };
+
+        ws.onerror = () => finish(new Error('WebSocket connection failed'));
+    });
+
+    return result;
+}
+
+async function runTransportTests(runAll = false) {
+    const serverId = document.getElementById('testServerSelect')?.value;
+    if (!serverId) {
+        showError('test-error', 'Please select a server before running transport tests');
+        return;
+    }
+
+    const loading = document.getElementById('test-loading');
+    const resultsDiv = document.getElementById('test-results');
+    const noResults = document.getElementById('no-results');
+    const errorDiv = document.getElementById('test-error');
+    const selectedTransport = document.getElementById('transportType')?.value || 'all';
+    const shouldRunAll = runAll || selectedTransport === 'all';
+    const transports = shouldRunAll ? ['stdio', 'sse', 'streamable-http', 'websocket'] : [selectedTransport];
+
+    loading?.classList.remove('hidden');
+    if (loading) loading.textContent = shouldRunAll ? 'Running all transport tests...' : `Running ${selectedTransport} transport test...`;
+    resultsDiv?.classList.add('hidden');
+    noResults?.classList.add('hidden');
+    errorDiv?.classList.add('hidden');
+
+    try {
+        const baseUrl = await resolveMcpTransportBaseUrl();
+        const serverResponse = await fetch(`/api/servers/${serverId}`);
+        const serverPayload = await serverResponse.json();
+        if (!serverPayload?.success || !serverPayload?.data?.config) {
+            throw new Error('Failed to load selected server details');
+        }
+        const serverName = serverPayload.data.config.name || serverId;
+        const expectedTools = Array.isArray(serverPayload.data.config.tools)
+            ? serverPayload.data.config.tools.map((tool) => ({
+                name: String(tool?.name || ''),
+                description: String(tool?.description || '')
+            })).filter((tool) => tool.name)
+            : [];
+        const transportResults = [];
+
+        for (const transport of transports) {
+            const startedAt = Date.now();
+            try {
+                let data;
+                if (transport === 'stdio') data = await testStdioTransport(baseUrl);
+                else if (transport === 'sse') data = await testSseTransport(baseUrl);
+                else if (transport === 'streamable-http') data = await testStreamableHttpTransport(baseUrl);
+                else data = await testWebSocketTransport(baseUrl);
+
+                transportResults.push({
+                    transport,
+                    status: 'success',
+                    description: `MCP ${transport.toUpperCase()} initialize + tools/list`,
+                    result: 'Transport request flow successful',
+                    duration: Date.now() - startedAt,
+                    protocolVersion: data?.protocolVersion || 'unknown',
+                    listedTools: extractServerToolsFromList(data?.listPayload, serverId)
+                });
+            } catch (error) {
+                transportResults.push({
+                    transport,
+                    status: 'error',
+                    description: `MCP ${transport.toUpperCase()} initialize + tools/list`,
+                    error: error?.message || String(error),
+                    duration: Date.now() - startedAt
+                });
+            }
+        }
+
+        let output = '';
+        transportResults.forEach((result) => {
+            const prettyTransport = result.transport === 'streamable-http' ? 'streamable_http' : result.transport;
+            const listedMap = new Map((result.listedTools || []).map((tool) => [tool.name, tool]));
+            const toolsToReport = expectedTools.length > 0
+                ? expectedTools
+                : Array.from(listedMap.values());
+            const toolRows = toolsToReport.map((tool) => {
+                const listed = listedMap.get(tool.name);
+                if (result.status !== 'success') {
+                    return {
+                        tool: tool.name,
+                        description: tool.description || listed?.description || 'No description',
+                        status: 'error',
+                        error: result.error
+                    };
+                }
+                if (listed) {
+                    return {
+                        tool: tool.name,
+                        description: tool.description || listed.description || 'No description',
+                        status: 'success',
+                        result: 'Tool is listed via transport'
+                    };
+                }
+                return {
+                    tool: tool.name,
+                    description: tool.description || 'No description',
+                    status: 'error',
+                    error: 'Tool not returned by transport tools/list'
+                };
+            });
+
+            const successCount = toolRows.filter((row) => row.status === 'success').length;
+            const failedCount = toolRows.filter((row) => row.status === 'error').length;
+
+            output += `=== Test Results for ${serverName} (${prettyTransport}) ===\n`;
+            output += `Total Tools: ${toolRows.length}\n`;
+            output += `Tests Run: ${toolRows.length}\n`;
+            output += `✅ Success: ${successCount} | ❌ Failed: ${failedCount}\n\n`;
+
+            toolRows.forEach((row) => {
+                const rowStatus = row.status === 'success' ? '✅ PASS' : '❌ FAIL';
+                output += `${rowStatus} ${row.tool}\n`;
+                output += `   Description: ${row.description}\n`;
+                if (row.status === 'success') {
+                    output += `   Result: ${row.result}\n`;
+                } else {
+                    output += `   Error: ${row.error}\n`;
+                }
+                output += '\n';
+            });
+
+            if (result.status === 'success') {
+                output += `Transport Protocol: ${result.protocolVersion}\n`;
+                output += `Transport Duration: ${result.duration}ms\n`;
+                output += `Tools Returned by Transport: ${(result.listedTools || []).length}\n`;
+            } else {
+                output += `Transport Error: ${result.error}\n`;
+                output += `Transport Duration: ${result.duration}ms\n`;
+            }
+            output += '\n';
+        });
+
+        if (resultsDiv) {
+            resultsDiv.textContent = output;
+            resultsDiv.classList.remove('hidden');
+        }
+        noResults?.classList.add('hidden');
+    } catch (error) {
+        showError('test-error', error?.message || String(error));
+        noResults?.classList.remove('hidden');
+    } finally {
+        loading?.classList.add('hidden');
+        if (loading) loading.textContent = 'Running...';
     }
 }
 
