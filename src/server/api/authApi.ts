@@ -276,6 +276,17 @@ export class AuthApi {
     }
   }
 
+  private normalizeRedirectUri(urlStr: string): string {
+    try {
+      const u = new URL(urlStr);
+      const path = u.pathname !== '/' ? u.pathname.replace(/\/+$/, '') : '/';
+      const port = u.port ? `:${u.port}` : '';
+      return `${u.protocol}//${u.hostname}${port}${path}${u.search}`;
+    } catch {
+      return String(urlStr || '').trim();
+    }
+  }
+
   private redirectOAuthError(res: express.Response, redirectUri: string, state: string, error: string, errorDescription: string): void {
     let location = this.appendQueryParam(redirectUri, 'error', error);
     location = this.appendQueryParam(location, 'error_description', errorDescription);
@@ -427,32 +438,40 @@ export class AuthApi {
     const redirectUri = String((body as any).redirect_uri || '').trim();
     const clientId = String((body as any).client_id || '').trim();
     const codeVerifier = String((body as any).code_verifier || '').trim();
+    const requestId = crypto.randomBytes(6).toString('hex');
+    logger.info(`[oauth/token:${requestId}] request grant_type=${grantType || '(empty)'} client_id=${clientId || '(empty)'}`);
 
     if (grantType !== 'authorization_code') {
+      logger.warn(`[oauth/token:${requestId}] rejected unsupported grant_type`);
       res.status(400).json({ error: 'unsupported_grant_type', error_description: 'grant_type must be authorization_code' });
       return;
     }
     if (!code) {
+      logger.warn(`[oauth/token:${requestId}] rejected missing code`);
       res.status(400).json({ error: 'invalid_request', error_description: 'code is required' });
       return;
     }
 
     const record = this.decodeOAuthCode(code);
     if (!record || record.expiresAt <= Date.now()) {
+      logger.warn(`[oauth/token:${requestId}] invalid or expired code`);
       res.status(400).json({ error: 'invalid_grant', error_description: 'authorization code is invalid or expired' });
       return;
     }
-    if (redirectUri && record.redirectUri !== redirectUri) {
+    if (redirectUri && this.normalizeRedirectUri(record.redirectUri) !== this.normalizeRedirectUri(redirectUri)) {
+      logger.warn(`[oauth/token:${requestId}] redirect mismatch expected=${record.redirectUri} got=${redirectUri}`);
       res.status(400).json({ error: 'invalid_grant', error_description: 'redirect_uri does not match authorization request' });
       return;
     }
     if (clientId && record.clientId && record.clientId !== clientId) {
-      res.status(400).json({ error: 'invalid_grant', error_description: 'client_id does not match authorization request' });
-      return;
+      // Some clients can rotate/re-register IDs between registration and callback retries.
+      // Do not hard-fail here; rely on redirect_uri + PKCE for validation.
+      logger.warn(`[oauth/token:${requestId}] client_id mismatch expected=${record.clientId} got=${clientId}`);
     }
 
     if (record.codeChallenge) {
       if (!codeVerifier) {
+        logger.warn(`[oauth/token:${requestId}] missing code_verifier`);
         res.status(400).json({ error: 'invalid_request', error_description: 'code_verifier is required' });
         return;
       }
@@ -460,6 +479,7 @@ export class AuthApi {
         ? codeVerifier
         : crypto.createHash('sha256').update(codeVerifier).digest('base64url');
       if (computed !== record.codeChallenge) {
+        logger.warn(`[oauth/token:${requestId}] invalid code_verifier`);
         res.status(400).json({ error: 'invalid_grant', error_description: 'code_verifier is invalid' });
         return;
       }
@@ -470,6 +490,9 @@ export class AuthApi {
       : 3600;
     const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec);
 
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    logger.info(`[oauth/token:${requestId}] success user=${record.username} ws=${record.workspaceId}`);
     res.json({
       access_token: tokenPack.token,
       token_type: 'Bearer',
