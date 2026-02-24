@@ -30,6 +30,8 @@ import { LogsApi } from './api/logsApi';
 import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
 import { logger } from '../utils/logger';
+import { DynamicMCPExecutor } from './dynamic-mcp-executor';
+import { McpCoreService } from '../mcp-core/McpCoreService';
 const app = express();
 type Request = express.Request;
 type Response = express.Response;
@@ -172,6 +174,46 @@ const logsApi = new LogsApi(ensureDataStore());
 const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode, MCP_PORT);
+
+const mcpCore = new McpCoreService({
+  executor: new DynamicMCPExecutor(),
+  authStore: ensureDataStore(),
+  authMode,
+  tokenSecret: process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me',
+  defaultToken: (process.env.QUICKMCP_TOKEN || '').trim()
+});
+
+async function resolveMcpAuthContext(req: Request): Promise<any> {
+  return mcpCore.resolveAuthContextFromSources({
+    authorization: String(req.headers.authorization || ''),
+    xMcpToken: String(req.headers['x-mcp-token'] || ''),
+    queryToken: String(req.query.token || ''),
+    bodyToken: String((req.body as any)?.token || '')
+  });
+}
+
+async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
+  try {
+    const authContext = await resolveMcpAuthContext(req);
+    const message = mcpCore.parseIncomingMessage(req.body);
+    const response = await mcpCore.processJsonRpcMessage(message, authContext);
+    if (!response) {
+      res.status(204).end();
+      return;
+    }
+    res.json(response);
+  } catch (error) {
+    logger.error('[MCP] /mcp request failed', error);
+    res.status(500).json({
+      jsonrpc: '2.0',
+      id: (req.body as any)?.id ?? null,
+      error: {
+        code: -32603,
+        message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }
+    });
+  }
+}
 async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   if (isNoneMode()) {
     applyNoneModeAuth(req);
@@ -271,6 +313,20 @@ databaseApi.registerRoutes(app);
 mcpApi.registerRoutes(app);
 authApi.registerRoutes(app);
 logsApi.registerRoutes(app);
+
+// Serverless/Vercel path: expose integrated MCP HTTP transport directly on the main app.
+app.get('/mcp', (_req, res) => {
+  res.status(200).json({ ok: true, transport: 'streamable-http', endpoint: '/mcp' });
+});
+app.post('/mcp', (req, res) => {
+  handleMcpJsonRpc(req, res).catch((error) => {
+    logger.error('[MCP] /mcp unhandled error', error);
+    res.status(500).json({ error: 'Internal error' });
+  });
+});
+app.delete('/mcp', (_req, res) => {
+  res.status(204).end();
+});
 indexApi.registerRoutes(app);
 
 export function startServer(): void {

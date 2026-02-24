@@ -194,6 +194,7 @@ export class IntegratedMCPServer {
 
     // 3) Streamable HTTP (single endpoint)
     this.app.all('/mcp', async (req, res) => {
+      logger.info(`[MCP/HTTP] ${req.method} /mcp accept=${String(req.headers.accept || '')} content-type=${String(req.headers['content-type'] || '')}`);
       if (req.method === 'DELETE') {
         res.status(204).end();
         return;
@@ -225,6 +226,7 @@ export class IntegratedMCPServer {
 
         res.json(response);
       } catch (error) {
+        logger.error(`[MCP/HTTP] request failed method=${req.method}`, error);
         res.status(500).json({
           jsonrpc: '2.0',
           id: (req.body as any)?.id,
