@@ -619,7 +619,8 @@ export class AuthApi {
     try {
       const store = this.deps.ensureDataStore();
       const workspaceUsers = await store.getAllUsersByWorkspace(ctx.workspaceId);
-      const users = (ctx.role === 'admin'
+      const canManageWorkspace = ctx.role === 'admin' || this.isSaasMode();
+      const users = (canManageWorkspace
         ? workspaceUsers
         : workspaceUsers.filter((u) => u.username === ctx.username)
       ).map((u) => ({ username: u.username, role: u.role }));
@@ -665,7 +666,13 @@ export class AuthApi {
   };
 
   private getAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const actor = await this.deps.requireAdminApi(req, res);
+    const actor = this.isSaasMode()
+      ? await this.deps.resolveAuthContext(req, res)
+      : await this.deps.requireAdminApi(req, res);
+    if (this.isSaasMode() && !actor) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
     if (!actor) return;
 
     try {
@@ -713,7 +720,13 @@ export class AuthApi {
   };
 
   private updateAuthorizationTokenPolicy = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
-    const actor = await this.deps.requireAdminApi(req, res);
+    const actor = this.isSaasMode()
+      ? await this.deps.resolveAuthContext(req, res)
+      : await this.deps.requireAdminApi(req, res);
+    if (this.isSaasMode() && !actor) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
     if (!actor) return;
 
     try {
@@ -787,7 +800,7 @@ export class AuthApi {
       return;
     }
     const subjectUsername = this.deps.normalizeUsername(req.body?.subjectUsername) || ctx.username;
-    if (ctx.role !== 'admin' && subjectUsername !== ctx.username) {
+    if (subjectUsername !== ctx.username && (this.isSaasMode() || ctx.role !== 'admin')) {
       res.status(403).json({ success: false, error: 'Only admin can generate token for other users' });
       return;
     }
@@ -868,9 +881,10 @@ export class AuthApi {
       return;
     }
 
+    const canManageWorkspace = ctx.role === 'admin' || this.isSaasMode();
     const tokens = (await this.deps.ensureDataStore()
       .getMcpTokensByWorkspace(ctx.workspaceId))
-      .filter((t) => ctx.role === 'admin' || t.subjectUsername === ctx.username)
+      .filter((t) => canManageWorkspace || t.subjectUsername === ctx.username)
       .map((t) => ({
         id: t.id,
         tokenName: t.tokenName,
@@ -898,8 +912,9 @@ export class AuthApi {
       return;
     }
 
+    const canManageWorkspace = ctx.role === 'admin' || this.isSaasMode();
     const token = await this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
-    if (!token || token.workspaceId !== ctx.workspaceId || (ctx.role !== 'admin' && token.subjectUsername !== ctx.username)) {
+    if (!token || token.workspaceId !== ctx.workspaceId || (!canManageWorkspace && token.subjectUsername !== ctx.username)) {
       res.status(404).json({ success: false, error: 'Token not found' });
       return;
     }
@@ -932,8 +947,9 @@ export class AuthApi {
       return;
     }
 
+    const canManageWorkspace = ctx.role === 'admin' || this.isSaasMode();
     const token = await this.deps.ensureDataStore().getMcpTokenById(String(req.params.id || ''));
-    if (!token || token.workspaceId !== ctx.workspaceId || (ctx.role !== 'admin' && token.subjectUsername !== ctx.username)) {
+    if (!token || token.workspaceId !== ctx.workspaceId || (!canManageWorkspace && token.subjectUsername !== ctx.username)) {
       res.status(404).json({ success: false, error: 'Token not found' });
       return;
     }
