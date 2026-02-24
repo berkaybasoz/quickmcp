@@ -185,8 +185,12 @@ function setupEventListeners() {
 
     // Data source type selection
     document.querySelectorAll('input[name="dataSourceType"]').forEach(radio => {
-        radio.addEventListener('change', toggleDataSourceFields);
+        radio.addEventListener('change', () => {
+            toggleDataSourceFields();
+            syncDataSourceCardSelectionState();
+        });
     });
+    setupDataSourceCardSelectionUx();
 
     // Database type change
     document.getElementById('dbType')?.addEventListener('change', updateDefaultPort);
@@ -709,6 +713,54 @@ function setupTemplateFilters() {
     applyFilter(defaultFilter, '');
 }
 
+function setupDataSourceCardSelectionUx() {
+    const cards = document.querySelectorAll('[data-role="data-source-card"]');
+    cards.forEach((card) => {
+        const surface = card.querySelector('div');
+        if (!surface) return;
+
+        surface.classList.add('relative');
+        if (!surface.querySelector('[data-role="template-selected-badge"]')) {
+            const badge = document.createElement('span');
+            badge.setAttribute('data-role', 'template-selected-badge');
+            badge.className = 'hidden absolute top-3 right-3 h-8 px-2 rounded-full bg-emerald-500 text-white shadow-md items-center justify-center gap-1';
+            badge.innerHTML = '<i class="fas fa-check text-xs"></i><button type="button" class="template-go-next inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/20 hover:bg-white/30" title="Go to next step"><i class="fas fa-arrow-right text-[10px]"></i></button>';
+            surface.appendChild(badge);
+        }
+
+        if (card.dataset.nextStepBound !== 'true') {
+            const goBtn = surface.querySelector('.template-go-next');
+            if (goBtn) {
+                goBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const radio = card.querySelector('input[name="dataSourceType"]');
+                    if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
+                    if (currentWizardStep === 1) {
+                        goToWizardStep(2);
+                    }
+                });
+            }
+            card.dataset.nextStepBound = 'true';
+        }
+    });
+
+    syncDataSourceCardSelectionState();
+}
+
+function syncDataSourceCardSelectionState() {
+    const cards = document.querySelectorAll('[data-role="data-source-card"]');
+    cards.forEach((card) => {
+        const radio = card.querySelector('input[name="dataSourceType"]');
+        const surface = card.querySelector('div');
+        const badge = surface?.querySelector('[data-role="template-selected-badge"]');
+        const selected = radio instanceof HTMLInputElement && radio.checked;
+        if (!badge) return;
+        badge.classList.toggle('hidden', !selected);
+        badge.classList.toggle('inline-flex', selected);
+    });
+}
+
 // Update default port based on database type
 function updateDefaultPort() {
     // Determine selected DB type from source cards
@@ -1145,6 +1197,7 @@ function resetForm() {
     document.querySelectorAll('input[name="dataSourceType"]').forEach(radio => {
         radio.checked = false;
     });
+    syncDataSourceCardSelectionState();
 
     document.getElementById('file-upload-section')?.classList.add('hidden');
     document.getElementById('database-section')?.classList.add('hidden');
