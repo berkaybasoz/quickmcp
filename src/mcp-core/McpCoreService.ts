@@ -231,8 +231,11 @@ export class McpCoreService {
   }
 
   private parseQualifiedName(name: string): [string, string] {
-    const sepIndex = name.indexOf('__');
+    // Tool/resource names are "<serverId>__<itemName>" and serverId itself can contain "__".
+    // Split by the last separator so owner-scoped server ids keep their full value.
+    const sepIndex = name.lastIndexOf('__');
     if (sepIndex <= 0 || sepIndex >= name.length - 2) {
+      logger.error(`[MCP] invalid qualified name: ${name}`);
       throw new Error(`Invalid qualified name format: ${name}`);
     }
     return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
