@@ -88,29 +88,20 @@ export class AuthApi {
     const requestOrigin = host ? `${proto}://${host}` : '';
 
     if (!configured) return requestOrigin;
-    if (!requestOrigin) return configured;
 
-    const requestHost = host;
-    const isLocalRequest = requestHost.startsWith('localhost:') || requestHost.startsWith('127.0.0.1:');
-
+    // Use a single canonical issuer/resource in production to avoid token binding drift
+    // between www/non-www hosts.
     try {
       const configuredHost = new URL(configured).host.toLowerCase();
       const isLocalConfigured = configuredHost.startsWith('localhost:') || configuredHost.startsWith('127.0.0.1:');
-      if (isLocalRequest && configuredHost !== requestHost) {
-        return requestOrigin;
-      }
-      if (!isLocalRequest && isLocalConfigured) {
-        return requestOrigin;
-      }
-      // In production, keep OAuth issuer/resource host aligned to the host ChatGPT actually calls.
-      // A configured non-www vs www mismatch causes ChatGPT to obtain token but skip attaching it to /mcp.
-      if (!isLocalRequest && configuredHost !== requestHost) {
-        return requestOrigin;
-      }
+      if (!isLocalConfigured) return configured;
     } catch {
-      return requestOrigin;
+      return requestOrigin || configured;
     }
 
+    // Local development convenience: if APP_BASE_URL is localhost but request host differs,
+    // reflect request origin.
+    if (requestOrigin) return requestOrigin;
     return configured;
   }
 
@@ -570,10 +561,9 @@ export class AuthApi {
     logger.info(`[oauth/token:${requestId}] success user=${record.username} ws=${record.workspaceId}`);
     res.json({
       access_token: tokenPack.token,
-      token_type: 'Bearer',
+      token_type: 'bearer',
       expires_in: ttlSec,
-      scope: record.scope || 'mcp',
-      resource: record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`
+      scope: record.scope || 'mcp'
     });
   };
 
