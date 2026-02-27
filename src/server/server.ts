@@ -31,7 +31,7 @@ import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
 import { logger } from '../utils/logger';
 import { DynamicMCPExecutor } from './dynamic-mcp-executor';
-import { McpCoreService } from '../mcp-core/McpCoreService';
+import { McpCoreService, McpAuthContext } from '../mcp-core/McpCoreService';
 const app = express();
 type Request = express.Request;
 type Response = express.Response;
@@ -183,13 +183,65 @@ const mcpCore = new McpCoreService({
   defaultToken: (process.env.QUICKMCP_TOKEN || '').trim()
 });
 
-async function resolveMcpAuthContext(req: Request): Promise<any> {
-  return mcpCore.resolveAuthContextFromSources({
+function parseCookieHeader(raw: string | undefined): Record<string, string> {
+  if (!raw) return {};
+  return raw.split(';').reduce((acc, part) => {
+    const [name, ...rest] = part.trim().split('=');
+    if (!name) return acc;
+    acc[name] = decodeURIComponent(rest.join('=') || '');
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+function buildCookieFallbackAuthContext(req: Request): McpAuthContext | null {
+  const cookies = parseCookieHeader(String(req.headers.cookie || ''));
+  const access = String(cookies[AUTH_COOKIE_NAMES.access] || '').trim();
+  if (!access) return null;
+  const payload = verifyAccessToken(access, authCookieSecret);
+  if (!payload?.sub) return null;
+
+  const username = String(payload.sub);
+  const workspace = String(payload.ws || payload.sub);
+  const role = String(payload.role || 'user');
+  return {
+    identity: {
+      tokenId: 'cookie-session',
+      username,
+      workspace,
+      role
+    },
+    tokenRecord: {
+      id: 'cookie-session',
+      tokenName: 'cookie-session',
+      workspaceId: workspace,
+      subjectUsername: username,
+      allowAllServers: true,
+      allowAllTools: true,
+      allowAllResources: true,
+      serverIds: [],
+      allowedTools: [],
+      allowedResources: [],
+      serverRules: {},
+      toolRules: {},
+      resourceRules: {},
+      neverExpires: true,
+      expiresAt: null,
+      revokedAt: null
+    }
+  };
+}
+
+async function resolveMcpAuthContext(req: Request): Promise<McpAuthContext> {
+  const mcpAuth = await mcpCore.resolveAuthContextFromSources({
     authorization: String(req.headers.authorization || ''),
     xMcpToken: String(req.headers['x-mcp-token'] || ''),
     queryToken: String(req.query.token || req.query.access_token || ''),
     bodyToken: String((req.body as any)?.token || (req.body as any)?.access_token || (req.body as any)?.params?.access_token || '')
   });
+  if (mcpAuth.identity) return mcpAuth;
+  if (authMode === 'NONE') return mcpAuth;
+  const cookieFallback = buildCookieFallbackAuthContext(req);
+  return cookieFallback || mcpAuth;
 }
 
 async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
