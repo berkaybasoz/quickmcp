@@ -314,11 +314,8 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     const authContext = await resolveMcpAuthContext(req);
     const method = String((message as any)?.method || '');
     const protectedMethods = new Set([
-      'tools/list',
       'tools/call',
-      'resources/list',
       'resources/read',
-      'prompts/list',
       'prompts/get'
     ]);
 
