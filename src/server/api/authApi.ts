@@ -388,8 +388,10 @@ export class AuthApi {
     const redirectUri = String(req.query.redirect_uri || '').trim();
     const state = String(req.query.state || '').trim();
     const scope = String(req.query.scope || '').trim();
-    const fallbackResource = `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
-    const resource = String(req.query.resource || fallbackResource).trim();
+    const canonicalResource = `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
+    const requestedResource = String(req.query.resource || '').trim();
+    // Force canonical resource host to prevent quickmcp.ai vs www.quickmcp.ai token-binding drift.
+    const resource = canonicalResource;
     const codeChallenge = String(req.query.code_challenge || '').trim();
     const codeChallengeMethod = this.normalizeOAuthCodeChallengeMethod(String(req.query.code_challenge_method || 'S256'));
 
@@ -427,6 +429,9 @@ export class AuthApi {
       codeChallengeMethod,
       createdAt: Date.now()
     };
+    if (requestedResource && requestedResource !== resource) {
+      logger.info(`[oauth/authorize] normalize resource requested=${requestedResource} canonical=${resource}`);
+    }
     const encoded = this.encodeOAuthPendingRequest(pending);
     this.deps.setCookie(res, this.oauthRequestCookieName, encoded, 10 * 60);
     res.redirect('/oauth/authorize/complete');
