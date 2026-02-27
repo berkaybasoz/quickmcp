@@ -310,8 +310,39 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     logger.info(`[MCP] debug headers=${safeStringifyForLog(req.headers)}`);
     logger.info(`[MCP] debug body=${bodyPreview}`);
 
-    const authContext = await resolveMcpAuthContext(req);
     const message = mcpCore.parseIncomingMessage(req.body);
+    const authContext = await resolveMcpAuthContext(req);
+    const method = String((message as any)?.method || '');
+    const protectedMethods = new Set([
+      'tools/list',
+      'tools/call',
+      'resources/list',
+      'resources/read',
+      'prompts/list',
+      'prompts/get'
+    ]);
+
+    if (authMode !== 'NONE' && !authContext.identity && protectedMethods.has(method)) {
+      const configuredBase = String(authProperty.appBaseUrl || '').trim().replace(/\/+$/, '');
+      const host = String(req.headers.host || '').trim();
+      const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+      const runtimeBase = host ? `${proto}://${host}` : '';
+      const base = configuredBase || runtimeBase;
+      const metadataUrl = `${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource`;
+      const challenge = `Bearer resource_metadata=\"${metadataUrl}\", error=\"invalid_token\", error_description=\"Bearer token required\"`;
+
+      res.setHeader('WWW-Authenticate', challenge);
+      res.status(401).json({
+        jsonrpc: '2.0',
+        id: (message as any)?.id ?? null,
+        result: {
+          content: [{ type: 'text', text: 'Authentication required: Bearer token is missing.' }],
+          _meta: { 'mcp/www_authenticate': [challenge] },
+          isError: true
+        }
+      });
+      return;
+    }
 
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
     if (!response) {
