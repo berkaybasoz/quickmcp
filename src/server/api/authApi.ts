@@ -1226,7 +1226,7 @@ export class AuthApi {
 
     const cookies = this.deps.parseCookies(req);
     const cookieNextRaw = String(cookies[this.oauthNextCookieName] || '').trim();
-    const cookieNext = cookieNextRaw.startsWith('/') ? cookieNextRaw : '/';
+    const cookieNext = cookieNextRaw.startsWith('/') ? cookieNextRaw : '/oauth/authorize/complete';
     const accessToken = typeof req.body?.accessToken === 'string' ? req.body.accessToken.trim() : '';
     if (!accessToken) {
       res.status(400).json({ success: false, error: 'accessToken is required' });
