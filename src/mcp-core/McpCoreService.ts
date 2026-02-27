@@ -97,6 +97,13 @@ export class McpCoreService {
     const method = String(messageData.method || '');
     const who = this.describeIdentity(authContext);
     logger.info(`[MCP] request method=${method} ${who}`);
+    const appBaseUrl = String(process.env.APP_BASE_URL || '').trim().replace(/\/+$/, '');
+    const resourceMetadataUrl = appBaseUrl
+      ? `${appBaseUrl}/.well-known/oauth-protected-resource`
+      : '';
+    const authChallenge = resourceMetadataUrl
+      ? `Bearer resource_metadata=\"${resourceMetadataUrl}\", error=\"invalid_token\", error_description=\"Bearer token required\"`
+      : 'Bearer error="invalid_token", error_description="Bearer token required"';
 
     switch (messageData.method) {
       case 'initialize':
@@ -118,6 +125,17 @@ export class McpCoreService {
         };
 
       case 'tools/list': {
+        if (this.authMode !== 'NONE' && !authContext.identity) {
+          return {
+            jsonrpc: '2.0',
+            id: messageData.id,
+            result: {
+              content: [{ type: 'text', text: 'Authentication required: Bearer token is missing.' }],
+              _meta: { 'mcp/www_authenticate': [authChallenge] },
+              isError: true
+            }
+          };
+        }
         const allTools = await this.executor.getAllTools();
         const tools = await this.getAuthorizedTools(allTools, authContext);
         if (tools.length === 0 && allTools.length > 0) {
@@ -130,6 +148,17 @@ export class McpCoreService {
       }
 
       case 'resources/list': {
+        if (this.authMode !== 'NONE' && !authContext.identity) {
+          return {
+            jsonrpc: '2.0',
+            id: messageData.id,
+            result: {
+              content: [{ type: 'text', text: 'Authentication required: Bearer token is missing.' }],
+              _meta: { 'mcp/www_authenticate': [authChallenge] },
+              isError: true
+            }
+          };
+        }
         const allResources = await this.executor.getAllResources();
         const resources = await this.getAuthorizedResources(allResources, authContext);
         logger.info(`[MCP] resources/list ${who} → ${resources.length}/${allResources.length} resources`);
