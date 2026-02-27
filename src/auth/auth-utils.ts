@@ -220,6 +220,7 @@ export class AuthUtils {
     if (pathname === '/mcp/.well-known/oauth-authorization-server') return true;
     if (pathname === '/.well-known/oauth-protected-resource') return true;
     if (pathname === '/.well-known/oauth-protected-resource/mcp') return true;
+    if (pathname === '/mcp/.well-known/oauth-protected-resource') return true;
     if (pathname === '/.well-known/openid-configuration') return true;
     if (pathname === '/.well-known/openid-configuration/mcp') return true;
     if (pathname === '/mcp/.well-known/openid-configuration') return true;

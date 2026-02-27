@@ -80,14 +80,16 @@ export class AuthApi {
 
   private resolveAppBaseUrl(req: express.Request): string {
     const configured = this.deps.getAuthProperty().appBaseUrl.trim();
-    const host = (req.get('x-forwarded-host') || req.get('host') || '').trim();
-    const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').trim();
+    const hostHeader = (req.get('x-forwarded-host') || req.get('host') || '').trim();
+    const protoHeader = (req.get('x-forwarded-proto') || req.protocol || 'http').trim();
+    const host = hostHeader.split(',')[0].trim().toLowerCase();
+    const proto = protoHeader.split(',')[0].trim().toLowerCase() || 'http';
     const requestOrigin = host ? `${proto}://${host}` : '';
 
     if (!configured) return requestOrigin;
     if (!requestOrigin) return configured;
 
-    const requestHost = host.toLowerCase();
+    const requestHost = host;
     const isLocalRequest = requestHost.startsWith('localhost:') || requestHost.startsWith('127.0.0.1:');
 
     try {
@@ -97,6 +99,11 @@ export class AuthApi {
         return requestOrigin;
       }
       if (!isLocalRequest && isLocalConfigured) {
+        return requestOrigin;
+      }
+      // In production, keep OAuth issuer/resource host aligned to the host ChatGPT actually calls.
+      // A configured non-www vs www mismatch causes ChatGPT to obtain token but skip attaching it to /mcp.
+      if (!isLocalRequest && configuredHost !== requestHost) {
         return requestOrigin;
       }
     } catch {
@@ -159,6 +166,7 @@ export class AuthApi {
     app.get('/mcp/.well-known/oauth-authorization-server', this.getOAuthAuthorizationServerMetadata);
     app.get('/.well-known/oauth-protected-resource', this.getOAuthProtectedResourceMetadata);
     app.get('/.well-known/oauth-protected-resource/mcp', this.getOAuthProtectedResourceMetadata);
+    app.get('/mcp/.well-known/oauth-protected-resource', this.getOAuthProtectedResourceMetadata);
     app.get('/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
     app.get('/.well-known/openid-configuration/mcp', this.getOpenIdConfigurationMetadata);
     app.get('/mcp/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
