@@ -1348,9 +1348,12 @@ export class AuthApi {
       res.redirect('/');
       return;
     }
+    const next = typeof req.query.next === 'string' && req.query.next.startsWith('/')
+      ? req.query.next
+      : '/';
     const ctx = await this.deps.resolveAuthContext(req as AuthenticatedRequest, res);
     if (ctx) {
-      res.redirect('/');
+      res.redirect(next);
       return;
     }
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
