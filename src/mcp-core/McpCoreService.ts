@@ -246,9 +246,12 @@ export class McpCoreService {
 
   private async getAuthorizedTools(tools: any[], authContext: McpAuthContext): Promise<any[]> {
     if (this.authMode === 'NONE') return tools;
-    // ChatGPT connector may perform discovery without attaching bearer token.
-    // Keep tools visible at discovery time; invocation is still guarded in tools/call.
-    if (!authContext.identity) return tools;
+    if (!authContext.identity) {
+      // In multi-tenant SaaS mode, unauthenticated discovery must never expose
+      // other tenants' tools. ChatGPT should attach bearer before scoped listing.
+      if (this.authMode === 'SUPABASE_GOOGLE') return [];
+      return tools;
+    }
     const out: any[] = [];
     for (const tool of tools) {
       try {
@@ -265,9 +268,10 @@ export class McpCoreService {
 
   private async getAuthorizedResources(resources: any[], authContext: McpAuthContext): Promise<any[]> {
     if (this.authMode === 'NONE') return resources;
-    // Same rationale as tools/list: show discoverable resources before auth,
-    // enforce access at resources/read.
-    if (!authContext.identity) return resources;
+    if (!authContext.identity) {
+      if (this.authMode === 'SUPABASE_GOOGLE') return [];
+      return resources;
+    }
     const out: any[] = [];
     for (const resource of resources) {
       try {
