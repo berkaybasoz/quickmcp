@@ -293,6 +293,8 @@ export class McpCoreService {
 
   private async getServerRequireMcpToken(serverId: string): Promise<boolean> {
     if (this.authMode === 'NONE') return false;
+    // In SAAS mode, MCP calls must always be token-bound to avoid tenant leakage.
+    if (this.authMode === 'SUPABASE_GOOGLE') return true;
     let requireToken = true;
     const owner = parseServerOwner(serverId);
     try {

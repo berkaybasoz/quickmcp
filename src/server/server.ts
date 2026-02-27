@@ -187,8 +187,8 @@ async function resolveMcpAuthContext(req: Request): Promise<any> {
   return mcpCore.resolveAuthContextFromSources({
     authorization: String(req.headers.authorization || ''),
     xMcpToken: String(req.headers['x-mcp-token'] || ''),
-    queryToken: String(req.query.token || ''),
-    bodyToken: String((req.body as any)?.token || '')
+    queryToken: String(req.query.token || req.query.access_token || ''),
+    bodyToken: String((req.body as any)?.token || (req.body as any)?.access_token || (req.body as any)?.params?.access_token || '')
   });
 }
 

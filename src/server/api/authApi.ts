@@ -153,6 +153,13 @@ export class AuthApi {
 
   registerRoutes(app: express.Express): void {
     app.get('/.well-known/oauth-authorization-server', this.getOAuthAuthorizationServerMetadata);
+    app.get('/.well-known/oauth-authorization-server/mcp', this.getOAuthAuthorizationServerMetadata);
+    app.get('/mcp/.well-known/oauth-authorization-server', this.getOAuthAuthorizationServerMetadata);
+    app.get('/.well-known/oauth-protected-resource', this.getOAuthProtectedResourceMetadata);
+    app.get('/.well-known/oauth-protected-resource/mcp', this.getOAuthProtectedResourceMetadata);
+    app.get('/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
+    app.get('/.well-known/openid-configuration/mcp', this.getOpenIdConfigurationMetadata);
+    app.get('/mcp/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
     app.post('/oauth/register', this.oauthRegister);
     app.get('/oauth/authorize', this.oauthAuthorize);
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
@@ -301,6 +308,29 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
+      response_types_supported: ['code'],
+      grant_types_supported: ['authorization_code'],
+      token_endpoint_auth_methods_supported: ['none'],
+      code_challenge_methods_supported: ['S256', 'plain']
+    });
+  };
+
+  private getOAuthProtectedResourceMetadata = (req: express.Request, res: express.Response): void => {
+    const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    res.json({
+      resource: `${issuer}/mcp`,
+      authorization_servers: [issuer],
+      bearer_methods_supported: ['header'],
+      scopes_supported: ['mcp']
+    });
+  };
+
+  private getOpenIdConfigurationMetadata = (req: express.Request, res: express.Response): void => {
+    const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    res.json({
+      issuer,
+      authorization_endpoint: `${issuer}/oauth/authorize`,
+      token_endpoint: `${issuer}/oauth/token`,
       response_types_supported: ['code'],
       grant_types_supported: ['authorization_code'],
       token_endpoint_auth_methods_supported: ['none'],

@@ -216,6 +216,13 @@ export class AuthUtils {
     if (pathname.startsWith('/api/auth')) return true;
     if (pathname.startsWith('/oauth')) return true;
     if (pathname === '/.well-known/oauth-authorization-server') return true;
+    if (pathname === '/.well-known/oauth-authorization-server/mcp') return true;
+    if (pathname === '/mcp/.well-known/oauth-authorization-server') return true;
+    if (pathname === '/.well-known/oauth-protected-resource') return true;
+    if (pathname === '/.well-known/oauth-protected-resource/mcp') return true;
+    if (pathname === '/.well-known/openid-configuration') return true;
+    if (pathname === '/.well-known/openid-configuration/mcp') return true;
+    if (pathname === '/mcp/.well-known/openid-configuration') return true;
     // MCP transport endpoints must be reachable with bearer token auth,
     // not blocked by web-session redirects to /login.
     if (pathname === '/mcp') return true;
