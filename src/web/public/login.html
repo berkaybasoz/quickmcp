@@ -285,7 +285,7 @@
       const accessToken = params.get('access_token');
       if (!accessToken) return false;
 
-      const response = await fetch('/api/auth/supabase/session', {
+      const response = await fetch('/api/auth/oauth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken })
@@ -325,7 +325,7 @@
         googleLoginBtn.addEventListener('click', () => {
           const queryNext = new URLSearchParams(window.location.search).get('next');
           const nextTarget = queryNext && queryNext.startsWith('/') ? queryNext : '/';
-          window.location.href = `/api/auth/supabase/start?next=${encodeURIComponent(nextTarget)}`;
+          window.location.href = `/api/auth/oauth/start?next=${encodeURIComponent(nextTarget)}`;
         });
         return;
       }

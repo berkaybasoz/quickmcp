@@ -1543,6 +1543,31 @@
   </footer>
   <script>
     (() => {
+      const hash = window.location.hash || '';
+      const hasSupabaseToken = hash.includes('access_token=');
+      if (hasSupabaseToken) {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const accessToken = params.get('access_token') || '';
+        if (accessToken) {
+          fetch('/api/auth/oauth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken })
+          })
+            .then((response) => response.ok ? response.json() : Promise.reject(new Error('session_failed')))
+            .then((body) => {
+              const apiNext = typeof body?.data?.next === 'string' ? body.data.next : '';
+              const next = apiNext.startsWith('/') ? apiNext : '/oauth/authorize/complete';
+              window.location.replace(next);
+            })
+            .catch(() => {
+              // Fallback to login page; keep hash so login page can retry session creation.
+              window.location.replace(`/login${window.location.hash}`);
+            });
+          return;
+        }
+      }
+
       const navMenuToggle = document.getElementById('navMenuToggle');
       const navMobileMenu = document.getElementById('navMobileMenu');
       if (navMenuToggle && navMobileMenu) {

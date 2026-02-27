@@ -68,7 +68,7 @@ type OAuthClientRegistration = {
 
 export class AuthApi {
   private readonly oauthRequestCookieName = 'quickmcp_oauth_req';
-  private readonly supabaseNextCookieName = 'quickmcp_supabase_next';
+  private readonly oauthNextCookieName = 'quickmcp_oauth_next';
   private readonly oauthCodeTtlMs = 5 * 60 * 1000;
   private readonly oauthAccessTokenTtlSec = Number(process.env.QUICKMCP_OAUTH_ACCESS_TTL_SEC || '3600');
   private readonly oauthClients = new Map<string, OAuthClientRegistration>();
@@ -194,8 +194,11 @@ export class AuthApi {
     app.post('/api/auth/users', this.createUser);
     app.patch('/api/auth/users/:username/role', this.updateUserRole);
     app.post('/api/auth/login', this.login);
-    app.get('/api/auth/supabase/start', this.supabaseStart);
-    app.post('/api/auth/supabase/session', this.supabaseSession);
+    app.get('/api/auth/oauth/start', this.oauthProviderStart);
+    app.post('/api/auth/oauth/session', this.oauthProviderSession);
+    // Backward-compatible aliases (deprecated).
+    app.get('/api/auth/supabase/start', this.oauthProviderStart);
+    app.post('/api/auth/supabase/session', this.oauthProviderSession);
     app.post('/api/auth/refresh', this.refresh);
     app.post('/api/auth/logout', this.logout);
 
@@ -1191,7 +1194,7 @@ export class AuthApi {
     return (isAdminEmail || isLegacyAdmin) ? 'admin' : 'user';
   }
 
-  private supabaseStart = (req: express.Request, res: express.Response): Promise<void> => {
+  private oauthProviderStart = (req: express.Request, res: express.Response): Promise<void> => {
     const authProperty = this.deps.getAuthProperty();
     if (this.deps.authMode !== 'SUPABASE_GOOGLE') {
       res.status(400).json({ success: false, error: 'Supabase login is only available when AUTH_MODE=SUPABASE_GOOGLE' });
@@ -1204,13 +1207,13 @@ export class AuthApi {
 
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/';
     const appBaseUrl = this.resolveAppBaseUrl(req);
-    const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?supabase=callback`;
-    this.deps.setCookie(res, this.supabaseNextCookieName, next, 10 * 60);
+    const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?oauth=callback`;
+    this.deps.setCookie(res, this.oauthNextCookieName, next, 10 * 60);
     const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
     res.redirect(authorizeUrl);
   };
 
-  private supabaseSession = async (req: express.Request, res: express.Response): Promise<void> => {
+  private oauthProviderSession = async (req: express.Request, res: express.Response): Promise<void> => {
     const authProperty = this.deps.getAuthProperty();
     if (this.deps.authMode !== 'SUPABASE_GOOGLE') {
       res.status(400).json({ success: false, error: 'Supabase session endpoint is only available when AUTH_MODE=SUPABASE_GOOGLE' });
@@ -1222,7 +1225,7 @@ export class AuthApi {
     }
 
     const cookies = this.deps.parseCookies(req);
-    const cookieNextRaw = String(cookies[this.supabaseNextCookieName] || '').trim();
+    const cookieNextRaw = String(cookies[this.oauthNextCookieName] || '').trim();
     const cookieNext = cookieNextRaw.startsWith('/') ? cookieNextRaw : '/';
     const accessToken = typeof req.body?.accessToken === 'string' ? req.body.accessToken.trim() : '';
     if (!accessToken) {
@@ -1283,7 +1286,7 @@ export class AuthApi {
         createdDate,
         lastSignInDate
       });
-      this.deps.clearCookie(res, this.supabaseNextCookieName);
+      this.deps.clearCookie(res, this.oauthNextCookieName);
 
       res.json({
         success: true,

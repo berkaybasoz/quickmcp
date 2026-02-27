@@ -223,7 +223,7 @@ async function consumeSupabaseHashSessionIfPresent() {
     if (!accessToken) return false;
 
     try {
-        const response = await fetch('/api/auth/supabase/session', {
+        const response = await fetch('/api/auth/oauth/session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ accessToken })
