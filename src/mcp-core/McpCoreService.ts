@@ -323,6 +323,10 @@ export class McpCoreService {
     if (this.authMode === 'NONE') return true;
     if (!authContext.identity || !authContext.tokenRecord) return false;
     const owner = parseServerOwner(serverId);
+    // SAAS tenant isolation must be workspace-based, not username-based.
+    if (this.authMode === 'SUPABASE_GOOGLE') {
+      return owner === authContext.identity.workspace;
+    }
     return owner === authContext.identity.workspace || owner === authContext.identity.username;
   }
 
