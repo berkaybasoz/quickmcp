@@ -294,31 +294,6 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     const authContext = await resolveMcpAuthContext(req);
     const message = mcpCore.parseIncomingMessage(req.body);
 
-    // initialize and notifications are allowed unauthenticated so ChatGPT can
-    // complete connection setup and discover OAuth. All other methods require auth.
-    const noAuthRequired = /^initialize$|^notifications\//.test(String(message.method || ''));
-
-    // If auth is required and no valid identity was resolved, return HTTP 401
-    // with WWW-Authenticate header so the client (e.g. ChatGPT openai-mcp) will
-    // retry the request with the Bearer token it obtained via OAuth.
-    if (authMode !== 'NONE' && !authContext.identity && !noAuthRequired) {
-      const baseUrl = configuredAppBaseUrl
-        ? configuredAppBaseUrl.replace(/\/+$/, '')
-        : (() => {
-            const host = String(req.headers['x-forwarded-host'] || req.headers.host || '');
-            const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
-            return host ? `${proto}://${host}` : '';
-          })();
-      const resourceMetadataUrl = `${baseUrl}/.well-known/oauth-protected-resource`;
-      res.setHeader('WWW-Authenticate', `Bearer realm="quickmcp", resource_metadata="${resourceMetadataUrl}"`);
-      logger.info(`[MCP] unauthenticated ${message.method} → 401 WWW-Authenticate (resource_metadata=${resourceMetadataUrl})`);
-      res.status(401).json({
-        jsonrpc: '2.0',
-        id: message.id ?? null,
-        error: { code: -32000, message: 'Authentication required. Include Authorization: Bearer <token> header.' }
-      });
-      return;
-    }
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
     if (!response) {
       res.status(204).end();
