@@ -42,6 +42,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Enforce a single canonical host in production so OAuth token binding
+// and MCP requests use the same origin (www vs non-www drift breaks bearer attach).
+const configuredAppBaseUrl = (process.env.APP_BASE_URL || '').trim();
+let canonicalHost = '';
+let canonicalProto = 'https';
+try {
+  if (configuredAppBaseUrl) {
+    const u = new URL(configuredAppBaseUrl);
+    canonicalHost = u.host.toLowerCase();
+    canonicalProto = (u.protocol || 'https:').replace(':', '');
+  }
+} catch {}
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!canonicalHost) return next();
+  const host = String(req.headers.host || '').toLowerCase();
+  const isLocal = host.startsWith('localhost:') || host.startsWith('127.0.0.1:');
+  if (!host || isLocal || host === canonicalHost) return next();
+
+  const target = `${canonicalProto}://${canonicalHost}${req.originalUrl || req.url}`;
+  res.redirect(308, target);
+});
+
 const dataProvider = getDataProvider();
 const deployMode = String(process.env.DEPLOY_MODE || 'ONPREM').trim().toUpperCase();
 const authMode = resolveAuthMode();
