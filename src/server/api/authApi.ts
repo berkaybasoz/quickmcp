@@ -39,6 +39,7 @@ type OAuthPendingRequest = {
   redirectUri: string;
   state: string;
   scope: string;
+  resource: string;
   codeChallenge: string;
   codeChallengeMethod: 'S256' | 'plain';
   createdAt: number;
@@ -48,6 +49,7 @@ type OAuthAuthorizationCode = {
   clientId: string;
   redirectUri: string;
   scope: string;
+  resource: string;
   codeChallenge: string;
   codeChallengeMethod: 'S256' | 'plain';
   username: string;
@@ -232,6 +234,7 @@ export class AuthApi {
         redirectUri: String((parsed as any).redirectUri || ''),
         state: String((parsed as any).state || ''),
         scope: String((parsed as any).scope || ''),
+        resource: String((parsed as any).resource || ''),
         codeChallenge: String((parsed as any).codeChallenge || ''),
         codeChallengeMethod: this.normalizeOAuthCodeChallengeMethod(String((parsed as any).codeChallengeMethod || 'S256')),
         createdAt: Number((parsed as any).createdAt || 0)
@@ -382,6 +385,8 @@ export class AuthApi {
     const redirectUri = String(req.query.redirect_uri || '').trim();
     const state = String(req.query.state || '').trim();
     const scope = String(req.query.scope || '').trim();
+    const fallbackResource = `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
+    const resource = String(req.query.resource || fallbackResource).trim();
     const codeChallenge = String(req.query.code_challenge || '').trim();
     const codeChallengeMethod = this.normalizeOAuthCodeChallengeMethod(String(req.query.code_challenge_method || 'S256'));
 
@@ -414,6 +419,7 @@ export class AuthApi {
       redirectUri,
       state,
       scope,
+      resource,
       codeChallenge,
       codeChallengeMethod,
       createdAt: Date.now()
@@ -448,6 +454,7 @@ export class AuthApi {
       clientId: pending.clientId,
       redirectUri: pending.redirectUri,
       scope: pending.scope,
+      resource: pending.resource,
       codeChallenge: pending.codeChallenge,
       codeChallengeMethod: pending.codeChallengeMethod,
       username: ctx.username,
@@ -553,7 +560,8 @@ export class AuthApi {
       access_token: tokenPack.token,
       token_type: 'Bearer',
       expires_in: ttlSec,
-      scope: record.scope || 'mcp'
+      scope: record.scope || 'mcp',
+      resource: record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`
     });
   };
 
