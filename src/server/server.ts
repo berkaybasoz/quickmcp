@@ -232,6 +232,9 @@ function buildCookieFallbackAuthContext(req: Request): McpAuthContext | null {
 }
 
 async function resolveMcpAuthContext(req: Request): Promise<McpAuthContext> {
+  logger.info(
+    `[MCP] transport host=${String(req.headers.host || '')} ua=${String(req.headers['user-agent'] || '').slice(0, 80)} cookie=${req.headers.cookie ? '1' : '0'}`
+  );
   const mcpAuth = await mcpCore.resolveAuthContextFromSources({
     authorization: String(req.headers.authorization || ''),
     xMcpToken: String(req.headers['x-mcp-token'] || ''),
