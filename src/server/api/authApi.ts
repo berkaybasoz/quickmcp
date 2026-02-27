@@ -23,7 +23,7 @@ interface AuthApiDeps {
   requireAdminApi: (req: AuthenticatedRequest, res: express.Response) => Promise<AuthContext | null>;
   ensureDataStore: () => IDataStore;
   normalizeUsername: (value: unknown) => string;
-  createMcpToken: (username: string, workspaceId: string, role: AppUserRole, ttlSec?: number) => CreateMcpTokenResult;
+  createMcpToken: (username: string, workspaceId: string, role: AppUserRole, ttlSec?: number, audience?: string) => CreateMcpTokenResult;
   hashPassword: (password: string) => string;
   verifyPassword: (password: string, expectedHash: string) => boolean;
   getUserRole: (username: string, workspaceId?: string) => AppUserRole;
@@ -315,7 +315,7 @@ export class AuthApi {
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
       response_types_supported: ['code'],
-      grant_types_supported: ['authorization_code'],
+      grant_types_supported: ['authorization_code', 'refresh_token'],
       token_endpoint_auth_methods_supported: ['none'],
       code_challenge_methods_supported: ['S256', 'plain']
     });
@@ -338,7 +338,7 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       response_types_supported: ['code'],
-      grant_types_supported: ['authorization_code'],
+      grant_types_supported: ['authorization_code', 'refresh_token'],
       token_endpoint_auth_methods_supported: ['none'],
       code_challenge_methods_supported: ['S256', 'plain']
     });
@@ -376,7 +376,7 @@ export class AuthApi {
       client_id_issued_at: createdAt,
       client_name: clientName,
       redirect_uris: redirectUris,
-      grant_types: ['authorization_code'],
+      grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none'
     });
@@ -488,9 +488,96 @@ export class AuthApi {
     logger.info(`[oauth/token:${requestId}] body=${JSON.stringify(body)}`);
     logger.info(`[oauth/token:${requestId}] request grant_type=${grantType || '(empty)'} client_id=${clientId || '(empty)'}`);
 
+    // refresh_token grant: look up the token and issue a new access token
+    if (grantType === 'refresh_token') {
+      const refreshTokenValue = String((body as any).refresh_token || '').trim();
+      if (!refreshTokenValue) {
+        res.status(400).json({ error: 'invalid_request', error_description: 'refresh_token is required' });
+        return;
+      }
+      try {
+        const store = this.deps.ensureDataStore();
+        const refreshHash = crypto.createHash('sha256').update(refreshTokenValue).digest('hex');
+        const existingToken = await store.getMcpTokenByHash(refreshHash);
+        if (!existingToken || existingToken.revokedAt) {
+          logger.warn(`[oauth/token:${requestId}] refresh_token invalid or revoked`);
+          res.status(400).json({ error: 'invalid_grant', error_description: 'refresh_token is invalid or revoked' });
+          return;
+        }
+        const refreshTtlSec = Number.isFinite(this.oauthAccessTokenTtlSec) && this.oauthAccessTokenTtlSec > 0
+          ? Math.floor(this.oauthAccessTokenTtlSec)
+          : 3600;
+        const resourceUrl = `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
+        const newTokenPack = this.deps.createMcpToken(
+          existingToken.subjectUsername,
+          existingToken.workspaceId,
+          this.deps.getUserRole(existingToken.subjectUsername, existingToken.workspaceId),
+          refreshTtlSec,
+          resourceUrl
+        );
+        await store.createMcpToken({
+          id: newTokenPack.tokenId,
+          tokenName: `oauth:refresh:${clientId || 'chatgpt'}`,
+          workspaceId: existingToken.workspaceId,
+          subjectUsername: existingToken.subjectUsername,
+          createdBy: existingToken.subjectUsername,
+          tokenHash: newTokenPack.tokenHash,
+          tokenValue: newTokenPack.token,
+          allowAllServers: true,
+          allowAllTools: true,
+          allowAllResources: true,
+          serverIds: [],
+          allowedTools: [],
+          allowedResources: [],
+          serverRules: {},
+          toolRules: {},
+          resourceRules: {},
+          neverExpires: false,
+          expiresAt: newTokenPack.expiresAt
+        });
+        const newRefreshToken = crypto.randomBytes(48).toString('base64url');
+        const newRefreshHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
+        await store.createMcpToken({
+          id: crypto.randomUUID(),
+          tokenName: `oauth:refresh-token:${clientId || 'chatgpt'}`,
+          workspaceId: existingToken.workspaceId,
+          subjectUsername: existingToken.subjectUsername,
+          createdBy: existingToken.subjectUsername,
+          tokenHash: newRefreshHash,
+          tokenValue: newRefreshToken,
+          allowAllServers: false,
+          allowAllTools: false,
+          allowAllResources: false,
+          serverIds: [],
+          allowedTools: [],
+          allowedResources: [],
+          serverRules: {},
+          toolRules: {},
+          resourceRules: {},
+          neverExpires: true,
+          expiresAt: null
+        });
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Pragma', 'no-cache');
+        logger.info(`[oauth/token:${requestId}] refresh success user=${existingToken.subjectUsername}`);
+        res.json({
+          access_token: newTokenPack.token,
+          token_type: 'Bearer',
+          expires_in: refreshTtlSec,
+          refresh_token: newRefreshToken,
+          scope: 'mcp',
+          resource: resourceUrl
+        });
+      } catch (err) {
+        logger.warn(`[oauth/token:${requestId}] refresh_token error: ${err instanceof Error ? err.message : String(err)}`);
+        res.status(400).json({ error: 'invalid_grant', error_description: 'refresh_token processing failed' });
+      }
+      return;
+    }
+
     if (grantType !== 'authorization_code') {
       logger.warn(`[oauth/token:${requestId}] rejected unsupported grant_type`);
-      res.status(400).json({ error: 'unsupported_grant_type', error_description: 'grant_type must be authorization_code' });
+      res.status(400).json({ error: 'unsupported_grant_type', error_description: 'grant_type must be authorization_code or refresh_token' });
       return;
     }
     if (!code) {
@@ -535,7 +622,12 @@ export class AuthApi {
     const ttlSec = Number.isFinite(this.oauthAccessTokenTtlSec) && this.oauthAccessTokenTtlSec > 0
       ? Math.floor(this.oauthAccessTokenTtlSec)
       : 3600;
-    const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec);
+    const resourceUrl = record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
+    const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec, resourceUrl);
+
+    // Generate a refresh token (stored as a special token record in the DB)
+    const refreshToken = crypto.randomBytes(48).toString('base64url');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
     try {
       const store = this.deps.ensureDataStore();
@@ -559,6 +651,27 @@ export class AuthApi {
         neverExpires: false,
         expiresAt: tokenPack.expiresAt
       });
+      // Store refresh token as a long-lived record so it can be looked up later
+      await store.createMcpToken({
+        id: crypto.randomUUID(),
+        tokenName: `oauth:refresh-token:${clientId || 'chatgpt'}`,
+        workspaceId: record.workspaceId,
+        subjectUsername: record.username,
+        createdBy: record.username,
+        tokenHash: refreshTokenHash,
+        tokenValue: refreshToken,
+        allowAllServers: false,
+        allowAllTools: false,
+        allowAllResources: false,
+        serverIds: [],
+        allowedTools: [],
+        allowedResources: [],
+        serverRules: {},
+        toolRules: {},
+        resourceRules: {},
+        neverExpires: true,
+        expiresAt: null
+      });
     } catch (err) {
       logger.warn(`[oauth/token:${requestId}] failed to persist token: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -570,8 +683,9 @@ export class AuthApi {
       access_token: tokenPack.token,
       token_type: 'Bearer',
       expires_in: ttlSec,
+      refresh_token: refreshToken,
       scope: record.scope || 'mcp',
-      resource: record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`
+      resource: resourceUrl
     });
   };
 

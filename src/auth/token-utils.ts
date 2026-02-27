@@ -41,6 +41,7 @@ export interface McpTokenPayload {
   workspace?: string;
   role?: string;
   typ?: string;
+  aud?: string;
   iat?: number;
   exp?: number;
 }

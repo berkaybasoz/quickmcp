@@ -100,7 +100,8 @@ export class AuthUtils {
     username: string,
     workspaceId: string,
     role: AppUserRole,
-    ttlSec?: number
+    ttlSec?: number,
+    audience?: string
   ): CreateMcpTokenResult {
     const nowSec = Math.floor(Date.now() / 1000);
     const tokenId = crypto.randomUUID();
@@ -111,6 +112,7 @@ export class AuthUtils {
       ws: workspaceId,
       role,
       typ: 'quickmcp-mcp',
+      ...(audience ? { aud: audience } : {}),
       iat: nowSec,
       ...(hasExpiry ? { exp: nowSec + Number(ttlSec) } : {})
     };
