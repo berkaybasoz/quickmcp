@@ -41,7 +41,9 @@ export interface McpTokenPayload {
   workspace?: string;
   role?: string;
   typ?: string;
+  iss?: string;
   aud?: string;
+  scope?: string;
   iat?: number;
   exp?: number;
 }
@@ -102,12 +104,29 @@ export function verifyAccessToken(token: string, secret: string): AccessTokenPay
 }
 
 export function verifyMcpToken(token: string, secret: string): McpTokenPayload | null {
-  const [payloadEncoded, signature] = token.split('.');
+  const parts = token.split('.');
+
+  let payloadEncoded: string;
+  let signingInput: string;
+  let signature: string;
+
+  if (parts.length === 3) {
+    // Standard 3-part JWT: header.payload.signature
+    [, payloadEncoded, signature] = parts;
+    signingInput = `${parts[0]}.${parts[1]}`;
+  } else if (parts.length === 2) {
+    // Legacy 2-part format: payload.signature
+    [payloadEncoded, signature] = parts;
+    signingInput = parts[0];
+  } else {
+    return null;
+  }
+
   if (!payloadEncoded || !signature) {
     return null;
   }
 
-  const expected = sign(payloadEncoded, secret);
+  const expected = sign(signingInput, secret);
   const expectedBuf = Buffer.from(expected);
   const signatureBuf = Buffer.from(signature);
   if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {

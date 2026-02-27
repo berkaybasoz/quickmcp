@@ -23,7 +23,7 @@ interface AuthApiDeps {
   requireAdminApi: (req: AuthenticatedRequest, res: express.Response) => Promise<AuthContext | null>;
   ensureDataStore: () => IDataStore;
   normalizeUsername: (value: unknown) => string;
-  createMcpToken: (username: string, workspaceId: string, role: AppUserRole, ttlSec?: number, audience?: string) => CreateMcpTokenResult;
+  createMcpToken: (username: string, workspaceId: string, role: AppUserRole, ttlSec?: number, audience?: string, issuer?: string, scope?: string) => CreateMcpTokenResult;
   hashPassword: (password: string) => string;
   verifyPassword: (password: string, expectedHash: string) => boolean;
   getUserRole: (username: string, workspaceId?: string) => AppUserRole;
@@ -508,12 +508,15 @@ export class AuthApi {
           ? Math.floor(this.oauthAccessTokenTtlSec)
           : 3600;
         const resourceUrl = `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
+        const issuerUrl = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
         const newTokenPack = this.deps.createMcpToken(
           existingToken.subjectUsername,
           existingToken.workspaceId,
           this.deps.getUserRole(existingToken.subjectUsername, existingToken.workspaceId),
           refreshTtlSec,
-          resourceUrl
+          resourceUrl,
+          issuerUrl,
+          'mcp'
         );
         await store.createMcpToken({
           id: newTokenPack.tokenId,
@@ -623,7 +626,8 @@ export class AuthApi {
       ? Math.floor(this.oauthAccessTokenTtlSec)
       : 3600;
     const resourceUrl = record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`;
-    const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec, resourceUrl);
+    const issuerUrl = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    const tokenPack = this.deps.createMcpToken(record.username, record.workspaceId, record.role, ttlSec, resourceUrl, issuerUrl, record.scope || 'mcp');
 
     // Generate a refresh token (stored as a special token record in the DB)
     const refreshToken = crypto.randomBytes(48).toString('base64url');

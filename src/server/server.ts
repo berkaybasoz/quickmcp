@@ -38,7 +38,6 @@ type Response = express.Response;
 type NextFunction = express.NextFunction;
 type AuthenticatedRequest = Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
 
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -54,6 +53,26 @@ try {
     canonicalProto = (u.protocol || 'https:').replace(':', '');
   }
 } catch {}
+
+const ALLOWED_ORIGINS = [
+  'https://chatgpt.com',
+  'https://chat.openai.com',
+  'https://claude.ai',
+  ...(configuredAppBaseUrl ? [configuredAppBaseUrl.replace(/\/+$/, '')] : [])
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + '/'))) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'MCP-Protocol-Version', 'x-mcp-token'],
+  exposedHeaders: ['WWW-Authenticate'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS']
+}));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (!canonicalHost) return next();
