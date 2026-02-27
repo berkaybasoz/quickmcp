@@ -484,6 +484,8 @@ export class AuthApi {
     const clientId = String((body as any).client_id || '').trim();
     const codeVerifier = String((body as any).code_verifier || '').trim();
     const requestId = crypto.randomBytes(6).toString('hex');
+    logger.info(`[oauth/token:${requestId}] headers=${JSON.stringify(req.headers)}`);
+    logger.info(`[oauth/token:${requestId}] body=${JSON.stringify(body)}`);
     logger.info(`[oauth/token:${requestId}] request grant_type=${grantType || '(empty)'} client_id=${clientId || '(empty)'}`);
 
     if (grantType !== 'authorization_code') {
@@ -566,9 +568,10 @@ export class AuthApi {
     logger.info(`[oauth/token:${requestId}] success user=${record.username} ws=${record.workspaceId}`);
     res.json({
       access_token: tokenPack.token,
-      token_type: 'bearer',
+      token_type: 'Bearer',
       expires_in: ttlSec,
-      scope: record.scope || 'mcp'
+      scope: record.scope || 'mcp',
+      resource: record.resource || `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/mcp`
     });
   };
 
