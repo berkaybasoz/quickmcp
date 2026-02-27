@@ -216,6 +216,19 @@ function parseCookieHeader(raw: string | undefined): Record<string, string> {
   }, {} as Record<string, string>);
 }
 
+function truncateForLog(input: string, maxLen = 4000): string {
+  if (input.length <= maxLen) return input;
+  return `${input.slice(0, maxLen)}...[truncated:${input.length - maxLen}]`;
+}
+
+function safeStringifyForLog(value: unknown): string {
+  try {
+    return truncateForLog(JSON.stringify(value));
+  } catch {
+    return String(value);
+  }
+}
+
 function buildCookieFallbackAuthContext(req: Request): McpAuthContext | null {
   const cookies = parseCookieHeader(String(req.headers.cookie || ''));
   const access = String(cookies[AUTH_COOKIE_NAMES.access] || '').trim();
@@ -272,6 +285,12 @@ async function resolveMcpAuthContext(req: Request): Promise<McpAuthContext> {
 
 async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
   try {
+    const bodyPreview = Buffer.isBuffer(req.body)
+      ? truncateForLog(req.body.toString('utf8'))
+      : safeStringifyForLog(req.body);
+    logger.info(`[MCP] debug headers=${safeStringifyForLog(req.headers)}`);
+    logger.info(`[MCP] debug body=${bodyPreview}`);
+
     const authContext = await resolveMcpAuthContext(req);
     const message = mcpCore.parseIncomingMessage(req.body);
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
