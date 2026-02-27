@@ -65,10 +65,9 @@ export class McpCoreService {
       return { identity: null, tokenRecord: null };
     }
 
-    const authHeader = String(sources.authorization || '');
-    const bearer = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7).trim()
-      : '';
+    const authHeader = String(sources.authorization || '').trim();
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const bearer = bearerMatch ? String(bearerMatch[1] || '').trim() : '';
     const xMcpToken = String(sources.xMcpToken || '').trim();
     const queryToken = String(sources.queryToken || '').trim();
     const bodyToken = String(sources.bodyToken || '').trim();
@@ -76,7 +75,7 @@ export class McpCoreService {
 
     if (!token) {
       logger.info(
-        `[MCP] auth carriers bearer=${bearer ? '1' : '0'} x-mcp-token=${xMcpToken ? '1' : '0'} query=${queryToken ? '1' : '0'} body=${bodyToken ? '1' : '0'}`
+        `[MCP] auth carriers authHeader=${authHeader ? '1' : '0'} bearer=${bearer ? '1' : '0'} x-mcp-token=${xMcpToken ? '1' : '0'} query=${queryToken ? '1' : '0'} body=${bodyToken ? '1' : '0'}`
       );
       if (this.defaultToken) {
         logger.info(`[MCP] auth: no token in request, using default token`);
