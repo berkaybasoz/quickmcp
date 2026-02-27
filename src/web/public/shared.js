@@ -214,8 +214,49 @@ function isNoTableDataSource(type) {
     return noTableTypes.includes(type);
 }
 
+function decodeBase64Url(input) {
+    const normalized = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    try {
+        return atob(padded);
+    } catch (_) {
+        return '';
+    }
+}
+
+async function consumeSupabaseHashSessionIfPresent() {
+    const hash = window.location.hash || '';
+    if (!hash || hash.indexOf('access_token=') === -1) return false;
+
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const accessToken = params.get('access_token');
+    if (!accessToken) return false;
+
+    try {
+        const response = await fetch('/api/auth/supabase/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken })
+        });
+        if (!response.ok) return false;
+
+        const queryNext = new URLSearchParams(window.location.search).get('next');
+        const stateNext = decodeBase64Url(params.get('state') || '');
+        const next = (queryNext && queryNext.startsWith('/'))
+            ? queryNext
+            : (stateNext.startsWith('/') ? stateNext : '/');
+        window.location.replace(next);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 // Initialize sidebar functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    const handledSupabaseHash = await consumeSupabaseHashSessionIfPresent();
+    if (handledSupabaseHash) return;
+
     renderSharedAppBar();
     updateUserAvatar();
     initBrandHomeLink();

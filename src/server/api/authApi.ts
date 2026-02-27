@@ -1204,7 +1204,8 @@ export class AuthApi {
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/';
     const appBaseUrl = this.resolveAppBaseUrl(req);
     const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?supabase=callback&next=${encodeURIComponent(next)}`;
-    const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+    const state = Buffer.from(next, 'utf8').toString('base64url');
+    const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}&state=${encodeURIComponent(state)}`;
     res.redirect(authorizeUrl);
   };
 
