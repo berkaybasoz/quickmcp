@@ -195,18 +195,6 @@ async function resolveMcpAuthContext(req: Request): Promise<any> {
 async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
   try {
     const authContext = await resolveMcpAuthContext(req);
-    if (authMode !== 'NONE' && !authContext.identity) {
-      res.setHeader('WWW-Authenticate', 'Bearer realm="quickmcp", error="invalid_token"');
-      res.status(401).json({
-        jsonrpc: '2.0',
-        id: (req.body as any)?.id ?? null,
-        error: {
-          code: -32001,
-          message: 'Authentication required: missing or invalid bearer token'
-        }
-      });
-      return;
-    }
     const message = mcpCore.parseIncomingMessage(req.body);
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
     if (!response) {
