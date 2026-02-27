@@ -214,16 +214,6 @@ function isNoTableDataSource(type) {
     return noTableTypes.includes(type);
 }
 
-function decodeBase64Url(input) {
-    const normalized = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
-    try {
-        return atob(padded);
-    } catch (_) {
-        return '';
-    }
-}
-
 async function consumeSupabaseHashSessionIfPresent() {
     const hash = window.location.hash || '';
     if (!hash || hash.indexOf('access_token=') === -1) return false;
@@ -239,12 +229,13 @@ async function consumeSupabaseHashSessionIfPresent() {
             body: JSON.stringify({ accessToken })
         });
         if (!response.ok) return false;
+        const body = await response.json().catch(() => ({}));
 
         const queryNext = new URLSearchParams(window.location.search).get('next');
-        const stateNext = decodeBase64Url(params.get('state') || '');
+        const apiNext = typeof body?.data?.next === 'string' ? body.data.next : '';
         const next = (queryNext && queryNext.startsWith('/'))
             ? queryNext
-            : (stateNext.startsWith('/') ? stateNext : '/');
+            : (apiNext.startsWith('/') ? apiNext : '/');
         window.location.replace(next);
         return true;
     } catch (_) {

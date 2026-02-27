@@ -280,16 +280,6 @@
       errorText.textContent = '';
     }
 
-    function decodeBase64Url(input) {
-      const normalized = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
-      try {
-        return atob(padded);
-      } catch (_) {
-        return '';
-      }
-    }
-
     async function completeSupabaseLoginFromHash() {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       const accessToken = params.get('access_token');
@@ -304,12 +294,13 @@
         const body = await response.json().catch(() => ({ error: 'Supabase login failed' }));
         throw new Error(body.error || 'Supabase login failed');
       }
+      const body = await response.json().catch(() => ({}));
 
       const queryNext = new URLSearchParams(window.location.search).get('next');
-      const stateNext = decodeBase64Url(params.get('state') || '');
+      const apiNext = typeof body?.data?.next === 'string' ? body.data.next : '';
       const next = queryNext && queryNext.startsWith('/')
         ? queryNext
-        : (stateNext.startsWith('/') ? stateNext : '/');
+        : (apiNext.startsWith('/') ? apiNext : '/');
       window.location.replace(next);
       return true;
     }

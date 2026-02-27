@@ -68,6 +68,7 @@ type OAuthClientRegistration = {
 
 export class AuthApi {
   private readonly oauthRequestCookieName = 'quickmcp_oauth_req';
+  private readonly supabaseNextCookieName = 'quickmcp_supabase_next';
   private readonly oauthCodeTtlMs = 5 * 60 * 1000;
   private readonly oauthAccessTokenTtlSec = Number(process.env.QUICKMCP_OAUTH_ACCESS_TTL_SEC || '3600');
   private readonly oauthClients = new Map<string, OAuthClientRegistration>();
@@ -1204,8 +1205,8 @@ export class AuthApi {
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/';
     const appBaseUrl = this.resolveAppBaseUrl(req);
     const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?supabase=callback&next=${encodeURIComponent(next)}`;
-    const state = Buffer.from(next, 'utf8').toString('base64url');
-    const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}&state=${encodeURIComponent(state)}`;
+    this.deps.setCookie(res, this.supabaseNextCookieName, next, 10 * 60);
+    const authorizeUrl = `${authProperty.providerUrl.replace(/\/+$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
     res.redirect(authorizeUrl);
   };
 
@@ -1220,6 +1221,9 @@ export class AuthApi {
       return;
     }
 
+    const cookies = this.deps.parseCookies(req);
+    const cookieNextRaw = String(cookies[this.supabaseNextCookieName] || '').trim();
+    const cookieNext = cookieNextRaw.startsWith('/') ? cookieNextRaw : '/';
     const accessToken = typeof req.body?.accessToken === 'string' ? req.body.accessToken.trim() : '';
     if (!accessToken) {
       res.status(400).json({ success: false, error: 'accessToken is required' });
@@ -1279,6 +1283,7 @@ export class AuthApi {
         createdDate,
         lastSignInDate
       });
+      this.deps.clearCookie(res, this.supabaseNextCookieName);
 
       res.json({
         success: true,
@@ -1286,7 +1291,8 @@ export class AuthApi {
           username,
           workspaceId,
           role,
-          isAdmin: role === 'admin'
+          isAdmin: role === 'admin',
+          next: cookieNext
         }
       });
     } catch (error) {
