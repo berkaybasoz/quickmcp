@@ -99,12 +99,13 @@ export class McpCoreService {
     logger.info(`[MCP] request method=${method} ${who}`);
 
     switch (messageData.method) {
-      case 'initialize':
+      case 'initialize': {
+        const protocolVersion = String(messageData.params?.protocolVersion || '2025-11-25');
         return {
           jsonrpc: '2.0',
           id: messageData.id,
           result: {
-            protocolVersion: '2025-11-25',
+            protocolVersion,
             serverInfo: {
               name: 'quickmcp-integrated',
               version: '1.0.0'
@@ -116,6 +117,7 @@ export class McpCoreService {
             }
           }
         };
+      }
 
       case 'tools/list': {
         const allTools = await this.executor.getAllTools();

@@ -347,6 +347,8 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
       res.status(204).end();
       return;
     }
+    const protocolVersion = String((message as any)?.params?.protocolVersion || '2025-11-25');
+    res.setHeader('mcp-protocol-version', protocolVersion);
     res.json(response);
   } catch (error) {
     logger.error('[MCP] /mcp request failed', error);

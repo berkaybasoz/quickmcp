@@ -585,7 +585,7 @@ export class AuthApi {
           token_type: 'Bearer',
           expires_in: refreshTtlSec,
           refresh_token: newRefreshToken,
-          scope: 'mcp',
+          scope: 'mcp openid',
           resource: resourceUrl
         });
       } catch (err) {
@@ -705,7 +705,7 @@ export class AuthApi {
       token_type: 'Bearer',
       expires_in: ttlSec,
       refresh_token: refreshToken,
-      scope: record.scope || 'mcp',
+      scope: (record.scope || 'mcp') + ' openid',
       resource: resourceUrl
     });
   };
