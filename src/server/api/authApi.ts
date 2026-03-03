@@ -5,6 +5,7 @@ import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
 import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from '../../auth/token-utils';
+import { getJwks } from '../../auth/jwks-provider';
 import { AuthProperty } from './authProperty';
 import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -162,6 +163,7 @@ export class AuthApi {
     app.get('/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
     app.get('/.well-known/openid-configuration/mcp', this.getOpenIdConfigurationMetadata);
     app.get('/mcp/.well-known/openid-configuration', this.getOpenIdConfigurationMetadata);
+    app.get('/oauth/jwks', this.getJwks);
     app.post('/oauth/register', this.oauthRegister);
     app.get('/oauth/authorize', this.oauthAuthorize);
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
@@ -307,6 +309,11 @@ export class AuthApi {
     res.redirect(location);
   }
 
+  private getJwks = (_req: express.Request, res: express.Response): void => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(getJwks());
+  };
+
   private getOAuthAuthorizationServerMetadata = (req: express.Request, res: express.Response): void => {
     const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
     res.json({
@@ -314,12 +321,14 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
+      jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
       scopes_supported: ['mcp'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+      id_token_signing_alg_values_supported: ['RS256'],
       ui_locales_supported: ['en', 'tr'],
       claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
       request_uri_parameter_supported: false,
@@ -334,8 +343,10 @@ export class AuthApi {
     res.json({
       resource: `${issuer}/mcp`,
       authorization_servers: [issuer],
-      bearer_methods_supported: ['header'],
-      scopes_supported: ['mcp']
+      jwks_uri: `${issuer}/oauth/jwks`,
+      bearer_methods_supported: ['header', 'body'],
+      scopes_supported: ['mcp'],
+      resource_registration: `${issuer}/oauth/register`
     });
   };
 
@@ -346,12 +357,14 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
+      jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
       scopes_supported: ['mcp'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+      id_token_signing_alg_values_supported: ['RS256'],
       ui_locales_supported: ['en', 'tr'],
       claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
       request_uri_parameter_supported: false,

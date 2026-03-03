@@ -5,7 +5,7 @@ import {
   McpIdentity,
   McpTokenAuthRecord
 } from '../auth/auth-utils';
-import { verifyMcpToken } from '../auth/token-utils';
+import { verifyMcpToken, verifyMcpTokenRS256 } from '../auth/token-utils';
 import { AuthMode } from '../config/auth-config';
 import { IDataStore, McpTokenRecord } from '../database/datastore';
 import { DynamicMCPExecutor } from '../server/dynamic-mcp-executor';
@@ -36,6 +36,7 @@ type McpCoreServiceDeps = {
   authMode: AuthMode;
   tokenSecret: string;
   defaultToken?: string;
+  rsaPublicKey?: crypto.KeyObject;
 };
 
 export class McpCoreService {
@@ -44,6 +45,7 @@ export class McpCoreService {
   private readonly authMode: AuthMode;
   private readonly tokenSecret: string;
   private readonly defaultToken: string;
+  private readonly rsaPublicKey: crypto.KeyObject | undefined;
 
   constructor(deps: McpCoreServiceDeps) {
     this.executor = deps.executor;
@@ -51,6 +53,7 @@ export class McpCoreService {
     this.authMode = deps.authMode;
     this.tokenSecret = deps.tokenSecret;
     this.defaultToken = (deps.defaultToken || '').trim();
+    this.rsaPublicKey = deps.rsaPublicKey;
   }
 
   parseIncomingMessage(body: any): JsonRpcMessage {
@@ -194,7 +197,8 @@ export class McpCoreService {
       return { identity: null, tokenRecord: null };
     }
 
-    const verified = verifyMcpToken(token, this.tokenSecret);
+    const verified = (this.rsaPublicKey ? verifyMcpTokenRS256(token, this.rsaPublicKey) : null)
+      ?? verifyMcpToken(token, this.tokenSecret);
     if (!verified) {
       throw new Error('Invalid MCP token');
     }

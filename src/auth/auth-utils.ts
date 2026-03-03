@@ -5,6 +5,7 @@ import path from 'path';
 import { IDataStore } from '../database/datastore';
 import { AuthMode, LiteAdminUser } from '../config/auth-config';
 import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from './token-utils';
+import { getRsaPrivateKey, getKid } from './jwks-provider';
 
 export type AppUserRole = 'admin' | 'user';
 export type AuthContext = { username: string; workspaceId: string; role: AppUserRole };
@@ -120,11 +121,11 @@ export class AuthUtils {
       ...(hasExpiry ? { exp: nowSec + Number(ttlSec) } : {})
     };
 
-    // Produce a standard 3-part JWT (header.payload.signature)
-    const header = this.base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    // Produce a standard 3-part JWT (header.payload.signature) signed with RS256
+    const header = this.base64UrlEncode(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: getKid() }));
     const payloadEncoded = this.base64UrlEncode(JSON.stringify(payload));
     const signingInput = `${header}.${payloadEncoded}`;
-    const signature = this.signMcpToken(signingInput);
+    const signature = crypto.sign('sha256', Buffer.from(signingInput), getRsaPrivateKey()).toString('base64url');
     const token = `${header}.${payloadEncoded}.${signature}`;
     return {
       token,

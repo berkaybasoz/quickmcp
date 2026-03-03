@@ -147,6 +147,33 @@ export function verifyMcpToken(token: string, secret: string): McpTokenPayload |
   }
 }
 
+export function verifyMcpTokenRS256(token: string, publicKey: crypto.KeyObject): McpTokenPayload | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [headerEncoded, payloadEncoded, signatureEncoded] = parts;
+
+  try {
+    const header = JSON.parse(Buffer.from(headerEncoded, 'base64url').toString('utf8'));
+    if (header.alg !== 'RS256') return null;
+  } catch {
+    return null;
+  }
+
+  const signingInput = `${headerEncoded}.${payloadEncoded}`;
+  const sigBuf = Buffer.from(signatureEncoded, 'base64url');
+  const valid = crypto.verify('sha256', Buffer.from(signingInput), publicKey, sigBuf);
+  if (!valid) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64url').toString('utf8')) as McpTokenPayload;
+    if (!payload?.sub) return null;
+    if (typeof payload.exp === 'number' && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export function createRefreshToken(): string {
   return crypto.randomBytes(48).toString('base64url');
 }

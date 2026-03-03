@@ -14,6 +14,7 @@ import { createDataStore, getDataProvider } from '../database/factory';
 import { IDataStore } from '../database/datastore';
 import { AuthMode, getAuthAccessTtlSeconds, parseAuthAdminUsers, getAuthCookieSecret, getAuthDefaultUsername, getAuthRefreshTtlSeconds, resolveAuthMode, validateAuthDataProviderCompatibility } from '../config/auth-config';
 import { AUTH_COOKIE_NAMES, isSecureCookieEnv, verifyAccessToken } from '../auth/token-utils';
+import { getRsaPublicKey } from '../auth/jwks-provider';
 import { AppUserRole, AuthUtils } from '../auth/auth-utils';
 import { ConfigApi } from './api/configApi';
 import { AuthApi } from './api/authApi';
@@ -222,7 +223,8 @@ const mcpCore = new McpCoreService({
   authStore: ensureDataStore(),
   authMode,
   tokenSecret: process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me',
-  defaultToken: (process.env.QUICKMCP_TOKEN || '').trim()
+  defaultToken: (process.env.QUICKMCP_TOKEN || '').trim(),
+  rsaPublicKey: getRsaPublicKey()
 });
 
 function parseCookieHeader(raw: string | undefined): Record<string, string> {
