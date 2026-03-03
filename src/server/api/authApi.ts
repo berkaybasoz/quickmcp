@@ -355,16 +355,9 @@ export class AuthApi {
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
-      code_challenge_methods_supported: ['S256', 'plain'],
+      code_challenge_methods_supported: ['S256'],
       scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
-      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
-      id_token_signing_alg_values_supported: ['RS256'],
-      ui_locales_supported: ['en', 'tr'],
-      claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
-      request_uri_parameter_supported: false,
-      require_request_uri_registration: false,
-      request_parameter_supported: false,
-      authorization_response_iss_parameter_supported: true
+      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic']
     });
   };
 
@@ -393,12 +386,9 @@ export class AuthApi {
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
-      code_challenge_methods_supported: ['S256', 'plain'],
+      code_challenge_methods_supported: ['S256'],
       scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
-      id_token_signing_alg_values_supported: ['RS256'],
-      ui_locales_supported: ['en', 'tr'],
-      claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
       request_uri_parameter_supported: false,
       require_request_uri_registration: false,
       request_parameter_supported: false,
