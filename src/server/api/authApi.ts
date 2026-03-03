@@ -346,6 +346,7 @@ export class AuthApi {
       jwks_uri: `${issuer}/oauth/jwks`,
       bearer_methods_supported: ['header', 'body'],
       scopes_supported: ['mcp'],
+      resource_documentation: 'https://www.quickmcp.ai/docs',
       resource_registration: `${issuer}/oauth/register`
     });
   };
