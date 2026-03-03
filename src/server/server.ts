@@ -313,13 +313,18 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     const message = mcpCore.parseIncomingMessage(req.body);
     const authContext = await resolveMcpAuthContext(req);
     const method = String((message as any)?.method || '');
+    const discoveryMethods = new Set(['tools/list', 'resources/list']);
     const protectedMethods = new Set([
       'tools/call',
       'resources/read',
       'prompts/get'
     ]);
 
-    if (authMode !== 'NONE' && !authContext.identity && protectedMethods.has(method)) {
+    const needsAuth =
+      (authMode !== 'NONE' && !authContext.identity && protectedMethods.has(method)) ||
+      (authMode === 'SUPABASE_GOOGLE' && !authContext.identity && discoveryMethods.has(method));
+
+    if (needsAuth) {
       const configuredBase = String(authProperty.appBaseUrl || '').trim().replace(/\/+$/, '');
       const host = String(req.headers.host || '').trim();
       const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
