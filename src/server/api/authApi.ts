@@ -4,8 +4,8 @@ import crypto from 'crypto';
 import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-utils';
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
-import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from '../../auth/token-utils';
-import { getJwks } from '../../auth/jwks-provider';
+import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyMcpToken, verifyMcpTokenRS256 } from '../../auth/token-utils';
+import { getJwks, getRsaPublicKey } from '../../auth/jwks-provider';
 import { AuthProperty } from './authProperty';
 import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -168,6 +168,7 @@ export class AuthApi {
     app.get('/oauth/authorize', this.oauthAuthorize);
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
     app.post('/oauth/token', this.oauthToken);
+    app.post('/oauth/introspect', this.oauthIntrospect);
 
     app.get('/api/auth/me', this.getMe);
     app.get('/api/auth/roles', this.getRoles);
@@ -320,13 +321,14 @@ export class AuthApi {
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
+      introspection_endpoint: `${issuer}/oauth/introspect`,
       registration_endpoint: `${issuer}/oauth/register`,
       jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
-      scopes_supported: ['mcp'],
+      scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
       id_token_signing_alg_values_supported: ['RS256'],
       ui_locales_supported: ['en', 'tr'],
@@ -345,7 +347,6 @@ export class AuthApi {
       authorization_servers: [issuer],
       jwks_uri: `${issuer}/oauth/jwks`,
       bearer_methods_supported: ['header', 'body'],
-      scopes_supported: ['mcp'],
       resource_documentation: 'https://www.quickmcp.ai/docs',
       resource_registration: `${issuer}/oauth/register`
     });
@@ -357,13 +358,14 @@ export class AuthApi {
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
+      introspection_endpoint: `${issuer}/oauth/introspect`,
       registration_endpoint: `${issuer}/oauth/register`,
       jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
-      scopes_supported: ['mcp'],
+      scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
       id_token_signing_alg_values_supported: ['RS256'],
       ui_locales_supported: ['en', 'tr'],
@@ -722,6 +724,42 @@ export class AuthApi {
       scope: (record.scope || 'mcp') + ' openid',
       resource: resourceUrl
     });
+  };
+
+  // RFC 7662 Token Introspection
+  private oauthIntrospect = async (req: express.Request, res: express.Response): Promise<void> => {
+    const body = (req.body && typeof req.body === 'object') ? req.body : {};
+    const token = String((body as any).token || '').trim();
+    res.setHeader('Cache-Control', 'no-store');
+    if (!token) {
+      res.json({ active: false });
+      return;
+    }
+    try {
+      const tokenSecret = String(process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me');
+      const rsaPublicKey = getRsaPublicKey();
+      const payload = (rsaPublicKey ? verifyMcpTokenRS256(token, rsaPublicKey) : null)
+        ?? verifyMcpToken(token, tokenSecret);
+      if (!payload) {
+        res.json({ active: false });
+        return;
+      }
+      const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+      res.json({
+        active: true,
+        sub: payload.sub,
+        scope: payload.scope || 'mcp openid',
+        username: payload.sub,
+        token_type: 'Bearer',
+        exp: payload.exp,
+        iat: payload.iat,
+        iss: payload.iss || issuer,
+        aud: payload.aud,
+        jti: payload.jti
+      });
+    } catch {
+      res.json({ active: false });
+    }
   };
 
   private getMe = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
