@@ -315,9 +315,17 @@ export class AuthApi {
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
       response_types_supported: ['code'],
+      response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
-      token_endpoint_auth_methods_supported: ['none'],
-      code_challenge_methods_supported: ['S256', 'plain']
+      code_challenge_methods_supported: ['S256', 'plain'],
+      scopes_supported: ['mcp'],
+      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+      ui_locales_supported: ['en', 'tr'],
+      claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
+      request_uri_parameter_supported: false,
+      require_request_uri_registration: false,
+      request_parameter_supported: false,
+      authorization_response_iss_parameter_supported: true
     });
   };
 
@@ -339,9 +347,17 @@ export class AuthApi {
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
       response_types_supported: ['code'],
+      response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
-      token_endpoint_auth_methods_supported: ['none'],
-      code_challenge_methods_supported: ['S256', 'plain']
+      code_challenge_methods_supported: ['S256', 'plain'],
+      scopes_supported: ['mcp'],
+      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+      ui_locales_supported: ['en', 'tr'],
+      claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
+      request_uri_parameter_supported: false,
+      require_request_uri_registration: false,
+      request_parameter_supported: false,
+      authorization_response_iss_parameter_supported: true
     });
   };
 
