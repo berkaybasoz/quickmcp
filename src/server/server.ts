@@ -313,8 +313,6 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     const message = mcpCore.parseIncomingMessage(req.body);
     const authContext = await resolveMcpAuthContext(req);
     const method = String((message as any)?.method || '');
-
-    const hasBearer = String(req.headers.authorization || '').toLowerCase().startsWith('bearer ');
     
     const protectedMethods = new Set([
       'tools/call',
@@ -322,9 +320,7 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
       'prompts/get'
     ]);
 
-    const isDiscovery = new Set(['initialize', 'tools/list', 'resources/list', 'prompts/list']).has(method);
-
-    if (authMode !== 'NONE' && !authContext.identity && (protectedMethods.has(method) || (isDiscovery && !hasBearer))) {
+    if (authMode !== 'NONE' && !authContext.identity && protectedMethods.has(method)) {
       const configuredBase = String(authProperty.appBaseUrl || '').trim().replace(/\/+$/, '');
       const host = String(req.headers.host || '').trim();
       const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
