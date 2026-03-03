@@ -5,7 +5,7 @@ import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
 import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyMcpToken, verifyMcpTokenRS256 } from '../../auth/token-utils';
-import { getJwks, getRsaPublicKey } from '../../auth/jwks-provider';
+import { getJwks, getRsaPublicKey, getRsaPrivateKey, getKid } from '../../auth/jwks-provider';
 import { AuthProperty } from './authProperty';
 import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -43,6 +43,7 @@ type OAuthPendingRequest = {
   resource: string;
   codeChallenge: string;
   codeChallengeMethod: 'S256' | 'plain';
+  nonce?: string;
   createdAt: number;
 };
 
@@ -53,6 +54,7 @@ type OAuthAuthorizationCode = {
   resource: string;
   codeChallenge: string;
   codeChallengeMethod: 'S256' | 'plain';
+  nonce?: string;
   username: string;
   workspaceId: string;
   role: AppUserRole;
@@ -169,6 +171,8 @@ export class AuthApi {
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
     app.post('/oauth/token', this.oauthToken);
     app.post('/oauth/introspect', this.oauthIntrospect);
+    app.get('/oauth/userinfo', this.oauthUserinfo);
+    app.post('/oauth/userinfo', this.oauthUserinfo);
 
     app.get('/api/auth/me', this.getMe);
     app.get('/api/auth/roles', this.getRoles);
@@ -273,6 +277,29 @@ export class AuthApi {
     }
   }
 
+  private createIdToken(params: {
+    sub: string;
+    issuer: string;
+    clientId: string;
+    ttlSec: number;
+    nonce?: string;
+  }): string {
+    const now = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: getKid() })).toString('base64url');
+    const payloadObj: Record<string, unknown> = {
+      iss: params.issuer,
+      sub: params.sub,
+      aud: params.clientId,
+      iat: now,
+      exp: now + params.ttlSec
+    };
+    if (params.nonce) payloadObj.nonce = params.nonce;
+    const payloadEncoded = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+    const signingInput = `${header}.${payloadEncoded}`;
+    const signature = crypto.sign('sha256', Buffer.from(signingInput), getRsaPrivateKey()).toString('base64url');
+    return `${signingInput}.${signature}`;
+  }
+
   private createAuthorizationCode(record: Omit<OAuthAuthorizationCode, 'expiresAt'>): string {
     const payload: OAuthAuthorizationCode = {
       ...record,
@@ -322,6 +349,7 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       introspection_endpoint: `${issuer}/oauth/introspect`,
+      userinfo_endpoint: `${issuer}/oauth/userinfo`,
       registration_endpoint: `${issuer}/oauth/register`,
       jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
@@ -359,6 +387,7 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       introspection_endpoint: `${issuer}/oauth/introspect`,
+      userinfo_endpoint: `${issuer}/oauth/userinfo`,
       registration_endpoint: `${issuer}/oauth/register`,
       jwks_uri: `${issuer}/oauth/jwks`,
       response_types_supported: ['code'],
@@ -427,6 +456,7 @@ export class AuthApi {
     const resource = canonicalResource;
     const codeChallenge = String(req.query.code_challenge || '').trim();
     const codeChallengeMethod = this.normalizeOAuthCodeChallengeMethod(String(req.query.code_challenge_method || 'S256'));
+    const nonce = String(req.query.nonce || '').trim() || undefined;
 
     if (responseType !== 'code') {
       if (redirectUri) {
@@ -460,6 +490,7 @@ export class AuthApi {
       resource,
       codeChallenge,
       codeChallengeMethod,
+      nonce,
       createdAt: Date.now()
     };
     if (requestedResource && requestedResource !== resource) {
@@ -498,6 +529,7 @@ export class AuthApi {
       resource: pending.resource,
       codeChallenge: pending.codeChallenge,
       codeChallengeMethod: pending.codeChallengeMethod,
+      nonce: pending.nonce,
       username: ctx.username,
       workspaceId: ctx.workspaceId,
       role: ctx.role
@@ -596,11 +628,13 @@ export class AuthApi {
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('Pragma', 'no-cache');
         logger.info(`[oauth/token:${requestId}] refresh success user=${existingToken.subjectUsername}`);
+        const refreshIdToken = this.createIdToken({ sub: existingToken.subjectUsername, issuer: issuerUrl, clientId: clientId || 'chatgpt', ttlSec: refreshTtlSec });
         res.json({
           access_token: newTokenPack.token,
           token_type: 'Bearer',
           expires_in: refreshTtlSec,
           refresh_token: newRefreshToken,
+          id_token: refreshIdToken,
           scope: 'mcp openid',
           resource: resourceUrl
         });
@@ -716,12 +750,18 @@ export class AuthApi {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Pragma', 'no-cache');
     logger.info(`[oauth/token:${requestId}] success user=${record.username} ws=${record.workspaceId}`);
+    const grantScopes = (record.scope || '').split(/\s+/);
+    const idToken = grantScopes.includes('openid')
+      ? this.createIdToken({ sub: record.username, issuer: issuerUrl, clientId: clientId || record.clientId, ttlSec, nonce: record.nonce })
+      : undefined;
+    const responseScope = [...new Set([...grantScopes, 'openid'])].join(' ');
     res.json({
       access_token: tokenPack.token,
       token_type: 'Bearer',
       expires_in: ttlSec,
       refresh_token: refreshToken,
-      scope: (record.scope || 'mcp') + ' openid',
+      ...(idToken ? { id_token: idToken } : {}),
+      scope: responseScope,
       resource: resourceUrl
     });
   };
@@ -759,6 +799,37 @@ export class AuthApi {
       });
     } catch {
       res.json({ active: false });
+    }
+  };
+
+  // OIDC UserInfo endpoint (RFC 7517)
+  private oauthUserinfo = async (req: express.Request, res: express.Response): Promise<void> => {
+    const authHeader = String(req.headers.authorization || '').trim();
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const token = bearerMatch ? bearerMatch[1].trim() : '';
+    if (!token) {
+      res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+      res.status(401).json({ error: 'invalid_token', error_description: 'Bearer token required' });
+      return;
+    }
+    try {
+      const tokenSecret = String(process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me');
+      const rsaPublicKey = getRsaPublicKey();
+      const payload = (rsaPublicKey ? verifyMcpTokenRS256(token, rsaPublicKey) : null)
+        ?? verifyMcpToken(token, tokenSecret);
+      if (!payload) {
+        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+        res.status(401).json({ error: 'invalid_token', error_description: 'Token is invalid or expired' });
+        return;
+      }
+      res.json({
+        sub: payload.sub,
+        name: payload.sub,
+        preferred_username: payload.sub,
+        profile: `${this.resolveAppBaseUrl(req).replace(/\/+$/, '')}/users/${encodeURIComponent(payload.sub)}`
+      });
+    } catch {
+      res.status(500).json({ error: 'server_error' });
     }
   };
 
