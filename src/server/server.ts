@@ -315,9 +315,6 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     const method = String((message as any)?.method || '');
     
     const protectedMethods = new Set([
-      'tools/list',
-      'resources/list',
-      'prompts/list',
       'tools/call',
       'resources/read',
       'prompts/get'
@@ -330,19 +327,16 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
       const runtimeBase = host ? `${proto}://${host}` : '';
       const base = configuredBase || runtimeBase;
       const metadataUrl = `${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource`;
-      const challenge = `Bearer resource_metadata="${metadataUrl}"`;
+      const challenge = `Bearer resource_metadata=\"${metadataUrl}\", error=\"invalid_token\", error_description=\"Bearer token required\"`;
 
-      logger.info(`[MCP] sending 401 challenge for method=${method} metadataUrl=${metadataUrl}`);
       res.setHeader('WWW-Authenticate', challenge);
       res.status(401).json({
         jsonrpc: '2.0',
         id: (message as any)?.id ?? null,
-        error: {
-          code: -32001,
-          message: 'Unauthorized',
-          data: {
-            'mcp/www_authenticate': [challenge]
-          }
+        result: {
+          content: [{ type: 'text', text: 'Authentication required: Bearer token is missing.' }],
+          _meta: { 'mcp/www_authenticate': [challenge] },
+          isError: true
         }
       });
       return;
