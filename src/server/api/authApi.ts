@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-utils';
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
-import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from '../../auth/token-utils';
+import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyMcpToken } from '../../auth/token-utils';
 import { AuthProperty } from './authProperty';
 import { logger } from '../../utils/logger';
 type AuthenticatedRequest = express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole };
@@ -166,6 +166,8 @@ export class AuthApi {
     app.get('/oauth/authorize', this.oauthAuthorize);
     app.get('/oauth/authorize/complete', this.oauthAuthorizeComplete);
     app.post('/oauth/token', this.oauthToken);
+    app.get('/oauth/userinfo', this.getUserInfo);
+    app.post('/oauth/userinfo', this.getUserInfo);
 
     app.get('/api/auth/me', this.getMe);
     app.get('/api/auth/roles', this.getRoles);
@@ -314,11 +316,12 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
+      userinfo_endpoint: `${issuer}/oauth/userinfo`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
-      scopes_supported: ['mcp'],
+      scopes_supported: ['mcp', 'openid'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
       ui_locales_supported: ['en', 'tr'],
       claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
@@ -335,7 +338,7 @@ export class AuthApi {
       resource: `${issuer}/mcp`,
       authorization_servers: [issuer],
       bearer_methods_supported: ['header'],
-      scopes_supported: ['mcp']
+      scopes_supported: ['mcp', 'openid']
     });
   };
 
@@ -346,11 +349,12 @@ export class AuthApi {
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/oauth/token`,
       registration_endpoint: `${issuer}/oauth/register`,
+      userinfo_endpoint: `${issuer}/oauth/userinfo`,
       response_types_supported: ['code'],
       response_modes_supported: ['query'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256', 'plain'],
-      scopes_supported: ['mcp'],
+      scopes_supported: ['mcp', 'openid'],
       token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
       ui_locales_supported: ['en', 'tr'],
       claims_supported: ['sub', 'ws', 'role', 'iss', 'aud', 'scope'],
@@ -498,8 +502,18 @@ export class AuthApi {
     const grantType = String((body as any).grant_type || '').trim();
     const code = String((body as any).code || '').trim();
     const redirectUri = String((body as any).redirect_uri || '').trim();
-    const clientId = String((body as any).client_id || '').trim();
     const codeVerifier = String((body as any).code_verifier || '').trim();
+    // Support client_secret_basic: extract client_id from Authorization: Basic header
+    let clientId = String((body as any).client_id || '').trim();
+    if (!clientId) {
+      const basicMatch = String(req.headers.authorization || '').match(/^Basic\s+(.+)$/i);
+      if (basicMatch) {
+        try {
+          const decoded = Buffer.from(basicMatch[1], 'base64').toString('utf8');
+          clientId = decoded.split(':')[0] || '';
+        } catch {}
+      }
+    }
     const requestId = crypto.randomBytes(6).toString('hex');
     logger.info(`[oauth/token:${requestId}] headers=${JSON.stringify(req.headers)}`);
     logger.info(`[oauth/token:${requestId}] body=${JSON.stringify(body)}`);
@@ -705,8 +719,41 @@ export class AuthApi {
       token_type: 'Bearer',
       expires_in: ttlSec,
       refresh_token: refreshToken,
-      scope: (record.scope || 'mcp') + ' openid',
+      scope: ((record.scope || 'mcp') + ' openid').trim(),
       resource: resourceUrl
+    });
+  };
+
+  private getUserInfo = (req: express.Request, res: express.Response): void => {
+    const authHeader = String(req.headers.authorization || '').trim();
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const token = bearerMatch ? String(bearerMatch[1] || '').trim() : '';
+
+    if (!token) {
+      res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+      res.status(401).json({ error: 'invalid_token', error_description: 'Bearer token required' });
+      return;
+    }
+
+    const tokenSecret = (process.env.QUICKMCP_TOKEN_SECRET || this.deps.authCookieSecret || 'change-me').trim();
+    const payload = verifyMcpToken(token, tokenSecret);
+    if (!payload) {
+      res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+      res.status(401).json({ error: 'invalid_token', error_description: 'Token is invalid or expired' });
+      return;
+    }
+
+    const sub = String(payload.sub || '');
+    const workspace = String(payload.ws || payload.workspace || sub);
+    res.json({
+      sub,
+      name: sub,
+      preferred_username: sub,
+      workspace,
+      ws: workspace,
+      role: String(payload.role || 'user'),
+      iss: payload.iss,
+      aud: payload.aud
     });
   };
 
