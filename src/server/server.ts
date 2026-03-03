@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -218,6 +219,17 @@ const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode, MCP_PORT);
 
+// Short-lived session store: maps Mcp-Session-Id → auth context.
+// Set when an authenticated probe arrives; openai-mcp clients include the
+// session ID in subsequent requests so we can identify the user.
+const mcpSessionStore = new Map<string, { identity: any; tokenRecord: any; expiresAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, s] of mcpSessionStore) {
+    if (s.expiresAt < now) mcpSessionStore.delete(id);
+  }
+}, 60_000);
+
 const mcpCore = new McpCoreService({
   executor: new DynamicMCPExecutor(),
   authStore: ensureDataStore(),
@@ -292,6 +304,15 @@ async function resolveMcpAuthContext(req: Request): Promise<McpAuthContext> {
   logger.info(
     `[MCP] transport host=${String(req.headers.host || '')} ua=${String(req.headers['user-agent'] || '').slice(0, 80)} cookie=${req.headers.cookie ? '1' : '0'}`
   );
+  // Check Mcp-Session-Id header (set during authenticated probe)
+  const sessionId = String(req.headers['mcp-session-id'] || '').trim();
+  if (sessionId && authMode !== 'NONE') {
+    const session = mcpSessionStore.get(sessionId);
+    if (session && session.expiresAt > Date.now()) {
+      logger.info(`[MCP] session hit sid=${sessionId.slice(0, 8)} user=${session.identity?.username}`);
+      return { identity: session.identity, tokenRecord: session.tokenRecord };
+    }
+  }
   const mcpAuth = await mcpCore.resolveAuthContextFromSources({
     authorization: String(req.headers.authorization || ''),
     xMcpToken: String(req.headers['x-mcp-token'] || ''),
@@ -304,6 +325,16 @@ async function resolveMcpAuthContext(req: Request): Promise<McpAuthContext> {
   return cookieFallback || mcpAuth;
 }
 
+function buildMcpWwwAuthenticate(req: Request): string {
+  const configuredBase = String(authProperty.appBaseUrl || '').trim().replace(/\/+$/, '');
+  const host = String(req.headers.host || '').trim();
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+  const runtimeBase = host ? `${proto}://${host}` : '';
+  const base = configuredBase || runtimeBase;
+  const metadataUrl = `${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource`;
+  return `Bearer resource_metadata="${metadataUrl}", error="invalid_token", error_description="Bearer token required"`;
+}
+
 async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
   try {
     const bodyPreview = Buffer.isBuffer(req.body)
@@ -311,6 +342,32 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
       : safeStringifyForLog(req.body);
     logger.info(`[MCP] debug headers=${safeStringifyForLog(req.headers)}`);
     logger.info(`[MCP] debug body=${bodyPreview}`);
+
+    // Detect empty probe (no JSON-RPC body — typically Python aiohttp after OAuth)
+    const isEmptyProbe = !req.body
+      || (typeof req.body === 'object' && !Buffer.isBuffer(req.body) && Object.keys(req.body as object).length === 0);
+
+    if (isEmptyProbe && authMode !== 'NONE') {
+      const challenge = buildMcpWwwAuthenticate(req);
+      const authContext = await resolveMcpAuthContext(req);
+      if (!authContext.identity) {
+        logger.info('[MCP] probe: no token → 401 challenge');
+        res.setHeader('WWW-Authenticate', challenge);
+        res.status(401).end();
+        return;
+      }
+      // Authenticated probe → create session for subsequent openai-mcp requests
+      const sid = crypto.randomUUID();
+      mcpSessionStore.set(sid, {
+        identity: authContext.identity,
+        tokenRecord: authContext.tokenRecord,
+        expiresAt: Date.now() + 10 * 60 * 1000
+      });
+      logger.info(`[MCP] probe: session created sid=${sid.slice(0, 8)} user=${authContext.identity.username}`);
+      res.setHeader('Mcp-Session-Id', sid);
+      res.status(200).json({ status: 'ok' });
+      return;
+    }
 
     const message = mcpCore.parseIncomingMessage(req.body);
     const authContext = await resolveMcpAuthContext(req);
