@@ -40,6 +40,8 @@ type McpCoreServiceDeps = {
   rsaPublicKey?: crypto.KeyObject;
 };
 
+const AUTH_RETRY_PROBE_TOOL_NAME = 'quickmcp__auth_retry_probe';
+
 export class McpCoreService {
   private readonly executor: DynamicMCPExecutor;
   private readonly authStore: IDataStore;
@@ -133,13 +135,14 @@ export class McpCoreService {
         const allTools = await this.executor.getAllTools();
         const tools = await this.getAuthorizedTools(allTools, authContext);
         const toolsWithSecuritySchemes = await this.withToolSecuritySchemes(tools);
+        const toolsWithProbe = this.withAuthRetryProbeTool(toolsWithSecuritySchemes);
         if (tools.length === 0 && allTools.length > 0) {
           logger.info(`[MCP] tools/list ${who} → 0/${allTools.length} tools (authorization filtered all tools)`);
         } else {
           const toolNames = tools.map((t: any) => String(t.name || '')).join(', ') || '(none)';
           logger.info(`[MCP] tools/list ${who} → ${tools.length}/${allTools.length} tools: [${toolNames}]`);
         }
-        return { jsonrpc: '2.0', id: messageData.id, result: { tools: toolsWithSecuritySchemes } };
+        return { jsonrpc: '2.0', id: messageData.id, result: { tools: toolsWithProbe } };
       }
 
       case 'resources/list': {
@@ -155,6 +158,10 @@ export class McpCoreService {
       case 'tools/call': {
         const toolName = String(messageData.params?.name || '');
         logger.info(`[MCP] tools/call tool=${toolName} ${who}`);
+        if (this.isSaasMode() && toolName === AUTH_RETRY_PROBE_TOOL_NAME) {
+          logger.info(`[MCP] auth-retry-probe invoked; forcing insufficient_scope challenge`);
+          throw new Error('insufficient_scope: auth retry probe');
+        }
         await this.ensureToolAllowed(toolName, authContext);
         const toolResult = await this.executor.executeTool(toolName, messageData.params?.arguments || {});
         return {
@@ -305,6 +312,29 @@ export class McpCoreService {
       out.push(cloned);
     }
     return out;
+  }
+
+  private withAuthRetryProbeTool(tools: any[]): any[] {
+    if (!this.isSaasMode()) return tools;
+    if (tools.some((tool) => String(tool?.name || '') === AUTH_RETRY_PROBE_TOOL_NAME)) return tools;
+    const schemes = [{ type: 'oauth2', scopes: ['mcp'] }];
+    const probeTool = {
+      name: AUTH_RETRY_PROBE_TOOL_NAME,
+      description: 'Auth retry probe tool. Always returns 401 with WWW-Authenticate to test bearer retry behavior.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          note: {
+            type: 'string',
+            description: 'Optional note for tracing.'
+          }
+        },
+        additionalProperties: true
+      },
+      securitySchemes: schemes,
+      _meta: { securitySchemes: schemes }
+    };
+    return [...tools, probeTool];
   }
 
   private async getAuthorizedResources(resources: any[], authContext: McpAuthContext): Promise<any[]> {

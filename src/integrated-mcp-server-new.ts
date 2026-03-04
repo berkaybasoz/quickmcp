@@ -22,6 +22,7 @@ export class IntegratedMCPServer {
   private executor: DynamicMCPExecutor;
   private authStore: IDataStore;
   private mcpAuthMode: AuthMode;
+  private deployMode: string;
   private mcpCore: McpCoreService;
   private sseSessions = new Map<string, SseSession>();
   private wsServer: WebSocketServer | null = null;
@@ -30,6 +31,7 @@ export class IntegratedMCPServer {
     this.executor = new DynamicMCPExecutor();
     this.authStore = createDataStore();
     this.mcpAuthMode = resolveAuthMode();
+    this.deployMode = String(process.env.DEPLOY_MODE || '').trim().toUpperCase();
 
     const tokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
     const defaultToken = (process.env.QUICKMCP_TOKEN || '').trim();
@@ -38,6 +40,7 @@ export class IntegratedMCPServer {
       executor: this.executor,
       authStore: this.authStore,
       authMode: this.mcpAuthMode,
+      deployMode: this.deployMode,
       tokenSecret,
       defaultToken
     });
@@ -73,6 +76,46 @@ export class IntegratedMCPServer {
   private async executeJsonRpc(rawBody: any, authContext: McpAuthContext): Promise<any | null> {
     const message = this.mcpCore.parseIncomingMessage(rawBody);
     return await this.mcpCore.processJsonRpcMessage(message, authContext);
+  }
+
+  private isMcpAuthError(error: unknown): boolean {
+    const msg = String(
+      error instanceof Error
+        ? error.message
+        : (error && typeof error === 'object' && 'message' in (error as any))
+          ? (error as any).message
+          : error
+    ).toLowerCase();
+    if (!msg) return false;
+    return msg.includes('unauthorized')
+      || msg.includes('invalid mcp token')
+      || msg.includes('bearer token required')
+      || msg.includes('insufficient_scope');
+  }
+
+  private buildMcpWwwAuthenticate(req: express.Request): string {
+    const host = String(req.headers.host || '').trim();
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const base = host ? `${proto}://${host}` : '';
+    const metadataUrl = `${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource`;
+    return `Bearer resource_metadata="${metadataUrl}", scope="mcp", error="insufficient_scope", error_description="You need to login to continue"`;
+  }
+
+  private sendMcpAuthRequired(req: express.Request, res: express.Response, id: string | number | null, text: string): void {
+    const challenge = this.buildMcpWwwAuthenticate(req);
+    logger.info(
+      `[MCP] auth challenge jsonrpc_id=${String(id)} authHeader=${req.headers.authorization ? '1' : '0'} x-mcp-token=${req.headers['x-mcp-token'] ? '1' : '0'}`
+    );
+    res.setHeader('WWW-Authenticate', challenge);
+    res.status(401).json({
+      jsonrpc: '2.0',
+      id,
+      result: {
+        content: [{ type: 'text', text }],
+        _meta: { 'mcp/www_authenticate': [challenge] },
+        isError: true
+      }
+    });
   }
 
   private writeSseEvent(res: express.Response, event: string, data: any): void {
@@ -117,6 +160,10 @@ export class IntegratedMCPServer {
           res.status(204).end();
         }
       } catch (error) {
+        if (this.mcpAuthMode !== 'NONE' && this.isMcpAuthError(error)) {
+          this.sendMcpAuthRequired(req, res, (req.body as any)?.id ?? null, 'Authentication required: no access token provided.');
+          return;
+        }
         res.status(500).json({
           jsonrpc: '2.0',
           id: (req.body as any)?.id,
@@ -181,6 +228,10 @@ export class IntegratedMCPServer {
 
         res.status(204).end();
       } catch (error) {
+        if (this.mcpAuthMode !== 'NONE' && this.isMcpAuthError(error)) {
+          this.sendMcpAuthRequired(req, res, (req.body as any)?.id ?? null, 'Authentication required: no access token provided.');
+          return;
+        }
         res.status(500).json({
           jsonrpc: '2.0',
           id: (req.body as any)?.id,
@@ -226,6 +277,10 @@ export class IntegratedMCPServer {
 
         res.json(response);
       } catch (error) {
+        if (this.mcpAuthMode !== 'NONE' && this.isMcpAuthError(error)) {
+          this.sendMcpAuthRequired(req, res, (req.body as any)?.id ?? null, 'Authentication required: no access token provided.');
+          return;
+        }
         logger.error(`[MCP/HTTP] request failed method=${req.method}`, error);
         res.status(500).json({
           jsonrpc: '2.0',
