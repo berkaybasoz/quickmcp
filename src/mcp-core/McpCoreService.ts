@@ -159,8 +159,30 @@ export class McpCoreService {
         const toolName = String(messageData.params?.name || '');
         logger.info(`[MCP] tools/call tool=${toolName} ${who}`);
         if (this.isSaasMode() && toolName === AUTH_RETRY_PROBE_TOOL_NAME) {
-          logger.info(`[MCP] auth-retry-probe invoked; forcing insufficient_scope challenge`);
-          throw new Error('insufficient_scope: auth retry probe');
+          if (!authContext.identity) {
+            logger.info(`[MCP] auth-retry-probe invoked without token; forcing insufficient_scope challenge`);
+            throw new Error('insufficient_scope: auth retry probe');
+          }
+          logger.info(
+            `[MCP] auth-retry-probe success authHeaderPresent=1 user=${authContext.identity.username} workspace=${authContext.identity.workspace}`
+          );
+          return {
+            jsonrpc: '2.0',
+            id: messageData.id,
+            result: {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    ok: true,
+                    message: 'Auth retry probe passed. Client retried with token.',
+                    username: authContext.identity.username,
+                    workspace: authContext.identity.workspace
+                  }, null, 2)
+                }
+              ]
+            }
+          };
         }
         await this.ensureToolAllowed(toolName, authContext);
         const toolResult = await this.executor.executeTool(toolName, messageData.params?.arguments || {});
