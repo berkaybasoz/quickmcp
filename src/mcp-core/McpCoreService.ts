@@ -125,13 +125,14 @@ export class McpCoreService {
       case 'tools/list': {
         const allTools = await this.executor.getAllTools();
         const tools = await this.getAuthorizedTools(allTools, authContext);
+        const toolsWithSecuritySchemes = await this.withToolSecuritySchemes(tools);
         if (tools.length === 0 && allTools.length > 0) {
           logger.info(`[MCP] tools/list ${who} → 0/${allTools.length} tools (authorization filtered all tools)`);
         } else {
           const toolNames = tools.map((t: any) => String(t.name || '')).join(', ') || '(none)';
           logger.info(`[MCP] tools/list ${who} → ${tools.length}/${allTools.length} tools: [${toolNames}]`);
         }
-        return { jsonrpc: '2.0', id: messageData.id, result: { tools } };
+        return { jsonrpc: '2.0', id: messageData.id, result: { tools: toolsWithSecuritySchemes } };
       }
 
       case 'resources/list': {
@@ -272,6 +273,33 @@ export class McpCoreService {
     return out;
   }
 
+  private async withToolSecuritySchemes(tools: any[]): Promise<any[]> {
+    const out: any[] = [];
+    for (const tool of tools) {
+      const cloned = { ...tool };
+      try {
+        const [serverId, toolName] = this.parseQualifiedName(String(tool.name || ''));
+        const requireToken = await this.getToolRequireMcpToken(serverId, toolName);
+        const defaultSchemes = requireToken
+          ? [{ type: 'oauth2', scopes: ['mcp'] }]
+          : [{ type: 'noauth' }];
+        const schemes = Array.isArray((tool as any).securitySchemes) && (tool as any).securitySchemes.length > 0
+          ? (tool as any).securitySchemes
+          : defaultSchemes;
+        cloned.securitySchemes = schemes;
+        cloned._meta = { ...((tool as any)._meta || {}), securitySchemes: schemes };
+      } catch {
+        const schemes = Array.isArray((tool as any).securitySchemes) && (tool as any).securitySchemes.length > 0
+          ? (tool as any).securitySchemes
+          : [{ type: 'oauth2', scopes: ['mcp'] }];
+        cloned.securitySchemes = schemes;
+        cloned._meta = { ...((tool as any)._meta || {}), securitySchemes: schemes };
+      }
+      out.push(cloned);
+    }
+    return out;
+  }
+
   private async getAuthorizedResources(resources: any[], authContext: McpAuthContext): Promise<any[]> {
     if (this.authMode === 'NONE') return resources;
     if (!authContext.identity) {
@@ -397,6 +425,16 @@ export class McpCoreService {
       return tokenRecord.allowedTools.includes(full);
     }
     return true;
+  }
+
+  private async getToolRequireMcpToken(serverId: string, toolName: string): Promise<boolean> {
+    if (this.authMode === 'NONE') return false;
+    let requireToken = await this.getServerRequireMcpToken(serverId);
+    try {
+      const toolCfg = await this.authStore.getMcpTokenPolicy('tool', `${serverId}__${toolName}`);
+      if (toolCfg) requireToken = toolCfg.requireMcpToken !== false;
+    } catch {}
+    return requireToken;
   }
 
   private async isResourceAuthorizedAsync(authContext: McpAuthContext, serverId: string, resourceName: string): Promise<boolean> {

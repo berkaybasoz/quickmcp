@@ -366,6 +366,7 @@ export class AuthApi {
     res.json({
       resource: `${issuer}/mcp`,
       authorization_servers: [issuer],
+      scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
       jwks_uri: `${issuer}/oauth/jwks`,
       bearer_methods_supported: ['header', 'body'],
       resource_documentation: 'https://www.quickmcp.ai/docs',
