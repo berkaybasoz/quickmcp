@@ -110,7 +110,7 @@ export class McpCoreService {
 
     switch (messageData.method) {
       case 'initialize': {
-        const protocolVersion = String(messageData.params?.protocolVersion || '2026-03-05');
+        const protocolVersion = String(messageData.params?.protocolVersion || '2025-11-25');
         return {
           jsonrpc: '2.0',
           id: messageData.id,
