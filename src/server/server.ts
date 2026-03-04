@@ -417,15 +417,11 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     res.setHeader('mcp-protocol-version', protocolVersion);
     res.setHeader('x-quickmcp-test', randomUUID());
 
-    // When tools/list returns 0 tools for an unauthenticated client (SAAS mode),
-    // include WWW-Authenticate so the client knows it can authenticate to see tools.
-    if (method === 'tools/list' && !authContext.identity && authMode !== 'NONE') {
-      const toolsResult = response?.result?.tools;
-      if (Array.isArray(toolsResult) && toolsResult.length === 0) {
-        const challenge = buildMcpWwwAuthenticate(req);
-        logger.info(`[MCP] tools/list unauthenticated → adding WWW-Authenticate hint`);
-        res.setHeader('WWW-Authenticate', challenge);
-      }
+    // When unauthenticated in SAAS mode, always include WWW-Authenticate so
+    // openai-mcp client can trigger OAuth and retry with a Bearer token.
+    if (!authContext.identity && authMode !== 'NONE') {
+      const challenge = buildMcpWwwAuthenticate(req);
+      res.setHeader('WWW-Authenticate', challenge);
     }
 
     res.json(response);
@@ -542,7 +538,13 @@ authApi.registerRoutes(app);
 logsApi.registerRoutes(app);
 
 // Serverless/Vercel path: expose integrated MCP HTTP transport directly on the main app.
-app.get('/mcp', (_req, res) => {
+app.get('/mcp', (req, res) => {
+  if (authMode !== 'NONE') {
+    const challenge = buildMcpWwwAuthenticate(req);
+    res.setHeader('WWW-Authenticate', challenge);
+    res.status(401).end();
+    return;
+  }
   res.status(200).json({ ok: true, transport: 'streamable-http', endpoint: '/mcp' });
 });
 app.post('/mcp', (req, res) => {
