@@ -97,8 +97,10 @@ export class IntegratedMCPServer {
     const host = String(req.headers.host || '').trim();
     const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
     const base = host ? `${proto}://${host}` : '';
-    const metadataUrl = `${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource`;
-    return `Bearer resource_metadata="${metadataUrl}", scope="mcp", error="insufficient_scope", error_description="You need to login to continue"`;
+    const normalizedBase = base.replace(/\/+$/, '');
+    const metadataUrl = `${normalizedBase}/mcp/.well-known/oauth-protected-resource`;
+    const resource = `${normalizedBase}/mcp`;
+    return `Bearer resource_metadata="${metadataUrl}", resource="${resource}", scope="mcp", error="insufficient_scope", error_description="You need to login to continue"`;
   }
 
   private sendMcpAuthRequired(req: express.Request, res: express.Response, id: string | number | null, text: string): void {
