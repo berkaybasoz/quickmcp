@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -412,6 +413,7 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     }
     const protocolVersion = String((message as any)?.params?.protocolVersion || '2025-11-25');
     res.setHeader('mcp-protocol-version', protocolVersion);
+    res.setHeader('x-quickmcp-test', randomUUID());
 
     // When tools/list returns 0 tools for an unauthenticated client (SAAS mode),
     // include WWW-Authenticate so the client knows it can authenticate to see tools.
