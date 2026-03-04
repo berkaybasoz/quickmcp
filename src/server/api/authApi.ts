@@ -78,6 +78,13 @@ export class AuthApi {
 
   constructor(private readonly deps: AuthApiDeps) {}
 
+  private maskTokenForLog(value: string | undefined): string {
+    const token = String(value || '');
+    if (!token) return '';
+    if (token.length <= 16) return `${token.slice(0, 4)}...(${token.length})`;
+    return `${token.slice(0, 8)}...${token.slice(-6)}(${token.length})`;
+  }
+
   private isSaasMode(): boolean {
     return String(this.deps.deployMode || '').trim().toUpperCase() === 'SAAS';
   }
@@ -620,7 +627,7 @@ export class AuthApi {
         res.setHeader('Pragma', 'no-cache');
         logger.info(`[oauth/token:${requestId}] refresh success user=${existingToken.subjectUsername}`);
         const refreshIdToken = this.createIdToken({ sub: existingToken.subjectUsername, issuer: issuerUrl, clientId: clientId || 'chatgpt', ttlSec: refreshTtlSec });
-        res.json({
+        const refreshResponse = {
           access_token: newTokenPack.token,
           token_type: 'Bearer',
           expires_in: refreshTtlSec,
@@ -628,7 +635,11 @@ export class AuthApi {
           id_token: refreshIdToken,
           scope: 'mcp openid',
           resource: resourceUrl
-        });
+        };
+        logger.info(
+          `[oauth/token:${requestId}] refresh response token_type=${refreshResponse.token_type} scope="${refreshResponse.scope}" resource="${refreshResponse.resource}" access_token=${this.maskTokenForLog(refreshResponse.access_token)} refresh_token=${this.maskTokenForLog(refreshResponse.refresh_token)} id_token=${this.maskTokenForLog(refreshResponse.id_token)}`
+        );
+        res.json(refreshResponse);
       } catch (err) {
         logger.warn(`[oauth/token:${requestId}] refresh_token error: ${err instanceof Error ? err.message : String(err)}`);
         res.status(400).json({ error: 'invalid_grant', error_description: 'refresh_token processing failed' });
@@ -746,7 +757,7 @@ export class AuthApi {
       ? this.createIdToken({ sub: record.username, issuer: issuerUrl, clientId: clientId || record.clientId, ttlSec, nonce: record.nonce })
       : undefined;
     const responseScope = [...new Set([...grantScopes, 'openid'])].join(' ');
-    res.json({
+    const tokenResponse = {
       access_token: tokenPack.token,
       token_type: 'Bearer',
       expires_in: ttlSec,
@@ -754,7 +765,11 @@ export class AuthApi {
       ...(idToken ? { id_token: idToken } : {}),
       scope: responseScope,
       resource: resourceUrl
-    });
+    };
+    logger.info(
+      `[oauth/token:${requestId}] response token_type=${tokenResponse.token_type} scope="${tokenResponse.scope}" resource="${tokenResponse.resource}" access_token=${this.maskTokenForLog(tokenResponse.access_token)} refresh_token=${this.maskTokenForLog(tokenResponse.refresh_token)} id_token=${this.maskTokenForLog((tokenResponse as any).id_token)}`
+    );
+    res.json(tokenResponse);
   };
 
   // RFC 7662 Token Introspection

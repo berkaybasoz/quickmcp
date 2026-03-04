@@ -34,6 +34,7 @@ type McpCoreServiceDeps = {
   executor: DynamicMCPExecutor;
   authStore: IDataStore;
   authMode: AuthMode;
+  deployMode?: string;
   tokenSecret: string;
   defaultToken?: string;
   rsaPublicKey?: crypto.KeyObject;
@@ -43,6 +44,7 @@ export class McpCoreService {
   private readonly executor: DynamicMCPExecutor;
   private readonly authStore: IDataStore;
   private readonly authMode: AuthMode;
+  private readonly deployMode: string;
   private readonly tokenSecret: string;
   private readonly defaultToken: string;
   private readonly rsaPublicKey: crypto.KeyObject | undefined;
@@ -51,9 +53,14 @@ export class McpCoreService {
     this.executor = deps.executor;
     this.authStore = deps.authStore;
     this.authMode = deps.authMode;
+    this.deployMode = String(deps.deployMode || '').trim().toUpperCase();
     this.tokenSecret = deps.tokenSecret;
     this.defaultToken = (deps.defaultToken || '').trim();
     this.rsaPublicKey = deps.rsaPublicKey;
+  }
+
+  private isSaasMode(): boolean {
+    return this.deployMode === 'SAAS';
   }
 
   parseIncomingMessage(body: any): JsonRpcMessage {
@@ -256,7 +263,7 @@ export class McpCoreService {
     if (!authContext.identity) {
       // In multi-tenant SaaS mode, unauthenticated discovery must never expose
       // other tenants' tools. ChatGPT should attach bearer before scoped listing.
-      if (this.authMode === 'SUPABASE_GOOGLE') return [];
+      if (this.isSaasMode()) return [];
       return tools;
     }
     const out: any[] = [];
@@ -303,7 +310,7 @@ export class McpCoreService {
   private async getAuthorizedResources(resources: any[], authContext: McpAuthContext): Promise<any[]> {
     if (this.authMode === 'NONE') return resources;
     if (!authContext.identity) {
-      if (this.authMode === 'SUPABASE_GOOGLE') return [];
+      if (this.isSaasMode()) return [];
       return resources;
     }
     const out: any[] = [];
@@ -341,7 +348,7 @@ export class McpCoreService {
   private async getServerRequireMcpToken(serverId: string): Promise<boolean> {
     if (this.authMode === 'NONE') return false;
     // In SAAS mode, MCP calls must always be token-bound to avoid tenant leakage.
-    if (this.authMode === 'SUPABASE_GOOGLE') return true;
+    if (this.isSaasMode()) return true;
     let requireToken = true;
     const owner = parseServerOwner(serverId);
     try {
@@ -371,7 +378,7 @@ export class McpCoreService {
     if (!authContext.identity || !authContext.tokenRecord) return false;
     const owner = parseServerOwner(serverId);
     // SAAS tenant isolation must be workspace-based, not username-based.
-    if (this.authMode === 'SUPABASE_GOOGLE') {
+    if (this.isSaasMode()) {
       return owner === authContext.identity.workspace;
     }
     return owner === authContext.identity.workspace || owner === authContext.identity.username;

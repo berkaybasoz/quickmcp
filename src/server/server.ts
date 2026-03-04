@@ -234,6 +234,7 @@ const mcpCore = new McpCoreService({
   executor: new DynamicMCPExecutor(),
   authStore: ensureDataStore(),
   authMode,
+  deployMode,
   tokenSecret: process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me',
   defaultToken: (process.env.QUICKMCP_TOKEN || '').trim(),
   rsaPublicKey: getRsaPublicKey()
@@ -341,6 +342,7 @@ function sendMcpAuthRequired(
   challenge: string,
   text: string
 ): void {
+  logger.info(`[MCP] auth challenge jsonrpc_id=${String(id)} www-authenticate=${challenge}`);
   res.setHeader('WWW-Authenticate', challenge);
   res.status(401).json({
     jsonrpc: '2.0',
@@ -378,7 +380,7 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
       const challenge = buildMcpWwwAuthenticate(req);
       const authContext = await resolveMcpAuthContext(req);
       if (!authContext.identity) {
-        logger.info('[MCP] probe: no token → 401 challenge');
+        logger.info(`[MCP] probe: no token → 401 challenge www-authenticate=${challenge}`);
         res.setHeader('WWW-Authenticate', challenge);
         res.status(401).end();
         return;
