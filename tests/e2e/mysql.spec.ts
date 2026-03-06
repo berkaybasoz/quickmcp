@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const SERVER_NAME = process.env.MYSQL_SERVER_NAME;
 const DB_HOST = process.env.MYSQL_HOST;
@@ -11,7 +12,7 @@ test.describe('MySQL template', () => {
   test.beforeEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      await deleteServerByName(request, SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -20,7 +21,7 @@ test.describe('MySQL template', () => {
   test.afterEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      //await deleteServerByName(request, SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

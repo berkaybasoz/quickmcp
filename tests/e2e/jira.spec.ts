@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const JIRA_SERVER_NAME = process.env.JIRA_SERVER_NAME;
 const JIRA_URL = process.env.JIRA_URL;
@@ -8,7 +9,7 @@ test.describe('Jira template', () => {
   test.beforeEach(async ({ request }) => {
     if (!JIRA_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(JIRA_SERVER_NAME)}`);
+      await deleteServerByName(request, JIRA_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -17,7 +18,7 @@ test.describe('Jira template', () => {
   test.afterEach(async ({ request }) => {
     if (!JIRA_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(JIRA_SERVER_NAME)}`);
+      //await deleteServerByName(request, JIRA_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

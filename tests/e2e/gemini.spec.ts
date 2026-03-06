@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const GEMINI_SERVER_NAME = process.env.GEMINI_SERVER_NAME;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -7,7 +8,7 @@ test.describe('Gemini template', () => {
   test.beforeEach(async ({ request }) => {
     if (!GEMINI_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(GEMINI_SERVER_NAME)}`);
+      await deleteServerByName(request, GEMINI_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -16,7 +17,7 @@ test.describe('Gemini template', () => {
   test.afterEach(async ({ request }) => {
     if (!GEMINI_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(GEMINI_SERVER_NAME)}`);
+      //await deleteServerByName(request, GEMINI_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

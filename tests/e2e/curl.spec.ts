@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const CURL_SERVER_NAME = process.env.CURL_SERVER_NAME;
 const CURL_COMMAND = process.env.CURL_COMMAND;
@@ -7,7 +8,7 @@ test.describe('cURL template', () => {
   test.beforeEach(async ({ request }) => {
     if (!CURL_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(CURL_SERVER_NAME)}`);
+      await deleteServerByName(request, CURL_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -16,7 +17,7 @@ test.describe('cURL template', () => {
   test.afterEach(async ({ request }) => {
     if (!CURL_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(CURL_SERVER_NAME)}`);
+      //await deleteServerByName(request, CURL_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

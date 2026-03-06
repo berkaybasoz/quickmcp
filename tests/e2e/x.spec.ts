@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const X_SERVER_NAME = process.env.X_SERVER_NAME;
 const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
@@ -8,7 +9,7 @@ test.describe('X template', () => {
   test.beforeEach(async ({ request }) => {
     if (!X_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(X_SERVER_NAME)}`);
+      await deleteServerByName(request, X_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -17,7 +18,7 @@ test.describe('X template', () => {
   test.afterEach(async ({ request }) => {
     if (!X_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(X_SERVER_NAME)}`);
+      //await deleteServerByName(request, X_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

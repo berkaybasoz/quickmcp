@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const CLAUDE_SERVER_NAME = process.env.CLAUDE_SERVER_NAME;
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
@@ -7,7 +8,7 @@ test.describe('Claude template', () => {
   test.beforeEach(async ({ request }) => {
     if (!CLAUDE_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(CLAUDE_SERVER_NAME)}`);
+      await deleteServerByName(request, CLAUDE_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -16,7 +17,7 @@ test.describe('Claude template', () => {
   test.afterEach(async ({ request }) => {
     if (!CLAUDE_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(CLAUDE_SERVER_NAME)}`);
+      //await deleteServerByName(request, CLAUDE_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

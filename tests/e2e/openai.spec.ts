@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const OPENAI_SERVER_NAME = process.env.OPENAI_SERVER_NAME;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -7,7 +8,7 @@ test.describe('OpenAI template', () => {
   test.beforeEach(async ({ request }) => {
     if (!OPENAI_SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(OPENAI_SERVER_NAME)}`);
+      await deleteServerByName(request, OPENAI_SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -16,7 +17,7 @@ test.describe('OpenAI template', () => {
   test.afterEach(async ({ request }) => {
     if (!OPENAI_SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(OPENAI_SERVER_NAME)}`);
+      //await deleteServerByName(request, OPENAI_SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }

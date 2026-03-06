@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { deleteServerByName } from './helpers/server-cleanup';
 
 const SERVER_NAME = process.env.REST_SERVER_NAME;
 const SWAGGER_URL = process.env.REST_SWAGGER_URL;
@@ -7,7 +8,7 @@ test.describe('REST template', () => {
   test.beforeEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
-      await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      await deleteServerByName(request, SERVER_NAME);
     } catch {
       // ignore if missing
     }
@@ -16,7 +17,7 @@ test.describe('REST template', () => {
   test.afterEach(async ({ request }) => {
     if (!SERVER_NAME) return;
     try {
-      //await request.delete(`/api/servers/${encodeURIComponent(SERVER_NAME)}`);
+      //await deleteServerByName(request, SERVER_NAME);
     } catch {
       // ignore if cleanup fails
     }
