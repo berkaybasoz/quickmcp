@@ -415,14 +415,7 @@ async function handleMcpJsonRpc(req: Request, res: Response): Promise<void> {
     }
     const protocolVersion = String((message as any)?.params?.protocolVersion || '2025-11-25');
     res.setHeader('mcp-protocol-version', protocolVersion);
-    res.setHeader('x-quickmcp-test', randomUUID());
-
-    // When unauthenticated in SAAS mode, always include WWW-Authenticate so
-    // openai-mcp client can trigger OAuth and retry with a Bearer token.
-    if (!authContext.identity && authMode !== 'NONE') {
-      const challenge = buildMcpWwwAuthenticate(req);
-      res.setHeader('WWW-Authenticate', challenge);
-    }
+    res.setHeader('x-quickmcp-random-no', randomUUID());
 
     res.json(response);
   } catch (error) {
