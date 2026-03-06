@@ -188,8 +188,15 @@ export class SQLiteManager implements IDataStore {
 
   async saveServer(server: ServerConfig): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO servers (id, name, version, owner_username, source_config, created_at, updated_at)
+      INSERT INTO servers (id, name, version, owner_username, source_config, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        version = excluded.version,
+        owner_username = excluded.owner_username,
+        source_config = excluded.source_config,
+        created_at = excluded.created_at,
+        updated_at = CURRENT_TIMESTAMP
     `);
 
     stmt.run(
