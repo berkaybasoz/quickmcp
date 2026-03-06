@@ -45,26 +45,23 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
   const meResponse = await context.request.get(`${baseURL.replace(/\/+$/, '')}/api/auth/me`);
   if (!meResponse.ok()) {
-    await page.goto(`${baseURL.replace(/\/+$/, '')}/login`, { waitUntil: 'domcontentloaded' });
+    const loginResponse = await context.request.post(`${baseURL.replace(/\/+$/, '')}/api/auth/login`, {
+      data: { username, password }
+    });
 
-    const loginForm = page.locator('#loginForm');
-    const oauthLogin = page.locator('#supabaseLogin');
-
-    if (await oauthLogin.isVisible().catch(() => false)) {
-      throw new Error(
-        'E2E global setup detected SUPABASE_GOOGLE auth mode. Configure a LITE test environment or provide a non-interactive auth flow for tests.'
-      );
+    if (!loginResponse.ok()) {
+      await page.goto(`${baseURL.replace(/\/+$/, '')}/login`, { waitUntil: 'domcontentloaded' });
+      const oauthLogin = page.locator('#supabaseLogin');
+      if (await oauthLogin.isVisible().catch(() => false)) {
+        throw new Error(
+          'E2E global setup detected SUPABASE_GOOGLE auth mode. Configure a LITE test environment or provide a non-interactive auth flow for tests.'
+        );
+      }
+      const body = await loginResponse.json().catch(() => null);
+      throw new Error(body?.error || `E2E global setup login failed with status ${loginResponse.status()}.`);
     }
 
-    if (!(await loginForm.isVisible().catch(() => false))) {
-      throw new Error('E2E global setup could not find a visible login form at /login.');
-    }
-
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill(password);
-    await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30000 });
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
   }
 
   const authDir = path.join(process.cwd(), 'playwright', '.auth');

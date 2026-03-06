@@ -1,11 +1,12 @@
 import { APIRequestContext } from '@playwright/test';
 
+type ServerListItem = {
+  id?: string;
+  name?: string;
+};
+
 type ServerListResponse = {
-  success?: boolean;
-  data?: Array<{
-    id?: string;
-    name?: string;
-  }>;
+  data?: ServerListItem[];
 };
 
 export async function deleteServerByName(request: APIRequestContext, serverName: string): Promise<void> {
@@ -15,9 +16,14 @@ export async function deleteServerByName(request: APIRequestContext, serverName:
   if (!listResponse.ok()) return;
 
   const payload = (await listResponse.json().catch(() => null)) as ServerListResponse | null;
-  const matchingServer = payload?.data?.find((server) => server?.name === serverName);
-  const serverId = matchingServer?.id;
-  if (!serverId) return;
+  const matchingServerIds = (payload?.data || [])
+    .filter((server) => server?.name === serverName && typeof server?.id === 'string' && server.id.length > 0)
+    .map((server) => server.id as string);
+  if (matchingServerIds.length === 0) return;
 
-  await request.delete(`/api/servers/${encodeURIComponent(serverId)}`);
+  await Promise.all(
+    matchingServerIds.map((serverId) =>
+      request.delete(`/api/servers/${encodeURIComponent(serverId)}`)
+    )
+  );
 }
