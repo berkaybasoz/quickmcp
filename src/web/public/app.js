@@ -8825,15 +8825,13 @@ function applySidebarCollapsedState() {
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-right';
 
-        // For each nav item: center icon, hide labels, color icon; make icon container square
+        // For each nav item: center icon, hide labels (keep neutral icon tone)
         sidebar.querySelectorAll('.nav-item').forEach(item => {
             item.classList.add('justify-center');
             item.classList.add('gap-0');
             item.classList.add('p-2');
             const label = item.querySelector('.flex-1');
             if (label) label.classList.add('hidden');
-            const iconEl = item.querySelector('i');
-            if (iconEl) iconEl.classList.add('text-blue-600');
             // container kare ve ortalı CSS üzerinden ayarlanıyor (style bloğu)
         });
         // Hide Navigation subtitles anywhere
@@ -8852,15 +8850,13 @@ function applySidebarCollapsedState() {
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-left';
 
-        // Restore menu item labels and icon default color; remove square styling
+        // Restore menu item labels; remove square styling
         sidebar.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('justify-center');
             item.classList.remove('gap-0');
             item.classList.remove('p-2');
             const label = item.querySelector('.flex-1');
             if (label) label.classList.remove('hidden');
-            const iconEl = item.querySelector('i');
-            if (iconEl) iconEl.classList.remove('text-blue-600');
             // kare container sınıfları style bloğunda kontrol ediliyor
         });
         sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
