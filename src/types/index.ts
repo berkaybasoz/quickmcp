@@ -26,6 +26,7 @@ export enum DataSourceType {
   Ftp = 'ftp',
   LocalFS = 'localfs',
   Email = 'email',
+  Gmail = 'gmail',
   Slack = 'slack',
   Discord = 'discord',
   Docker = 'docker',
@@ -128,6 +129,7 @@ export function shouldGenerateResources(parsedData: any, sourceConfig: any): boo
     DataSourceType.Ftp,
     DataSourceType.LocalFS,
     DataSourceType.Email,
+    DataSourceType.Gmail,
     DataSourceType.Slack,
     DataSourceType.Discord,
     DataSourceType.Docker,
@@ -1405,7 +1407,7 @@ export interface LocalFSGeneratorConfig extends BaseGeneratorConfig {
 }
 
 export interface EmailGeneratorConfig extends BaseGeneratorConfig {
-  type: DataSourceType.Email;
+  type: DataSourceType.Email | DataSourceType.Gmail;
   mode: 'read' | 'write' | 'both';
   imapHost?: string;
   imapPort?: number;
@@ -2599,10 +2601,11 @@ export function createEmailGeneratorConfig(
   smtpPort: number | undefined,
   username: string,
   password: string,
-  secure?: boolean
+  secure?: boolean,
+  type: DataSourceType.Email | DataSourceType.Gmail = DataSourceType.Email
 ): EmailGeneratorConfig {
   return {
-    type: DataSourceType.Email,
+    type,
     mode,
     imapHost: mode !== 'write' ? imapHost : undefined,
     imapPort: mode !== 'write' ? (imapPort || 993) : undefined,

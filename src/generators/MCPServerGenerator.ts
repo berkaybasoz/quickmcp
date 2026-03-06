@@ -216,6 +216,8 @@ export class MCPServerGenerator {
         tools = this.generateToolsForLocalFS(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Email) {
         tools = this.generateToolsForEmail(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Gmail) {
+        tools = this.generateToolsForEmail(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Slack) {
         tools = this.generateToolsForSlack(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Discord) {

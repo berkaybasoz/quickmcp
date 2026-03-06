@@ -1259,8 +1259,7 @@ function getServerTypeIconMeta(serverType) {
         azureopenai: 'azureai',
         googlecalendar: 'googlecalender',
         rest: 'webhook',
-        webpage: 'webhook',
-        email: 'gmail'
+        webpage: 'webhook'
     };
     const normalized = aliases[type] || type;
 
@@ -1269,6 +1268,9 @@ function getServerTypeIconMeta(serverType) {
     }
     if (normalized === 'ftp') {
         return { image: '', icon: 'fa-folder-open', bg: 'bg-amber-100', text: 'text-amber-700' };
+    }
+    if (normalized === 'email') {
+        return { image: '', icon: 'fa-envelope', bg: 'bg-rose-100', text: 'text-rose-700' };
     }
     if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
         return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
@@ -1319,8 +1321,7 @@ function displayServers(servers) {
         </div>`;
 
     const rowsHtml = servers.map(server => {
-        const derivedType = server.type || (typeof server.description === 'string' && (server.description.match(/\(([^)]+)\)/)?.[1] || '')) || '';
-        const safeType = derivedType || 'unknown';
+        const safeType = String(server.type || '').toLowerCase() || 'unknown';
         const iconMeta = getServerTypeIconMeta(safeType);
         const isWebPageLike = ['webpage', 'webhook'].includes(String(safeType).toLowerCase());
         const iconHtml = isWebPageLike
@@ -1400,7 +1401,7 @@ function filterServers(servers, query, opts = {}) {
         }
         // type equals (normalized)
         if (typeFilter) {
-            const derivedType = (s.type || (typeof s.description === 'string' && (s.description.match(/\(([^)]+)\)/)?.[1] || '')) || '').toLowerCase();
+            const derivedType = String(s.type || '').toLowerCase();
             if (derivedType !== typeFilter) return false;
         }
         // min tools
@@ -6366,7 +6367,7 @@ async function handleNextToStep3() {
         }
 
         currentDataSource = {
-            type: DataSourceType.Email,
+            type: DataSourceType.Gmail,
             name: 'Gmail',
             mode: gmailMode,
             imapHost: gmailMode !== 'write' ? 'imap.gmail.com' : null,

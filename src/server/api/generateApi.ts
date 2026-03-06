@@ -651,6 +651,19 @@ export class GenerateApi {
             dataSource.password,
             dataSource.secure
           );
+        } else if (dataSource?.type === DataSourceType.Gmail) {
+          parsedForGen = {};
+          dbConfForGen = createEmailGeneratorConfig(
+            dataSource.mode || 'both',
+            dataSource.imapHost,
+            dataSource.imapPort,
+            dataSource.smtpHost,
+            dataSource.smtpPort,
+            dataSource.username,
+            dataSource.password,
+            dataSource.secure,
+            DataSourceType.Gmail
+          );
         } else if (dataSource?.type === DataSourceType.Slack) {
           parsedForGen = {};
           dbConfForGen = createSlackGeneratorConfig(
