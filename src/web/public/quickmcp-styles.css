@@ -308,6 +308,25 @@ body {
 #sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
 #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
 
+#sidebarUserSection {
+  margin-top: auto;
+}
+#sidebar.collapsed #sidebarUserSection {
+  padding: 0.5rem !important;
+}
+#sidebar.collapsed #sidebarUserButton {
+  justify-content: center !important;
+  padding: 0 !important;
+}
+#sidebar.collapsed #sidebarUserMeta {
+  display: none !important;
+}
+#sidebar.collapsed #sidebarUserSection [data-user-avatar] {
+  width: 2rem !important;
+  height: 2rem !important;
+  font-size: 0.75rem !important;
+}
+
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
 #sidebar.collapsed > div:first-child { padding: 1rem !important; } /* keep header icon vertically aligned with expanded state */

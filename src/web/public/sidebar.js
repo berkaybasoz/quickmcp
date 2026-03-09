@@ -281,6 +281,16 @@
         ${navItem('/how-to-use', 'fa-book', 'How to Use', 'Documentation & Guide', isActive('/how-to-use'))}
       </div>
 
+      <div id="sidebarUserSection" class="p-3 border-t border-slate-200/60 bg-white">
+        <button id="sidebarUserButton" data-user-menu-anchor="true" type="button" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md flex-shrink-0" data-user-avatar>G</div>
+          <div id="sidebarUserMeta" class="min-w-0">
+            <div id="sidebarUserName" class="text-sm font-semibold text-slate-800 truncate">Guest</div>
+            <div id="sidebarUserEmail" class="text-xs text-slate-500 truncate">Not signed in</div>
+          </div>
+        </button>
+      </div>
+
       <div id="sidebarResizer" class="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent"></div>
     `;
 
@@ -288,6 +298,9 @@
     setSidebarCollapseIcon();
     wireSidebarInteractions();
     syncDesktopLayoutOffset(root);
+    if (typeof window.updateUserAvatar === 'function') {
+      window.updateUserAvatar();
+    }
     root.setAttribute('data-ready', '1');
   }
 

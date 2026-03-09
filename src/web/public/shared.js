@@ -337,7 +337,6 @@ function renderSharedAppBar() {
           <i class="fas fa-bell"></i>
           <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
-        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md" data-user-avatar>G</div>
         <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
           <i class="fas fa-bars"></i>
         </button>
@@ -370,6 +369,17 @@ function initBrandHomeLink() {
     });
 }
 
+function syncSidebarUserDetails(name, email, isSignedIn = false, role = '') {
+    const nameEl = document.getElementById('sidebarUserName');
+    const emailEl = document.getElementById('sidebarUserEmail');
+    const roleText = typeof role === 'string' ? role.trim() : '';
+    const subtitle = email
+        ? email
+        : (isSignedIn ? (roleText ? roleText : 'Signed in') : 'Not signed in');
+    if (nameEl) nameEl.textContent = name || 'Guest';
+    if (emailEl) emailEl.textContent = subtitle;
+}
+
 async function updateUserAvatar() {
     const avatarEls = document.querySelectorAll('[data-user-avatar]');
     if (!avatarEls.length) return;
@@ -383,6 +393,7 @@ async function updateUserAvatar() {
               </svg>
             `;
         });
+        syncSidebarUserDetails('Guest', '');
     };
 
     renderAnonymousAvatar();
@@ -427,6 +438,12 @@ async function updateUserAvatar() {
         avatarEls.forEach((el) => {
             el.textContent = initial;
         });
+        syncSidebarUserDetails(
+            currentUserDisplayName || currentUserName,
+            currentUserEmail,
+            true,
+            currentUserRole
+        );
         initializeUserMenu();
     } catch {
         if (shouldRedirectToLogin()) {
@@ -436,12 +453,15 @@ async function updateUserAvatar() {
         initializeUserMenu();
     }
 }
+window.updateUserAvatar = updateUserAvatar;
 
 function initializeUserMenu() {
-    const avatarEls = document.querySelectorAll('[data-user-avatar]');
-    if (!avatarEls.length) return;
+    const avatarEls = Array.from(document.querySelectorAll('[data-user-avatar]'));
+    const menuAnchors = Array.from(document.querySelectorAll('[data-user-menu-anchor]'));
+    const triggerEls = [...avatarEls, ...menuAnchors];
+    if (!triggerEls.length) return;
 
-    avatarEls.forEach((el) => {
+    triggerEls.forEach((el) => {
         if (el.dataset.userMenuBound === 'true') return;
         el.dataset.userMenuBound = 'true';
         el.classList.add('cursor-pointer');
@@ -491,8 +511,31 @@ function getOrCreateUserMenu() {
 
 function positionUserMenu(menu, anchorEl) {
     const rect = anchorEl.getBoundingClientRect();
-    const top = rect.bottom + 8;
-    const right = Math.max(window.innerWidth - rect.right, 8);
+    // Measure menu size before final placement.
+    const wasHidden = menu.classList.contains('hidden');
+    if (wasHidden) {
+        menu.classList.remove('hidden');
+        menu.style.visibility = 'hidden';
+    }
+    const menuHeight = menu.offsetHeight || 0;
+    const menuWidth = menu.offsetWidth || 0;
+    if (wasHidden) {
+        menu.classList.add('hidden');
+        menu.style.visibility = '';
+    }
+
+    let top = rect.bottom + 8;
+    const viewportBottom = window.innerHeight - 8;
+    if (top + menuHeight > viewportBottom) {
+        top = Math.max(8, rect.top - menuHeight - 8);
+    }
+
+    let right = Math.max(window.innerWidth - rect.right, 8);
+    const left = window.innerWidth - right - menuWidth;
+    if (left < 8) {
+        right = Math.max(8, window.innerWidth - (8 + menuWidth));
+    }
+
     menu.style.top = `${top}px`;
     menu.style.right = `${right}px`;
 }
