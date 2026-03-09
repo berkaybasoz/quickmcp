@@ -263,18 +263,35 @@ body {
 }
 #sidebar.collapsed .nav-item i { font-size: 1.05rem !important; line-height: 1 !important; }
 
-#sidebar.collapsed #sidebarHeaderMain { display: none !important; }
 #sidebar.collapsed #sidebarHeaderRow {
+  position: relative !important;
   justify-content: center !important;
   align-items: center !important;
   margin-bottom: 0.5rem !important;
   min-height: 2rem !important;
 }
+#sidebar.collapsed #sidebarHeaderMain {
+  display: flex !important;
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
 #sidebar.collapsed #sidebarHeaderToggleWrap {
-  width: 100% !important;
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+#sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderMain {
+  opacity: 0;
+}
+#sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderToggleWrap {
+  opacity: 1;
+  pointer-events: auto;
 }
 #sidebar.collapsed #sidebarHeaderActions {
   display: none !important;
