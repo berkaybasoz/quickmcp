@@ -563,6 +563,7 @@ function switchTab(tabName) {
 function setupFileUpload() {
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
+    const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
 
     if (!fileUpload || !fileInput) return;
 
@@ -585,6 +586,7 @@ function setupFileUpload() {
         if (files.length > 0) {
             fileInput.files = files;
             updateFileUploadDisplay(files[0].name);
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
             updateWizardNavigation();
         }
     });
@@ -592,9 +594,15 @@ function setupFileUpload() {
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             updateFileUploadDisplay(e.target.files[0].name);
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
             updateWizardNavigation();
         }
     });
+
+    if (csvExcelFilePathInput && !csvExcelFilePathInput.dataset.listenerAttached) {
+        csvExcelFilePathInput.addEventListener('input', updateWizardNavigation);
+        csvExcelFilePathInput.dataset.listenerAttached = 'true';
+    }
 }
 
 function updateFileUploadDisplay(fileName) {
@@ -618,8 +626,10 @@ function updateFileUploadDisplay(fileName) {
 function resetFileUpload() {
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
+    const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
 
     if (fileInput) fileInput.value = '';
+    if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
 
     if (fileUpload) {
         fileUpload.innerHTML = `
@@ -635,6 +645,8 @@ function resetFileUpload() {
             </div>
         `;
     }
+
+    updateWizardNavigation();
 }
 
 
@@ -1261,6 +1273,12 @@ function getServerTypeIconMeta(serverType) {
     }
     if (normalized === 'email') {
         return { image: '', icon: 'fa-envelope', bg: 'bg-rose-100', text: 'text-rose-700' };
+    }
+    if (normalized === 'csv') {
+        return { image: '', icon: 'fa-file-csv', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    }
+    if (normalized === 'excel') {
+        return { image: '', icon: 'fa-file-excel', bg: 'bg-emerald-100', text: 'text-emerald-700' };
     }
     if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
         return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
@@ -6810,10 +6828,16 @@ async function handleNextToStep3() {
 
         if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
             const fileInput = document.getElementById('fileInput');
-            if (!fileInput?.files[0]) {
-                throw new Error('Please select a file');
+            const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
+            const selectedPath = csvExcelFilePathInput?.value?.trim();
+            if (!fileInput?.files[0] && !selectedPath) {
+                throw new Error('Please select a file or provide a file path');
             }
-            formData.append('file', fileInput.files[0]);
+            if (fileInput?.files?.[0]) {
+                formData.append('file', fileInput.files[0]);
+            } else if (selectedPath) {
+                formData.append('filePath', selectedPath);
+            }
         } else if (isDatabase(selectedType)) {
             const connection = {
                 type: selectedType,
@@ -7159,7 +7183,8 @@ function updateWizardNavigation() {
     let canProceed = false;
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         const fileInput = document.getElementById('fileInput');
-        canProceed = !!fileInput?.files?.length;
+        const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
+        canProceed = !!fileInput?.files?.length || !!csvExcelFilePathInput?.value?.trim();
     } else if (isDatabase(selectedType)) {
         const dbType = selectedType;
         const dbHost = document.getElementById('dbHost')?.value;
@@ -14163,9 +14188,44 @@ function displayConfluencePreview(confluenceConfig) {
 
 // Directory Picker functionality
 let directoryPickerCurrentPath = '~';
+let directoryPickerMode = 'directory';
+let directoryPickerTargetInputId = 'localfsBasePath';
+let directoryPickerExtensions = [];
+
+function openDirectoryPicker(mode, targetInputId, extensions = []) {
+    const modal = document.getElementById('directoryPickerModal');
+    const titleEl = document.getElementById('dirPickerTitle');
+    const subtitleEl = document.getElementById('dirPickerSubtitle');
+    const selectLabelEl = document.getElementById('dirPickerSelectLabel');
+    const selectedEl = document.getElementById('dirPickerSelected');
+    if (!modal) return;
+
+    directoryPickerMode = mode === 'file' ? 'file' : 'directory';
+    directoryPickerTargetInputId = targetInputId;
+    directoryPickerExtensions = Array.isArray(extensions) ? extensions : [];
+
+    if (titleEl) {
+        titleEl.textContent = directoryPickerMode === 'file' ? 'Select File' : 'Select Directory';
+    }
+    if (subtitleEl) {
+        subtitleEl.textContent = directoryPickerMode === 'file'
+            ? 'Choose a CSV/Excel file'
+            : 'Choose a folder to use as base path';
+    }
+    if (selectLabelEl) {
+        selectLabelEl.textContent = directoryPickerMode === 'file' ? 'Select This File' : 'Select This Folder';
+    }
+    if (selectedEl) {
+        selectedEl.textContent = '-';
+    }
+
+    modal.classList.remove('hidden');
+    loadDirectories('~');
+}
 
 function initDirectoryPicker() {
     const browseBtn = document.getElementById('browseDirectoryBtn');
+    const browseCsvExcelFileBtn = document.getElementById('browseCsvExcelFileBtn');
     const modal = document.getElementById('directoryPickerModal');
     const overlay = document.getElementById('directoryPickerOverlay');
     const closeBtn = document.getElementById('closeDirectoryPicker');
@@ -14174,13 +14234,16 @@ function initDirectoryPicker() {
     const homeBtn = document.getElementById('dirPickerHome');
     const upBtn = document.getElementById('dirPickerUp');
 
-    if (!browseBtn || !modal) return;
+    if (!modal) return;
 
-    // Open modal
-    browseBtn.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        loadDirectories('~');
-    });
+    if (browseBtn && !browseBtn.dataset.listenerAttached) {
+        browseBtn.addEventListener('click', () => openDirectoryPicker('directory', 'localfsBasePath'));
+        browseBtn.dataset.listenerAttached = 'true';
+    }
+    if (browseCsvExcelFileBtn && !browseCsvExcelFileBtn.dataset.listenerAttached) {
+        browseCsvExcelFileBtn.addEventListener('click', () => openDirectoryPicker('file', 'csvExcelFilePath', ['.csv', '.xlsx', '.xls']));
+        browseCsvExcelFileBtn.dataset.listenerAttached = 'true';
+    }
 
     // Close modal
     const closeModal = () => modal.classList.add('hidden');
@@ -14205,10 +14268,14 @@ function initDirectoryPicker() {
     // Select button
     selectBtn?.addEventListener('click', () => {
         const selectedEl = document.getElementById('dirPickerSelected');
-        const basePathInput = document.getElementById('localfsBasePath');
-        if (selectedEl && basePathInput && selectedEl.textContent !== '-') {
-            basePathInput.value = selectedEl.textContent;
-            basePathInput.dispatchEvent(new Event('input'));
+        const targetInput = document.getElementById(directoryPickerTargetInputId);
+        if (selectedEl && targetInput && selectedEl.textContent !== '-') {
+            targetInput.value = selectedEl.textContent;
+            targetInput.dispatchEvent(new Event('input'));
+            if (directoryPickerTargetInputId === 'csvExcelFilePath') {
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.value = '';
+            }
             closeModal();
         }
     });
@@ -14226,7 +14293,14 @@ async function loadDirectories(path) {
     listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Loading...</p></div>';
 
     try {
-        const response = await fetch('/api/directories?path=' + encodeURIComponent(path));
+        const query = new URLSearchParams({ path: path || '~' });
+        if (directoryPickerMode === 'file') {
+            query.set('includeFiles', '1');
+            if (directoryPickerExtensions.length) {
+                query.set('extensions', directoryPickerExtensions.join(','));
+            }
+        }
+        const response = await fetch('/api/directories?' + query.toString());
         const result = await response.json();
 
         if (!result.success) {
@@ -14239,8 +14313,8 @@ async function loadDirectories(path) {
             currentPathEl.dataset.parent = result.parentPath || '';
         }
 
-        // Update selected
-        if (selectedEl) {
+        // Update selected default
+        if (selectedEl && selectedEl.textContent === '-' && directoryPickerMode === 'directory') {
             selectedEl.textContent = result.currentPath;
         }
 
@@ -14250,17 +14324,32 @@ async function loadDirectories(path) {
             upBtn.classList.toggle('opacity-50', !result.parentPath);
         }
 
-        // Render directories
-        if (result.directories.length === 0) {
-            listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-folder-open text-2xl"></i><p class="mt-2">No subdirectories</p></div>';
-        } else {
-            listEl.innerHTML = result.directories.map(dir => {
+        // Render directories and files
+        const dirItems = (result.directories || []).map(dir => {
                 const escapedPath = dir.path.replace(/'/g, "\\'");
-                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + dir.path + '" ondblclick="loadDirectories(\'' + escapedPath + '\')" onclick="selectDirectory(\'' + escapedPath + '\')">' +
+                const clickAction = directoryPickerMode === 'file'
+                    ? `loadDirectories('${escapedPath}')`
+                    : `selectDirectory('${escapedPath}')`;
+                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + dir.path + '" ondblclick="loadDirectories(\'' + escapedPath + '\')" onclick="' + clickAction + '">' +
                     '<div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-200"><i class="fas fa-folder text-lg"></i></div>' +
                     '<div class="flex-1 min-w-0"><div class="font-medium text-slate-900 truncate">' + dir.name + '</div><div class="text-xs text-slate-500 truncate">' + dir.path + '</div></div>' +
                     '<i class="fas fa-chevron-right text-slate-400 group-hover:text-slate-600"></i></button>';
-            }).join('');
+            });
+        const fileItems = directoryPickerMode === 'file'
+            ? (result.files || []).map(file => {
+                const escapedPath = file.path.replace(/'/g, "\\'");
+                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + file.path + '" onclick="selectDirectory(\'' + escapedPath + '\')">' +
+                    '<div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-200"><i class="fas fa-file-lines text-lg"></i></div>' +
+                    '<div class="flex-1 min-w-0"><div class="font-medium text-slate-900 truncate">' + file.name + '</div><div class="text-xs text-slate-500 truncate">' + file.path + '</div></div>' +
+                    '</button>';
+              })
+            : [];
+
+        const items = [...dirItems, ...fileItems];
+        if (items.length === 0) {
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-folder-open text-2xl"></i><p class="mt-2">No items found</p></div>';
+        } else {
+            listEl.innerHTML = items.join('');
         }
 
         directoryPickerCurrentPath = result.currentPath;

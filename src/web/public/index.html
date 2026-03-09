@@ -1338,6 +1338,17 @@
                                                 10MB</p>
                                             <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
                                         </div>
+                                        <div class="mt-4">
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">File Path (Optional)</label>
+                                            <div class="flex gap-2">
+                                                <input type="text" id="csvExcelFilePath" placeholder="/Users/username/Documents/data.csv" class="input flex-1" autocomplete="off">
+                                                <button type="button" id="browseCsvExcelFileBtn" class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                                                    <i class="fas fa-file"></i>
+                                                    <span>Browse File</span>
+                                                </button>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-2">Upload yerine doğrudan dosya yolu da kullanabilirsiniz.</p>
+                                        </div>
                                     </div>
 
                                     <!-- Database Config -->
@@ -4752,8 +4763,8 @@
                         <i class="fas fa-folder-open text-xl"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-900">Select Directory</h3>
-                        <p class="text-xs text-slate-500">Choose a folder to use as base path</p>
+                        <h3 id="dirPickerTitle" class="font-bold text-slate-900">Select Directory</h3>
+                        <p id="dirPickerSubtitle" class="text-xs text-slate-500">Choose a folder to use as base path</p>
                     </div>
                 </div>
                 <button type="button" id="closeDirectoryPicker" class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700">
@@ -4795,7 +4806,7 @@
                         Cancel
                     </button>
                     <button type="button" id="dirPickerSelect" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white">
-                        Select This Folder
+                        <span id="dirPickerSelectLabel">Select This Folder</span>
                     </button>
                 </div>
             </div>
