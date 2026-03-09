@@ -262,7 +262,10 @@ function setupEventListeners() {
 
     // Test mode tabs
     document.querySelectorAll('[data-test-mode-tab]').forEach((tabBtn) => {
-        tabBtn.addEventListener('click', () => setTestModeTab(tabBtn.getAttribute('data-test-mode-tab') || 'automated'));
+        tabBtn.addEventListener('click', () => {
+            if (tabBtn.hasAttribute('disabled') || tabBtn.getAttribute('data-test-mode-locked') === 'true') return;
+            setTestModeTab(tabBtn.getAttribute('data-test-mode-tab') || 'automated');
+        });
     });
     initializeTestModeTabs();
 
@@ -2730,13 +2733,16 @@ function initializeTestModeTabs() {
 }
 
 function setTestModeTab(mode) {
+    if (mode === 'e2e') mode = 'automated';
     const tabs = document.querySelectorAll('[data-test-mode-tab]');
     const panels = document.querySelectorAll('[data-test-mode-panel]');
     const activeClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px';
     const inactiveClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+    const lockedClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-400 cursor-not-allowed';
     tabs.forEach((tab) => {
+        const isLocked = tab.getAttribute('data-test-mode-locked') === 'true' || tab.hasAttribute('disabled');
         const isActive = tab.getAttribute('data-test-mode-tab') === mode;
-        tab.className = isActive ? activeClass : inactiveClass;
+        tab.className = isLocked ? lockedClass : (isActive ? activeClass : inactiveClass);
     });
     panels.forEach((panel) => {
         const isActive = panel.getAttribute('data-test-mode-panel') === mode;
