@@ -245,17 +245,26 @@ function setupEventListeners() {
     document.getElementById('openrouterModel')?.addEventListener('input', updateWizardNavigation);
 
     // Test buttons
-    document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
-    document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
-    document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
+    document.getElementById('runAutoTestsBtn')?.addEventListener('click', () => {
+        const selectedType = document.getElementById('autoTestType')?.value || 'quick';
+        runAutoTests(selectedType === 'full');
+    });
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
     document.getElementById('runTransportTestBtn')?.addEventListener('click', () => runTransportTests(false));
     
     // Test type change handler
     document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
     
-    // Test server select change handler for loading tools
+    // Test server select change handlers for loading tools
+    document.getElementById('autoTestServerSelect')?.addEventListener('change', handleTestServerChange);
+    document.getElementById('customTestServerSelect')?.addEventListener('change', handleTestServerChange);
     document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
+
+    // Test mode tabs
+    document.querySelectorAll('[data-test-mode-tab]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => setTestModeTab(tabBtn.getAttribute('data-test-mode-tab') || 'automated'));
+    });
+    initializeTestModeTabs();
 
     // Server search & filters (Manage page)
     const serverSearchInput = document.getElementById('serverSearch');
@@ -551,7 +560,7 @@ function switchTab(tabName) {
     // If the target view's DOM isn't present on this page, do a full navigation
     const needsFullNav = (
         (tabName === 'manage' && !document.getElementById('server-list')) ||
-        (tabName === 'test' && !document.getElementById('testServerSelect')) ||
+        (tabName === 'test' && !document.getElementById('autoTestServerSelect') && !document.getElementById('testServerSelect')) ||
         (tabName === 'generate' && !document.getElementById('generate-tab'))
     );
     if (needsFullNav) {
@@ -1475,13 +1484,20 @@ async function loadTestServers() {
         const response = await fetch('/api/servers');
         const result = await response.json();
 
-        const select = document.getElementById('testServerSelect');
-        if (!select) return;
+        const selectIds = ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'];
+        const selects = selectIds
+            .map((id) => document.getElementById(id))
+            .filter((el) => el);
+        if (selects.length === 0) return;
 
         if (result.success && result.data.length > 0) {
-            select.innerHTML = '<option value="">Select a server to test</option>';
+            const options = ['<option value="">Select a server to test</option>'];
             result.data.forEach(server => {
-                select.innerHTML += `<option value="${server.id}">${server.name}</option>`;
+                options.push(`<option value="${server.id}">${server.name}</option>`);
+            });
+            const optionsHtml = options.join('');
+            selects.forEach((select) => {
+                select.innerHTML = optionsHtml;
             });
             // Preselect if requested via query or storage
             try {
@@ -1491,7 +1507,7 @@ async function loadTestServers() {
                 const toSelect = q || stored;
                 const toolParam = params.get('tool') || localStorage.getItem('prefTestToolName');
                 if (toSelect) {
-                    select.value = toSelect;
+                    selects.forEach((select) => { select.value = toSelect; });
                     // Ensure type is tool call so dropdown loads
                     const type = document.getElementById('testType');
                     if (type) type.value = 'tools/call';
@@ -1509,14 +1525,16 @@ async function loadTestServers() {
                 }
             } catch {}
         } else {
-            select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
+            selects.forEach((select) => {
+                select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
+            });
         }
     } catch (error) {
         logger.error('Failed to load test servers:', error);
-        const select = document.getElementById('testServerSelect');
-        if (select) {
-            select.innerHTML = '<option value="">Error loading servers</option>';
-        }
+        ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+            const select = document.getElementById(id);
+            if (select) select.innerHTML = '<option value="">Error loading servers</option>';
+        });
     }
 }
 
@@ -1524,7 +1542,9 @@ async function loadTestServers() {
 function handleTestTypeChange() {
     const testType = document.getElementById('testType')?.value;
     const container = document.getElementById('testNameContainer');
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     
     if (!container) return;
     
@@ -1540,7 +1560,9 @@ function handleTestTypeChange() {
 // Handle test server change - reload tools if Tool Call is selected
 async function handleTestServerChange() {
     const testType = document.getElementById('testType')?.value;
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     
     if (testType === 'tools/call' && serverId) {
         await loadToolsDropdown(serverId);
@@ -1630,7 +1652,8 @@ function updateParametersExample() {
 
 // Test functions
 async function runAutoTests(runAll = false) {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server to test');
         return;
@@ -1643,24 +1666,17 @@ async function runAutoTests(runAll = false) {
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
     
-    // Update button states
-    const quickBtn = document.getElementById('runQuickTestBtn');
-    const fullBtn = document.getElementById('runFullTestBtn');
-    const fullBtnIcon = document.getElementById('fullTestIcon');
-    const fullBtnText = document.getElementById('fullTestText');
+    // Update button state
+    const runBtn = document.getElementById('runAutoTestsBtn');
+    const runBtnIcon = document.getElementById('autoTestRunIcon');
+    const runBtnText = document.getElementById('autoTestRunText');
     
-    if (runAll) {
-        // Show loading spinner in button
-        if (fullBtnIcon) fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
-        if (fullBtnText) fullBtnText.textContent = 'Testing All Tools...';
-        if (fullBtn) fullBtn.disabled = true;
-        if (quickBtn) quickBtn.disabled = true;
-        if (loadingText) loadingText.textContent = 'Running all tests... This may take a while.';
-    } else {
-        if (quickBtn) quickBtn.disabled = true;
-        if (fullBtn) fullBtn.disabled = true;
-        if (loadingText) loadingText.textContent = 'Running quick tests...';
-    }
+    if (runBtn) runBtn.disabled = true;
+    if (runBtnIcon) runBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
+    if (runBtnText) runBtnText.textContent = runAll ? 'Running Full Test...' : 'Running Quick Test...';
+    if (loadingText) loadingText.textContent = runAll
+        ? 'Running all tests... This may take a while.'
+        : 'Running quick tests...';
 
     loading?.classList.remove('hidden');
     resultsDiv?.classList.add('hidden');
@@ -1689,18 +1705,17 @@ async function runAutoTests(runAll = false) {
     } finally {
         loading?.classList.add('hidden');
         
-        // Reset button states
-        if (quickBtn) quickBtn.disabled = false;
-        if (fullBtn) {
-            fullBtn.disabled = false;
-            if (fullBtnIcon) fullBtnIcon.className = 'fas fa-play-circle mr-2';
-            if (fullBtnText) fullBtnText.textContent = 'Run Auto Tests';
-        }
+        // Reset button state
+        if (runBtn) runBtn.disabled = false;
+        if (runBtnIcon) runBtnIcon.className = 'fas fa-play mr-2';
+        if (runBtnText) runBtnText.textContent = 'Run';
     }
 }
 
 async function runCustomTest() {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     const testType = document.getElementById('testType')?.value;
     const testName = document.getElementById('testName')?.value;
     const testParams = document.getElementById('testParams')?.value;
@@ -1974,7 +1989,9 @@ async function testWebSocketTransport(baseUrl) {
 }
 
 async function runTransportTests(runAll = false) {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('transportTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server before running transport tests');
         return;
@@ -2669,11 +2686,11 @@ function testServer(serverId) {
         return;
     }
     // Already on test page: set immediately
-    const select = document.getElementById('testServerSelect');
-    if (select) {
-        select.value = serverId;
-        handleTestServerChange();
-    }
+    ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+        const select = document.getElementById(id);
+        if (select) select.value = serverId;
+    });
+    handleTestServerChange();
 }
 
 function testTool(serverId, toolName) {
@@ -2689,10 +2706,10 @@ function testTool(serverId, toolName) {
         return;
     }
     // Already on test page
-    const serverSelect = document.getElementById('testServerSelect');
-    if (serverSelect) {
-        serverSelect.value = serverId;
-    }
+    ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+        const serverSelect = document.getElementById(id);
+        if (serverSelect) serverSelect.value = serverId;
+    });
     const type = document.getElementById('testType');
     if (type) type.value = 'tools/call';
     // Ensure tools dropdown loads, then select tool
@@ -2702,6 +2719,28 @@ function testTool(serverId, toolName) {
             toolSelect.value = toolName;
             updateParametersExample();
         }
+    });
+}
+
+function initializeTestModeTabs() {
+    const tabs = document.querySelectorAll('[data-test-mode-tab]');
+    const panels = document.querySelectorAll('[data-test-mode-panel]');
+    if (!tabs.length || !panels.length) return;
+    setTestModeTab('automated');
+}
+
+function setTestModeTab(mode) {
+    const tabs = document.querySelectorAll('[data-test-mode-tab]');
+    const panels = document.querySelectorAll('[data-test-mode-panel]');
+    const activeClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px';
+    const inactiveClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+    tabs.forEach((tab) => {
+        const isActive = tab.getAttribute('data-test-mode-tab') === mode;
+        tab.className = isActive ? activeClass : inactiveClass;
+    });
+    panels.forEach((panel) => {
+        const isActive = panel.getAttribute('data-test-mode-panel') === mode;
+        panel.classList.toggle('hidden', !isActive);
     });
 }
 
