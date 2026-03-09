@@ -252,6 +252,14 @@ body {
 
 #sidebar.collapsed #sidebarHeaderMain { display: none !important; }
 #sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
+#sidebar.collapsed #sidebarHeaderToggleWrap {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+#sidebar.collapsed #sidebarHeaderActions {
+  display: none !important;
+}
 #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
 #sidebar.collapsed #closeSidebar { display: none !important; }
 
@@ -437,4 +445,28 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 }
 #sidebar.collapsed #sidebarNavList .nav-item i {
   color: #64748b !important;
+}
+
+/* Collapsed icon interactions */
+#sidebar.collapsed #sidebarNavList .nav-item {
+  border-radius: 0.5rem !important;
+  transition: color 120ms ease !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item:hover i {
+  color: #334155 !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item:hover .relative > div::before {
+  background: rgba(148, 163, 184, 0.12) !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] {
+  background: transparent !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active i,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] i {
+  color: #0f172a !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active .relative > div::before,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] .relative > div::before {
+  background: rgba(15, 23, 42, 0.12) !important;
 }

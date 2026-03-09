@@ -27,11 +27,12 @@
   function navItem(href, icon, title, subtitle, active, iconClass = '') {
     const base = "nav-item group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors";
     const activeCls = active
-      ? " bg-slate-100 text-slate-900"
+      ? " active bg-slate-100 text-slate-900"
       : "";
     const iconBase = iconClass || "bg-transparent text-slate-500";
+    const currentAttr = active ? ' aria-current="page"' : '';
     return `
-      <a href="${href}" class="${base}${activeCls}">
+      <a href="${href}" class="${base}${activeCls}"${currentAttr}>
         <div class="relative">
           <div class="w-8 h-8 flex items-center justify-center rounded-md transition-colors ${iconBase}">
             <i class="fas ${icon}"></i>
@@ -125,6 +126,7 @@
   function wireSidebarInteractions() {
     const sidebar = document.getElementById('sidebar');
     const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const headerToggleBtn = document.getElementById('sidebarHeaderToggle');
     const headerRow = document.getElementById('sidebarHeaderRow');
     if (!sidebar) return;
 
@@ -144,10 +146,21 @@
       headerRow.addEventListener('click', (event) => {
         if (!sidebar.classList.contains('collapsed')) return;
         const clickedToggle = Array.isArray(event.composedPath?.())
-          ? event.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
-          : !!(event.target?.closest && event.target.closest('#sidebarCollapseBtn'));
+          ? event.composedPath().some((el) => el && (el.id === 'sidebarCollapseBtn' || el.id === 'sidebarHeaderToggle'))
+          : !!(event.target?.closest && (event.target.closest('#sidebarCollapseBtn') || event.target.closest('#sidebarHeaderToggle')));
         if (clickedToggle) return;
         try { localStorage.setItem('sidebarCollapsed', 'false'); } catch {}
+        applySidebarCollapsedState();
+      });
+    }
+
+    if (headerToggleBtn && headerToggleBtn.dataset.bound !== 'true') {
+      headerToggleBtn.dataset.bound = 'true';
+      headerToggleBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const current = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+        try { localStorage.setItem('sidebarCollapsed', (!current).toString()); } catch {}
         applySidebarCollapsedState();
       });
     }
@@ -181,20 +194,19 @@
 
     const html = `
       <div class="p-4 border-b border-slate-200/60 bg-white">
-        <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
-          <div id="sidebarHeaderMain" class="flex items-center gap-3">
-            <div class="w-7 h-7 flex items-center justify-center rounded-md bg-slate-100 text-slate-600">
+        <div id="sidebarHeaderRow" class="flex items-center justify-start gap-2 mb-2">
+          <div id="sidebarHeaderToggleWrap" class="flex items-center gap-2">
+            <button id="sidebarHeaderToggle" type="button" class="w-7 h-7 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" title="Toggle sidebar">
               <i class="fas fa-bars"></i>
-            </div>
+            </button>
+          </div>
+          <div id="sidebarHeaderMain" class="flex items-center gap-3">
             <div>
               <h2 class="text-slate-900 font-semibold tracking-tight text-sm">Menu</h2>
               <p class="text-slate-500 text-xs leading-none">Pages</p>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
-              <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
-            </button>
+          <div id="sidebarHeaderActions" class="flex items-center gap-2 ml-auto">
             <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
               <i class="fas fa-times"></i>
             </button>
