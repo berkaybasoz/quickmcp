@@ -61,6 +61,57 @@
     iconWrap.innerHTML = getSidebarPanelIconSvg();
   }
 
+  function normalizeSidebarWidth(value, fallback = '18rem') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    if (raw.endsWith('px') || raw.endsWith('rem')) return raw;
+    const num = Number(raw);
+    if (Number.isFinite(num) && num > 0) return `${num}px`;
+    return fallback;
+  }
+
+  function syncDesktopLayoutOffset(sidebar) {
+    if (!sidebar) return;
+    const collapsed = sidebar.classList.contains('collapsed');
+    const measuredWidth = Math.round(sidebar.getBoundingClientRect().width || 0);
+    const expanded = measuredWidth > 0 && !collapsed
+      ? `${measuredWidth}px`
+      : normalizeSidebarWidth(
+          sidebar.style.width
+          || (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })(),
+          '18rem'
+        );
+    const offset = collapsed ? '3rem' : expanded;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    if (document.body) document.body.setAttribute('data-has-sidebar', '1');
+
+    // Force layout sync to prevent header/sidebar overlap during collapse/expand transitions.
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const header = document.querySelector('body > header');
+    const layouts = document.querySelectorAll('.app-main-layout');
+    if (isDesktop) {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = offset;
+        header.style.width = `calc(100% - ${offset})`;
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = `calc(${offset} + var(--sidebar-gutter, 0px))`;
+        }
+      });
+    } else {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = '';
+        header.style.width = '';
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = '';
+        }
+      });
+    }
+  }
+
   function applySidebarCollapsedState() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -73,10 +124,12 @@
       if (collapseBtn) collapseBtn.title = 'Expand sidebar';
     } else {
       sidebar.classList.remove('collapsed');
-      sidebar.style.width = '';
+      const savedWidth = (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })();
+      sidebar.style.width = normalizeSidebarWidth(savedWidth, '');
       setSidebarCollapseIcon();
       if (collapseBtn) collapseBtn.title = 'Collapse sidebar';
     }
+    syncDesktopLayoutOffset(sidebar);
   }
 
   function initSidebarResizer() {
@@ -95,6 +148,7 @@
       const delta = event.clientX - startX;
       const next = Math.max(180, Math.min(420, startWidth + delta));
       sidebar.style.width = `${next}px`;
+      syncDesktopLayoutOffset(sidebar);
     };
 
     const onUp = () => {
@@ -121,6 +175,7 @@
     if (savedWidth && !sidebar.classList.contains('collapsed')) {
       sidebar.style.width = savedWidth;
     }
+    syncDesktopLayoutOffset(sidebar);
   }
 
   function wireSidebarInteractions() {
@@ -167,6 +222,10 @@
 
     applySidebarCollapsedState();
     initSidebarResizer();
+    if (!window.__quickmcpSidebarResizeBound) {
+      window.__quickmcpSidebarResizeBound = true;
+      window.addEventListener('resize', () => syncDesktopLayoutOffset(document.getElementById('sidebar')));
+    }
   }
 
   async function renderSidebar() {
@@ -176,7 +235,7 @@
 
     // Ensure base container classes exist (for pages that only mount an empty div)
     if (!root.className) {
-      root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0';
+      root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0';
     }
 
     // Respect saved collapsed state before any async work
@@ -229,6 +288,7 @@
     root.innerHTML = html;
     setSidebarCollapseIcon();
     wireSidebarInteractions();
+    syncDesktopLayoutOffset(root);
     root.setAttribute('data-ready', '1');
   }
 

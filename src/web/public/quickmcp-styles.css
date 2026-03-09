@@ -2,6 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 :root {
+  --sidebar-offset: 18rem;
+  --sidebar-gutter: 0.75rem;
   /* Modern Color Palette */
   --color-primary: 59 130 246; /* blue-500 */
   --color-primary-dark: 37 99 235; /* blue-600 */
@@ -58,6 +60,17 @@ body {
   overflow-x: hidden;
   overscroll-behavior-x: contain;
   scrollbar-gutter: stable both-edges;
+}
+
+@media (min-width: 1024px) {
+  body[data-has-sidebar="1"] > header {
+    margin-left: var(--sidebar-offset);
+    width: calc(100% - var(--sidebar-offset));
+  }
+
+  body[data-has-sidebar="1"] .app-main-layout {
+    padding-left: calc(var(--sidebar-offset) + var(--sidebar-gutter));
+  }
 }
 
 /* Modern Scrollbar */

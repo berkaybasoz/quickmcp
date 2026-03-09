@@ -245,6 +245,7 @@ async function consumeSupabaseHashSessionIfPresent() {
 
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', async function() {
+    initializeDesktopSidebarLayoutBase();
     const handledSupabaseHash = await consumeSupabaseHashSessionIfPresent();
     if (handledSupabaseHash) return;
 
@@ -286,12 +287,29 @@ function getAppBarSubtitle() {
     return 'Server Generator';
 }
 
+function initializeDesktopSidebarLayoutBase() {
+    if (!document.getElementById('sidebar')) return;
+    try {
+        const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const savedWidth = Number(localStorage.getItem('sidebarWidth'));
+        const expanded = (savedWidth && savedWidth >= 200 && savedWidth <= 480)
+            ? `${savedWidth}px`
+            : '18rem';
+        const offset = collapsed ? '3rem' : expanded;
+        document.documentElement.style.setProperty('--sidebar-offset', offset);
+    } catch {
+        document.documentElement.style.setProperty('--sidebar-offset', '18rem');
+    }
+    document.body.setAttribute('data-has-sidebar', '1');
+}
+
 function renderSharedAppBar() {
     const header = document.querySelector('header');
     if (!header || header.dataset.commonAppBar === 'true') return;
 
     header.dataset.commonAppBar = 'true';
-    header.className = 'backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
+    const baseClass = 'backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
+    header.className = baseClass;
 
     const subtitle = getAppBarSubtitle();
     header.innerHTML = `

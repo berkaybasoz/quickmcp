@@ -149,7 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { applySidebarCollapsedState(); } catch {}
+    }
 
     // This will run on the manage-servers page
     if (document.getElementById('server-list')) {
@@ -159,8 +161,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
 window.addEventListener('load', () => {
-    try { initSidebarResizer(); } catch {}
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { initSidebarResizer(); } catch {}
+        try { applySidebarCollapsedState(); } catch {}
+    }
 });
 
 // Setup event listeners
@@ -303,33 +307,7 @@ function setupEventListeners() {
     const deleteAllBtn = document.getElementById('deleteAllServersBtn');
     if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllServers);
 
-    // Collapsible left sidebar toggle
-    const leftToggle = document.getElementById('sidebarCollapseBtn');
-    if (leftToggle && leftToggle.dataset.bound !== 'true') {
-        leftToggle.dataset.bound = 'true';
-        leftToggle.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const current = localStorage.getItem('sidebarCollapsed') === 'true';
-            localStorage.setItem('sidebarCollapsed', (!current).toString());
-            applySidebarCollapsedState();
-        });
-        // Also make the entire header row clickable to expand when collapsed
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        if (headerRow && headerRow.dataset.bound !== 'true') {
-            headerRow.dataset.bound = 'true';
-            headerRow.addEventListener('click', (e) => {
-                if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
-                    // Prevent double handling when clicking the button itself
-                    const clickedToggle = Array.isArray(e.composedPath?.())
-                        ? e.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
-                        : !!(e.target.closest && e.target.closest('#sidebarCollapseBtn'));
-                    if (clickedToggle) return;
-                    localStorage.setItem('sidebarCollapsed', 'false');
-                    applySidebarCollapsedState();
-                }
-            });
-        }
-    }
+    // Sidebar collapse/resizer is managed by sidebar.js
 
 
     // cURL mode toggle
@@ -2530,12 +2508,25 @@ function setRightPanelCollapsed(collapsed) {
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
 window.addEventListener('load', () => {
-    try { initSidebarResizer(); } catch {}
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { initSidebarResizer(); } catch {}
+        try { applySidebarCollapsedState(); } catch {}
+    }
 });
 
 // Left sidebar resizer (drag to change width)
+function syncDesktopLayoutOffsetFromApp(sidebar) {
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    const expandedWidth = (saved && saved >= 200 && saved <= 480) ? `${saved}px` : '18rem';
+    const offset = collapsed ? '3rem' : expandedWidth;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    document.body?.setAttribute('data-has-sidebar', '1');
+}
+
 function initSidebarResizer() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const resizer = document.getElementById('sidebarResizer');
     if (!sidebar || !resizer) return;
@@ -2548,6 +2539,7 @@ function initSidebarResizer() {
         let newW = Math.min(max, Math.max(min, startWidth + dx));
         sidebar.style.width = newW + 'px';
         localStorage.setItem('sidebarWidth', String(newW));
+        syncDesktopLayoutOffsetFromApp(sidebar);
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'col-resize';
     };
@@ -2570,6 +2562,7 @@ function initSidebarResizer() {
 }
 
 function applySidebarCollapsedState() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const collapseBtn = document.getElementById('sidebarCollapseBtn');
     if (!sidebar) return;
@@ -8820,6 +8813,7 @@ function showSuccess(elementId, message) {
 
 // Left sidebar resizer (drag to change width)
 function initSidebarResizer() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const resizer = document.getElementById('sidebarResizer');
     if (!sidebar || !resizer) return;
@@ -8832,6 +8826,7 @@ function initSidebarResizer() {
         let newW = Math.min(max, Math.max(min, startWidth + dx));
         sidebar.style.width = newW + 'px';
         localStorage.setItem('sidebarWidth', String(newW));
+        syncDesktopLayoutOffsetFromApp(sidebar);
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'col-resize';
     };
@@ -8851,61 +8846,28 @@ function initSidebarResizer() {
     if (saved && saved >= min && saved <= max) {
         sidebar.style.width = saved + 'px';
     }
+    syncDesktopLayoutOffsetFromApp(sidebar);
 }
 
 function applySidebarCollapsedState() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
     const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (collapsed) {
         sidebar.classList.add('collapsed');
-        // Collapsed: show only menu icons (centered, colored) and the » button; hide Navigation texts
         sidebar.style.width = '3rem';
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        const headerMain = document.getElementById('sidebarHeaderMain');
-        const collapseBtn = document.getElementById('sidebarCollapseBtn');
-        headerMain?.classList.add('hidden');
-        headerRow?.classList.remove('justify-start', 'gap-2', 'mb-2');
-        headerRow?.classList.add('justify-center');
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-right';
-
-        // For each nav item: center icon, hide labels (keep neutral icon tone)
-        sidebar.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.add('justify-center');
-            item.classList.add('gap-0');
-            item.classList.add('p-2');
-            const label = item.querySelector('.flex-1');
-            if (label) label.classList.add('hidden');
-            // container kare ve ortalı CSS üzerinden ayarlanıyor (style bloğu)
-        });
-        // Hide Navigation subtitles anywhere
-        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.add('hidden'));
     } else {
         sidebar.classList.remove('collapsed');
-        // Expanded: one notch wider by default if none saved
         const saved = Number(localStorage.getItem('sidebarWidth'));
-        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '20rem';
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        const headerMain = document.getElementById('sidebarHeaderMain');
-        const collapseBtn = document.getElementById('sidebarCollapseBtn');
-        headerMain?.classList.remove('hidden');
-        headerRow?.classList.remove('justify-center');
-        headerRow?.classList.add('justify-start', 'gap-2', 'mb-2');
+        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '';
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-left';
-
-        // Restore menu item labels; remove square styling
-        sidebar.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('justify-center');
-            item.classList.remove('gap-0');
-            item.classList.remove('p-2');
-            const label = item.querySelector('.flex-1');
-            if (label) label.classList.remove('hidden');
-            // kare container sınıfları style bloğunda kontrol ediliyor
-        });
-        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
     }
+    syncDesktopLayoutOffsetFromApp(sidebar);
 }
 
 // Rename server functionality
