@@ -251,14 +251,26 @@ body {
 #sidebar.collapsed .nav-item i { font-size: 1.05rem !important; line-height: 1 !important; }
 
 #sidebar.collapsed #sidebarHeaderMain { display: none !important; }
-#sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
+#sidebar.collapsed #sidebarHeaderRow {
+  justify-content: center !important;
+  align-items: center !important;
+  margin-bottom: 0 !important;
+  min-height: 2.5rem !important;
+}
 #sidebar.collapsed #sidebarHeaderToggleWrap {
   width: 100% !important;
   display: flex !important;
   justify-content: center !important;
+  align-items: center !important;
 }
 #sidebar.collapsed #sidebarHeaderActions {
   display: none !important;
+}
+#sidebar.collapsed #sidebarHeaderToggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
 }
 #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
 #sidebar.collapsed #closeSidebar { display: none !important; }
