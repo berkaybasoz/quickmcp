@@ -267,8 +267,8 @@ body {
 #sidebar.collapsed #sidebarHeaderRow {
   justify-content: center !important;
   align-items: center !important;
-  margin-bottom: 0 !important;
-  min-height: 2.5rem !important;
+  margin-bottom: 0.5rem !important;
+  min-height: 2rem !important;
 }
 #sidebar.collapsed #sidebarHeaderToggleWrap {
   width: 100% !important;
@@ -293,7 +293,7 @@ body {
 
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
-#sidebar.collapsed > div:first-child { padding: 0.25rem !important; } /* shrink header padding so ">>" fits */
+#sidebar.collapsed > div:first-child { padding: 1rem !important; } /* keep header icon vertically aligned with expanded state */
 #sidebar.collapsed #sidebarCollapseBtn { width: 2rem !important; height: 2rem !important; } /* smaller button in collapsed */
 #sidebar.collapsed #sidebarNavList { 
   padding-left: 0 !important; 

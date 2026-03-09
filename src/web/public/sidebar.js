@@ -252,20 +252,19 @@
     const showUsers = showAuthManagement && authCfg?.usersEnabled !== false && deployMode !== 'SAAS';
 
     const html = `
-      <div class="p-4 border-b border-slate-200/60 bg-white">
+      <div class="p-4 bg-white">
         <div id="sidebarHeaderRow" class="flex items-center justify-start gap-2 mb-2">
-          <div id="sidebarHeaderToggleWrap" class="flex items-center gap-2">
-            <button id="sidebarHeaderToggle" type="button" class="w-7 h-7 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" title="Toggle sidebar">
-              <i class="fas fa-bars"></i>
-            </button>
-          </div>
           <div id="sidebarHeaderMain" class="flex items-center gap-3">
-            <div>
-              <h2 class="text-slate-900 font-semibold tracking-tight text-sm">Menu</h2>
-              <p class="text-slate-500 text-xs leading-none">Pages</p>
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <i class="fas fa-rocket text-sm"></i>
             </div>
           </div>
-          <div id="sidebarHeaderActions" class="flex items-center gap-2 ml-auto">
+          <div id="sidebarHeaderToggleWrap" class="flex items-center ml-auto">
+            <button id="sidebarHeaderToggle" type="button" class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-600 hover:shadow-sm transition-all" title="Toggle sidebar">
+              <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
+            </button>
+          </div>
+          <div id="sidebarHeaderActions" class="flex items-center gap-2">
             <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
               <i class="fas fa-times"></i>
             </button>

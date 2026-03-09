@@ -315,9 +315,6 @@ function renderSharedAppBar() {
     header.innerHTML = `
       <div class="flex items-center gap-6">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
-            <i class="fas fa-rocket text-lg"></i>
-          </div>
           <div>
             <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
             <p class="text-xs text-slate-500 font-medium">${subtitle}</p>
