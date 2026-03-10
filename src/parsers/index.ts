@@ -23,14 +23,13 @@ export class DataSourceParser {
     switch (dataSource.type) {
       case DataSourceType.CSV: {
         const csvSource = dataSource as CsvDataSource;
-        const csvData = await this.csvParser.parse(csvSource.filePath);
+        const csvData = await this.csvParser.parse(csvSource.filePath, csvSource.name);
         return [csvData];
       }
 
       case DataSourceType.Excel: {
         const excelSource = dataSource as ExcelDataSource;
-        const excelData = await this.excelParser.parse(excelSource.filePath);
-        return [excelData];
+        return await this.excelParser.parseAll(excelSource.filePath);
       }
 
       case DataSourceType.JSON: {

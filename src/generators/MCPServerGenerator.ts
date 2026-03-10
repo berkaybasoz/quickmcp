@@ -232,6 +232,10 @@ export class MCPServerGenerator {
         tools = this.generateToolsForElasticsearch(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.OpenShift) {
         tools = this.generateToolsForOpenShift(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.CSV) {
+        tools = this.generateToolsForCSV(serverId, parsedData as ParsedData, sourceConfig, selectedTables);
+      } else if (sourceConfig?.type === DataSourceType.Excel) {
+        tools = this.generateToolsForExcel(serverId, parsedData as ParsedData, sourceConfig, selectedTables);
       } else {
         //console.log('⚠️ Falling back to generateToolsForData, sourceConfig.type:', sourceConfig?.type);
         tools = this.generateToolsForData(serverId, parsedData as ParsedData, sourceConfig, selectedTables);
@@ -7306,6 +7310,25 @@ export class MCPServerGenerator {
     });
 
     return tools;
+  }
+
+  private generateToolsForCSV(serverId: string, parsedData: ParsedData, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
+    return this.generateToolsForFileData(serverId, parsedData, sourceConfig, selectedTables);
+  }
+
+  private generateToolsForExcel(serverId: string, parsedData: ParsedData, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
+    return this.generateToolsForFileData(serverId, parsedData, sourceConfig, selectedTables);
+  }
+
+  private generateToolsForFileData(serverId: string, parsedData: ParsedData, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
+    const tools = this.generateToolsForData(serverId, parsedData, sourceConfig, selectedTables);
+    const type = sourceConfig?.type;
+    if (type !== DataSourceType.CSV && type !== DataSourceType.Excel) return tools;
+    const fileQueryConfig = JSON.stringify({
+      type,
+      filePath: sourceConfig?.filePath || sourceConfig?.database || ''
+    });
+    return tools.map((tool) => ({ ...tool, sqlQuery: fileQueryConfig }));
   }
 
   private generateToolsForData(serverId: string, parsedData: ParsedData, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {

@@ -2,6 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 :root {
+  --sidebar-offset: 18rem;
+  --sidebar-gutter: 0.75rem;
   /* Modern Color Palette */
   --color-primary: 59 130 246; /* blue-500 */
   --color-primary-dark: 37 99 235; /* blue-600 */
@@ -58,6 +60,17 @@ body {
   overflow-x: hidden;
   overscroll-behavior-x: contain;
   scrollbar-gutter: stable both-edges;
+}
+
+@media (min-width: 1024px) {
+  body[data-has-sidebar="1"] > header {
+    margin-left: var(--sidebar-offset);
+    width: calc(100% - var(--sidebar-offset));
+  }
+
+  body[data-has-sidebar="1"] .app-main-layout {
+    padding-left: calc(var(--sidebar-offset) + var(--sidebar-gutter));
+  }
 }
 
 /* Modern Scrollbar */
@@ -250,17 +263,73 @@ body {
 }
 #sidebar.collapsed .nav-item i { font-size: 1.05rem !important; line-height: 1 !important; }
 
-#sidebar.collapsed #sidebarHeaderMain { display: none !important; }
-#sidebar.collapsed #sidebarHeaderRow { justify-content: center !important; }
+#sidebar.collapsed #sidebarHeaderRow {
+  position: relative !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-bottom: 0.5rem !important;
+  min-height: 2rem !important;
+}
+#sidebar.collapsed #sidebarHeaderMain {
+  display: flex !important;
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
+#sidebar.collapsed #sidebarHeaderToggleWrap {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+#sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderMain {
+  opacity: 0;
+}
+#sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderToggleWrap {
+  opacity: 1;
+  pointer-events: auto;
+}
+#sidebar.collapsed #sidebarHeaderActions {
+  display: none !important;
+}
+#sidebar.collapsed #sidebarHeaderToggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
 #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
 #sidebar.collapsed #closeSidebar { display: none !important; }
 
 #sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
 #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
 
+#sidebarUserSection {
+  margin-top: auto;
+}
+#sidebar.collapsed #sidebarUserSection {
+  padding: 0.5rem !important;
+}
+#sidebar.collapsed #sidebarUserButton {
+  justify-content: center !important;
+  padding: 0 !important;
+}
+#sidebar.collapsed #sidebarUserMeta {
+  display: none !important;
+}
+#sidebar.collapsed #sidebarUserSection [data-user-avatar] {
+  width: 2rem !important;
+  height: 2rem !important;
+  font-size: 0.75rem !important;
+}
+
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
-#sidebar.collapsed > div:first-child { padding: 0.25rem !important; } /* shrink header padding so ">>" fits */
+#sidebar.collapsed > div:first-child { padding: 1rem !important; } /* keep header icon vertically aligned with expanded state */
 #sidebar.collapsed #sidebarCollapseBtn { width: 2rem !important; height: 2rem !important; } /* smaller button in collapsed */
 #sidebar.collapsed #sidebarNavList { 
   padding-left: 0 !important; 
@@ -397,3 +466,68 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 .details-rail .rail-btn:hover { border-color: #93c5fd; color: #2563eb; }
 .details-rail .rail-btn.danger { color: #dc2626; }
 .details-rail .rail-btn.danger:hover { border-color: #fecaca; color: #dc2626; }
+
+/* Minimal Sidebar Theme */
+#sidebar:not(.collapsed) #sidebarNavList .nav-item {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item:hover {
+  background: #f8fafc !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item.active,
+#sidebar:not(.collapsed) #sidebarNavList .nav-item[aria-current="page"] {
+  background: #f1f5f9 !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item .relative > div {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item i {
+  color: #64748b !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item .flex-1 > span:first-child {
+  color: #0f172a !important;
+}
+#sidebar:not(.collapsed) #sidebarNavList .nav-item .flex-1 > span:last-child {
+  color: #94a3b8 !important;
+}
+
+#sidebar.collapsed #sidebarNavList .nav-item > .relative > div,
+#sidebar.collapsed #sidebarNavList .nav-item:hover .relative > div {
+  border: 0 !important;
+  transform: none !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item > .relative > div::before,
+#sidebar.collapsed #sidebarNavList .nav-item:hover .relative > div::before {
+  background: transparent !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item i {
+  color: #64748b !important;
+}
+
+/* Collapsed icon interactions */
+#sidebar.collapsed #sidebarNavList .nav-item {
+  border-radius: 0.5rem !important;
+  transition: color 120ms ease !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item:hover i {
+  color: #334155 !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item:hover .relative > div::before {
+  background: rgba(148, 163, 184, 0.12) !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] {
+  background: transparent !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active i,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] i {
+  color: #0f172a !important;
+}
+#sidebar.collapsed #sidebarNavList .nav-item.active .relative > div::before,
+#sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] .relative > div::before {
+  background: rgba(15, 23, 42, 0.12) !important;
+}

@@ -20,6 +20,13 @@ export class DirectoryApi {
       }
 
       const resolvedPath = pathModule.resolve(requestedPath);
+      const includeFiles = String(req.query.includeFiles || '').toLowerCase() === '1'
+        || String(req.query.includeFiles || '').toLowerCase() === 'true';
+      const allowedExts = String(req.query.extensions || '')
+        .split(',')
+        .map((ext) => ext.trim().toLowerCase())
+        .filter(Boolean);
+
       const entries = await fs.readdir(resolvedPath, { withFileTypes: true });
       const directories = entries
         .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
@@ -29,6 +36,21 @@ export class DirectoryApi {
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      const files = includeFiles
+        ? entries
+          .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
+          .filter((entry) => {
+            if (allowedExts.length === 0) return true;
+            const ext = pathModule.extname(entry.name).toLowerCase();
+            return allowedExts.includes(ext);
+          })
+          .map((entry) => ({
+            name: entry.name,
+            path: pathModule.join(resolvedPath, entry.name)
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+        : [];
+
       const parentPath = pathModule.dirname(resolvedPath);
       const hasParent = parentPath !== resolvedPath;
 
@@ -36,7 +58,8 @@ export class DirectoryApi {
         success: true,
         currentPath: resolvedPath,
         parentPath: hasParent ? parentPath : null,
-        directories
+        directories,
+        files
       });
     } catch (error) {
       logger.error('Directory listing error:', error);

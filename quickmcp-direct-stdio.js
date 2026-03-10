@@ -283,7 +283,13 @@ async function handleMessage(message) {
   }
 
   try {
-    const authContext = mcpCore.resolveAuthContextFromSources({});
+    let authContext;
+    try {
+      authContext = await mcpCore.resolveAuthContextFromSources({});
+    } catch (authError) {
+      logger.error('[QuickMCP] Failed to resolve auth context:', authError && authError.message ? authError.message : String(authError));
+      authContext = { identity: null, tokenRecord: null };
+    }
     const response = await mcpCore.processJsonRpcMessage(message, authContext);
     if (response) {
       logger.error(`[QuickMCP] Sending: ${response.result ? 'success' : 'error'}`);

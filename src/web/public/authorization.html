@@ -29,16 +29,16 @@
     </div>
   </header>
 
-  <div class="flex flex-1 overflow-hidden">
-    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+  <div class="app-main-layout flex flex-1 overflow-x-hidden">
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-[60] fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0"></div>
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
     <main class="flex-1 overflow-y-auto p-8">
       <div class="max-w-6xl mx-auto space-y-6">
-        <section class="card p-6">
-          <h2 class="text-2xl font-bold text-slate-900">MCP Authorization</h2>
-          <p id="authSummary" class="text-sm text-slate-600 mt-2"></p>
-        </section>
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-bold text-slate-900">MCP Authorization</h2>
+          <p id="authSummary" class="text-slate-600 mt-1"></p>
+        </div>
 
         <section class="card p-0 overflow-hidden">
           <div class="border-b border-slate-200 bg-slate-50/80">
@@ -185,19 +185,43 @@
     };
     let tokenModalRawValue = '';
     let tokenModalMasked = true;
+    let isSaasMode = false;
 
     function byId(id) { return document.getElementById(id); }
     function setAuthorizationTab(tab) {
+      if (isSaasMode && tab === 'policy') {
+        tab = 'token';
+      }
       const isToken = tab === 'token';
-      byId('tokenTabPanel').classList.toggle('hidden', !isToken);
-      byId('policyTabPanel').classList.toggle('hidden', isToken);
+      byId('tokenTabPanel')?.classList.toggle('hidden', !isToken);
+      byId('policyTabPanel')?.classList.toggle('hidden', isToken);
 
-      byId('tabToken').className = isToken
+      const tabToken = byId('tabToken');
+      const tabPolicy = byId('tabPolicy');
+      if (tabToken) {
+        tabToken.className = isToken
         ? 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px'
         : 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
-      byId('tabPolicy').className = !isToken
-        ? 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px'
-        : 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+      }
+      if (tabPolicy && !isSaasMode) {
+        tabPolicy.className = !isToken
+          ? 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px'
+          : 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+      }
+    }
+
+    function applyAuthorizationMode(configData) {
+      const deployMode = String(configData?.deployMode || '').trim().toUpperCase();
+      isSaasMode = deployMode === 'SAAS';
+      const tabPolicy = byId('tabPolicy');
+      const policyPanel = byId('policyTabPanel');
+      if (isSaasMode) {
+        tabPolicy?.classList.add('hidden');
+        policyPanel?.classList.add('hidden');
+        setAuthorizationTab('token');
+      } else {
+        tabPolicy?.classList.remove('hidden');
+      }
     }
 
     function refreshCopyButtonState() {
@@ -644,6 +668,7 @@
       if (!res.ok) throw new Error('Failed to load config');
       const payload = await res.json();
       const data = payload?.data || {};
+      applyAuthorizationMode(data);
       byId('authSummary').textContent = data.mcpTokenRequired
         ? 'Create and manage access tokens to control which users can see and run MCP servers, tools, and resources.'
         : 'You can optionally create access tokens to control who can use MCP servers, tools, and resources.';
@@ -787,7 +812,10 @@
         .catch((error) => window.utils?.showToast?.(error.message || 'Failed to save token policy', 'error'));
     });
     byId('tabToken').addEventListener('click', () => setAuthorizationTab('token'));
-    byId('tabPolicy').addEventListener('click', () => setAuthorizationTab('policy'));
+    byId('tabPolicy')?.addEventListener('click', () => {
+      if (isSaasMode) return;
+      setAuthorizationTab('policy');
+    });
     byId('subjectUserSelect').addEventListener('change', renderTree);
     byId('copyTokenBtn').addEventListener('click', async () => {
       const token = byId('generatedToken').value.trim();
@@ -826,7 +854,9 @@
         setAuthorizationTab('token');
         await loadConfig();
         await loadContext();
-        await loadTokenPolicy();
+        if (!isSaasMode) {
+          await loadTokenPolicy();
+        }
         await loadTokens();
         refreshCopyButtonState();
       } catch (error) {

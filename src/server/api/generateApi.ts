@@ -714,6 +714,36 @@ export class GenerateApi {
             dataSource.kubeconfig,
             dataSource.namespace
           );
+        } else if (dataSource?.type === DataSourceType.CSV) {
+          const fullParsedData = parsedData || await parser.parse(dataSource);
+          const parsedDataObject: { [tableName: string]: any[] } = {};
+          fullParsedData.forEach((data: ParsedData, index: number) => {
+            const tableName = data.tableName || `table_${index}`;
+            parsedDataObject[tableName] = data.rows.map((row: any[]) => {
+              const obj: { [key: string]: any } = {};
+              data.headers.forEach((header: string, i: number) => {
+                obj[header] = row[i];
+              });
+              return obj;
+            });
+          });
+          parsedForGen = parsedDataObject;
+          dbConfForGen = dataSource.connection || createFileGeneratorConfig(dataSource.filePath || serverName, DataSourceType.CSV);
+        } else if (dataSource?.type === DataSourceType.Excel) {
+          const fullParsedData = parsedData || await parser.parse(dataSource);
+          const parsedDataObject: { [tableName: string]: any[] } = {};
+          fullParsedData.forEach((data: ParsedData, index: number) => {
+            const tableName = data.tableName || `table_${index}`;
+            parsedDataObject[tableName] = data.rows.map((row: any[]) => {
+              const obj: { [key: string]: any } = {};
+              data.headers.forEach((header: string, i: number) => {
+                obj[header] = row[i];
+              });
+              return obj;
+            });
+          });
+          parsedForGen = parsedDataObject;
+          dbConfForGen = dataSource.connection || createFileGeneratorConfig(dataSource.filePath || serverName, DataSourceType.Excel);
         } else {
           // Use provided parsed data or re-parse if not available
           const fullParsedData = parsedData || await parser.parse(dataSource);

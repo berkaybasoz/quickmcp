@@ -149,7 +149,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFileUpload();
     setupRouting();
     handleInitialRoute();
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { applySidebarCollapsedState(); } catch {}
+    }
 
     // This will run on the manage-servers page
     if (document.getElementById('server-list')) {
@@ -159,8 +161,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
 window.addEventListener('load', () => {
-    try { initSidebarResizer(); } catch {}
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { initSidebarResizer(); } catch {}
+        try { applySidebarCollapsedState(); } catch {}
+    }
 });
 
 // Setup event listeners
@@ -245,17 +249,29 @@ function setupEventListeners() {
     document.getElementById('openrouterModel')?.addEventListener('input', updateWizardNavigation);
 
     // Test buttons
-    document.getElementById('runQuickTestBtn')?.addEventListener('click', () => runAutoTests(false));
-    document.getElementById('runFullTestBtn')?.addEventListener('click', () => runAutoTests(true));
-    document.getElementById('runAutoTestsBtn')?.addEventListener('click', runAutoTests);
+    document.getElementById('runAutoTestsBtn')?.addEventListener('click', () => {
+        const selectedType = document.getElementById('autoTestType')?.value || 'quick';
+        runAutoTests(selectedType === 'full');
+    });
     document.getElementById('runCustomTestBtn')?.addEventListener('click', runCustomTest);
     document.getElementById('runTransportTestBtn')?.addEventListener('click', () => runTransportTests(false));
     
     // Test type change handler
     document.getElementById('testType')?.addEventListener('change', handleTestTypeChange);
     
-    // Test server select change handler for loading tools
+    // Test server select change handlers for loading tools
+    document.getElementById('autoTestServerSelect')?.addEventListener('change', handleTestServerChange);
+    document.getElementById('customTestServerSelect')?.addEventListener('change', handleTestServerChange);
     document.getElementById('testServerSelect')?.addEventListener('change', handleTestServerChange);
+
+    // Test mode tabs
+    document.querySelectorAll('[data-test-mode-tab]').forEach((tabBtn) => {
+        tabBtn.addEventListener('click', () => {
+            if (tabBtn.hasAttribute('disabled') || tabBtn.getAttribute('data-test-mode-locked') === 'true') return;
+            setTestModeTab(tabBtn.getAttribute('data-test-mode-tab') || 'automated');
+        });
+    });
+    initializeTestModeTabs();
 
     // Server search & filters (Manage page)
     const serverSearchInput = document.getElementById('serverSearch');
@@ -291,33 +307,7 @@ function setupEventListeners() {
     const deleteAllBtn = document.getElementById('deleteAllServersBtn');
     if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllServers);
 
-    // Collapsible left sidebar toggle
-    const leftToggle = document.getElementById('sidebarCollapseBtn');
-    if (leftToggle && leftToggle.dataset.bound !== 'true') {
-        leftToggle.dataset.bound = 'true';
-        leftToggle.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const current = localStorage.getItem('sidebarCollapsed') === 'true';
-            localStorage.setItem('sidebarCollapsed', (!current).toString());
-            applySidebarCollapsedState();
-        });
-        // Also make the entire header row clickable to expand when collapsed
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        if (headerRow && headerRow.dataset.bound !== 'true') {
-            headerRow.dataset.bound = 'true';
-            headerRow.addEventListener('click', (e) => {
-                if (document.getElementById('sidebar')?.classList.contains('collapsed')) {
-                    // Prevent double handling when clicking the button itself
-                    const clickedToggle = Array.isArray(e.composedPath?.())
-                        ? e.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
-                        : !!(e.target.closest && e.target.closest('#sidebarCollapseBtn'));
-                    if (clickedToggle) return;
-                    localStorage.setItem('sidebarCollapsed', 'false');
-                    applySidebarCollapsedState();
-                }
-            });
-        }
-    }
+    // Sidebar collapse/resizer is managed by sidebar.js
 
 
     // cURL mode toggle
@@ -551,7 +541,7 @@ function switchTab(tabName) {
     // If the target view's DOM isn't present on this page, do a full navigation
     const needsFullNav = (
         (tabName === 'manage' && !document.getElementById('server-list')) ||
-        (tabName === 'test' && !document.getElementById('testServerSelect')) ||
+        (tabName === 'test' && !document.getElementById('autoTestServerSelect') && !document.getElementById('testServerSelect')) ||
         (tabName === 'generate' && !document.getElementById('generate-tab'))
     );
     if (needsFullNav) {
@@ -573,6 +563,7 @@ function switchTab(tabName) {
 function setupFileUpload() {
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
+    const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
 
     if (!fileUpload || !fileInput) return;
 
@@ -595,6 +586,7 @@ function setupFileUpload() {
         if (files.length > 0) {
             fileInput.files = files;
             updateFileUploadDisplay(files[0].name);
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = files[0].name;
             updateWizardNavigation();
         }
     });
@@ -602,49 +594,95 @@ function setupFileUpload() {
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             updateFileUploadDisplay(e.target.files[0].name);
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = e.target.files[0].name;
             updateWizardNavigation();
         }
     });
+
+    if (csvExcelFilePathInput && !csvExcelFilePathInput.dataset.listenerAttached) {
+        csvExcelFilePathInput.addEventListener('input', updateWizardNavigation);
+        csvExcelFilePathInput.dataset.listenerAttached = 'true';
+    }
 }
 
 function updateFileUploadDisplay(fileName) {
     const fileUpload = document.getElementById('fileUpload');
-    if (fileUpload) {
-        fileUpload.innerHTML = `
-            <div class="space-y-4">
-                <div class="w-16 h-16 mx-auto bg-green-50 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-check text-2xl text-green-500"></i>
-                </div>
-                <div>
-                    <p class="text-lg font-medium text-gray-900">File Selected</p>
-                    <p class="text-sm text-gray-500">${fileName}</p>
-                </div>
-                <button type="button" onclick="resetFileUpload()" class="text-xs text-blue-500 hover:text-blue-600">Choose different file</button>
-            </div>
-        `;
+    if (!fileUpload) return;
+
+    fileUpload.dataset.selectedFile = fileName;
+    fileUpload.classList.remove('border-slate-300');
+    fileUpload.classList.add('border-emerald-400', 'bg-emerald-50/30');
+
+    const icon = fileUpload.querySelector('i');
+    if (icon) {
+        icon.classList.remove('fa-cloud-upload-alt', 'text-slate-400');
+        icon.classList.add('fa-check', 'text-emerald-600');
+    }
+
+    const iconWrap = icon?.closest('div');
+    if (iconWrap) {
+        iconWrap.classList.remove('bg-slate-100', 'text-slate-400');
+        iconWrap.classList.add('bg-emerald-100');
+    }
+
+    const titleEl = fileUpload.querySelector('h4');
+    if (titleEl) titleEl.textContent = 'File Selected';
+
+    const subtitleEl = fileUpload.querySelector('p');
+    if (subtitleEl) subtitleEl.textContent = fileName;
+
+    let resetBtn = fileUpload.querySelector('[data-role="file-upload-reset"]');
+    if (!resetBtn) {
+        resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.setAttribute('data-role', 'file-upload-reset');
+        resetBtn.className = 'mt-3 text-xs text-blue-500 hover:text-blue-600';
+        resetBtn.textContent = 'Choose different file';
+        resetBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            resetFileUpload();
+        });
+        fileUpload.appendChild(resetBtn);
     }
 }
 
 function resetFileUpload() {
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
+    const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
 
     if (fileInput) fileInput.value = '';
+    if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
 
     if (fileUpload) {
-        fileUpload.innerHTML = `
-            <div class="space-y-4">
-                <div class="w-16 h-16 mx-auto bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <i class="fas fa-cloud-upload-alt text-2xl text-blue-500"></i>
-                </div>
-                <div>
-                    <p class="text-lg font-medium text-gray-900">Drop your file here</p>
-                    <p class="text-sm text-gray-500">or click to browse files</p>
-                </div>
-                <p class="text-xs text-gray-400">Supports CSV, Excel files up to 10MB</p>
-            </div>
-        `;
+        delete fileUpload.dataset.selectedFile;
+        fileUpload.classList.remove('border-emerald-400', 'bg-emerald-50/30');
+        fileUpload.classList.add('border-slate-300');
+
+        const icon = fileUpload.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-check', 'text-emerald-600');
+            icon.classList.add('fa-cloud-upload-alt', 'text-slate-400');
+        }
+
+        const iconWrap = icon?.closest('div');
+        if (iconWrap) {
+            iconWrap.classList.remove('bg-emerald-100');
+            iconWrap.classList.add('bg-slate-100', 'text-slate-400');
+        }
+
+        const titleEl = fileUpload.querySelector('h4');
+        if (titleEl) titleEl.textContent = 'Click or Drag file here';
+
+        const subtitleEl = fileUpload.querySelector('p');
+        if (subtitleEl) subtitleEl.textContent = 'Supports .csv and .xlsx files up to 10MB';
+
+        const resetBtn = fileUpload.querySelector('[data-role="file-upload-reset"]');
+        resetBtn?.remove();
     }
+
+    updateWizardNavigation();
 }
 
 
@@ -1272,6 +1310,12 @@ function getServerTypeIconMeta(serverType) {
     if (normalized === 'email') {
         return { image: '', icon: 'fa-envelope', bg: 'bg-rose-100', text: 'text-rose-700' };
     }
+    if (normalized === 'csv') {
+        return { image: '', icon: 'fa-file-csv', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    }
+    if (normalized === 'excel') {
+        return { image: '', icon: 'fa-file-excel', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    }
     if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
         return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
     }
@@ -1475,13 +1519,20 @@ async function loadTestServers() {
         const response = await fetch('/api/servers');
         const result = await response.json();
 
-        const select = document.getElementById('testServerSelect');
-        if (!select) return;
+        const selectIds = ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'];
+        const selects = selectIds
+            .map((id) => document.getElementById(id))
+            .filter((el) => el);
+        if (selects.length === 0) return;
 
         if (result.success && result.data.length > 0) {
-            select.innerHTML = '<option value="">Select a server to test</option>';
+            const options = ['<option value="">Select a server to test</option>'];
             result.data.forEach(server => {
-                select.innerHTML += `<option value="${server.id}">${server.name}</option>`;
+                options.push(`<option value="${server.id}">${server.name}</option>`);
+            });
+            const optionsHtml = options.join('');
+            selects.forEach((select) => {
+                select.innerHTML = optionsHtml;
             });
             // Preselect if requested via query or storage
             try {
@@ -1491,7 +1542,7 @@ async function loadTestServers() {
                 const toSelect = q || stored;
                 const toolParam = params.get('tool') || localStorage.getItem('prefTestToolName');
                 if (toSelect) {
-                    select.value = toSelect;
+                    selects.forEach((select) => { select.value = toSelect; });
                     // Ensure type is tool call so dropdown loads
                     const type = document.getElementById('testType');
                     if (type) type.value = 'tools/call';
@@ -1509,14 +1560,16 @@ async function loadTestServers() {
                 }
             } catch {}
         } else {
-            select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
+            selects.forEach((select) => {
+                select.innerHTML = '<option value="">No servers available - Generate a server first</option>';
+            });
         }
     } catch (error) {
         logger.error('Failed to load test servers:', error);
-        const select = document.getElementById('testServerSelect');
-        if (select) {
-            select.innerHTML = '<option value="">Error loading servers</option>';
-        }
+        ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+            const select = document.getElementById(id);
+            if (select) select.innerHTML = '<option value="">Error loading servers</option>';
+        });
     }
 }
 
@@ -1524,7 +1577,9 @@ async function loadTestServers() {
 function handleTestTypeChange() {
     const testType = document.getElementById('testType')?.value;
     const container = document.getElementById('testNameContainer');
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     
     if (!container) return;
     
@@ -1540,7 +1595,9 @@ function handleTestTypeChange() {
 // Handle test server change - reload tools if Tool Call is selected
 async function handleTestServerChange() {
     const testType = document.getElementById('testType')?.value;
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     
     if (testType === 'tools/call' && serverId) {
         await loadToolsDropdown(serverId);
@@ -1630,7 +1687,8 @@ function updateParametersExample() {
 
 // Test functions
 async function runAutoTests(runAll = false) {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server to test');
         return;
@@ -1643,24 +1701,17 @@ async function runAutoTests(runAll = false) {
     const noResults = document.getElementById('no-results');
     const errorDiv = document.getElementById('test-error');
     
-    // Update button states
-    const quickBtn = document.getElementById('runQuickTestBtn');
-    const fullBtn = document.getElementById('runFullTestBtn');
-    const fullBtnIcon = document.getElementById('fullTestIcon');
-    const fullBtnText = document.getElementById('fullTestText');
+    // Update button state
+    const runBtn = document.getElementById('runAutoTestsBtn');
+    const runBtnIcon = document.getElementById('autoTestRunIcon');
+    const runBtnText = document.getElementById('autoTestRunText');
     
-    if (runAll) {
-        // Show loading spinner in button
-        if (fullBtnIcon) fullBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
-        if (fullBtnText) fullBtnText.textContent = 'Testing All Tools...';
-        if (fullBtn) fullBtn.disabled = true;
-        if (quickBtn) quickBtn.disabled = true;
-        if (loadingText) loadingText.textContent = 'Running all tests... This may take a while.';
-    } else {
-        if (quickBtn) quickBtn.disabled = true;
-        if (fullBtn) fullBtn.disabled = true;
-        if (loadingText) loadingText.textContent = 'Running quick tests...';
-    }
+    if (runBtn) runBtn.disabled = true;
+    if (runBtnIcon) runBtnIcon.className = 'fas fa-spinner fa-spin mr-2';
+    if (runBtnText) runBtnText.textContent = runAll ? 'Running Full Test...' : 'Running Quick Test...';
+    if (loadingText) loadingText.textContent = runAll
+        ? 'Running all tests... This may take a while.'
+        : 'Running quick tests...';
 
     loading?.classList.remove('hidden');
     resultsDiv?.classList.add('hidden');
@@ -1689,18 +1740,17 @@ async function runAutoTests(runAll = false) {
     } finally {
         loading?.classList.add('hidden');
         
-        // Reset button states
-        if (quickBtn) quickBtn.disabled = false;
-        if (fullBtn) {
-            fullBtn.disabled = false;
-            if (fullBtnIcon) fullBtnIcon.className = 'fas fa-play-circle mr-2';
-            if (fullBtnText) fullBtnText.textContent = 'Run Auto Tests';
-        }
+        // Reset button state
+        if (runBtn) runBtn.disabled = false;
+        if (runBtnIcon) runBtnIcon.className = 'fas fa-play mr-2';
+        if (runBtnText) runBtnText.textContent = 'Run';
     }
 }
 
 async function runCustomTest() {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('customTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     const testType = document.getElementById('testType')?.value;
     const testName = document.getElementById('testName')?.value;
     const testParams = document.getElementById('testParams')?.value;
@@ -1974,7 +2024,9 @@ async function testWebSocketTransport(baseUrl) {
 }
 
 async function runTransportTests(runAll = false) {
-    const serverId = document.getElementById('testServerSelect')?.value;
+    const serverId = document.getElementById('transportTestServerSelect')?.value
+        || document.getElementById('autoTestServerSelect')?.value
+        || document.getElementById('testServerSelect')?.value;
     if (!serverId) {
         showError('test-error', 'Please select a server before running transport tests');
         return;
@@ -2510,12 +2562,25 @@ function setRightPanelCollapsed(collapsed) {
 
 // Initialize sidebar resizer and collapsed state on window load (safe after DOM ready)
 window.addEventListener('load', () => {
-    try { initSidebarResizer(); } catch {}
-    try { applySidebarCollapsedState(); } catch {}
+    if (!window.renderSidebar) {
+        try { initSidebarResizer(); } catch {}
+        try { applySidebarCollapsedState(); } catch {}
+    }
 });
 
 // Left sidebar resizer (drag to change width)
+function syncDesktopLayoutOffsetFromApp(sidebar) {
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    const expandedWidth = (saved && saved >= 200 && saved <= 480) ? `${saved}px` : '18rem';
+    const offset = collapsed ? '3rem' : expandedWidth;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    document.body?.setAttribute('data-has-sidebar', '1');
+}
+
 function initSidebarResizer() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const resizer = document.getElementById('sidebarResizer');
     if (!sidebar || !resizer) return;
@@ -2528,6 +2593,7 @@ function initSidebarResizer() {
         let newW = Math.min(max, Math.max(min, startWidth + dx));
         sidebar.style.width = newW + 'px';
         localStorage.setItem('sidebarWidth', String(newW));
+        syncDesktopLayoutOffsetFromApp(sidebar);
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'col-resize';
     };
@@ -2550,6 +2616,7 @@ function initSidebarResizer() {
 }
 
 function applySidebarCollapsedState() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const collapseBtn = document.getElementById('sidebarCollapseBtn');
     if (!sidebar) return;
@@ -2669,11 +2736,11 @@ function testServer(serverId) {
         return;
     }
     // Already on test page: set immediately
-    const select = document.getElementById('testServerSelect');
-    if (select) {
-        select.value = serverId;
-        handleTestServerChange();
-    }
+    ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+        const select = document.getElementById(id);
+        if (select) select.value = serverId;
+    });
+    handleTestServerChange();
 }
 
 function testTool(serverId, toolName) {
@@ -2689,10 +2756,10 @@ function testTool(serverId, toolName) {
         return;
     }
     // Already on test page
-    const serverSelect = document.getElementById('testServerSelect');
-    if (serverSelect) {
-        serverSelect.value = serverId;
-    }
+    ['autoTestServerSelect', 'customTestServerSelect', 'transportTestServerSelect', 'testServerSelect'].forEach((id) => {
+        const serverSelect = document.getElementById(id);
+        if (serverSelect) serverSelect.value = serverId;
+    });
     const type = document.getElementById('testType');
     if (type) type.value = 'tools/call';
     // Ensure tools dropdown loads, then select tool
@@ -2702,6 +2769,31 @@ function testTool(serverId, toolName) {
             toolSelect.value = toolName;
             updateParametersExample();
         }
+    });
+}
+
+function initializeTestModeTabs() {
+    const tabs = document.querySelectorAll('[data-test-mode-tab]');
+    const panels = document.querySelectorAll('[data-test-mode-panel]');
+    if (!tabs.length || !panels.length) return;
+    setTestModeTab('automated');
+}
+
+function setTestModeTab(mode) {
+    if (mode === 'e2e') mode = 'automated';
+    const tabs = document.querySelectorAll('[data-test-mode-tab]');
+    const panels = document.querySelectorAll('[data-test-mode-panel]');
+    const activeClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px';
+    const inactiveClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70';
+    const lockedClass = 'px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-400 cursor-not-allowed';
+    tabs.forEach((tab) => {
+        const isLocked = tab.getAttribute('data-test-mode-locked') === 'true' || tab.hasAttribute('disabled');
+        const isActive = tab.getAttribute('data-test-mode-tab') === mode;
+        tab.className = isLocked ? lockedClass : (isActive ? activeClass : inactiveClass);
+    });
+    panels.forEach((panel) => {
+        const isActive = panel.getAttribute('data-test-mode-panel') === mode;
+        panel.classList.toggle('hidden', !isActive);
     });
 }
 
@@ -6772,10 +6864,16 @@ async function handleNextToStep3() {
 
         if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
             const fileInput = document.getElementById('fileInput');
-            if (!fileInput?.files[0]) {
-                throw new Error('Please select a file');
+            const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
+            const selectedPath = csvExcelFilePathInput?.value?.trim();
+            if (!fileInput?.files[0] && !selectedPath) {
+                throw new Error('Please select a file or provide a file path');
             }
-            formData.append('file', fileInput.files[0]);
+            if (fileInput?.files?.[0]) {
+                formData.append('file', fileInput.files[0]);
+            } else if (selectedPath) {
+                formData.append('filePath', selectedPath);
+            }
         } else if (isDatabase(selectedType)) {
             const connection = {
                 type: selectedType,
@@ -7121,7 +7219,8 @@ function updateWizardNavigation() {
     let canProceed = false;
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         const fileInput = document.getElementById('fileInput');
-        canProceed = !!fileInput?.files?.length;
+        const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
+        canProceed = !!fileInput?.files?.length || !!csvExcelFilePathInput?.value?.trim();
     } else if (isDatabase(selectedType)) {
         const dbType = selectedType;
         const dbHost = document.getElementById('dbHost')?.value;
@@ -8775,6 +8874,7 @@ function showSuccess(elementId, message) {
 
 // Left sidebar resizer (drag to change width)
 function initSidebarResizer() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     const resizer = document.getElementById('sidebarResizer');
     if (!sidebar || !resizer) return;
@@ -8787,6 +8887,7 @@ function initSidebarResizer() {
         let newW = Math.min(max, Math.max(min, startWidth + dx));
         sidebar.style.width = newW + 'px';
         localStorage.setItem('sidebarWidth', String(newW));
+        syncDesktopLayoutOffsetFromApp(sidebar);
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'col-resize';
     };
@@ -8806,65 +8907,28 @@ function initSidebarResizer() {
     if (saved && saved >= min && saved <= max) {
         sidebar.style.width = saved + 'px';
     }
+    syncDesktopLayoutOffsetFromApp(sidebar);
 }
 
 function applySidebarCollapsedState() {
+    if (window.renderSidebar) return;
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
     const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (collapsed) {
         sidebar.classList.add('collapsed');
-        // Collapsed: show only menu icons (centered, colored) and the » button; hide Navigation texts
         sidebar.style.width = '3rem';
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        const headerMain = document.getElementById('sidebarHeaderMain');
-        const collapseBtn = document.getElementById('sidebarCollapseBtn');
-        headerMain?.classList.add('hidden');
-        headerRow?.classList.remove('justify-between', 'mb-2');
-        headerRow?.classList.add('justify-center');
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-right';
-
-        // For each nav item: center icon, hide labels, color icon; make icon container square
-        sidebar.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.add('justify-center');
-            item.classList.add('gap-0');
-            item.classList.add('p-2');
-            const label = item.querySelector('.flex-1');
-            if (label) label.classList.add('hidden');
-            const iconEl = item.querySelector('i');
-            if (iconEl) iconEl.classList.add('text-blue-600');
-            // container kare ve ortalı CSS üzerinden ayarlanıyor (style bloğu)
-        });
-        // Hide Navigation subtitles anywhere
-        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.add('hidden'));
     } else {
         sidebar.classList.remove('collapsed');
-        // Expanded: one notch wider by default if none saved
         const saved = Number(localStorage.getItem('sidebarWidth'));
-        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '20rem';
-        const headerRow = document.getElementById('sidebarHeaderRow');
-        const headerMain = document.getElementById('sidebarHeaderMain');
-        const collapseBtn = document.getElementById('sidebarCollapseBtn');
-        headerMain?.classList.remove('hidden');
-        headerRow?.classList.remove('justify-center');
-        headerRow?.classList.add('justify-between', 'mb-2');
+        if (saved) sidebar.style.width = saved + 'px'; else sidebar.style.width = '';
         const icon = collapseBtn?.querySelector('i');
         if (icon) icon.className = 'fas fa-angles-left';
-
-        // Restore menu item labels and icon default color; remove square styling
-        sidebar.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('justify-center');
-            item.classList.remove('gap-0');
-            item.classList.remove('p-2');
-            const label = item.querySelector('.flex-1');
-            if (label) label.classList.remove('hidden');
-            const iconEl = item.querySelector('i');
-            if (iconEl) iconEl.classList.remove('text-blue-600');
-            // kare container sınıfları style bloğunda kontrol ediliyor
-        });
-        sidebar.querySelectorAll('h2, p').forEach(el => el.classList.remove('hidden'));
     }
+    syncDesktopLayoutOffsetFromApp(sidebar);
 }
 
 // Rename server functionality
@@ -14160,9 +14224,44 @@ function displayConfluencePreview(confluenceConfig) {
 
 // Directory Picker functionality
 let directoryPickerCurrentPath = '~';
+let directoryPickerMode = 'directory';
+let directoryPickerTargetInputId = 'localfsBasePath';
+let directoryPickerExtensions = [];
+
+function openDirectoryPicker(mode, targetInputId, extensions = []) {
+    const modal = document.getElementById('directoryPickerModal');
+    const titleEl = document.getElementById('dirPickerTitle');
+    const subtitleEl = document.getElementById('dirPickerSubtitle');
+    const selectLabelEl = document.getElementById('dirPickerSelectLabel');
+    const selectedEl = document.getElementById('dirPickerSelected');
+    if (!modal) return;
+
+    directoryPickerMode = mode === 'file' ? 'file' : 'directory';
+    directoryPickerTargetInputId = targetInputId;
+    directoryPickerExtensions = Array.isArray(extensions) ? extensions : [];
+
+    if (titleEl) {
+        titleEl.textContent = directoryPickerMode === 'file' ? 'Select File' : 'Select Directory';
+    }
+    if (subtitleEl) {
+        subtitleEl.textContent = directoryPickerMode === 'file'
+            ? 'Choose a CSV/Excel file'
+            : 'Choose a folder to use as base path';
+    }
+    if (selectLabelEl) {
+        selectLabelEl.textContent = directoryPickerMode === 'file' ? 'Select This File' : 'Select This Folder';
+    }
+    if (selectedEl) {
+        selectedEl.textContent = '-';
+    }
+
+    modal.classList.remove('hidden');
+    loadDirectories('~');
+}
 
 function initDirectoryPicker() {
     const browseBtn = document.getElementById('browseDirectoryBtn');
+    const browseCsvExcelFileBtn = document.getElementById('browseCsvExcelFileBtn');
     const modal = document.getElementById('directoryPickerModal');
     const overlay = document.getElementById('directoryPickerOverlay');
     const closeBtn = document.getElementById('closeDirectoryPicker');
@@ -14171,13 +14270,16 @@ function initDirectoryPicker() {
     const homeBtn = document.getElementById('dirPickerHome');
     const upBtn = document.getElementById('dirPickerUp');
 
-    if (!browseBtn || !modal) return;
+    if (!modal) return;
 
-    // Open modal
-    browseBtn.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        loadDirectories('~');
-    });
+    if (browseBtn && !browseBtn.dataset.listenerAttached) {
+        browseBtn.addEventListener('click', () => openDirectoryPicker('directory', 'localfsBasePath'));
+        browseBtn.dataset.listenerAttached = 'true';
+    }
+    if (browseCsvExcelFileBtn && !browseCsvExcelFileBtn.dataset.listenerAttached) {
+        browseCsvExcelFileBtn.addEventListener('click', () => openDirectoryPicker('file', 'csvExcelFilePath', ['.csv', '.xlsx', '.xls']));
+        browseCsvExcelFileBtn.dataset.listenerAttached = 'true';
+    }
 
     // Close modal
     const closeModal = () => modal.classList.add('hidden');
@@ -14202,10 +14304,14 @@ function initDirectoryPicker() {
     // Select button
     selectBtn?.addEventListener('click', () => {
         const selectedEl = document.getElementById('dirPickerSelected');
-        const basePathInput = document.getElementById('localfsBasePath');
-        if (selectedEl && basePathInput && selectedEl.textContent !== '-') {
-            basePathInput.value = selectedEl.textContent;
-            basePathInput.dispatchEvent(new Event('input'));
+        const targetInput = document.getElementById(directoryPickerTargetInputId);
+        if (selectedEl && targetInput && selectedEl.textContent !== '-') {
+            targetInput.value = selectedEl.textContent;
+            targetInput.dispatchEvent(new Event('input'));
+            if (directoryPickerTargetInputId === 'csvExcelFilePath') {
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.value = '';
+            }
             closeModal();
         }
     });
@@ -14223,7 +14329,14 @@ async function loadDirectories(path) {
     listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Loading...</p></div>';
 
     try {
-        const response = await fetch('/api/directories?path=' + encodeURIComponent(path));
+        const query = new URLSearchParams({ path: path || '~' });
+        if (directoryPickerMode === 'file') {
+            query.set('includeFiles', '1');
+            if (directoryPickerExtensions.length) {
+                query.set('extensions', directoryPickerExtensions.join(','));
+            }
+        }
+        const response = await fetch('/api/directories?' + query.toString());
         const result = await response.json();
 
         if (!result.success) {
@@ -14236,8 +14349,8 @@ async function loadDirectories(path) {
             currentPathEl.dataset.parent = result.parentPath || '';
         }
 
-        // Update selected
-        if (selectedEl) {
+        // Update selected default
+        if (selectedEl && selectedEl.textContent === '-' && directoryPickerMode === 'directory') {
             selectedEl.textContent = result.currentPath;
         }
 
@@ -14247,17 +14360,32 @@ async function loadDirectories(path) {
             upBtn.classList.toggle('opacity-50', !result.parentPath);
         }
 
-        // Render directories
-        if (result.directories.length === 0) {
-            listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-folder-open text-2xl"></i><p class="mt-2">No subdirectories</p></div>';
-        } else {
-            listEl.innerHTML = result.directories.map(dir => {
+        // Render directories and files
+        const dirItems = (result.directories || []).map(dir => {
                 const escapedPath = dir.path.replace(/'/g, "\\'");
-                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + dir.path + '" ondblclick="loadDirectories(\'' + escapedPath + '\')" onclick="selectDirectory(\'' + escapedPath + '\')">' +
+                const clickAction = directoryPickerMode === 'file'
+                    ? `loadDirectories('${escapedPath}')`
+                    : `selectDirectory('${escapedPath}')`;
+                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + dir.path + '" ondblclick="loadDirectories(\'' + escapedPath + '\')" onclick="' + clickAction + '">' +
                     '<div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-200"><i class="fas fa-folder text-lg"></i></div>' +
                     '<div class="flex-1 min-w-0"><div class="font-medium text-slate-900 truncate">' + dir.name + '</div><div class="text-xs text-slate-500 truncate">' + dir.path + '</div></div>' +
                     '<i class="fas fa-chevron-right text-slate-400 group-hover:text-slate-600"></i></button>';
-            }).join('');
+            });
+        const fileItems = directoryPickerMode === 'file'
+            ? (result.files || []).map(file => {
+                const escapedPath = file.path.replace(/'/g, "\\'");
+                return '<button type="button" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-left transition-colors group" data-path="' + file.path + '" onclick="selectDirectory(\'' + escapedPath + '\')">' +
+                    '<div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-200"><i class="fas fa-file-lines text-lg"></i></div>' +
+                    '<div class="flex-1 min-w-0"><div class="font-medium text-slate-900 truncate">' + file.name + '</div><div class="text-xs text-slate-500 truncate">' + file.path + '</div></div>' +
+                    '</button>';
+              })
+            : [];
+
+        const items = [...dirItems, ...fileItems];
+        if (items.length === 0) {
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-folder-open text-2xl"></i><p class="mt-2">No items found</p></div>';
+        } else {
+            listEl.innerHTML = items.join('');
         }
 
         directoryPickerCurrentPath = result.currentPath;

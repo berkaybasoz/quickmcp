@@ -32,17 +32,17 @@
     </div>
   </header>
 
-  <div class="flex flex-1 overflow-hidden">
-    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0"></div>
+  <div class="app-main-layout flex flex-1 overflow-x-hidden">
+    <div id="sidebar" class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-[60] fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0"></div>
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
     <main class="flex-1 overflow-y-auto p-8">
       <div class="max-w-6xl mx-auto space-y-6">
-        <section class="card p-6">
-          <h2 class="text-2xl font-bold text-slate-900">Users</h2>
-          <p class="text-slate-600 mt-2">Only users with the <span class="font-semibold">Admin</span> role can add new users.</p>
-          <p id="viewerInfo" class="text-sm text-slate-500 mt-3"></p>
-        </section>
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-bold text-slate-900">Users</h2>
+          <p class="text-slate-600 mt-1">Only users with the <span class="font-semibold">Admin</span> role can add new users.</p>
+          <p id="viewerInfo" class="text-sm text-slate-500 mt-2"></p>
+        </div>
 
         <section id="createUserCard" class="card p-6 hidden">
           <h3 class="text-lg font-semibold text-slate-900 mb-4">Add User</h3>

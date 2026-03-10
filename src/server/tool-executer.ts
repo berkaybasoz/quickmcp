@@ -5,9 +5,13 @@ import { MongoClient } from 'mongodb';
 import sql from 'mssql';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
+import { CsvParser } from '../parsers/CsvParser';
+import { ExcelParser } from '../parsers/ExcelParser';
 import { logger } from '../utils/logger';
 export class ToolExecuter {
   private dbConnections: Map<string, ActiveDatabaseConnection> = new Map();
+  private csvParser = new CsvParser();
+  private excelParser = new ExcelParser();
 
   constructor(private readonly serverUtils: ServerUtils) {}
 
@@ -18,6 +22,8 @@ export class ToolExecuter {
       const serverConfig = await this.serverUtils.getServerConfig(serverId);
       const queryConfig = this.serverUtils.parseQueryConfig(tool.sqlQuery);
 
+      if (queryConfig?.type === DataSourceType.CSV) return await this.executeFileSourceTool(actualToolName, tool, queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Excel) return await this.executeFileSourceTool(actualToolName, tool, queryConfig, args);
       if (queryConfig?.type === DataSourceType.Rest) return await this.executeRestCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.Webpage) return await this.executeWebpageFetch(queryConfig);
       if (queryConfig?.type === DataSourceType.GraphQL) return await this.executeGraphQLCall(queryConfig, args);
@@ -6111,6 +6117,143 @@ export class ToolExecuter {
   async executeResourceQuery(serverId: string, sourceConfig: any, sqlQuery: string, args: any = {}, operation = 'SELECT'): Promise<any> {
     const dbConnection = await this.getOrCreateConnection(serverId, sourceConfig);
     return this.executeQuery(dbConnection, sqlQuery, args, operation);
+  }
+
+  private async executeFileSourceTool(toolName: string, tool: ToolDefinition, sourceConfig: any, args: any): Promise<any> {
+    const filteredRows = await this.executeFileSelect(sourceConfig, args, toolName);
+
+    if (toolName.startsWith('count_')) {
+      return { success: true, data: [{ total_count: filteredRows.length }], rowCount: 1 };
+    }
+
+    if (toolName.startsWith('get_')) {
+      const limit = Math.max(1, Math.min(1000, Number(args?.limit) || 100));
+      const offset = Math.max(0, Number(args?.offset) || 0);
+      const paged = filteredRows.slice(offset, offset + limit);
+      return { success: true, data: paged, rowCount: paged.length };
+    }
+
+    const aggregateMatch = toolName.match(/^(min|max|sum|avg)_.+$/);
+    if (aggregateMatch) {
+      const op = aggregateMatch[1];
+      const colMatch = String(tool.description || '').match(/value of (.+?) in/i);
+      const columnName = colMatch?.[1]?.trim();
+      if (!columnName) {
+        throw new Error(`Could not resolve aggregate column for tool ${toolName}`);
+      }
+      const nums = filteredRows
+        .map((row: any) => Number(row?.[columnName]))
+        .filter((n: number) => Number.isFinite(n));
+
+      let value: number | null = null;
+      if (nums.length > 0) {
+        if (op === 'min') value = Math.min(...nums);
+        if (op === 'max') value = Math.max(...nums);
+        if (op === 'sum') value = nums.reduce((a, b) => a + b, 0);
+        if (op === 'avg') value = nums.reduce((a, b) => a + b, 0) / nums.length;
+      }
+      const fieldMap: Record<string, string> = { min: 'min_value', max: 'max_value', sum: 'sum_value', avg: 'avg_value' };
+      return { success: true, data: [{ [fieldMap[op]]: value }], rowCount: 1 };
+    }
+
+    if (toolName.startsWith('create_') || toolName.startsWith('update_') || toolName.startsWith('delete_')) {
+      throw new Error(`File datasource is read-only. Tool '${toolName}' is not supported for CSV/Excel.`);
+    }
+
+    return { success: true, data: filteredRows, rowCount: filteredRows.length };
+  }
+
+  private async executeFileSelect(sourceConfig: any, args: any, toolName?: string): Promise<any[]> {
+    const filePath = String(sourceConfig?.filePath || sourceConfig?.database || '').trim();
+    if (!filePath) {
+      throw new Error('File path is missing in source config');
+    }
+
+    const parsed = sourceConfig?.type === DataSourceType.CSV
+      ? await this.csvParser.parse(filePath)
+      : this.resolveExcelSheetByTool(await this.excelParser.parseAll(filePath), toolName);
+
+    const rows = (parsed.rows || []).map((row: any[]) => {
+      const obj: Record<string, any> = {};
+      (parsed.headers || []).forEach((header: string, idx: number) => {
+        obj[header] = row[idx];
+      });
+      return obj;
+    });
+
+    const filters = Object.entries(args || {})
+      .filter(([key, val]) => key.startsWith('filter_') && val !== undefined && val !== null && String(val) !== '')
+      .map(([key, val]) => ({ column: key.replace(/^filter_/, ''), value: val }));
+
+    return rows.filter((row) => {
+      for (const f of filters) {
+        const left = row?.[f.column];
+        const right = f.value;
+        const leftNum = Number(left);
+        const rightNum = Number(right);
+        if (Number.isFinite(leftNum) && Number.isFinite(rightNum)) {
+          if (leftNum !== rightNum) return false;
+        } else if (String(left ?? '') !== String(right ?? '')) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  private resolveExcelSheetByTool(parsedSheets: any[], toolName?: string): any {
+    if (!Array.isArray(parsedSheets) || parsedSheets.length === 0) {
+      throw new Error('No sheets found in Excel file');
+    }
+    if (!toolName) return parsedSheets[0];
+
+    const tableTokens = this.extractTableTokenCandidatesFromToolName(toolName);
+    if (tableTokens.length === 0) return parsedSheets[0];
+
+    const matched = parsedSheets.find((sheet: any) => {
+      const sheetToken = this.sanitizeFileName(sheet?.tableName || '');
+      return tableTokens.some((token) => token === sheetToken);
+    });
+    return matched || parsedSheets[0];
+  }
+
+  private extractTableTokenCandidatesFromToolName(toolName: string): string[] {
+    const lower = String(toolName || '').trim().toLowerCase();
+    if (!lower) return [];
+
+    const basicPrefixes = ['get_', 'create_', 'update_', 'delete_', 'count_'];
+    for (const prefix of basicPrefixes) {
+      if (lower.startsWith(prefix)) {
+        const token = lower.slice(prefix.length);
+        return token ? [token] : [];
+      }
+    }
+
+    const aggregatePrefixes = ['min_', 'max_', 'sum_', 'avg_'];
+    for (const prefix of aggregatePrefixes) {
+      if (!lower.startsWith(prefix)) continue;
+      const rest = lower.slice(prefix.length);
+      if (!rest) return [];
+      const segments = rest.split('_').filter(Boolean);
+      if (segments.length === 0) return [];
+
+      const tokens: string[] = [];
+      for (let i = segments.length; i >= 1; i--) {
+        const candidate = segments.slice(0, i).join('_');
+        if (candidate) tokens.push(candidate);
+      }
+      return tokens;
+    }
+
+    return [];
+  }
+
+  private sanitizeFileName(name: string): string {
+    return String(name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
   getActiveConnectionsCount(): number {

@@ -181,3 +181,7 @@ export function createRefreshToken(): string {
 export function hashRefreshToken(refreshToken: string, secret: string): string {
   return crypto.createHmac('sha256', secret).update(refreshToken).digest('hex');
 }
+
+export function hashMcpToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}

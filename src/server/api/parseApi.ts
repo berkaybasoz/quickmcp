@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { DataSourceParser } from '../../parsers';
 import {
   CsvDataSource,
@@ -24,8 +25,9 @@ export class ParseApi {
 
   private parseDataSource = async (req: express.Request, res: express.Response): Promise<express.Response | void> => {
       try {
-        const { type, connection, swaggerUrl, curlSetting } = req.body as any;
+        const { type, connection, swaggerUrl, curlSetting, filePath } = req.body as any;
         const file = req.file;
+        const normalizedFilePath = typeof filePath === 'string' ? filePath.trim() : '';
     
         let dataSource: DataSource | CurlDataSource | CsvDataSource | ExcelDataSource;
     
@@ -3390,13 +3392,28 @@ export class ParseApi {
                     parsedData
                 }
             });
-        } else if (file) {
-          if (type === DataSourceType.CSV) {
-            dataSource = createCsvDataSource(file.originalname, file.path);
-          } else if (type === DataSourceType.Excel) {
-            dataSource = createExcelDataSource(file.originalname, file.path);
+        } else if (type === DataSourceType.CSV || type === DataSourceType.Excel) {
+          if (file) {
+            if (type === DataSourceType.CSV) {
+              dataSource = createCsvDataSource(file.originalname, file.path);
+            } else {
+              dataSource = createExcelDataSource(file.originalname, file.path);
+            }
+          } else if (normalizedFilePath) {
+            const ext = path.extname(normalizedFilePath).toLowerCase();
+            if (type === DataSourceType.CSV && ext !== '.csv') {
+              throw new Error('Selected file must be a .csv file');
+            }
+            if (type === DataSourceType.Excel && !['.xlsx', '.xls'].includes(ext)) {
+              throw new Error('Selected file must be a .xlsx or .xls file');
+            }
+            if (type === DataSourceType.CSV) {
+              dataSource = createCsvDataSource(path.basename(normalizedFilePath), normalizedFilePath);
+            } else {
+              dataSource = createExcelDataSource(path.basename(normalizedFilePath), normalizedFilePath);
+            }
           } else {
-            throw new Error('Invalid file type');
+            throw new Error('Please upload a file or provide a file path');
           }
         } else {
           throw new Error('No file or connection provided');
@@ -3415,7 +3432,7 @@ export class ParseApi {
           }
         });
       } catch (error) {
-        logger.error('Parse error:', error);
+        logger.error(`Parse error: ${error instanceof Error ? error.message : String(error)}`);
         res.status(400).json({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'

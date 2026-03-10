@@ -97,11 +97,11 @@
     </header>
 
     <!-- Main Body -->
-    <div class="flex flex-1 overflow-hidden" id="app">
+    <div class="app-main-layout flex flex-1 overflow-x-hidden" id="app">
 
         <!-- Left Sidebar (Navigation) -->
         <div id="sidebar"
-            class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0">
+            class="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-[60] fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0">
             <!-- Sidebar Header -->
             <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
                 <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
@@ -116,9 +116,6 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
-                            <i class="fas fa-angles-left"></i>
-                        </button>
                         <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
                             <i class="fas fa-times"></i>
                         </button>
@@ -1340,6 +1337,17 @@
                                             <p class="text-sm text-slate-500 mt-1">Supports .csv and .xlsx files up to
                                                 10MB</p>
                                             <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+                                        </div>
+                                        <div class="mt-4">
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">File Path (Optional)</label>
+                                            <div class="flex gap-2">
+                                                <input type="text" id="csvExcelFilePath" placeholder="/Users/username/Documents/data.csv" class="input flex-1" autocomplete="off">
+                                                <button type="button" id="browseCsvExcelFileBtn" class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                                                    <i class="fas fa-file"></i>
+                                                    <span>Browse File</span>
+                                                </button>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-2">Upload yerine doğrudan dosya yolu da kullanabilirsiniz.</p>
                                         </div>
                                     </div>
 
@@ -4589,51 +4597,54 @@
                             <p class="text-slate-600">Verify your server functionality.</p>
                         </div>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <!-- Auto Test -->
-                            <div class="card">
-                                <div class="p-6 border-b border-slate-200/60 bg-slate-50/50">
-                                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
-                                        <i class="fas fa-robot text-blue-500"></i> Automated Testing
-                                    </h3>
+                        <div class="card mb-6 p-0 overflow-hidden">
+                            <div class="border-b border-slate-200 bg-slate-50/80">
+                                <div class="px-5 pt-4">
+                                    <nav class="flex items-end gap-1" aria-label="Test Suite tabs">
+                                        <button data-test-mode-tab="automated" class="px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-slate-200 border-b-white bg-white text-slate-900 -mb-px">
+                                            Automated Testing
+                                        </button>
+                                        <button data-test-mode-tab="custom" class="px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-600 hover:text-blue-700 hover:bg-white/70">
+                                            Custom Request
+                                        </button>
+                                        <button data-test-mode-tab="e2e" data-test-mode-locked="true" disabled aria-disabled="true" title="E2E Testing yakında aktif olacak" class="px-4 py-2.5 rounded-t-lg text-sm font-semibold border border-transparent text-slate-400 cursor-not-allowed">
+                                            <i class="fas fa-lock mr-2 text-xs"></i>E2E Testing
+                                        </button>
+                                    </nav>
                                 </div>
-                                <div class="p-6 space-y-4">
+                            </div>
+
+                            <div class="p-6" data-test-mode-panel="automated">
+                                <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_220px_auto] gap-3 items-end">
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select
-                                            Server</label>
-                                        <select id="testServerSelect" class="input"></select>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select Server</label>
+                                        <select id="autoTestServerSelect" class="input"></select>
                                     </div>
-                                    <div class="flex gap-3">
-                                        <button id="runQuickTestBtn"
-                                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
-                                            <i class="fas fa-bolt mr-2"></i> Quick Test
-                                        </button>
-                                        <button id="runFullTestBtn"
-                                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md">
-                                            <i class="fas fa-play mr-2"></i> Full Test
-                                        </button>
-                                        <!-- Hidden button for app.js compatibility if needed, or just rely on these two -->
-                                        <button id="runAutoTestsBtn" class="hidden"></button>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Type</label>
+                                        <select id="autoTestType" class="input">
+                                            <option value="quick">Quick Test</option>
+                                            <option value="full">Full Test</option>
+                                        </select>
                                     </div>
-                                    <div id="test-loading" class="hidden text-center text-sm text-blue-600 py-2">
-                                        Running...</div>
-                                    <div id="test-error" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded">
+                                    <div class="flex">
+                                        <button id="runAutoTestsBtn"
+                                            class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md whitespace-nowrap">
+                                            <i id="autoTestRunIcon" class="fas fa-play mr-2"></i><span id="autoTestRunText">Run</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Custom Test -->
-                            <div class="card">
-                                <div class="p-6 border-b border-slate-200/60 bg-slate-50/50">
-                                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
-                                        <i class="fas fa-code text-purple-500"></i> Custom Request
-                                    </h3>
-                                </div>
-                                <div class="p-6 space-y-4">
+                            <div class="p-6 hidden" data-test-mode-panel="custom">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select Server</label>
+                                        <select id="customTestServerSelect" class="input"></select>
+                                    </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label
-                                                class="block text-xs font-bold text-slate-700 uppercase mb-2">Type</label>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Type</label>
                                             <select id="testType" class="input">
                                                 <option value="tools/call">Tool Call</option>
                                                 <option value="resources/list">Resource List</option>
@@ -4641,16 +4652,14 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label
-                                                class="block text-xs font-bold text-slate-700 uppercase mb-2">Name</label>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Name</label>
                                             <div id="testNameContainer">
                                                 <input type="text" id="testName" placeholder="tool_name" class="input">
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Params
-                                            (JSON)</label>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Params (JSON)</label>
                                         <textarea id="testParams" rows="3" class="input font-mono text-xs"
                                             placeholder="{}"></textarea>
                                     </div>
@@ -4660,7 +4669,35 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <div class="p-6 hidden" data-test-mode-panel="e2e">
+                                <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_220px_auto] gap-3 items-end">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select Server</label>
+                                        <select id="transportTestServerSelect" class="input"></select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Transport</label>
+                                        <select id="transportType" class="input">
+                                            <option value="all">All</option>
+                                            <option value="stdio">STDIO</option>
+                                            <option value="sse">SSE</option>
+                                            <option value="streamable-http">Streamable HTTP</option>
+                                            <option value="websocket">WebSocket</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex">
+                                        <button id="runTransportTestBtn"
+                                            class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-md whitespace-nowrap">
+                                            <i class="fas fa-network-wired mr-2"></i> Run Transport Test
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <div id="test-loading" class="hidden text-center text-sm text-blue-600 py-2">Running...</div>
+                        <div id="test-error" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded"></div>
 
                         <!-- Results -->
                         <div class="card mt-8">
@@ -4726,8 +4763,8 @@
                         <i class="fas fa-folder-open text-xl"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-900">Select Directory</h3>
-                        <p class="text-xs text-slate-500">Choose a folder to use as base path</p>
+                        <h3 id="dirPickerTitle" class="font-bold text-slate-900">Select Directory</h3>
+                        <p id="dirPickerSubtitle" class="text-xs text-slate-500">Choose a folder to use as base path</p>
                     </div>
                 </div>
                 <button type="button" id="closeDirectoryPicker" class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700">
@@ -4769,7 +4806,7 @@
                         Cancel
                     </button>
                     <button type="button" id="dirPickerSelect" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white">
-                        Select This Folder
+                        <span id="dirPickerSelectLabel">Select This Folder</span>
                     </button>
                 </div>
             </div>

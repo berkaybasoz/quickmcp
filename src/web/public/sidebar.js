@@ -25,21 +25,22 @@
   }
 
   function navItem(href, icon, title, subtitle, active, iconClass = '') {
-    const base = "nav-item card card-hover group relative flex items-center gap-3 p-4 hover:border-blue-300 hover:shadow-blue-500/10 transition-all";
+    const base = "nav-item group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors";
     const activeCls = active
-      ? " border-blue-400 shadow-md shadow-blue-500/10 bg-blue-50/30"
+      ? " active bg-slate-100 text-slate-900"
       : "";
-    const iconBase = iconClass || "bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600";
+    const iconBase = iconClass || "bg-transparent text-slate-500";
+    const currentAttr = active ? ' aria-current="page"' : '';
     return `
-      <a href="${href}" class="${base}${activeCls}">
+      <a href="${href}" class="${base}${activeCls}"${currentAttr}>
         <div class="relative">
-          <div class="p-2.5 rounded-lg shadow-sm transition-colors ${iconBase}">
+          <div class="w-8 h-8 flex items-center justify-center rounded-md transition-colors ${iconBase}">
             <i class="fas ${icon}"></i>
           </div>
         </div>
         <div class="flex-1 min-w-0">
-          <span class="text-slate-700 font-semibold text-sm block group-hover:text-blue-700 transition-colors">${title}</span>
-          <span class="text-slate-500 text-xs mt-0.5 block font-medium">${subtitle}</span>
+          <span class="text-slate-700 font-medium text-sm block">${title}</span>
+          <span class="text-slate-500 text-xs mt-0.5 block">${subtitle}</span>
         </div>
       </a>
     `;
@@ -60,6 +61,57 @@
     iconWrap.innerHTML = getSidebarPanelIconSvg();
   }
 
+  function normalizeSidebarWidth(value, fallback = '18rem') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    if (raw.endsWith('px') || raw.endsWith('rem')) return raw;
+    const num = Number(raw);
+    if (Number.isFinite(num) && num > 0) return `${num}px`;
+    return fallback;
+  }
+
+  function syncDesktopLayoutOffset(sidebar) {
+    if (!sidebar) return;
+    const collapsed = sidebar.classList.contains('collapsed');
+    const measuredWidth = Math.round(sidebar.getBoundingClientRect().width || 0);
+    const expanded = measuredWidth > 0 && !collapsed
+      ? `${measuredWidth}px`
+      : normalizeSidebarWidth(
+          sidebar.style.width
+          || (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })(),
+          '18rem'
+        );
+    const offset = collapsed ? '3rem' : expanded;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    if (document.body) document.body.setAttribute('data-has-sidebar', '1');
+
+    // Force layout sync to prevent header/sidebar overlap during collapse/expand transitions.
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const header = document.querySelector('body > header');
+    const layouts = document.querySelectorAll('.app-main-layout');
+    if (isDesktop) {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = offset;
+        header.style.width = `calc(100% - ${offset})`;
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = `calc(${offset} + var(--sidebar-gutter, 0px))`;
+        }
+      });
+    } else {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = '';
+        header.style.width = '';
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = '';
+        }
+      });
+    }
+  }
+
   function applySidebarCollapsedState() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -72,10 +124,12 @@
       if (collapseBtn) collapseBtn.title = 'Expand sidebar';
     } else {
       sidebar.classList.remove('collapsed');
-      sidebar.style.width = '';
+      const savedWidth = (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })();
+      sidebar.style.width = normalizeSidebarWidth(savedWidth, '');
       setSidebarCollapseIcon();
       if (collapseBtn) collapseBtn.title = 'Collapse sidebar';
     }
+    syncDesktopLayoutOffset(sidebar);
   }
 
   function initSidebarResizer() {
@@ -94,6 +148,7 @@
       const delta = event.clientX - startX;
       const next = Math.max(180, Math.min(420, startWidth + delta));
       sidebar.style.width = `${next}px`;
+      syncDesktopLayoutOffset(sidebar);
     };
 
     const onUp = () => {
@@ -120,11 +175,13 @@
     if (savedWidth && !sidebar.classList.contains('collapsed')) {
       sidebar.style.width = savedWidth;
     }
+    syncDesktopLayoutOffset(sidebar);
   }
 
   function wireSidebarInteractions() {
     const sidebar = document.getElementById('sidebar');
     const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const headerToggleBtn = document.getElementById('sidebarHeaderToggle');
     const headerRow = document.getElementById('sidebarHeaderRow');
     if (!sidebar) return;
 
@@ -144,16 +201,31 @@
       headerRow.addEventListener('click', (event) => {
         if (!sidebar.classList.contains('collapsed')) return;
         const clickedToggle = Array.isArray(event.composedPath?.())
-          ? event.composedPath().some((el) => el && el.id === 'sidebarCollapseBtn')
-          : !!(event.target?.closest && event.target.closest('#sidebarCollapseBtn'));
+          ? event.composedPath().some((el) => el && (el.id === 'sidebarCollapseBtn' || el.id === 'sidebarHeaderToggle'))
+          : !!(event.target?.closest && (event.target.closest('#sidebarCollapseBtn') || event.target.closest('#sidebarHeaderToggle')));
         if (clickedToggle) return;
         try { localStorage.setItem('sidebarCollapsed', 'false'); } catch {}
         applySidebarCollapsedState();
       });
     }
 
+    if (headerToggleBtn && headerToggleBtn.dataset.bound !== 'true') {
+      headerToggleBtn.dataset.bound = 'true';
+      headerToggleBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const current = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+        try { localStorage.setItem('sidebarCollapsed', (!current).toString()); } catch {}
+        applySidebarCollapsedState();
+      });
+    }
+
     applySidebarCollapsedState();
     initSidebarResizer();
+    if (!window.__quickmcpSidebarResizeBound) {
+      window.__quickmcpSidebarResizeBound = true;
+      window.addEventListener('resize', () => syncDesktopLayoutOffset(document.getElementById('sidebar')));
+    }
   }
 
   async function renderSidebar() {
@@ -163,7 +235,7 @@
 
     // Ensure base container classes exist (for pages that only mount an empty div)
     if (!root.className) {
-      root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out lg:h-auto h-full pt-16 lg:pt-0';
+      root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0';
     }
 
     // Respect saved collapsed state before any async work
@@ -180,21 +252,19 @@
     const showUsers = showAuthManagement && authCfg?.usersEnabled !== false && deployMode !== 'SAAS';
 
     const html = `
-      <div class="p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50">
-        <div id="sidebarHeaderRow" class="flex items-center justify-between mb-2">
+      <div class="p-4 bg-white">
+        <div id="sidebarHeaderRow" class="flex items-center justify-start gap-2 mb-2">
           <div id="sidebarHeaderMain" class="flex items-center gap-3">
-            <div class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/25">
-              <i class="fas fa-compass text-white"></i>
-            </div>
-            <div>
-              <h2 class="text-slate-900 font-bold tracking-tight text-lg">Navigation</h2>
-              <p class="text-slate-500 text-xs leading-none font-medium">Application Pages</p>
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <i class="fas fa-rocket text-sm"></i>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <button id="sidebarCollapseBtn" class="hidden lg:inline-flex text-slate-400 hover:text-slate-600" title="Collapse sidebar">
+          <div id="sidebarHeaderToggleWrap" class="flex items-center ml-auto">
+            <button id="sidebarHeaderToggle" type="button" class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-600 hover:shadow-sm transition-all" title="Toggle sidebar">
               <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
             </button>
+          </div>
+          <div id="sidebarHeaderActions" class="flex items-center gap-2">
             <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
               <i class="fas fa-times"></i>
             </button>
@@ -202,7 +272,7 @@
         </div>
       </div>
 
-      <div id="sidebarNavList" class="p-4 overflow-y-auto flex-1 scrollbar-modern space-y-3">
+      <div id="sidebarNavList" class="p-3 overflow-y-auto flex-1 scrollbar-modern space-y-1.5">
         ${navItem('/', 'fa-magic', 'Generate Server', 'Create new MCP servers', isActive('/'))}
         ${navItem('/manage-servers', 'fa-server', 'Manage Servers', 'Edit & Control', isActive('/manage-servers'))}
         ${navItem('/test-servers', 'fa-vial', 'Test Servers', 'Verify functionality', isActive('/test-servers'))}
@@ -211,12 +281,26 @@
         ${navItem('/how-to-use', 'fa-book', 'How to Use', 'Documentation & Guide', isActive('/how-to-use'))}
       </div>
 
+      <div id="sidebarUserSection" class="p-3 border-t border-slate-200/60 bg-white">
+        <button id="sidebarUserButton" data-user-menu-anchor="true" type="button" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md flex-shrink-0" data-user-avatar>G</div>
+          <div id="sidebarUserMeta" class="min-w-0">
+            <div id="sidebarUserName" class="text-sm font-semibold text-slate-800 truncate">Guest</div>
+            <div id="sidebarUserEmail" class="text-xs text-slate-500 truncate">Not signed in</div>
+          </div>
+        </button>
+      </div>
+
       <div id="sidebarResizer" class="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent"></div>
     `;
 
     root.innerHTML = html;
     setSidebarCollapseIcon();
     wireSidebarInteractions();
+    syncDesktopLayoutOffset(root);
+    if (typeof window.updateUserAvatar === 'function') {
+      window.updateUserAvatar();
+    }
     root.setAttribute('data-ready', '1');
   }
 
