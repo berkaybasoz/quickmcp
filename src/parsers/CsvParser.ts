@@ -4,7 +4,7 @@ import * as path from 'path';
 import { ParsedData } from '../types';
 
 export class CsvParser {
-  async parse(filePath: string): Promise<ParsedData> {
+  async parse(filePath: string, displayName?: string): Promise<ParsedData> {
     return new Promise((resolve, reject) => {
       const rows: any[] = [];
       let headers: string[] = [];
@@ -20,7 +20,8 @@ export class CsvParser {
         .on('end', () => {
           const dataTypes = this.inferDataTypes(rows, headers);
 
-          const fileName = path.basename(filePath, path.extname(filePath));
+          const sourceName = String(displayName || filePath);
+          const fileName = path.basename(sourceName, path.extname(sourceName));
           resolve({
             tableName: fileName,
             headers,

@@ -586,7 +586,7 @@ function setupFileUpload() {
         if (files.length > 0) {
             fileInput.files = files;
             updateFileUploadDisplay(files[0].name);
-            if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = files[0].name;
             updateWizardNavigation();
         }
     });
@@ -594,7 +594,7 @@ function setupFileUpload() {
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             updateFileUploadDisplay(e.target.files[0].name);
-            if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
+            if (csvExcelFilePathInput) csvExcelFilePathInput.value = e.target.files[0].name;
             updateWizardNavigation();
         }
     });
@@ -607,19 +607,43 @@ function setupFileUpload() {
 
 function updateFileUploadDisplay(fileName) {
     const fileUpload = document.getElementById('fileUpload');
-    if (fileUpload) {
-        fileUpload.innerHTML = `
-            <div class="space-y-4">
-                <div class="w-16 h-16 mx-auto bg-green-50 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-check text-2xl text-green-500"></i>
-                </div>
-                <div>
-                    <p class="text-lg font-medium text-gray-900">File Selected</p>
-                    <p class="text-sm text-gray-500">${fileName}</p>
-                </div>
-                <button type="button" onclick="resetFileUpload()" class="text-xs text-blue-500 hover:text-blue-600">Choose different file</button>
-            </div>
-        `;
+    if (!fileUpload) return;
+
+    fileUpload.dataset.selectedFile = fileName;
+    fileUpload.classList.remove('border-slate-300');
+    fileUpload.classList.add('border-emerald-400', 'bg-emerald-50/30');
+
+    const icon = fileUpload.querySelector('i');
+    if (icon) {
+        icon.classList.remove('fa-cloud-upload-alt', 'text-slate-400');
+        icon.classList.add('fa-check', 'text-emerald-600');
+    }
+
+    const iconWrap = icon?.closest('div');
+    if (iconWrap) {
+        iconWrap.classList.remove('bg-slate-100', 'text-slate-400');
+        iconWrap.classList.add('bg-emerald-100');
+    }
+
+    const titleEl = fileUpload.querySelector('h4');
+    if (titleEl) titleEl.textContent = 'File Selected';
+
+    const subtitleEl = fileUpload.querySelector('p');
+    if (subtitleEl) subtitleEl.textContent = fileName;
+
+    let resetBtn = fileUpload.querySelector('[data-role="file-upload-reset"]');
+    if (!resetBtn) {
+        resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.setAttribute('data-role', 'file-upload-reset');
+        resetBtn.className = 'mt-3 text-xs text-blue-500 hover:text-blue-600';
+        resetBtn.textContent = 'Choose different file';
+        resetBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            resetFileUpload();
+        });
+        fileUpload.appendChild(resetBtn);
     }
 }
 
@@ -632,18 +656,30 @@ function resetFileUpload() {
     if (csvExcelFilePathInput) csvExcelFilePathInput.value = '';
 
     if (fileUpload) {
-        fileUpload.innerHTML = `
-            <div class="space-y-4">
-                <div class="w-16 h-16 mx-auto bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <i class="fas fa-cloud-upload-alt text-2xl text-blue-500"></i>
-                </div>
-                <div>
-                    <p class="text-lg font-medium text-gray-900">Drop your file here</p>
-                    <p class="text-sm text-gray-500">or click to browse files</p>
-                </div>
-                <p class="text-xs text-gray-400">Supports CSV, Excel files up to 10MB</p>
-            </div>
-        `;
+        delete fileUpload.dataset.selectedFile;
+        fileUpload.classList.remove('border-emerald-400', 'bg-emerald-50/30');
+        fileUpload.classList.add('border-slate-300');
+
+        const icon = fileUpload.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-check', 'text-emerald-600');
+            icon.classList.add('fa-cloud-upload-alt', 'text-slate-400');
+        }
+
+        const iconWrap = icon?.closest('div');
+        if (iconWrap) {
+            iconWrap.classList.remove('bg-emerald-100');
+            iconWrap.classList.add('bg-slate-100', 'text-slate-400');
+        }
+
+        const titleEl = fileUpload.querySelector('h4');
+        if (titleEl) titleEl.textContent = 'Click or Drag file here';
+
+        const subtitleEl = fileUpload.querySelector('p');
+        if (subtitleEl) subtitleEl.textContent = 'Supports .csv and .xlsx files up to 10MB';
+
+        const resetBtn = fileUpload.querySelector('[data-role="file-upload-reset"]');
+        resetBtn?.remove();
     }
 
     updateWizardNavigation();

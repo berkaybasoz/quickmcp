@@ -441,6 +441,22 @@ export function normalizeStringArray(value: unknown): string[] {
   return [];
 }
 
+export function resolveLiteAdminUsernames(): Set<string> {
+  const raw = String(process.env.AUTH_ADMIN_USERS || '').trim();
+  if (!raw) return new Set<string>();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set<string>();
+    return new Set(
+      parsed
+        .map((item: any) => String(item?.username || '').trim().toLowerCase())
+        .filter((username: string) => username.length > 0)
+    );
+  } catch {
+    return new Set<string>();
+  }
+}
+
 export function normalizeRuleMap(value: unknown): Record<string, boolean | null> {
   let obj: Record<string, unknown> = {};
   if (value && typeof value === 'object') {

@@ -3,12 +3,15 @@ import {
   isMcpAuthorizedGlobally,
   parseServerOwner,
   McpIdentity,
-  McpTokenAuthRecord
+  McpTokenAuthRecord,
+  resolveLiteAdminUsernames
 } from '../auth/auth-utils';
-import { verifyMcpToken, verifyMcpTokenRS256 } from '../auth/token-utils';
+import { hashMcpToken, verifyMcpToken, verifyMcpTokenRS256 } from '../auth/token-utils';
+import { Constant } from '../constant/constant';
 import { AuthMode } from '../config/auth-config';
 import { IDataStore, McpTokenRecord } from '../database/datastore';
 import { DynamicMCPExecutor } from '../server/dynamic-mcp-executor';
+import { DeploymentUtil } from '../utils/deployment-util';
 import { logger } from '../utils/logger';
 
 export type JsonRpcMessage = {
@@ -35,6 +38,7 @@ type McpCoreServiceDeps = {
   authStore: IDataStore;
   authMode: AuthMode;
   deployMode?: string;
+  tokenMode?: string;
   tokenSecret: string;
   defaultToken?: string;
   rsaPublicKey?: crypto.KeyObject;
@@ -46,23 +50,21 @@ export class McpCoreService {
   private readonly executor: DynamicMCPExecutor;
   private readonly authStore: IDataStore;
   private readonly authMode: AuthMode;
-  private readonly deployMode: string;
+  private readonly deploymentUtil: DeploymentUtil;
   private readonly tokenSecret: string;
   private readonly defaultToken: string;
   private readonly rsaPublicKey: crypto.KeyObject | undefined;
+  private readonly liteAdminUsernames: Set<string>;
 
   constructor(deps: McpCoreServiceDeps) {
     this.executor = deps.executor;
     this.authStore = deps.authStore;
     this.authMode = deps.authMode;
-    this.deployMode = String(deps.deployMode || '').trim().toUpperCase();
+    this.deploymentUtil = DeploymentUtil.fromRuntime(deps.deployMode, deps.tokenMode);
     this.tokenSecret = deps.tokenSecret;
     this.defaultToken = (deps.defaultToken || '').trim();
     this.rsaPublicKey = deps.rsaPublicKey;
-  }
-
-  private isSaasMode(): boolean {
-    return this.deployMode === 'SAAS';
+    this.liteAdminUsernames = resolveLiteAdminUsernames();
   }
 
   parseIncomingMessage(body: any): JsonRpcMessage {
@@ -73,7 +75,7 @@ export class McpCoreService {
   }
 
   async resolveAuthContextFromSources(sources: AuthTokenSources): Promise<McpAuthContext> {
-    if (this.authMode === 'NONE') {
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) {
       return { identity: null, tokenRecord: null };
     }
 
@@ -100,7 +102,7 @@ export class McpCoreService {
   }
 
   private describeIdentity(authContext: McpAuthContext): string {
-    if (this.authMode === 'NONE') return 'anonymous (auth=NONE)';
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return 'anonymous (auth=NONE)';
     if (authContext.identity) return `user=${authContext.identity.username} workspace=${authContext.identity.workspace} role=${authContext.identity.role}`;
     return 'unauthenticated (no valid token)';
   }
@@ -158,7 +160,7 @@ export class McpCoreService {
       case 'tools/call': {
         const toolName = String(messageData.params?.name || '');
         logger.info(`[MCP] tools/call tool=${toolName} ${who}`);
-        if (this.isSaasMode() && toolName === AUTH_RETRY_PROBE_TOOL_NAME) {
+        if (this.deploymentUtil.isSaasMode() && toolName === AUTH_RETRY_PROBE_TOOL_NAME) {
           if (!authContext.identity) {
             logger.info(`[MCP] auth-retry-probe invoked without token; forcing insufficient_scope challenge`);
             throw new Error('insufficient_scope: auth retry probe');
@@ -225,7 +227,7 @@ export class McpCoreService {
   }
 
   private async resolveAuthContextFromToken(rawToken: string): Promise<McpAuthContext> {
-    if (this.authMode === 'NONE') {
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) {
       return { identity: null, tokenRecord: null };
     }
 
@@ -234,24 +236,44 @@ export class McpCoreService {
       return { identity: null, tokenRecord: null };
     }
 
-    const verified = (this.rsaPublicKey ? verifyMcpTokenRS256(token, this.rsaPublicKey) : null)
-      ?? verifyMcpToken(token, this.tokenSecret);
-    if (!verified) {
-      throw new Error('Invalid MCP token');
+    if (this.deploymentUtil.tokenModeIsLocal()) {
+      const tokenHash = hashMcpToken(token);
+      const row = await this.authStore.getMcpTokenByHash(tokenHash);
+      const tokenRecord = this.mapToAuthRecord(row);
+      if (!tokenRecord) {
+        throw new Error('Invalid MCP token');
+      }
+
+      const identity: McpIdentity = {
+        tokenId: tokenRecord.id,
+        username: tokenRecord.subjectUsername,
+        workspace: tokenRecord.workspaceId,
+        role: this.liteAdminUsernames.has(String(tokenRecord.subjectUsername || '').trim().toLowerCase())
+          ? Constant.Roles.ADMIN
+          : Constant.Roles.USER
+      };
+
+      return { identity, tokenRecord };
+    } else {
+      const verified = (this.rsaPublicKey ? verifyMcpTokenRS256(token, this.rsaPublicKey) : null)
+        ?? verifyMcpToken(token, this.tokenSecret);
+      if (!verified) {
+        throw new Error('Invalid MCP token');
+      }
+
+      const identity: McpIdentity = {
+        tokenId: verified.jti ? String(verified.jti) : '',
+        username: String(verified.sub),
+        workspace: String(verified.ws || verified.workspace || verified.sub),
+        role: String(verified.role || Constant.Roles.USER)
+      };
+
+      const tokenHash = hashMcpToken(token);
+      const row = await this.authStore.getMcpTokenByHash(tokenHash);
+      const tokenRecord = this.mapToAuthRecord(row);
+
+      return { identity, tokenRecord };
     }
-
-    const identity: McpIdentity = {
-      tokenId: verified.jti ? String(verified.jti) : '',
-      username: String(verified.sub),
-      workspace: String(verified.ws || verified.workspace || verified.sub),
-      role: String(verified.role || 'user')
-    };
-
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const row = await this.authStore.getMcpTokenByHash(tokenHash);
-    const tokenRecord = this.mapToAuthRecord(row);
-
-    return { identity, tokenRecord };
   }
 
   private mapToAuthRecord(row: McpTokenRecord | null): McpTokenAuthRecord | null {
@@ -288,11 +310,11 @@ export class McpCoreService {
   }
 
   private async getAuthorizedTools(tools: any[], authContext: McpAuthContext): Promise<any[]> {
-    if (this.authMode === 'NONE') return tools;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return tools;
     if (!authContext.identity) {
       // In multi-tenant SaaS mode, unauthenticated discovery must never expose
       // other tenants' tools. ChatGPT should attach bearer before scoped listing.
-      if (this.isSaasMode()) return [];
+      if (this.deploymentUtil.isSaasMode()) return [];
       return tools;
     }
     const out: any[] = [];
@@ -337,7 +359,7 @@ export class McpCoreService {
   }
 
   private withAuthRetryProbeTool(tools: any[]): any[] {
-    if (!this.isSaasMode()) return tools;
+    if (!this.deploymentUtil.isSaasMode()) return tools;
     if (tools.some((tool) => String(tool?.name || '') === AUTH_RETRY_PROBE_TOOL_NAME)) return tools;
     const schemes = [{ type: 'oauth2', scopes: ['mcp'] }];
     const probeTool = {
@@ -360,9 +382,9 @@ export class McpCoreService {
   }
 
   private async getAuthorizedResources(resources: any[], authContext: McpAuthContext): Promise<any[]> {
-    if (this.authMode === 'NONE') return resources;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return resources;
     if (!authContext.identity) {
-      if (this.isSaasMode()) return [];
+      if (this.deploymentUtil.isSaasMode()) return [];
       return resources;
     }
     const out: any[] = [];
@@ -380,7 +402,7 @@ export class McpCoreService {
   }
 
   private async ensureToolAllowed(qualifiedToolName: string, authContext: McpAuthContext): Promise<void> {
-    if (this.authMode === 'NONE') return;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return;
     const [serverId, toolName] = this.parseQualifiedName(qualifiedToolName);
     const allowed = await this.isToolAuthorizedAsync(authContext, serverId, toolName);
     if (!allowed) {
@@ -389,7 +411,7 @@ export class McpCoreService {
   }
 
   private async ensureResourceAllowed(qualifiedResourceName: string, authContext: McpAuthContext): Promise<void> {
-    if (this.authMode === 'NONE') return;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return;
     const [serverId, resourceName] = this.parseQualifiedName(qualifiedResourceName);
     const allowed = await this.isResourceAuthorizedAsync(authContext, serverId, resourceName);
     if (!allowed) {
@@ -398,9 +420,9 @@ export class McpCoreService {
   }
 
   private async getServerRequireMcpToken(serverId: string): Promise<boolean> {
-    if (this.authMode === 'NONE') return false;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return false;
     // In SAAS mode, MCP calls must always be token-bound to avoid tenant leakage.
-    if (this.isSaasMode()) return true;
+    if (this.deploymentUtil.isSaasMode()) return true;
     let requireToken = true;
     const owner = parseServerOwner(serverId);
     try {
@@ -426,18 +448,18 @@ export class McpCoreService {
   }
 
   private isServerOwnedByIdentity(authContext: McpAuthContext, serverId: string): boolean {
-    if (this.authMode === 'NONE') return true;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return true;
     if (!authContext.identity || !authContext.tokenRecord) return false;
     const owner = parseServerOwner(serverId);
     // SAAS tenant isolation must be workspace-based, not username-based.
-    if (this.isSaasMode()) {
+    if (this.deploymentUtil.isSaasMode()) {
       return owner === authContext.identity.workspace;
     }
     return owner === authContext.identity.workspace || owner === authContext.identity.username;
   }
 
   private async isServerAuthorizedAsync(authContext: McpAuthContext, serverId: string): Promise<boolean> {
-    if (this.authMode === 'NONE') return true;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return true;
     const requireToken = await this.getServerRequireMcpToken(serverId);
     if (!requireToken) return true;
 
@@ -458,7 +480,7 @@ export class McpCoreService {
   }
 
   private async isToolAuthorizedAsync(authContext: McpAuthContext, serverId: string, toolName: string): Promise<boolean> {
-    if (this.authMode === 'NONE') return true;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return true;
 
     let requireToken = await this.getServerRequireMcpToken(serverId);
     try {
@@ -487,7 +509,7 @@ export class McpCoreService {
   }
 
   private async getToolRequireMcpToken(serverId: string, toolName: string): Promise<boolean> {
-    if (this.authMode === 'NONE') return false;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return false;
     let requireToken = await this.getServerRequireMcpToken(serverId);
     try {
       const toolCfg = await this.authStore.getMcpTokenPolicy('tool', `${serverId}__${toolName}`);
@@ -497,7 +519,7 @@ export class McpCoreService {
   }
 
   private async isResourceAuthorizedAsync(authContext: McpAuthContext, serverId: string, resourceName: string): Promise<boolean> {
-    if (this.authMode === 'NONE') return true;
+    if (this.deploymentUtil.authModeIsNone(this.authMode)) return true;
     if (!await this.isServerAuthorizedAsync(authContext, serverId)) return false;
 
     const tokenRecord = authContext.tokenRecord;

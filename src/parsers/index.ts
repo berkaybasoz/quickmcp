@@ -23,7 +23,7 @@ export class DataSourceParser {
     switch (dataSource.type) {
       case DataSourceType.CSV: {
         const csvSource = dataSource as CsvDataSource;
-        const csvData = await this.csvParser.parse(csvSource.filePath);
+        const csvData = await this.csvParser.parse(csvSource.filePath, csvSource.name);
         return [csvData];
       }
 
