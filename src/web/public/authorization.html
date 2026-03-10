@@ -212,7 +212,7 @@
 
     function applyAuthorizationMode(configData) {
       const deployMode = String(configData?.deployMode || '').trim().toUpperCase();
-      isSaasMode = deployMode === 'SAAS';
+      isSaasMode = configData?.isSaasMode === true;
       const tabPolicy = byId('tabPolicy');
       const policyPanel = byId('policyTabPanel');
       if (isSaasMode) {
