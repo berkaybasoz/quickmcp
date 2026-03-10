@@ -3432,7 +3432,7 @@ export class ParseApi {
           }
         });
       } catch (error) {
-        logger.error('Parse error:', error);
+        logger.error(`Parse error: ${error instanceof Error ? error.message : String(error)}`);
         res.status(400).json({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
