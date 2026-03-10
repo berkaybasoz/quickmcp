@@ -5,6 +5,10 @@ let currentDataSource = null;
 let currentWizardStep = 1;
 let allServers = [];
 let serverSearchTimer = null;
+const ON_PREM_ONLY_SOURCE_TYPES = new Set();
+let isSaasDeployMode = false;
+let authConfigCache = null;
+let authConfigPromise = null;
 
 function getPanelToggleIconSvg() {
     return `
@@ -147,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     try { setupTemplateFilters(); } catch {}
     setupFileUpload();
+    applySaasDataSourceRestrictions();
     setupRouting();
     handleInitialRoute();
     if (!window.renderSidebar) {
@@ -784,6 +789,90 @@ function setupDataSourceCardSelectionUx() {
     });
 
     syncDataSourceCardSelectionState();
+}
+
+function isOnPremOnlySource(type) {
+    return ON_PREM_ONLY_SOURCE_TYPES.has(String(type || '').trim().toLowerCase());
+}
+
+async function getAuthConfigOnce() {
+    if (authConfigCache) return authConfigCache;
+    if (authConfigPromise) return authConfigPromise;
+
+    authConfigPromise = (async () => {
+        try {
+            const response = await fetch('/api/auth/config');
+            const payload = await response.json();
+            authConfigCache = payload?.data || {};
+        } catch {
+            authConfigCache = {};
+        } finally {
+            authConfigPromise = null;
+        }
+        return authConfigCache;
+    })();
+
+    return authConfigPromise;
+}
+
+function applyOnPremSourceTypeConfig(configData, isSaasMode) {
+    const restrictedTypes = Array.isArray(configData?.dataSourceCapabilities)
+        ? configData.dataSourceCapabilities
+            .filter((item) => item?.onlyOnPrem === true)
+            .map((item) => String(item?.type || '').trim().toLowerCase())
+            .filter((type) => type.length > 0)
+        : [];
+
+    ON_PREM_ONLY_SOURCE_TYPES.clear();
+    if (restrictedTypes.length > 0) {
+        for (const type of restrictedTypes) ON_PREM_ONLY_SOURCE_TYPES.add(type);
+    }
+}
+
+async function applySaasDataSourceRestrictions() {
+    const configData = await getAuthConfigOnce();
+    const deployMode = String(configData?.deployMode || '').trim().toUpperCase();
+    isSaasDeployMode = configData?.isSaasMode === true || deployMode === 'SAAS';
+    applyOnPremSourceTypeConfig(configData, isSaasDeployMode);
+
+    const radios = document.querySelectorAll('input[name="dataSourceType"]');
+    for (const radio of radios) {
+        if (!(radio instanceof HTMLInputElement)) continue;
+        const type = String(radio.value || '').trim().toLowerCase();
+        const isRestricted = isSaasDeployMode && isOnPremOnlySource(type);
+        const card = radio.closest('[data-role="data-source-card"]');
+        const surface = card?.querySelector('div');
+        if (!surface) continue;
+
+        let badge = surface.querySelector('[data-role="onprem-badge"]');
+
+        if (isRestricted) {
+            radio.disabled = true;
+            if (radio.checked) radio.checked = false;
+            card?.classList.remove('cursor-pointer');
+            card?.classList.add('cursor-not-allowed');
+            surface.classList.add('opacity-70', 'grayscale-[0.2]', 'overflow-hidden');
+
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.setAttribute('data-role', 'onprem-badge');
+                badge.className = 'absolute top-3 -right-6 z-20 w-24 py-[2px] text-center text-[8px] font-semibold uppercase tracking-[0.12em] bg-slate-900/90 text-white shadow-sm pointer-events-none';
+                badge.style.transform = 'rotate(45deg)';
+                badge.innerHTML = 'ON-PREM';
+                surface.appendChild(badge);
+            }
+        } else {
+            radio.disabled = false;
+            card?.classList.remove('cursor-not-allowed');
+            card?.classList.add('cursor-pointer');
+            surface.classList.remove('opacity-70', 'grayscale-[0.2]', 'overflow-hidden');
+            badge?.remove();
+        }
+    }
+
+    syncDataSourceCardSelectionState();
+    toggleDataSourceFields();
+    updateWizardNavigation();
 }
 
 function syncDataSourceCardSelectionState() {
@@ -1820,16 +1909,11 @@ function nextMcpRequestId() {
 async function resolveMcpTransportBaseUrl() {
     if (mcpTransportBaseUrlCache) return mcpTransportBaseUrlCache;
 
-    try {
-        const response = await fetch('/api/auth/config');
-        const result = await response.json();
-        const mcpPort = result?.data?.mcpPort || result?.data?.mcpDefaultPort;
-        if (mcpPort) {
-            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.hostname}:${mcpPort}`;
-        } else {
-            mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
-        }
-    } catch {
+    const configData = await getAuthConfigOnce();
+    const mcpPort = configData?.mcpPort || configData?.mcpDefaultPort;
+    if (mcpPort) {
+        mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.hostname}:${mcpPort}`;
+    } else {
         mcpTransportBaseUrlCache = `${window.location.protocol}//${window.location.host}`;
     }
 
@@ -7211,13 +7295,16 @@ function updateWizardNavigation() {
 
     const hasDataSource = document.querySelector('input[name="dataSourceType"]:checked');
     const selectedType = hasDataSource?.value;
+    const isRestrictedSourceInSaas = isSaasDeployMode && isOnPremOnlySource(selectedType);
 
     if (nextToStep2) {
-        nextToStep2.disabled = !hasDataSource;
+        nextToStep2.disabled = !hasDataSource || isRestrictedSourceInSaas;
     }
 
     let canProceed = false;
-    if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
+    if (isRestrictedSourceInSaas) {
+        canProceed = false;
+    } else if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         const fileInput = document.getElementById('fileInput');
         const csvExcelFilePathInput = document.getElementById('csvExcelFilePath');
         canProceed = !!fileInput?.files?.length || !!csvExcelFilePathInput?.value?.trim();

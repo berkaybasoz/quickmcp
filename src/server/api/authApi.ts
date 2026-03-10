@@ -910,10 +910,13 @@ export class AuthApi {
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
+    const isSaasMode = this.isSaasMode();
     res.json({
       success: true,
       data: {
         authMode: this.deps.authMode,
+        deployMode: String(this.deps.deployMode || '').trim().toUpperCase(),
+        isSaasMode,
         mcpTokenRequired: this.deps.authMode !== 'NONE',
         username: ctx.username,
         workspaceId: ctx.workspaceId
