@@ -11,7 +11,7 @@ export class DeploymentUtil {
 
   static fromRuntime(rawDeployMode?: string, rawTokenMode?: string): DeploymentUtil {
     return new DeploymentUtil(
-      String(rawDeployMode || process.env.DEPLOY_MODE || ''),
+      String(rawDeployMode || process.env.DEPLOY_MODE || 'ONPREM'),
       rawTokenMode || process.env.QUICKMCP_TOKEN_MODE
     );
   }
@@ -23,7 +23,11 @@ export class DeploymentUtil {
       .replace(/[^A-Z]/g, '');
     if (normalized === 'SAAS') return 'SAAS';
     if (normalized === 'ONPREM') return 'ONPREM';
-    return normalized;
+    return 'ONPREM';
+  }
+
+  getDeployMode(): string {
+    return this.deployMode;
   }
 
   resolveTokenMode(rawMode: string | undefined): TokenMode {

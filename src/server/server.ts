@@ -217,7 +217,7 @@ const authApi = new AuthApi({
 const logsApi = new LogsApi(ensureDataStore());
 const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
-const configApi = new ConfigApi(authMode, authProperty.providerUrl, deployMode, MCP_PORT);
+const configApi = new ConfigApi(authMode, authProperty.providerUrl, MCP_PORT);
 
 const mcpCore = new McpCoreService({
   executor: new DynamicMCPExecutor(),
