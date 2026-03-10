@@ -2,14 +2,13 @@ import * as ExcelJS from 'exceljs';
 import { ParsedData } from '../types';
 
 export class ExcelParser {
-  async parse(filePath: string, sheetName?: string): Promise<ParsedData> {
+  async parseAll(filePath: string): Promise<ParsedData[]> {
     try {
-      return await this.parseWithWorkbook(filePath, sheetName);
+      return await this.parseAllWithWorkbook(filePath);
     } catch (primaryError) {
-      // Fallback: some valid xlsx variants (namespaced XML exports) fail in ExcelJS workbook reader.
-      const fallback = await this.tryParseWithZipXml(filePath, sheetName)
-        ?? await this.tryParseWithStreamReader(filePath, sheetName);
-      if (fallback) return fallback;
+      const fallback = await this.tryParseAllWithZipXml(filePath)
+        ?? await this.tryParseAllWithStreamReader(filePath);
+      if (fallback && fallback.length > 0) return fallback;
 
       const message = primaryError instanceof Error ? primaryError.message : String(primaryError);
       if (message.includes(`reading 'sheets'`)) {
@@ -19,47 +18,61 @@ export class ExcelParser {
     }
   }
 
+  async parse(filePath: string, sheetName?: string): Promise<ParsedData> {
+    const allSheets = await this.parseAll(filePath);
+    if (allSheets.length === 0) {
+      throw new Error('No data found in the workbook');
+    }
+
+    if (sheetName) {
+      const found = allSheets.find((sheet) => sheet.tableName === sheetName);
+      if (!found) {
+        throw new Error(`Sheet "${sheetName}" not found`);
+      }
+      return found;
+    }
+
+    return allSheets[0];
+  }
+
   async getSheetNames(filePath: string): Promise<string[]> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     return workbook.worksheets.map(sheet => sheet.name);
   }
 
-  private async parseWithWorkbook(filePath: string, sheetName?: string): Promise<ParsedData> {
+  private async parseAllWithWorkbook(filePath: string): Promise<ParsedData[]> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
+    const parsedSheets: ParsedData[] = [];
 
-    const worksheet = sheetName
-      ? workbook.getWorksheet(sheetName)
-      : workbook.getWorksheet(1); // First worksheet
+    for (const worksheet of workbook.worksheets) {
+      const rows: any[][] = [];
+      let headers: string[] = [];
 
-    if (!worksheet) {
-      throw new Error(`Sheet "${sheetName || 'first sheet'}" not found`);
+      worksheet.eachRow((row, rowNumber) => {
+        const values = row.values as any[];
+        const rowData = values.slice(1).map((cell) => this.normalizeCellValue(cell));
+
+        if (rowNumber === 1) {
+          headers = rowData.map(cell => String(cell ?? ''));
+        } else {
+          rows.push(rowData);
+        }
+      });
+
+      if (headers.length === 0) continue;
+      parsedSheets.push(this.buildParsedData(worksheet.name, headers, rows));
     }
 
-    const rows: any[][] = [];
-    let headers: string[] = [];
-
-    worksheet.eachRow((row, rowNumber) => {
-      const values = row.values as any[];
-      // Remove the first element (it's undefined in ExcelJS)
-      const rowData = values.slice(1).map((cell) => this.normalizeCellValue(cell));
-
-      if (rowNumber === 1) {
-        headers = rowData.map(cell => String(cell ?? ''));
-      } else {
-        rows.push(rowData);
-      }
-    });
-
-    if (headers.length === 0) {
-      throw new Error('No data found in the sheet');
+    if (parsedSheets.length === 0) {
+      throw new Error('No data found in the workbook');
     }
 
-    return this.buildParsedData(worksheet.name, headers, rows);
+    return parsedSheets;
   }
 
-  private async tryParseWithStreamReader(filePath: string, sheetName?: string): Promise<ParsedData | null> {
+  private async tryParseAllWithStreamReader(filePath: string): Promise<ParsedData[] | null> {
     try {
       const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(filePath, {
         entries: 'emit',
@@ -67,16 +80,13 @@ export class ExcelParser {
         sharedStrings: 'cache'
       });
 
-      let selectedSheetName = '';
-      let headers: string[] = [];
-      const rows: any[][] = [];
+      const parsedSheets: ParsedData[] = [];
 
       for await (const worksheetReader of workbookReader) {
         const worksheetName = String((worksheetReader as any)?.name || '');
-        const isTargetSheet = sheetName ? worksheetName === sheetName : !selectedSheetName;
-        if (!isTargetSheet) continue;
+        let headers: string[] = [];
+        const rows: any[][] = [];
 
-        selectedSheetName = worksheetName || (sheetName || 'Sheet1');
         for await (const row of worksheetReader) {
           const rowData = (Array.isArray(row.values) ? row.values.slice(1) : [])
             .map((cell) => this.normalizeCellValue(cell));
@@ -87,23 +97,19 @@ export class ExcelParser {
             rows.push(rowData);
           }
         }
-        break;
+
+        if (headers.length > 0) {
+          parsedSheets.push(this.buildParsedData(worksheetName || `Sheet${parsedSheets.length + 1}`, headers, rows));
+        }
       }
 
-      if (!selectedSheetName) {
-        return null;
-      }
-      if (headers.length === 0) {
-        throw new Error('No data found in the sheet');
-      }
-
-      return this.buildParsedData(selectedSheetName, headers, rows);
+      return parsedSheets.length > 0 ? parsedSheets : null;
     } catch {
       return null;
     }
   }
 
-  private async tryParseWithZipXml(filePath: string, sheetName?: string): Promise<ParsedData | null> {
+  private async tryParseAllWithZipXml(filePath: string): Promise<ParsedData[] | null> {
     try {
       const fs = await import('fs/promises');
       const jszipModule: any = await import('jszip');
@@ -122,13 +128,9 @@ export class ExcelParser {
       const sheets = this.parseWorkbookSheets(workbookXml);
       const worksheetTargets = this.parseWorksheetTargets(relsXml);
       if (sheets.length === 0 || Object.keys(worksheetTargets).length === 0) return null;
+      const parsedSheets: ParsedData[] = [];
 
-      const candidates = sheetName
-        ? sheets.filter((s) => s.name === sheetName)
-        : sheets;
-      let firstParsed: ParsedData | null = null;
-
-      for (const candidate of candidates) {
+      for (const candidate of sheets) {
         const target = worksheetTargets[candidate.rId];
         if (!target) continue;
         const normalizedTarget = target.replace(/^\/+/, '');
@@ -137,16 +139,10 @@ export class ExcelParser {
 
         const worksheetXml = String(await worksheetFile.async('string'));
         const parsed = this.parseWorksheetXml(candidate.name, worksheetXml, sharedStrings);
-        if (!parsed) continue;
-
-        if (sheetName) return parsed;
-
-        if (!firstParsed) firstParsed = parsed;
-        const isTabular = parsed.headers.length > 1 && parsed.rows.length > 0;
-        if (isTabular) return parsed;
+        if (parsed) parsedSheets.push(parsed);
       }
 
-      return firstParsed;
+      return parsedSheets.length > 0 ? parsedSheets : null;
     } catch {
       return null;
     }

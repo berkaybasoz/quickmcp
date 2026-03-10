@@ -29,8 +29,7 @@ export class DataSourceParser {
 
       case DataSourceType.Excel: {
         const excelSource = dataSource as ExcelDataSource;
-        const excelData = await this.excelParser.parse(excelSource.filePath);
-        return [excelData];
+        return await this.excelParser.parseAll(excelSource.filePath);
       }
 
       case DataSourceType.JSON: {

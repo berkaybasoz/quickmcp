@@ -6120,7 +6120,7 @@ export class ToolExecuter {
   }
 
   private async executeFileSourceTool(toolName: string, tool: ToolDefinition, sourceConfig: any, args: any): Promise<any> {
-    const filteredRows = await this.executeFileSelect(sourceConfig, args);
+    const filteredRows = await this.executeFileSelect(sourceConfig, args, toolName);
 
     if (toolName.startsWith('count_')) {
       return { success: true, data: [{ total_count: filteredRows.length }], rowCount: 1 };
@@ -6163,7 +6163,7 @@ export class ToolExecuter {
     return { success: true, data: filteredRows, rowCount: filteredRows.length };
   }
 
-  private async executeFileSelect(sourceConfig: any, args: any): Promise<any[]> {
+  private async executeFileSelect(sourceConfig: any, args: any, toolName?: string): Promise<any[]> {
     const filePath = String(sourceConfig?.filePath || sourceConfig?.database || '').trim();
     if (!filePath) {
       throw new Error('File path is missing in source config');
@@ -6171,7 +6171,7 @@ export class ToolExecuter {
 
     const parsed = sourceConfig?.type === DataSourceType.CSV
       ? await this.csvParser.parse(filePath)
-      : await this.excelParser.parse(filePath);
+      : this.resolveExcelSheetByTool(await this.excelParser.parseAll(filePath), toolName);
 
     const rows = (parsed.rows || []).map((row: any[]) => {
       const obj: Record<string, any> = {};
@@ -6199,6 +6199,61 @@ export class ToolExecuter {
       }
       return true;
     });
+  }
+
+  private resolveExcelSheetByTool(parsedSheets: any[], toolName?: string): any {
+    if (!Array.isArray(parsedSheets) || parsedSheets.length === 0) {
+      throw new Error('No sheets found in Excel file');
+    }
+    if (!toolName) return parsedSheets[0];
+
+    const tableTokens = this.extractTableTokenCandidatesFromToolName(toolName);
+    if (tableTokens.length === 0) return parsedSheets[0];
+
+    const matched = parsedSheets.find((sheet: any) => {
+      const sheetToken = this.sanitizeFileName(sheet?.tableName || '');
+      return tableTokens.some((token) => token === sheetToken);
+    });
+    return matched || parsedSheets[0];
+  }
+
+  private extractTableTokenCandidatesFromToolName(toolName: string): string[] {
+    const lower = String(toolName || '').trim().toLowerCase();
+    if (!lower) return [];
+
+    const basicPrefixes = ['get_', 'create_', 'update_', 'delete_', 'count_'];
+    for (const prefix of basicPrefixes) {
+      if (lower.startsWith(prefix)) {
+        const token = lower.slice(prefix.length);
+        return token ? [token] : [];
+      }
+    }
+
+    const aggregatePrefixes = ['min_', 'max_', 'sum_', 'avg_'];
+    for (const prefix of aggregatePrefixes) {
+      if (!lower.startsWith(prefix)) continue;
+      const rest = lower.slice(prefix.length);
+      if (!rest) return [];
+      const segments = rest.split('_').filter(Boolean);
+      if (segments.length === 0) return [];
+
+      const tokens: string[] = [];
+      for (let i = segments.length; i >= 1; i--) {
+        const candidate = segments.slice(0, i).join('_');
+        if (candidate) tokens.push(candidate);
+      }
+      return tokens;
+    }
+
+    return [];
+  }
+
+  private sanitizeFileName(name: string): string {
+    return String(name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
   getActiveConnectionsCount(): number {
