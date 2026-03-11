@@ -427,6 +427,16 @@ function quickAskBuildTitle(text) {
     return clean.length > 52 ? `${clean.slice(0, 52)}...` : clean;
 }
 
+function quickAskNormalizeIdArray(value) {
+    if (!Array.isArray(value)) return [];
+    const uniq = new Set(
+        value
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+    );
+    return Array.from(uniq);
+}
+
 function quickAskCreateChat(initialTitle = 'New chat') {
     const now = quickAskNowIso();
     return {
@@ -434,7 +444,9 @@ function quickAskCreateChat(initialTitle = 'New chat') {
         title: initialTitle,
         createdAt: now,
         updatedAt: now,
-        messages: []
+        messages: [],
+        selectedServerIds: quickAskNormalizeIdArray(Array.from(quickAskSelectedServerIds)),
+        selectedToolIds: quickAskNormalizeIdArray(Array.from(quickAskSelectedToolIds))
     };
 }
 
@@ -458,7 +470,41 @@ function quickAskNormalizeChat(raw) {
                 };
             })
         : [];
-    return { id, title, createdAt, updatedAt, messages };
+    const selectedServerIds = quickAskNormalizeIdArray(raw.selectedServerIds);
+    const selectedToolIds = quickAskNormalizeIdArray(raw.selectedToolIds);
+    return { id, title, createdAt, updatedAt, messages, selectedServerIds, selectedToolIds };
+}
+
+function quickAskApplySelectionsFromChat(chat) {
+    const serverIds = quickAskNormalizeIdArray(chat?.selectedServerIds);
+    const toolIds = quickAskNormalizeIdArray(chat?.selectedToolIds);
+    quickAskSelectedServerIds = new Set(serverIds);
+    quickAskSelectedToolIds = new Set(toolIds);
+    updateQuickAskSelectedCount();
+}
+
+function quickAskSameStringArray(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+function quickAskPersistSelectionsToCurrentChat(shouldPersist = false) {
+    const chat = getCurrentQuickAskChat();
+    if (!chat) return;
+    const nextServerIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedServerIds));
+    const nextToolIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedToolIds));
+    const prevServerIds = quickAskNormalizeIdArray(chat.selectedServerIds);
+    const prevToolIds = quickAskNormalizeIdArray(chat.selectedToolIds);
+    const changed = !quickAskSameStringArray(prevServerIds, nextServerIds)
+        || !quickAskSameStringArray(prevToolIds, nextToolIds);
+    if (!changed) return;
+    chat.selectedServerIds = nextServerIds;
+    chat.selectedToolIds = nextToolIds;
+    if (shouldPersist) persistQuickAskChats();
 }
 
 function quickAskSortChats() {
@@ -567,6 +613,7 @@ async function loadQuickAskChats() {
         const cleanUrl = `${window.location.pathname}${window.location.hash || ''}`;
         window.history.replaceState(null, '', cleanUrl);
     }
+    quickAskApplySelectionsFromChat(getCurrentQuickAskChat());
 }
 
 function getCurrentQuickAskChat() {
@@ -607,6 +654,10 @@ function quickAskCreateNewChat() {
     const chat = quickAskCreateChat('New chat');
     quickAskChats.unshift(chat);
     quickAskCurrentChatId = chat.id;
+    quickAskApplySelectionsFromChat(chat);
+    if (quickAskContext?.askEnabled === true) {
+        renderQuickAskTools();
+    }
     persistQuickAskChats();
     renderQuickAskMessages();
     renderQuickAskSidebarChats();
@@ -680,6 +731,10 @@ function quickAskDeleteChat(chatId) {
         quickAskCurrentChatId = String(quickAskChats[0]?.id || '');
     }
 
+    quickAskApplySelectionsFromChat(getCurrentQuickAskChat());
+    if (quickAskContext?.askEnabled === true) {
+        renderQuickAskTools();
+    }
     persistQuickAskChats();
     renderQuickAskSidebarChats();
     renderQuickAskMessages();
@@ -870,6 +925,10 @@ function ensureQuickAskSidebarSection() {
         if (quickAskInlineRenameChatId && quickAskInlineRenameChatId !== id) {
             quickAskInlineRenameChatId = '';
         }
+        quickAskApplySelectionsFromChat(getCurrentQuickAskChat());
+        if (quickAskContext?.askEnabled === true) {
+            renderQuickAskTools();
+        }
         persistQuickAskChats();
         renderQuickAskSidebarChats();
         renderQuickAskMessages();
@@ -1021,7 +1080,7 @@ function updateQuickAskSelectedCount() {
     countEl.textContent = String(quickAskSelectedToolIds.size);
 }
 
-function collectQuickAskSelectionsFromDom() {
+function collectQuickAskSelectionsFromDom(shouldPersist = false) {
     quickAskSelectedServerIds = new Set(
         Array.from(document.querySelectorAll('input[data-quick-ask-server]:checked'))
             .map((input) => String(input.getAttribute('data-server-id') || '').trim())
@@ -1032,6 +1091,7 @@ function collectQuickAskSelectionsFromDom() {
             .map((input) => String(input.getAttribute('data-tool-id') || '').trim())
             .filter(Boolean)
     );
+    quickAskPersistSelectionsToCurrentChat(shouldPersist);
     updateQuickAskSelectedCount();
 }
 
@@ -1100,7 +1160,7 @@ function renderQuickAskTools() {
                     toolEl.checked = serverInput.checked;
                 }
             });
-            collectQuickAskSelectionsFromDom();
+            collectQuickAskSelectionsFromDom(true);
         });
     });
 
@@ -1115,11 +1175,11 @@ function renderQuickAskTools() {
             if (serverInput instanceof HTMLInputElement) {
                 serverInput.checked = allChecked;
             }
-            collectQuickAskSelectionsFromDom();
+            collectQuickAskSelectionsFromDom(true);
         });
     });
 
-    collectQuickAskSelectionsFromDom();
+    collectQuickAskSelectionsFromDom(true);
 }
 
 async function loadQuickAskContext() {
