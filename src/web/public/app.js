@@ -445,8 +445,8 @@ function quickAskCreateChat(initialTitle = 'New chat') {
         createdAt: now,
         updatedAt: now,
         messages: [],
-        selectedServerIds: quickAskNormalizeIdArray(Array.from(quickAskSelectedServerIds)),
-        selectedToolIds: quickAskNormalizeIdArray(Array.from(quickAskSelectedToolIds))
+        selectedServerIds: [],
+        selectedToolIds: []
     };
 }
 
@@ -478,8 +478,28 @@ function quickAskNormalizeChat(raw) {
 function quickAskApplySelectionsFromChat(chat) {
     const serverIds = quickAskNormalizeIdArray(chat?.selectedServerIds);
     const toolIds = quickAskNormalizeIdArray(chat?.selectedToolIds);
-    quickAskSelectedServerIds = new Set(serverIds);
-    quickAskSelectedToolIds = new Set(toolIds);
+    if (Array.isArray(quickAskContext?.servers) && quickAskContext.servers.length > 0) {
+        const allowedServers = new Set(
+            quickAskContext.servers
+                .map((server) => String(server?.id || '').trim())
+                .filter(Boolean)
+        );
+        const allowedTools = new Set(
+            quickAskContext.servers.flatMap((server) => {
+                const tools = Array.isArray(server?.tools) ? server.tools : [];
+                return tools
+                    .map((tool) => String(tool?.id || '').trim())
+                    .filter(Boolean);
+            })
+        );
+        const filteredServerIds = serverIds.filter((id) => allowedServers.has(id));
+        const filteredToolIds = toolIds.filter((id) => allowedTools.has(id));
+        quickAskSelectedServerIds = new Set(filteredServerIds);
+        quickAskSelectedToolIds = new Set(filteredToolIds);
+    } else {
+        quickAskSelectedServerIds = new Set(serverIds);
+        quickAskSelectedToolIds = new Set(toolIds);
+    }
     updateQuickAskSelectedCount();
 }
 
@@ -495,8 +515,25 @@ function quickAskSameStringArray(a, b) {
 function quickAskPersistSelectionsToCurrentChat(shouldPersist = false) {
     const chat = getCurrentQuickAskChat();
     if (!chat) return;
-    const nextServerIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedServerIds));
-    const nextToolIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedToolIds));
+    let nextServerIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedServerIds));
+    let nextToolIds = quickAskNormalizeIdArray(Array.from(quickAskSelectedToolIds));
+    if (Array.isArray(quickAskContext?.servers) && quickAskContext.servers.length > 0) {
+        const allowedServers = new Set(
+            quickAskContext.servers
+                .map((server) => String(server?.id || '').trim())
+                .filter(Boolean)
+        );
+        const allowedTools = new Set(
+            quickAskContext.servers.flatMap((server) => {
+                const tools = Array.isArray(server?.tools) ? server.tools : [];
+                return tools
+                    .map((tool) => String(tool?.id || '').trim())
+                    .filter(Boolean);
+            })
+        );
+        nextServerIds = nextServerIds.filter((id) => allowedServers.has(id));
+        nextToolIds = nextToolIds.filter((id) => allowedTools.has(id));
+    }
     const prevServerIds = quickAskNormalizeIdArray(chat.selectedServerIds);
     const prevToolIds = quickAskNormalizeIdArray(chat.selectedToolIds);
     const changed = !quickAskSameStringArray(prevServerIds, nextServerIds)
@@ -1108,7 +1145,7 @@ function renderQuickAskTools() {
     const servers = Array.isArray(quickAskContext?.servers) ? quickAskContext.servers : [];
     if (servers.length === 0) {
         root.innerHTML = '<p class="text-xs text-slate-500">No MCP servers found yet.</p>';
-        collectQuickAskSelectionsFromDom();
+        collectQuickAskSelectionsFromDom(true);
         return;
     }
 
