@@ -255,11 +255,11 @@ export class AskApi {
 
       const aiConfig = await this.resolveAiConfig(store);
       if (!aiConfig?.apiToken) {
-        res.status(400).json({ success: false, error: 'Claude configuration not found for this workspace' });
+        res.status(400).json({ success: false, error: 'Aria configuration not found for this workspace' });
         return;
       }
       if (!String(aiConfig.model || '').trim()) {
-        res.status(400).json({ success: false, error: 'Claude model is missing in workspace_ai_config' });
+        res.status(400).json({ success: false, error: 'Aria model is missing in workspace_ai_config' });
         return;
       }
 
@@ -301,7 +301,7 @@ export class AskApi {
         content: [
           {
             type: 'text',
-            text: `User request:\n${prompt}\n\nSelected MCP tools:\n${toolLines}`
+            text: `${prompt}`
           }
         ]
       }
@@ -313,8 +313,8 @@ export class AskApi {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
         const anthropicPayload: Record<string, any> = {
           model: String(aiConfig.model || '').trim(),
-          max_tokens: 1200,
-          temperature: 0.2,
+          max_tokens: 4000,
+          //temperature: 0.2,
           system: systemPrompt,
           messages
         };
