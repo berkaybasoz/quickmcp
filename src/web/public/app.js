@@ -776,7 +776,14 @@ function renderQuickAskMessages() {
         const wrapper = isUser ? 'justify-end' : 'justify-start';
         const contentHtml = isUser
             ? `<p class="text-sm leading-6 whitespace-pre-wrap">${escapeHtml(String(msg.content || ''))}</p>`
-            : `<div class="qa-markdown text-sm">${msg.pending ? '<p class="my-2 text-slate-500">Thinking...</p>' : (renderQuickAskAnswerMarkdown(String(msg.content || '')) || '<p class="my-2">No response</p>')}</div>`;
+            : `<div class="qa-markdown text-sm">${msg.pending ? `
+                <div class="qa-thinking" role="status" aria-live="polite" aria-label="AI is thinking">
+                    <span class="qa-thinking-icon"><i class="fas fa-robot"></i></span>
+                    <span class="qa-thinking-dots" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </span>
+                </div>
+            ` : (renderQuickAskAnswerMarkdown(String(msg.content || '')) || '<p class="my-2">No response</p>')}</div>`;
 
         return `
             <div class="flex ${wrapper} w-full">
