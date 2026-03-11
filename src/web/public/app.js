@@ -20,6 +20,7 @@ let quickAskChatSearchText = '';
 let quickAskPersistTimer = null;
 let quickAskPersistInFlight = false;
 let quickAskPersistDirty = false;
+let quickAskConversationOpened = false;
 
 function getPanelToggleIconSvg() {
     return `
@@ -593,6 +594,52 @@ function quickAskCreateNewChat() {
     }
 }
 
+function quickAskRenameChat(chatId) {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    const chat = quickAskChats.find((item) => item.id === id);
+    if (!chat) return;
+
+    const currentTitle = String(chat.title || 'New chat').trim() || 'New chat';
+    const renamed = window.prompt('Rename chat', currentTitle);
+    if (renamed === null) return;
+    const nextTitle = renamed.trim();
+    if (!nextTitle) {
+        window.utils?.showToast?.('Chat title cannot be empty', 'error');
+        return;
+    }
+
+    chat.title = nextTitle.slice(0, 80);
+    quickAskTouchChat(chat);
+    persistQuickAskChats();
+    renderQuickAskSidebarChats();
+    renderQuickAskMessages();
+}
+
+function quickAskDeleteChat(chatId) {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    const chat = quickAskChats.find((item) => item.id === id);
+    if (!chat) return;
+
+    const title = String(chat.title || 'this chat').trim() || 'this chat';
+    if (!window.confirm(`Delete "${title}"?`)) return;
+
+    quickAskChats = quickAskChats.filter((item) => item.id !== id);
+    if (quickAskChats.length === 0) {
+        const newChat = quickAskCreateChat('New chat');
+        quickAskChats = [newChat];
+        quickAskCurrentChatId = newChat.id;
+    } else if (quickAskCurrentChatId === id) {
+        quickAskSortChats();
+        quickAskCurrentChatId = String(quickAskChats[0]?.id || '');
+    }
+
+    persistQuickAskChats();
+    renderQuickAskSidebarChats();
+    renderQuickAskMessages();
+}
+
 function quickAskGetChatPreview(chat) {
     if (!chat || !Array.isArray(chat.messages) || chat.messages.length === 0) return 'No messages yet';
     const last = chat.messages[chat.messages.length - 1];
@@ -602,17 +649,28 @@ function quickAskGetChatPreview(chat) {
 }
 
 function renderQuickAskMessages() {
+    const wrap = document.getElementById('quickAskConversationWrap');
     const list = document.getElementById('quickAskMessages');
     const empty = document.getElementById('quickAskMessagesEmpty');
     const title = document.getElementById('quickAskActiveChatTitle');
     if (!list || !empty) return;
 
     const chat = getCurrentQuickAskChat();
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    const hasMessages = messages.length > 0;
+    const shouldShowConversation = quickAskConversationOpened || hasMessages;
+
+    if (wrap) {
+        wrap.classList.toggle('hidden', !shouldShowConversation);
+    }
+    if (!shouldShowConversation) {
+        return;
+    }
+
     if (title) {
         title.textContent = chat?.title || 'New chat';
     }
 
-    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
     if (messages.length === 0) {
         list.classList.add('hidden');
         list.innerHTML = '';
@@ -691,10 +749,24 @@ function ensureQuickAskSidebarSection() {
     list?.addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof Element)) return;
-        const btn = target.closest('button[data-quick-ask-chat-id]');
+
+        const actionBtn = target.closest('button[data-quick-ask-action][data-quick-ask-chat-id]');
+        if (actionBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const id = String(actionBtn.getAttribute('data-quick-ask-chat-id') || '').trim();
+            const action = String(actionBtn.getAttribute('data-quick-ask-action') || '').trim();
+            if (!id || !action) return;
+            if (action === 'rename') quickAskRenameChat(id);
+            if (action === 'delete') quickAskDeleteChat(id);
+            return;
+        }
+
+        const btn = target.closest('button[data-quick-ask-select][data-quick-ask-chat-id]');
         if (!btn) return;
         const id = String(btn.getAttribute('data-quick-ask-chat-id') || '').trim();
         if (!id) return;
+        quickAskConversationOpened = true;
         quickAskCurrentChatId = id;
         persistQuickAskChats();
         renderQuickAskSidebarChats();
@@ -735,10 +807,20 @@ function renderQuickAskSidebarChats() {
             ? 'border-blue-200 bg-blue-50'
             : 'border-slate-200 bg-white hover:bg-slate-50';
         return `
-            <button type="button" data-quick-ask-chat-id="${chat.id}" class="w-full rounded-lg border px-2.5 py-2 text-left transition-colors ${itemClass}">
-                <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(chat.title || 'New chat')}</p>
-                <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
-            </button>
+            <div class="group relative rounded-lg border transition-colors ${itemClass}">
+                <button type="button" data-quick-ask-select="true" data-quick-ask-chat-id="${chat.id}" class="w-full rounded-lg px-2.5 py-2 pr-16 text-left">
+                    <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(chat.title || 'New chat')}</p>
+                    <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
+                </button>
+                <div class="absolute right-1 top-1 hidden items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm group-hover:flex group-focus-within:flex">
+                    <button type="button" data-quick-ask-action="rename" data-quick-ask-chat-id="${chat.id}" title="Rename chat" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                        <i class="fas fa-pen text-[10px]"></i>
+                    </button>
+                    <button type="button" data-quick-ask-action="delete" data-quick-ask-chat-id="${chat.id}" title="Delete chat" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600">
+                        <i class="fas fa-trash text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
         `;
     }).join('');
 }
@@ -936,6 +1018,7 @@ async function sendQuickAskPrompt() {
     if (!getCurrentQuickAskChat()) {
         quickAskCreateNewChat();
     }
+    quickAskConversationOpened = true;
     appendQuickAskMessage('user', userMessage, false);
     const assistantMessageId = appendQuickAskMessage('assistant', 'Thinking...', true);
     const conversation = buildQuickAskConversationForRequest(getCurrentQuickAskChat());
