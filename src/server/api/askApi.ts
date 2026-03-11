@@ -92,9 +92,9 @@ export class AskApi {
     return out;
   }
 
-  private async resolveAiConfig(store: IDataStore, workspaceId: string): Promise<WorkspaceAiConfig | null> {
+  private async resolveAiConfig(store: IDataStore): Promise<WorkspaceAiConfig | null> {
     if (!this.isSaasMode()) return null;
-    return store.getWorkspaceAiConfig(workspaceId);
+    return store.getWorkspaceAiConfig('admin');
   }
 
   private getAskContext = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
@@ -108,7 +108,7 @@ export class AskApi {
       const store = this.deps.ensureDataStore();
       const ownerUsername = this.resolveServerOwner(ctx);
       const servers = await this.loadServerContext(store, ownerUsername);
-      const aiConfig = await this.resolveAiConfig(store, ctx.workspaceId);
+      const aiConfig = await this.resolveAiConfig(store);
       const askEnabled = this.isSaasMode() && !!aiConfig?.apiToken;
 
       res.json({
@@ -119,7 +119,7 @@ export class AskApi {
           reason: askEnabled
             ? ''
             : (this.isSaasMode()
-              ? 'Claude configuration not found in workspace_ai_config.'
+              ? 'Claude configuration not found'
               : 'Ask API is currently available only in SAAS mode.'),
           servers
         }
@@ -169,7 +169,7 @@ export class AskApi {
         return false;
       });
 
-      const aiConfig = await this.resolveAiConfig(store, ctx.workspaceId);
+      const aiConfig = await this.resolveAiConfig(store);
       if (!aiConfig?.apiToken) {
         res.status(400).json({ success: false, error: 'Claude configuration not found for this workspace' });
         return;
