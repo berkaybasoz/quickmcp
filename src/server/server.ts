@@ -29,6 +29,7 @@ import { DatabaseApi } from './api/databaseApi';
 import { McpApi } from './api/mcpApi';
 import { IndexApi } from './api/indexApi';
 import { LogsApi } from './api/logsApi';
+import { AskApi } from './api/askApi';
 import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
 import { logger } from '../utils/logger';
@@ -215,6 +216,11 @@ const authApi = new AuthApi({
   getAuthProperty: () => authProperty
 });
 const logsApi = new LogsApi(ensureDataStore());
+const askApi = new AskApi({
+  ensureDataStore,
+  resolveAuthContext,
+  deployMode
+});
 const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 const configApi = new ConfigApi(authMode, authProperty.providerUrl, MCP_PORT);
@@ -529,6 +535,7 @@ databaseApi.registerRoutes(app);
 mcpApi.registerRoutes(app);
 authApi.registerRoutes(app);
 logsApi.registerRoutes(app);
+askApi.registerRoutes(app);
 
 // Serverless/Vercel path: expose integrated MCP HTTP transport directly on the main app.
 app.get('/mcp', (req, res) => {

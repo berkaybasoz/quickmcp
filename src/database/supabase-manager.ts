@@ -11,7 +11,8 @@ import {
   ServerConfig,
   ToolDefinition,
   UserRecord,
-  UserRole
+  UserRole,
+  WorkspaceAiConfig
 } from './datastore';
 
 function safeJsonParse<T>(value: unknown, fallback: T): T {
@@ -444,6 +445,27 @@ export class SupabaseDataStore implements IDataStore {
     await this.request(`mcp_tokens?id=eq.${encodeURIComponent(id)}&revoked_at=is.null`, 'PATCH', {
       revoked_at: new Date().toISOString()
     }, { Prefer: 'return=minimal' });
+  }
+
+  async getWorkspaceAiConfig(workspaceId: string): Promise<WorkspaceAiConfig | null> {
+    try {
+      const rows = await this.request<any[]>(
+        `workspace_ai_config?select=provider,model,api_token,api_version,base_url&workspace_id=eq.${encodeURIComponent(workspaceId)}&limit=1`
+      );
+      if (!rows.length) return null;
+      const row = rows[0];
+      const apiToken = String(row.api_token || '').trim();
+      if (!apiToken) return null;
+      return {
+        provider: String(row.provider || 'claude').trim().toLowerCase(),
+        model: String(row.model || '').trim(),
+        apiToken,
+        apiVersion: String(row.api_version || '').trim() || undefined,
+        baseUrl: String(row.base_url || '').trim() || undefined
+      };
+    } catch {
+      return null;
+    }
   }
 
   async writeLog(entry: LogEntry): Promise<void> {

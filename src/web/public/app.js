@@ -9,6 +9,10 @@ const ON_PREM_ONLY_SOURCE_TYPES = new Set();
 let isSaasDeployMode = false;
 let authConfigCache = null;
 let authConfigPromise = null;
+let quickAskContext = null;
+let quickAskSelectedServerIds = new Set();
+let quickAskSelectedToolIds = new Set();
+let quickAskBusy = false;
 
 function getPanelToggleIconSvg() {
     return `
@@ -151,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     try { setupTemplateFilters(); } catch {}
     setupFileUpload();
+    initializeQuickAsk();
     applySaasDataSourceRestrictions();
     setupRouting();
     handleInitialRoute();
@@ -171,6 +176,242 @@ window.addEventListener('load', () => {
         try { applySidebarCollapsedState(); } catch {}
     }
 });
+
+function setQuickAskStatus(kind, text) {
+    const el = document.getElementById('quickAskStatus');
+    if (!el) return;
+    const styles = {
+        idle: 'bg-slate-100 text-slate-600 border border-slate-200',
+        ready: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+        busy: 'bg-amber-50 text-amber-700 border border-amber-200',
+        error: 'bg-rose-50 text-rose-700 border border-rose-200'
+    };
+    const dots = {
+        idle: 'bg-slate-400',
+        ready: 'bg-emerald-500',
+        busy: 'bg-amber-500',
+        error: 'bg-rose-500'
+    };
+    const mode = Object.prototype.hasOwnProperty.call(styles, kind) ? kind : 'idle';
+    el.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${styles[mode]}`;
+    el.innerHTML = `<span class="h-2 w-2 rounded-full ${dots[mode]}"></span>${text || ''}`;
+}
+
+function updateQuickAskSelectedCount() {
+    const countEl = document.getElementById('quickAskSelectedCount');
+    if (!countEl) return;
+    countEl.textContent = String(quickAskSelectedToolIds.size);
+}
+
+function collectQuickAskSelectionsFromDom() {
+    quickAskSelectedServerIds = new Set(
+        Array.from(document.querySelectorAll('input[data-quick-ask-server]:checked'))
+            .map((input) => String(input.getAttribute('data-server-id') || '').trim())
+            .filter(Boolean)
+    );
+    quickAskSelectedToolIds = new Set(
+        Array.from(document.querySelectorAll('input[data-quick-ask-tool]:checked'))
+            .map((input) => String(input.getAttribute('data-tool-id') || '').trim())
+            .filter(Boolean)
+    );
+    updateQuickAskSelectedCount();
+}
+
+function renderQuickAskTools() {
+    const root = document.getElementById('quickAskToolsList');
+    if (!root) return;
+    const servers = Array.isArray(quickAskContext?.servers) ? quickAskContext.servers : [];
+    if (servers.length === 0) {
+        root.innerHTML = '<p class="text-xs text-slate-500">No MCP servers found yet.</p>';
+        collectQuickAskSelectionsFromDom();
+        return;
+    }
+
+    root.innerHTML = servers.map((server) => {
+        const serverId = String(server?.id || '');
+        const tools = Array.isArray(server?.tools) ? server.tools : [];
+        const checkedServer = quickAskSelectedServerIds.has(serverId);
+        return `
+            <details class="border border-slate-200 rounded-lg bg-slate-50/60" ${checkedServer ? 'open' : ''}>
+                <summary class="cursor-pointer px-3 py-2.5 flex items-center justify-between gap-3 text-sm">
+                    <label class="inline-flex items-center gap-2 text-slate-800 font-medium">
+                        <input type="checkbox" data-quick-ask-server data-server-id="${serverId}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" ${checkedServer ? 'checked' : ''}>
+                        <span>${server?.name || serverId}</span>
+                        <span class="text-[11px] text-slate-500 uppercase tracking-wide">${server?.type || ''}</span>
+                    </label>
+                    <span class="text-xs text-slate-500">${tools.length} tools</span>
+                </summary>
+                <div class="px-4 pb-3 space-y-2">
+                    ${tools.map((tool) => {
+                        const toolId = String(tool?.id || '');
+                        const checkedTool = quickAskSelectedToolIds.has(toolId);
+                        return `
+                            <label class="flex items-start gap-2 text-xs text-slate-700">
+                                <input type="checkbox" data-quick-ask-tool data-server-id="${serverId}" data-tool-id="${toolId}" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" ${checkedTool ? 'checked' : ''}>
+                                <span>
+                                    <span class="font-semibold text-slate-800">${tool?.name || ''}</span>
+                                    <span class="text-slate-500">${tool?.description ? ` - ${tool.description}` : ''}</span>
+                                </span>
+                            </label>
+                        `;
+                    }).join('') || '<p class="text-xs text-slate-400">No tools in this server.</p>'}
+                </div>
+            </details>
+        `;
+    }).join('');
+
+    root.querySelectorAll('input[data-quick-ask-server]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const serverInput = event.target;
+            if (!(serverInput instanceof HTMLInputElement)) return;
+            const serverId = String(serverInput.getAttribute('data-server-id') || '').trim();
+            const toolInputs = root.querySelectorAll(`input[data-quick-ask-tool][data-server-id="${serverId}"]`);
+            toolInputs.forEach((toolEl) => {
+                if (toolEl instanceof HTMLInputElement) {
+                    toolEl.checked = serverInput.checked;
+                }
+            });
+            collectQuickAskSelectionsFromDom();
+        });
+    });
+
+    root.querySelectorAll('input[data-quick-ask-tool]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const toolInput = event.target;
+            if (!(toolInput instanceof HTMLInputElement)) return;
+            const serverId = String(toolInput.getAttribute('data-server-id') || '').trim();
+            const serverInput = root.querySelector(`input[data-quick-ask-server][data-server-id="${serverId}"]`);
+            const allServerTools = Array.from(root.querySelectorAll(`input[data-quick-ask-tool][data-server-id="${serverId}"]`));
+            const allChecked = allServerTools.length > 0 && allServerTools.every((el) => el instanceof HTMLInputElement && el.checked);
+            if (serverInput instanceof HTMLInputElement) {
+                serverInput.checked = allChecked;
+            }
+            collectQuickAskSelectionsFromDom();
+        });
+    });
+
+    collectQuickAskSelectionsFromDom();
+}
+
+async function loadQuickAskContext() {
+    const input = document.getElementById('quickAskInput');
+    const sendBtn = document.getElementById('quickAskSendBtn');
+    const hint = document.getElementById('quickAskHint');
+    const panel = document.getElementById('quickAskToolsPanel');
+    if (!input || !sendBtn || !hint || !panel) return;
+
+    setQuickAskStatus('busy', 'Loading context');
+    try {
+        const response = await fetch('/api/ask/context');
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.success) {
+            throw new Error(payload?.error || 'Failed to load Ask context');
+        }
+
+        quickAskContext = payload?.data || {};
+        const enabled = quickAskContext?.askEnabled === true;
+        input.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+        panel.classList.toggle('hidden', !enabled);
+        hint.textContent = quickAskContext?.reason || 'Select one or more tools to narrow the answer context.';
+
+        if (enabled) {
+            setQuickAskStatus('ready', 'Aria ready');
+            renderQuickAskTools();
+        } else {
+            setQuickAskStatus('idle', quickAskContext?.isSaasMode ? 'Not configured' : 'On-Prem unsupported');
+            quickAskSelectedServerIds.clear();
+            quickAskSelectedToolIds.clear();
+            updateQuickAskSelectedCount();
+        }
+    } catch (error) {
+        input.disabled = true;
+        sendBtn.disabled = true;
+        hint.textContent = 'Ask context could not be loaded.';
+        setQuickAskStatus('error', 'Unavailable');
+        const message = error instanceof Error ? error.message : 'Ask context could not be loaded';
+        window.utils?.showToast?.(message, 'error');
+    }
+}
+
+async function sendQuickAskPrompt() {
+    const input = document.getElementById('quickAskInput');
+    const sendBtn = document.getElementById('quickAskSendBtn');
+    const answerWrap = document.getElementById('quickAskAnswerWrap');
+    const answer = document.getElementById('quickAskAnswer');
+    if (!(input instanceof HTMLTextAreaElement) || !(sendBtn instanceof HTMLButtonElement) || !answerWrap || !answer) return;
+    if (quickAskBusy) return;
+
+    const prompt = input.value.trim();
+    if (!prompt) {
+        window.utils?.showToast?.('Please enter a prompt', 'error');
+        return;
+    }
+
+    quickAskBusy = true;
+    sendBtn.disabled = true;
+    setQuickAskStatus('busy', 'Aria is thinking');
+    answerWrap.classList.remove('hidden');
+    answer.textContent = 'Thinking...';
+    collectQuickAskSelectionsFromDom();
+
+    try {
+        const response = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                selectedServerIds: Array.from(quickAskSelectedServerIds),
+                selectedToolIds: Array.from(quickAskSelectedToolIds)
+            })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.success) {
+            throw new Error(payload?.error || 'Ask request failed');
+        }
+        answer.textContent = String(payload?.data?.answer || '').trim() || 'No response';
+        setQuickAskStatus('ready', 'Aria ready');
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Ask request failed';
+        answer.textContent = message;
+        setQuickAskStatus('error', 'Request failed');
+        window.utils?.showToast?.(message, 'error');
+    } finally {
+        quickAskBusy = false;
+        sendBtn.disabled = quickAskContext?.askEnabled !== true;
+    }
+}
+
+function initializeQuickAsk() {
+    const section = document.getElementById('quickAskSection');
+    if (!section) return;
+
+    const toggleBtn = document.getElementById('quickAskOpenToolsBtn');
+    const refreshBtn = document.getElementById('quickAskRefreshBtn');
+    const panel = document.getElementById('quickAskToolsPanel');
+    const sendBtn = document.getElementById('quickAskSendBtn');
+    const input = document.getElementById('quickAskInput');
+
+    toggleBtn?.addEventListener('click', () => {
+        panel?.classList.toggle('hidden');
+    });
+    refreshBtn?.addEventListener('click', () => {
+        loadQuickAskContext();
+    });
+    sendBtn?.addEventListener('click', () => {
+        sendQuickAskPrompt();
+    });
+    if (input instanceof HTMLTextAreaElement) {
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendQuickAskPrompt();
+            }
+        });
+    }
+
+    loadQuickAskContext();
+}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -460,9 +701,12 @@ function handleInitialRoute() {
 // Route handler
 function handleRoute() {
     const path = window.location.pathname;
+    if (path === '/' || path === '/quick-ask') return;
     let tabName = 'generate'; // default tab
 
-    if (path === '/manage-servers') {
+    if (path === '/generate') {
+        tabName = 'generate';
+    } else if (path === '/manage-servers') {
         tabName = 'manage';
     } else if (path === '/test-servers') {
         tabName = 'test';
@@ -536,7 +780,7 @@ function switchTabByRoute(tabName) {
 // Tab management with URL update
 function switchTab(tabName) {
     // Update URL
-    let newPath = '/';
+    let newPath = '/generate';
     if (tabName === 'manage') {
         newPath = '/manage-servers';
     } else if (tabName === 'test') {
@@ -1427,7 +1671,7 @@ function displayServers(servers) {
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">No Servers Generated Yet</h3>
                     <p class="text-gray-600 mb-6">Create your first MCP server by uploading data or connecting to a database.</p>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-xl shadow-blue-500/40" onclick="window.location.href='/'">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-xl shadow-blue-500/40" onclick="window.location.href='/generate'">
                         <i class="fas fa-rocket mr-2"></i>
                         Generate Your First Server
                     </button>

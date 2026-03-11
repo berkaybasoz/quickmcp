@@ -205,7 +205,7 @@ async function loadExportServerList() {
                     <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
                     <h3 style="margin-bottom: 8px; color: #2d3748;">No Servers Available</h3>
                     <p style="margin-bottom: 20px;">Create an MCP server first to export it.</p>
-                    <a href="/" class="btn btn-primary">
+                    <a href="/generate" class="btn btn-primary">
                         🚀 Generate Your First Server
                     </a>
                 </div>

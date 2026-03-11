@@ -115,6 +115,14 @@ export interface LogEntry {
   additionalInfo?: string | null;
 }
 
+export interface WorkspaceAiConfig {
+  provider: string;
+  model: string;
+  apiToken: string;
+  apiVersion?: string;
+  baseUrl?: string;
+}
+
 export interface IDataStore {
   saveServer(server: ServerConfig): Promise<void>;
   getServer(serverId: string): Promise<ServerConfig | null>;
@@ -156,6 +164,7 @@ export interface IDataStore {
   getMcpTokenById(id: string): Promise<McpTokenRecord | null>;
   getMcpTokensByWorkspace(workspaceId: string): Promise<McpTokenRecord[]>;
   revokeMcpToken(id: string): Promise<void>;
+  getWorkspaceAiConfig(workspaceId: string): Promise<WorkspaceAiConfig | null>;
 
   writeLog(entry: LogEntry): Promise<void>;
 
