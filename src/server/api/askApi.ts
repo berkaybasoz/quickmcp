@@ -245,15 +245,31 @@ export class AskApi {
     }
 
     const content = Array.isArray((payload as any)?.content) ? (payload as any).content : [];
-    const text = content
+    const rawText = content
       .filter((part: any) => part?.type === 'text')
       .map((part: any) => String(part?.text || ''))
       .join('\n\n')
       .trim();
 
+    const text = this.sanitizeAssistantText(rawText);
     if (!text) {
       throw new Error('Claude returned an empty response');
     }
     return text;
+  }
+
+  private sanitizeAssistantText(input: string): string {
+    return String(input || '')
+      .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+      .replace(/<tool_response>[\s\S]*?<\/tool_response>/gi, '')
+      .replace(/```json[\s\S]*?```/gi, (block) => {
+        const lower = block.toLowerCase();
+        if (lower.includes('tool_call') || lower.includes('tool_response') || lower.includes('"method"') || lower.includes('"jsonrpc"')) {
+          return '';
+        }
+        return block;
+      })
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 }

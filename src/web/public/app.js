@@ -197,6 +197,149 @@ function setQuickAskStatus(kind, text) {
     el.innerHTML = `<span class="h-2 w-2 rounded-full ${dots[mode]}"></span>${text || ''}`;
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderInlineMarkdown(text) {
+    let out = escapeHtml(text);
+    out = out.replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 text-slate-800 text-[12px]">$1</code>');
+    out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    out = out.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    return out;
+}
+
+function renderMarkdownTextBlock(raw) {
+    const lines = String(raw || '').replace(/\r/g, '').split('\n');
+    const html = [];
+    let inUl = false;
+    let inOl = false;
+
+    const closeLists = () => {
+        if (inUl) {
+            html.push('</ul>');
+            inUl = false;
+        }
+        if (inOl) {
+            html.push('</ol>');
+            inOl = false;
+        }
+    };
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            closeLists();
+            continue;
+        }
+
+        const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+            closeLists();
+            const level = Math.min(6, heading[1].length);
+            const sizeMap = {
+                1: 'text-2xl',
+                2: 'text-xl',
+                3: 'text-lg',
+                4: 'text-base',
+                5: 'text-sm',
+                6: 'text-sm'
+            };
+            const sizeClass = sizeMap[level] || 'text-sm';
+            html.push(`<h${level} class="${sizeClass} font-semibold text-slate-900 mt-4 mb-2">${renderInlineMarkdown(heading[2])}</h${level}>`);
+            continue;
+        }
+
+        const unordered = trimmed.match(/^[-*+]\s+(.+)$/);
+        if (unordered) {
+            if (inOl) {
+                html.push('</ol>');
+                inOl = false;
+            }
+            if (!inUl) {
+                html.push('<ul class="list-disc pl-6 space-y-1 my-2">');
+                inUl = true;
+            }
+            html.push(`<li>${renderInlineMarkdown(unordered[1])}</li>`);
+            continue;
+        }
+
+        const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (ordered) {
+            if (inUl) {
+                html.push('</ul>');
+                inUl = false;
+            }
+            if (!inOl) {
+                html.push('<ol class="list-decimal pl-6 space-y-1 my-2">');
+                inOl = true;
+            }
+            html.push(`<li>${renderInlineMarkdown(ordered[1])}</li>`);
+            continue;
+        }
+
+        const quote = trimmed.match(/^>\s?(.+)$/);
+        if (quote) {
+            closeLists();
+            html.push(`<blockquote class="border-l-4 border-slate-300 pl-3 text-slate-700 italic my-2">${renderInlineMarkdown(quote[1])}</blockquote>`);
+            continue;
+        }
+
+        if (/^---+$/.test(trimmed)) {
+            closeLists();
+            html.push('<hr class="my-4 border-slate-200">');
+            continue;
+        }
+
+        closeLists();
+        html.push(`<p class="my-2">${renderInlineMarkdown(trimmed)}</p>`);
+    }
+
+    closeLists();
+    return html.join('');
+}
+
+function renderQuickAskAnswerMarkdown(markdown) {
+    const input = String(markdown || '').trim();
+    if (!input) return '';
+
+    const html = [];
+    const codeRegex = /```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g;
+    let cursor = 0;
+    let match;
+
+    while ((match = codeRegex.exec(input)) !== null) {
+        const before = input.slice(cursor, match.index);
+        if (before.trim()) {
+            html.push(renderMarkdownTextBlock(before));
+        }
+
+        const lang = String(match[1] || '').trim();
+        const code = String(match[2] || '').replace(/\n$/, '');
+        html.push(`
+            <div class="my-3 rounded-lg overflow-hidden border border-slate-200 bg-slate-950 text-slate-100">
+                ${lang ? `<div class="px-3 py-1 text-[11px] uppercase tracking-wide text-slate-400 border-b border-slate-800">${escapeHtml(lang)}</div>` : ''}
+                <pre class="p-3 overflow-x-auto text-xs leading-5"><code>${escapeHtml(code)}</code></pre>
+            </div>
+        `);
+
+        cursor = match.index + match[0].length;
+    }
+
+    const rest = input.slice(cursor);
+    if (rest.trim()) {
+        html.push(renderMarkdownTextBlock(rest));
+    }
+
+    const finalHtml = html.join('').trim();
+    return finalHtml || `<p class="my-2">${renderInlineMarkdown(input)}</p>`;
+}
+
 function updateQuickAskSelectedCount() {
     const countEl = document.getElementById('quickAskSelectedCount');
     if (!countEl) return;
@@ -369,11 +512,12 @@ async function sendQuickAskPrompt() {
         if (!response.ok || !payload?.success) {
             throw new Error(payload?.error || 'Ask request failed');
         }
-        answer.textContent = String(payload?.data?.answer || '').trim() || 'No response';
+        const rendered = renderQuickAskAnswerMarkdown(String(payload?.data?.answer || ''));
+        answer.innerHTML = rendered || '<p class="my-2">No response</p>';
         setQuickAskStatus('ready', 'Aria ready');
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Ask request failed';
-        answer.textContent = message;
+        answer.innerHTML = `<p class="my-2 text-rose-700">${escapeHtml(message)}</p>`;
         setQuickAskStatus('error', 'Request failed');
         window.utils?.showToast?.(message, 'error');
     } finally {
