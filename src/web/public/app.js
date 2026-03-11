@@ -20,7 +20,7 @@ let quickAskChatSearchText = '';
 let quickAskPersistTimer = null;
 let quickAskPersistInFlight = false;
 let quickAskPersistDirty = false;
-let quickAskConversationOpened = false;
+let quickAskInlineRenameChatId = '';
 
 function getPanelToggleIconSvg() {
     return `
@@ -594,16 +594,34 @@ function quickAskCreateNewChat() {
     }
 }
 
-function quickAskRenameChat(chatId) {
+function quickAskStartInlineRename(chatId) {
     const id = String(chatId || '').trim();
     if (!id) return;
     const chat = quickAskChats.find((item) => item.id === id);
     if (!chat) return;
+    quickAskInlineRenameChatId = id;
+    renderQuickAskSidebarChats();
 
-    const currentTitle = String(chat.title || 'New chat').trim() || 'New chat';
-    const renamed = window.prompt('Rename chat', currentTitle);
-    if (renamed === null) return;
-    const nextTitle = renamed.trim();
+    requestAnimationFrame(() => {
+        const input = document.querySelector(`input[data-quick-ask-rename-input="true"][data-quick-ask-chat-id="${id}"]`);
+        if (input instanceof HTMLInputElement) {
+            input.focus();
+            input.select();
+        }
+    });
+}
+
+function quickAskCommitInlineRename(chatId, rawTitle) {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    const chat = quickAskChats.find((item) => item.id === id);
+    if (!chat) {
+        quickAskInlineRenameChatId = '';
+        renderQuickAskSidebarChats();
+        return;
+    }
+
+    const nextTitle = String(rawTitle || '').trim();
     if (!nextTitle) {
         window.utils?.showToast?.('Chat title cannot be empty', 'error');
         return;
@@ -611,9 +629,16 @@ function quickAskRenameChat(chatId) {
 
     chat.title = nextTitle.slice(0, 80);
     quickAskTouchChat(chat);
+    quickAskInlineRenameChatId = '';
     persistQuickAskChats();
     renderQuickAskSidebarChats();
     renderQuickAskMessages();
+}
+
+function quickAskCancelInlineRename() {
+    if (!quickAskInlineRenameChatId) return;
+    quickAskInlineRenameChatId = '';
+    renderQuickAskSidebarChats();
 }
 
 function quickAskDeleteChat(chatId) {
@@ -622,10 +647,8 @@ function quickAskDeleteChat(chatId) {
     const chat = quickAskChats.find((item) => item.id === id);
     if (!chat) return;
 
-    const title = String(chat.title || 'this chat').trim() || 'this chat';
-    if (!window.confirm(`Delete "${title}"?`)) return;
-
     quickAskChats = quickAskChats.filter((item) => item.id !== id);
+    if (quickAskInlineRenameChatId === id) quickAskInlineRenameChatId = '';
     if (quickAskChats.length === 0) {
         const newChat = quickAskCreateChat('New chat');
         quickAskChats = [newChat];
@@ -638,6 +661,49 @@ function quickAskDeleteChat(chatId) {
     persistQuickAskChats();
     renderQuickAskSidebarChats();
     renderQuickAskMessages();
+}
+
+function closeQuickAskDeleteModal() {
+    const modal = document.getElementById('quickAskDeleteConfirmModal');
+    if (modal) modal.remove();
+}
+
+function showQuickAskDeleteModal(chatId) {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    const chat = quickAskChats.find((item) => item.id === id);
+    if (!chat) return;
+    const title = String(chat.title || 'New chat').trim() || 'New chat';
+
+    closeQuickAskDeleteModal();
+    const modal = document.createElement('div');
+    modal.id = 'quickAskDeleteConfirmModal';
+    modal.className = 'fixed inset-0 z-[160] bg-slate-900/45 backdrop-blur-[1px] flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200">
+                <p class="text-sm font-semibold text-slate-900">Delete chat?</p>
+                <p class="mt-1 text-xs text-slate-500">This will permanently remove <span class="font-semibold text-slate-700">${escapeHtml(title)}</span>.</p>
+            </div>
+            <div class="px-5 py-4 flex items-center justify-end gap-2">
+                <button id="quickAskDeleteCancelBtn" type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button id="quickAskDeleteConfirmBtn" type="button" class="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700">Delete</button>
+            </div>
+        </div>
+    `;
+
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeQuickAskDeleteModal();
+    });
+    document.body.appendChild(modal);
+
+    document.getElementById('quickAskDeleteCancelBtn')?.addEventListener('click', () => {
+        closeQuickAskDeleteModal();
+    });
+    document.getElementById('quickAskDeleteConfirmBtn')?.addEventListener('click', () => {
+        closeQuickAskDeleteModal();
+        quickAskDeleteChat(id);
+    });
 }
 
 function quickAskGetChatPreview(chat) {
@@ -658,7 +724,7 @@ function renderQuickAskMessages() {
     const chat = getCurrentQuickAskChat();
     const messages = Array.isArray(chat?.messages) ? chat.messages : [];
     const hasMessages = messages.length > 0;
-    const shouldShowConversation = quickAskConversationOpened || hasMessages;
+    const shouldShowConversation = hasMessages;
 
     if (wrap) {
         wrap.classList.toggle('hidden', !shouldShowConversation);
@@ -757,8 +823,13 @@ function ensureQuickAskSidebarSection() {
             const id = String(actionBtn.getAttribute('data-quick-ask-chat-id') || '').trim();
             const action = String(actionBtn.getAttribute('data-quick-ask-action') || '').trim();
             if (!id || !action) return;
-            if (action === 'rename') quickAskRenameChat(id);
-            if (action === 'delete') quickAskDeleteChat(id);
+            if (action === 'rename') quickAskStartInlineRename(id);
+            if (action === 'rename-save') {
+                const inputEl = list.querySelector(`input[data-quick-ask-rename-input="true"][data-quick-ask-chat-id="${id}"]`);
+                quickAskCommitInlineRename(id, inputEl instanceof HTMLInputElement ? inputEl.value : '');
+            }
+            if (action === 'rename-cancel') quickAskCancelInlineRename();
+            if (action === 'delete') showQuickAskDeleteModal(id);
             return;
         }
 
@@ -766,11 +837,29 @@ function ensureQuickAskSidebarSection() {
         if (!btn) return;
         const id = String(btn.getAttribute('data-quick-ask-chat-id') || '').trim();
         if (!id) return;
-        quickAskConversationOpened = true;
         quickAskCurrentChatId = id;
+        if (quickAskInlineRenameChatId && quickAskInlineRenameChatId !== id) {
+            quickAskInlineRenameChatId = '';
+        }
         persistQuickAskChats();
         renderQuickAskSidebarChats();
         renderQuickAskMessages();
+    });
+
+    list?.addEventListener('keydown', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (target.getAttribute('data-quick-ask-rename-input') !== 'true') return;
+        const id = String(target.getAttribute('data-quick-ask-chat-id') || '').trim();
+        if (!id) return;
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            quickAskCommitInlineRename(id, target.value);
+        }
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            quickAskCancelInlineRename();
+        }
     });
 
     return true;
@@ -803,15 +892,35 @@ function renderQuickAskSidebarChats() {
 
     list.innerHTML = filtered.map((chat) => {
         const active = chat.id === quickAskCurrentChatId;
+        const isRenaming = chat.id === quickAskInlineRenameChatId;
         const itemClass = active
             ? 'border-blue-200 bg-blue-50'
             : 'border-slate-200 bg-white hover:bg-slate-50';
-        return `
-            <div class="group relative rounded-lg border transition-colors ${itemClass}">
-                <button type="button" data-quick-ask-select="true" data-quick-ask-chat-id="${chat.id}" class="w-full rounded-lg px-2.5 py-2 pr-16 text-left">
-                    <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(chat.title || 'New chat')}</p>
-                    <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
-                </button>
+        const title = String(chat.title || 'New chat');
+        const titleBlock = isRenaming
+            ? `
+                <input
+                    type="text"
+                    data-quick-ask-rename-input="true"
+                    data-quick-ask-chat-id="${chat.id}"
+                    value="${escapeHtml(title)}"
+                    maxlength="80"
+                    class="w-full rounded-md border border-blue-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+            `
+            : `<p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(title)}</p>`;
+        const actionButtons = isRenaming
+            ? `
+                <div class="absolute right-1 top-1 flex items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm">
+                    <button type="button" data-quick-ask-action="rename-save" data-quick-ask-chat-id="${chat.id}" title="Save" class="inline-flex h-6 w-6 items-center justify-center rounded text-emerald-600 hover:bg-emerald-50">
+                        <i class="fas fa-check text-[10px]"></i>
+                    </button>
+                    <button type="button" data-quick-ask-action="rename-cancel" data-quick-ask-chat-id="${chat.id}" title="Cancel" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                </div>
+            `
+            : `
                 <div class="absolute right-1 top-1 hidden items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm group-hover:flex group-focus-within:flex">
                     <button type="button" data-quick-ask-action="rename" data-quick-ask-chat-id="${chat.id}" title="Rename chat" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
                         <i class="fas fa-pen text-[10px]"></i>
@@ -820,6 +929,24 @@ function renderQuickAskSidebarChats() {
                         <i class="fas fa-trash text-[10px]"></i>
                     </button>
                 </div>
+            `;
+        const rowBody = isRenaming
+            ? `
+                <div class="w-full rounded-lg px-2.5 py-2 pr-16 text-left">
+                    ${titleBlock}
+                    <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
+                </div>
+            `
+            : `
+                <button type="button" data-quick-ask-select="true" data-quick-ask-chat-id="${chat.id}" class="w-full rounded-lg px-2.5 py-2 pr-16 text-left">
+                    ${titleBlock}
+                    <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
+                </button>
+            `;
+        return `
+            <div class="group relative rounded-lg border transition-colors ${itemClass}">
+                ${rowBody}
+                ${actionButtons}
             </div>
         `;
     }).join('');
@@ -1018,7 +1145,6 @@ async function sendQuickAskPrompt() {
     if (!getCurrentQuickAskChat()) {
         quickAskCreateNewChat();
     }
-    quickAskConversationOpened = true;
     appendQuickAskMessage('user', userMessage, false);
     const assistantMessageId = appendQuickAskMessage('assistant', 'Thinking...', true);
     const conversation = buildQuickAskConversationForRequest(getCurrentQuickAskChat());
