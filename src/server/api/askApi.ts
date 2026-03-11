@@ -36,8 +36,6 @@ type AskServerContext = {
 };
 
 const DEFAULT_ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
-const MAX_TOOL_ROUNDS = 6;
-const MAX_TOOL_RESULT_CHARS = 12000;
 
 export class AskApi {
   private readonly deploymentUtil: DeploymentUtil;
@@ -168,15 +166,11 @@ export class AskApi {
   }
 
   private serializeToolResult(value: any): string {
-    let raw = '';
     try {
-      raw = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+      return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
     } catch {
-      raw = String(value);
+      return String(value);
     }
-
-    if (raw.length <= MAX_TOOL_RESULT_CHARS) return raw;
-    return `${raw.slice(0, MAX_TOOL_RESULT_CHARS)}\n...[truncated ${raw.length - MAX_TOOL_RESULT_CHARS} chars]`;
   }
 
   private getAskContext = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
@@ -310,7 +304,7 @@ export class AskApi {
     let toolExecutor: DynamicMCPExecutor | null = null;
 
     try {
-      for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+      for (;;) {
         const anthropicPayload: Record<string, any> = {
           model: String(aiConfig.model || '').trim(),
           max_tokens: 4000,
@@ -348,10 +342,6 @@ export class AskApi {
             throw new Error('Aria returned an empty response');
           }
           return text;
-        }
-
-        if (round === MAX_TOOL_ROUNDS - 1) {
-          throw new Error('Aria tool loop exceeded the maximum number of rounds');
         }
 
         if (!toolExecutor) toolExecutor = new DynamicMCPExecutor();
@@ -412,7 +402,7 @@ export class AskApi {
       }
     }
 
-    throw new Error('Claude tool loop terminated unexpectedly');
+    throw new Error('Aria tool loop terminated unexpectedly');
   }
 
   private sanitizeAssistantText(input: string): string {
