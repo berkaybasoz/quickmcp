@@ -101,6 +101,9 @@
       <div id="sharedQuickAskSidebarChatList" class="space-y-1">
         <p class="px-2 py-2 text-xs text-slate-500">Loading chats...</p>
       </div>
+      <a href="/quick-ask?new=1" class="quick-ask-collapsed-add w-9 h-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-600" title="New chat" aria-label="New chat">
+        <i class="fas fa-plus text-[12px]"></i>
+      </a>
     `;
 
     const list = section.querySelector('#sharedQuickAskSidebarChatList');

@@ -485,8 +485,21 @@ body {
   height: 2rem !important;
   font-size: 0.75rem !important;
 }
-#sidebar.collapsed #sharedQuickAskSidebarChats {
+.quick-ask-collapsed-add {
   display: none !important;
+}
+#sidebar.collapsed #sharedQuickAskSidebarChats,
+#sidebar.collapsed #quickAskSidebarChats {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+#sidebar.collapsed #sharedQuickAskSidebarChats > :not(.quick-ask-collapsed-add),
+#sidebar.collapsed #quickAskSidebarChats > :not(.quick-ask-collapsed-add) {
+  display: none !important;
+}
+#sidebar.collapsed .quick-ask-collapsed-add {
+  display: inline-flex !important;
 }
 
 /* Center collapsed nav within the narrow sidebar */

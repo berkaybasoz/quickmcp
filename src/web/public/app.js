@@ -879,14 +879,21 @@ function ensureQuickAskSidebarSection() {
             <input id="quickAskChatSearchInput" type="text" placeholder="Search chats" class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-7 pr-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200">
         </div>
         <div id="quickAskChatList" class="space-y-1"></div>
+        <button id="quickAskCollapsedNewChatBtn" type="button" class="quick-ask-collapsed-add w-9 h-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-600" title="New chat" aria-label="New chat">
+            <i class="fas fa-plus text-[12px]"></i>
+        </button>
     `;
     navList.appendChild(section);
 
     const newBtn = document.getElementById('quickAskSidebarNewChatBtn');
+    const collapsedNewBtn = document.getElementById('quickAskCollapsedNewChatBtn');
     const searchInput = document.getElementById('quickAskChatSearchInput');
     const list = document.getElementById('quickAskChatList');
 
     newBtn?.addEventListener('click', () => {
+        quickAskCreateNewChat();
+    });
+    collapsedNewBtn?.addEventListener('click', () => {
         quickAskCreateNewChat();
     });
     if (searchInput instanceof HTMLInputElement) {
