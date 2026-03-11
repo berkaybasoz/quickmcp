@@ -185,6 +185,19 @@ export class AskApi {
     }
   }
 
+  private sanitizeIdArray(value: any): string[] {
+    if (!Array.isArray(value)) return [];
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const item of value) {
+      const id = String(item || '').trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  }
+
   private sanitizeChatPayload(rawChats: any): any[] {
     if (!Array.isArray(rawChats)) return [];
     const out: any[] = [];
@@ -205,7 +218,9 @@ export class AskApi {
               createdAt: String(msg.createdAt || new Date().toISOString())
             }))
         : [];
-      out.push({ id, title, createdAt, updatedAt, messages });
+      const selectedServerIds = this.sanitizeIdArray((item as any).selectedServerIds);
+      const selectedToolIds = this.sanitizeIdArray((item as any).selectedToolIds);
+      out.push({ id, title, createdAt, updatedAt, messages, selectedServerIds, selectedToolIds });
       if (out.length >= 100) break;
     }
     return out;
