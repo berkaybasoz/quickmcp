@@ -1154,7 +1154,7 @@ function renderQuickAskTools() {
         const tools = Array.isArray(server?.tools) ? server.tools : [];
         const checkedServer = quickAskSelectedServerIds.has(serverId);
         return `
-            <details class="quick-ask-server-details border border-slate-200 rounded-lg bg-slate-50/60" ${checkedServer ? 'open' : ''}>
+            <details class="quick-ask-server-details border border-slate-200 rounded-lg bg-slate-50/60">
                 <summary class="quick-ask-server-summary cursor-pointer px-3 py-2.5 flex items-center justify-between gap-3 text-sm">
                     <div class="flex items-center gap-2 min-w-0">
                         <i class="quick-ask-server-chevron fas fa-chevron-down text-[11px] text-slate-500"></i>
