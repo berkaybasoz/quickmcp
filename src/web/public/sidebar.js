@@ -21,6 +21,7 @@
   function isActive(path) {
     const p = window.location.pathname.replace(/\/$/, '');
     if (p === '' || p === '/') return path === '/';
+    if (p === '/quick-ask' && path === '/') return true;
     return p === path;
   }
 
@@ -273,7 +274,8 @@
       </div>
 
       <div id="sidebarNavList" class="p-3 overflow-y-auto flex-1 scrollbar-modern space-y-1.5">
-        ${navItem('/', 'fa-magic', 'Generate Server', 'Create new MCP servers', isActive('/'))}
+        ${navItem('/', 'fa-comment-dots', 'Quick Ask', 'Ask Aria with MCP tools', isActive('/'))}
+        ${navItem('/generate', 'fa-magic', 'Generate Server', 'Create new MCP servers', isActive('/generate'))}
         ${navItem('/manage-servers', 'fa-server', 'Manage Servers', 'Edit & Control', isActive('/manage-servers'))}
         ${navItem('/test-servers', 'fa-vial', 'Test Servers', 'Verify functionality', isActive('/test-servers'))}
         ${showAuthManagement ? navItem('/authorization', 'fa-key', 'Authorization', 'MCP token policy', isActive('/authorization'), 'bg-amber-100 text-amber-700 group-hover:bg-amber-200') : ''}

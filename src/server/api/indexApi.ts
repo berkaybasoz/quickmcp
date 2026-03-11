@@ -14,6 +14,8 @@ export class IndexApi {
 
   registerRoutes(app: express.Express): void {
     app.get('/', this.serveRoot);
+    app.get('/quick-ask', this.serveQuickAsk);
+    app.get('/generate', this.serveGenerate);
     app.get('/landing', this.serveLanding);
     app.get('/pricing', this.servePricing);
     // Keep this route last: it catches all unmatched routes.
@@ -23,10 +25,28 @@ export class IndexApi {
   private serveRoot = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'index.html'));
+      res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
       return;
     }
     res.sendFile(path.join(this.deps.publicDir, 'landing.html'));
+  };
+
+  private serveQuickAsk = async (req: express.Request, res: express.Response): Promise<void> => {
+    const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
+    if (ctx) {
+      res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
+      return;
+    }
+    res.redirect('/landing');
+  };
+
+  private serveGenerate = async (req: express.Request, res: express.Response): Promise<void> => {
+    const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
+    if (ctx) {
+      res.sendFile(path.join(this.deps.publicDir, 'index.html'));
+      return;
+    }
+    res.redirect('/landing');
   };
 
   private serveLanding = async (req: express.Request, res: express.Response): Promise<void> => {
@@ -43,6 +63,6 @@ export class IndexApi {
   };
 
   private serveApp = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'index.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
   };
 }

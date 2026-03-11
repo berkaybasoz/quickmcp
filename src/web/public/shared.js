@@ -276,7 +276,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function getAppBarSubtitle() {
     const p = (window.location.pathname || '/').replace(/\/$/, '') || '/';
-    if (p === '/') return 'Server Generator';
+    if (p === '/' || p === '/quick-ask') return 'Quick Ask';
+    if (p === '/generate') return 'Server Generator';
     if (p === '/manage-servers') return 'Manage Servers';
     if (p === '/test-servers') return 'Test Servers';
     if (p === '/authorization') return 'Authorization';
@@ -322,7 +323,7 @@ function renderSharedAppBar() {
         </div>
         <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
         <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
-          <button id="headerNewServerBtn" onclick="window.location.href='/'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+          <button id="headerNewServerBtn" onclick="window.location.href='/generate'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
             <i class="fas fa-plus"></i>
             <span>New Server</span>
           </button>

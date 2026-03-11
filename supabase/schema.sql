@@ -94,6 +94,16 @@ create table if not exists public.app_logs (
   additional_info text
 );
 
+create table if not exists public.workspace_ai_config (
+  workspace_id text primary key,
+  provider text not null default 'claude',
+  model text not null,
+  api_token text not null,
+  api_version text,
+  base_url text,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_servers_owner on public.servers(owner_username);
 create index if not exists idx_refresh_tokens_user on public.refresh_tokens(username);
 create index if not exists idx_users_workspace on public.users(workspace_id);
@@ -104,3 +114,4 @@ create index if not exists idx_mcp_token_policies_scope on public.mcp_token_poli
 create index if not exists idx_app_logs_severity on public.app_logs(severity);
 create index if not exists idx_app_logs_datetime on public.app_logs(datetime);
 create index if not exists idx_app_logs_username on public.app_logs(username);
+create index if not exists idx_workspace_ai_provider on public.workspace_ai_config(provider);

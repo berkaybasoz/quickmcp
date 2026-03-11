@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { IDataStore, LogEntry, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope } from './datastore';
+import { IDataStore, LogEntry, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 
 export class SQLiteManager implements IDataStore {
   private db: Database.Database;
@@ -657,6 +657,10 @@ export class SQLiteManager implements IDataStore {
       WHERE id = ?
     `);
     stmt.run(id);
+  }
+
+  async getWorkspaceAiConfig(_workspaceId: string): Promise<WorkspaceAiConfig | null> {
+    return null;
   }
 
   async writeLog(entry: LogEntry): Promise<void> {
