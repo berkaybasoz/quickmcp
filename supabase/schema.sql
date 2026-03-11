@@ -104,6 +104,13 @@ create table if not exists public.workspace_ai_config (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.chat_state (
+  workspace_id text primary key,
+  chats_json jsonb not null default '[]'::jsonb,
+  current_chat_id text not null default '',
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_servers_owner on public.servers(owner_username);
 create index if not exists idx_refresh_tokens_user on public.refresh_tokens(username);
 create index if not exists idx_users_workspace on public.users(workspace_id);
@@ -115,3 +122,4 @@ create index if not exists idx_app_logs_severity on public.app_logs(severity);
 create index if not exists idx_app_logs_datetime on public.app_logs(datetime);
 create index if not exists idx_app_logs_username on public.app_logs(username);
 create index if not exists idx_workspace_ai_provider on public.workspace_ai_config(provider);
+create index if not exists idx_chat_state_updated_at on public.chat_state(updated_at);

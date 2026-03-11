@@ -123,6 +123,13 @@ export interface WorkspaceAiConfig {
   baseUrl?: string;
 }
 
+export interface QuickAskStateRecord {
+  workspaceId: string;
+  chats: any[];
+  currentChatId: string;
+  updatedAt: string;
+}
+
 export interface IDataStore {
   saveServer(server: ServerConfig): Promise<void>;
   getServer(serverId: string): Promise<ServerConfig | null>;
@@ -165,6 +172,8 @@ export interface IDataStore {
   getMcpTokensByWorkspace(workspaceId: string): Promise<McpTokenRecord[]>;
   revokeMcpToken(id: string): Promise<void>;
   getWorkspaceAiConfig(workspaceId: string): Promise<WorkspaceAiConfig | null>;
+  getQuickAskState(workspaceId: string): Promise<QuickAskStateRecord | null>;
+  saveQuickAskState(workspaceId: string, chats: any[], currentChatId: string): Promise<void>;
 
   writeLog(entry: LogEntry): Promise<void>;
 

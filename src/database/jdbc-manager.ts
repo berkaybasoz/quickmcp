@@ -1,4 +1,4 @@
-import { IDataStore, LogEntry, RefreshTokenRecord, ResourceDefinition, ServerConfig, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
+import { IDataStore, LogEntry, QuickAskStateRecord, RefreshTokenRecord, ResourceDefinition, ServerConfig, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 
 export class JdbcDataStore implements IDataStore {
   constructor() {
@@ -44,6 +44,8 @@ export class JdbcDataStore implements IDataStore {
   async getMcpTokensByWorkspace(_workspaceId: string): Promise<McpTokenRecord[]> { throw new Error('Not implemented'); }
   async revokeMcpToken(_id: string): Promise<void> { throw new Error('Not implemented'); }
   async getWorkspaceAiConfig(_workspaceId: string): Promise<WorkspaceAiConfig | null> { throw new Error('Not implemented'); }
+  async getQuickAskState(_workspaceId: string): Promise<QuickAskStateRecord | null> { throw new Error('Not implemented'); }
+  async saveQuickAskState(_workspaceId: string, _chats: any[], _currentChatId: string): Promise<void> { throw new Error('Not implemented'); }
 
   async writeLog(_entry: LogEntry): Promise<void> { throw new Error('Not implemented'); }
 

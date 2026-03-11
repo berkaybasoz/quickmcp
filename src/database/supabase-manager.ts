@@ -5,6 +5,7 @@ import {
   McpTokenPolicyRecord,
   McpTokenPolicyScope,
   McpTokenRecord,
+  QuickAskStateRecord,
   RefreshTokenRecord,
   ResourceDefinition,
   ServerAuthConfig,
@@ -466,6 +467,36 @@ export class SupabaseDataStore implements IDataStore {
     } catch {
       return null;
     }
+  }
+
+  async getQuickAskState(workspaceId: string): Promise<QuickAskStateRecord | null> {
+    try {
+      const rows = await this.request<any[]>(
+        `chat_state?select=workspace_id,chats_json,current_chat_id,updated_at&workspace_id=eq.${encodeURIComponent(workspaceId)}&limit=1`
+      );
+      if (!rows.length) return null;
+      const row = rows[0];
+      const chatsRaw = typeof row.chats_json === 'string'
+        ? safeJsonParse<any[]>(row.chats_json, [])
+        : (Array.isArray(row.chats_json) ? row.chats_json : []);
+      return {
+        workspaceId: String(row.workspace_id || workspaceId),
+        chats: chatsRaw,
+        currentChatId: String(row.current_chat_id || ''),
+        updatedAt: String(row.updated_at || new Date().toISOString())
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  async saveQuickAskState(workspaceId: string, chats: any[], currentChatId: string): Promise<void> {
+    await this.request('chat_state?on_conflict=workspace_id', 'POST', {
+      workspace_id: workspaceId,
+      chats_json: Array.isArray(chats) ? chats : [],
+      current_chat_id: String(currentChatId || ''),
+      updated_at: new Date().toISOString()
+    }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
   }
 
   async writeLog(entry: LogEntry): Promise<void> {

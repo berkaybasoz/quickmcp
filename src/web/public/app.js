@@ -13,6 +13,13 @@ let quickAskContext = null;
 let quickAskSelectedServerIds = new Set();
 let quickAskSelectedToolIds = new Set();
 let quickAskBusy = false;
+const QUICK_ASK_MAX_CHATS = 60;
+let quickAskChats = [];
+let quickAskCurrentChatId = '';
+let quickAskChatSearchText = '';
+let quickAskPersistTimer = null;
+let quickAskPersistInFlight = false;
+let quickAskPersistDirty = false;
 
 function getPanelToggleIconSvg() {
     return `
@@ -405,6 +412,371 @@ function renderQuickAskAnswerMarkdown(markdown) {
     return finalHtml || `<p class="my-2">${renderInlineMarkdown(input)}</p>`;
 }
 
+function quickAskNowIso() {
+    return new Date().toISOString();
+}
+
+function quickAskCreateId(prefix = 'qa') {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function quickAskBuildTitle(text) {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return 'New chat';
+    return clean.length > 52 ? `${clean.slice(0, 52)}...` : clean;
+}
+
+function quickAskCreateChat(initialTitle = 'New chat') {
+    const now = quickAskNowIso();
+    return {
+        id: quickAskCreateId('chat'),
+        title: initialTitle,
+        createdAt: now,
+        updatedAt: now,
+        messages: []
+    };
+}
+
+function quickAskNormalizeChat(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const id = String(raw.id || '').trim() || quickAskCreateId('chat');
+    const title = String(raw.title || 'New chat').trim() || 'New chat';
+    const createdAt = String(raw.createdAt || quickAskNowIso());
+    const updatedAt = String(raw.updatedAt || createdAt);
+    const messages = Array.isArray(raw.messages)
+        ? raw.messages
+            .map((item) => {
+                const role = item?.role === 'assistant' ? 'assistant' : 'user';
+                const content = String(item?.content || '');
+                return {
+                    id: String(item?.id || quickAskCreateId('msg')),
+                    role,
+                    content,
+                    createdAt: String(item?.createdAt || quickAskNowIso()),
+                    pending: item?.pending === true
+                };
+            })
+        : [];
+    return { id, title, createdAt, updatedAt, messages };
+}
+
+function quickAskSortChats() {
+    quickAskChats.sort((a, b) => {
+        const ta = new Date(a?.updatedAt || 0).getTime();
+        const tb = new Date(b?.updatedAt || 0).getTime();
+        return tb - ta;
+    });
+}
+
+function normalizeQuickAskChatsState() {
+    quickAskSortChats();
+    if (quickAskChats.length > QUICK_ASK_MAX_CHATS) {
+        quickAskChats = quickAskChats.slice(0, QUICK_ASK_MAX_CHATS);
+    }
+    if (!quickAskChats.some((chat) => chat.id === quickAskCurrentChatId)) {
+        quickAskCurrentChatId = quickAskChats[0]?.id || '';
+    }
+}
+
+async function saveQuickAskChatsToServer() {
+    if (quickAskPersistInFlight) {
+        quickAskPersistDirty = true;
+        return;
+    }
+    quickAskPersistInFlight = true;
+    quickAskPersistDirty = false;
+    try {
+        const response = await fetch('/api/ask/chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chats: quickAskChats,
+                currentChatId: quickAskCurrentChatId
+            })
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to save chats (${response.status})`);
+        }
+    } catch {
+        // Keep local in-memory state; retry on next mutation.
+    } finally {
+        quickAskPersistInFlight = false;
+        if (quickAskPersistDirty) {
+            quickAskPersistDirty = false;
+            setTimeout(() => {
+                saveQuickAskChatsToServer();
+            }, 50);
+        }
+    }
+}
+
+function scheduleQuickAskChatsSave() {
+    if (quickAskPersistTimer) clearTimeout(quickAskPersistTimer);
+    quickAskPersistTimer = setTimeout(() => {
+        quickAskPersistTimer = null;
+        saveQuickAskChatsToServer();
+    }, 300);
+}
+
+function persistQuickAskChats() {
+    normalizeQuickAskChatsState();
+    scheduleQuickAskChatsSave();
+}
+
+async function loadQuickAskChats() {
+    quickAskChats = [];
+    quickAskCurrentChatId = '';
+    try {
+        const response = await fetch('/api/ask/chats');
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok && payload?.success) {
+            const chatsRaw = Array.isArray(payload?.data?.chats) ? payload.data.chats : [];
+            quickAskChats = chatsRaw.map((chat) => quickAskNormalizeChat(chat)).filter(Boolean);
+            quickAskCurrentChatId = String(payload?.data?.currentChatId || '').trim();
+        }
+    } catch {}
+
+    if (quickAskChats.length === 0) {
+        const chat = quickAskCreateChat('New chat');
+        quickAskChats = [chat];
+        quickAskCurrentChatId = chat.id;
+        persistQuickAskChats();
+    }
+
+    normalizeQuickAskChatsState();
+}
+
+function getCurrentQuickAskChat() {
+    return quickAskChats.find((chat) => chat.id === quickAskCurrentChatId) || null;
+}
+
+function quickAskTouchChat(chat) {
+    if (!chat) return;
+    chat.updatedAt = quickAskNowIso();
+}
+
+function quickAskRefreshChatTitle(chat) {
+    if (!chat) return;
+    if (String(chat.title || '').trim() !== 'New chat' && chat.messages.length > 0) return;
+    const firstUser = chat.messages.find((msg) => msg.role === 'user' && String(msg.content || '').trim());
+    if (!firstUser) return;
+    chat.title = quickAskBuildTitle(firstUser.content);
+}
+
+function buildQuickAskConversationForRequest(chat) {
+    if (!chat || !Array.isArray(chat.messages)) return [];
+    return chat.messages
+        .filter((msg) => msg && msg.pending !== true)
+        .map((msg) => {
+            const role = msg?.role === 'assistant' ? 'assistant' : (msg?.role === 'user' ? 'user' : '');
+            const content = String(msg?.content || '').trim();
+            if (!role || !content) return null;
+            return {
+                role,
+                content: content.slice(0, 8000)
+            };
+        })
+        .filter(Boolean)
+        .slice(-24);
+}
+
+function quickAskCreateNewChat() {
+    const chat = quickAskCreateChat('New chat');
+    quickAskChats.unshift(chat);
+    quickAskCurrentChatId = chat.id;
+    persistQuickAskChats();
+    renderQuickAskMessages();
+    renderQuickAskSidebarChats();
+    const input = document.getElementById('quickAskInput');
+    if (input instanceof HTMLTextAreaElement) {
+        input.focus();
+    }
+}
+
+function quickAskGetChatPreview(chat) {
+    if (!chat || !Array.isArray(chat.messages) || chat.messages.length === 0) return 'No messages yet';
+    const last = chat.messages[chat.messages.length - 1];
+    const text = String(last?.content || '').replace(/\s+/g, ' ').trim();
+    if (!text) return 'No messages yet';
+    return text.length > 56 ? `${text.slice(0, 56)}...` : text;
+}
+
+function renderQuickAskMessages() {
+    const list = document.getElementById('quickAskMessages');
+    const empty = document.getElementById('quickAskMessagesEmpty');
+    const title = document.getElementById('quickAskActiveChatTitle');
+    if (!list || !empty) return;
+
+    const chat = getCurrentQuickAskChat();
+    if (title) {
+        title.textContent = chat?.title || 'New chat';
+    }
+
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    if (messages.length === 0) {
+        list.classList.add('hidden');
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+
+    empty.classList.add('hidden');
+    list.classList.remove('hidden');
+    list.innerHTML = messages.map((msg) => {
+        const isUser = msg.role === 'user';
+        const bubbleBase = isUser
+            ? 'bg-slate-900 text-white border border-slate-800'
+            : 'bg-white text-slate-800 border border-slate-200';
+        const wrapper = isUser ? 'justify-end' : 'justify-start';
+        const contentHtml = isUser
+            ? `<p class="text-sm leading-6 whitespace-pre-wrap">${escapeHtml(String(msg.content || ''))}</p>`
+            : `<div class="qa-markdown text-sm">${msg.pending ? '<p class="my-2 text-slate-500">Thinking...</p>' : (renderQuickAskAnswerMarkdown(String(msg.content || '')) || '<p class="my-2">No response</p>')}</div>`;
+
+        return `
+            <div class="flex ${wrapper} w-full">
+                <div class="max-w-[84%] rounded-2xl px-4 py-3 shadow-sm ${bubbleBase}">
+                    ${contentHtml}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    requestAnimationFrame(() => {
+        list.scrollTop = list.scrollHeight;
+    });
+}
+
+function ensureQuickAskSidebarSection() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return false;
+    const existing = document.getElementById('quickAskSidebarChats');
+    if (existing) return true;
+
+    const userSection = document.getElementById('sidebarUserSection');
+    if (!userSection) return false;
+
+    const section = document.createElement('div');
+    section.id = 'quickAskSidebarChats';
+    section.className = 'px-3 pb-3 border-t border-slate-200/60 bg-white space-y-2';
+    section.innerHTML = `
+        <div class="pt-3 flex items-center justify-between gap-2">
+            <p class="text-[11px] tracking-[0.14em] uppercase text-slate-500 font-semibold">Your Chats</p>
+            <button id="quickAskSidebarNewChatBtn" type="button" class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">
+                <i class="fas fa-plus text-[10px]"></i>
+                New
+            </button>
+        </div>
+        <div class="relative">
+            <i class="fas fa-search absolute left-2.5 top-2.5 text-[11px] text-slate-400"></i>
+            <input id="quickAskChatSearchInput" type="text" placeholder="Search chats" class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-7 pr-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200">
+        </div>
+        <div id="quickAskChatList" class="max-h-56 overflow-y-auto scrollbar-modern space-y-1"></div>
+    `;
+    sidebar.insertBefore(section, userSection);
+
+    const newBtn = document.getElementById('quickAskSidebarNewChatBtn');
+    const searchInput = document.getElementById('quickAskChatSearchInput');
+    const list = document.getElementById('quickAskChatList');
+
+    newBtn?.addEventListener('click', () => {
+        quickAskCreateNewChat();
+    });
+    if (searchInput instanceof HTMLInputElement) {
+        searchInput.value = quickAskChatSearchText;
+        searchInput.addEventListener('input', () => {
+            quickAskChatSearchText = searchInput.value.trim().toLowerCase();
+            renderQuickAskSidebarChats();
+        });
+    }
+    list?.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const btn = target.closest('button[data-quick-ask-chat-id]');
+        if (!btn) return;
+        const id = String(btn.getAttribute('data-quick-ask-chat-id') || '').trim();
+        if (!id) return;
+        quickAskCurrentChatId = id;
+        persistQuickAskChats();
+        renderQuickAskSidebarChats();
+        renderQuickAskMessages();
+    });
+
+    return true;
+}
+
+function mountQuickAskSidebarSectionWithRetry(attempt = 0) {
+    if (ensureQuickAskSidebarSection()) {
+        renderQuickAskSidebarChats();
+        return;
+    }
+    if (attempt >= 25) return;
+    setTimeout(() => mountQuickAskSidebarSectionWithRetry(attempt + 1), 200);
+}
+
+function renderQuickAskSidebarChats() {
+    const list = document.getElementById('quickAskChatList');
+    if (!list) return;
+
+    quickAskSortChats();
+    const filtered = quickAskChats.filter((chat) => {
+        if (!quickAskChatSearchText) return true;
+        const haystack = `${chat.title} ${quickAskGetChatPreview(chat)}`.toLowerCase();
+        return haystack.includes(quickAskChatSearchText);
+    });
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<p class="px-2 py-3 text-xs text-slate-500">No chats found.</p>';
+        return;
+    }
+
+    list.innerHTML = filtered.map((chat) => {
+        const active = chat.id === quickAskCurrentChatId;
+        const itemClass = active
+            ? 'border-blue-200 bg-blue-50'
+            : 'border-slate-200 bg-white hover:bg-slate-50';
+        return `
+            <button type="button" data-quick-ask-chat-id="${chat.id}" class="w-full rounded-lg border px-2.5 py-2 text-left transition-colors ${itemClass}">
+                <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(chat.title || 'New chat')}</p>
+                <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(quickAskGetChatPreview(chat))}</p>
+            </button>
+        `;
+    }).join('');
+}
+
+function appendQuickAskMessage(role, content, pending = false) {
+    const chat = getCurrentQuickAskChat();
+    if (!chat) return '';
+
+    const msg = {
+        id: quickAskCreateId('msg'),
+        role: role === 'assistant' ? 'assistant' : 'user',
+        content: String(content || ''),
+        createdAt: quickAskNowIso(),
+        pending: pending === true
+    };
+    chat.messages.push(msg);
+    quickAskTouchChat(chat);
+    quickAskRefreshChatTitle(chat);
+    persistQuickAskChats();
+    renderQuickAskMessages();
+    renderQuickAskSidebarChats();
+    return msg.id;
+}
+
+function updateQuickAskMessage(messageId, content, pending = false) {
+    const chat = getCurrentQuickAskChat();
+    if (!chat) return;
+    const msg = chat.messages.find((item) => item.id === messageId);
+    if (!msg) return;
+    msg.content = String(content || '');
+    msg.pending = pending === true;
+    quickAskTouchChat(chat);
+    quickAskRefreshChatTitle(chat);
+    persistQuickAskChats();
+    renderQuickAskMessages();
+    renderQuickAskSidebarChats();
+}
+
 function updateQuickAskSelectedCount() {
     const countEl = document.getElementById('quickAskSelectedCount');
     if (!countEl) return;
@@ -545,9 +917,7 @@ async function loadQuickAskContext() {
 async function sendQuickAskPrompt() {
     const input = document.getElementById('quickAskInput');
     const sendBtn = document.getElementById('quickAskSendBtn');
-    const answerWrap = document.getElementById('quickAskAnswerWrap');
-    const answer = document.getElementById('quickAskAnswer');
-    if (!(input instanceof HTMLTextAreaElement) || !(sendBtn instanceof HTMLButtonElement) || !answerWrap || !answer) return;
+    if (!(input instanceof HTMLTextAreaElement) || !(sendBtn instanceof HTMLButtonElement)) return;
     if (quickAskBusy) return;
 
     const prompt = input.value.trim();
@@ -559,16 +929,24 @@ async function sendQuickAskPrompt() {
     quickAskBusy = true;
     sendBtn.disabled = true;
     setQuickAskStatus('busy', 'Aria is thinking');
-    answerWrap.classList.remove('hidden');
-    answer.textContent = 'Thinking...';
     collectQuickAskSelectionsFromDom();
+    const userMessage = prompt;
+    input.value = '';
+
+    if (!getCurrentQuickAskChat()) {
+        quickAskCreateNewChat();
+    }
+    appendQuickAskMessage('user', userMessage, false);
+    const assistantMessageId = appendQuickAskMessage('assistant', 'Thinking...', true);
+    const conversation = buildQuickAskConversationForRequest(getCurrentQuickAskChat());
 
     try {
         const response = await fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                prompt,
+                prompt: userMessage,
+                conversation,
                 selectedServerIds: Array.from(quickAskSelectedServerIds),
                 selectedToolIds: Array.from(quickAskSelectedToolIds)
             })
@@ -577,12 +955,11 @@ async function sendQuickAskPrompt() {
         if (!response.ok || !payload?.success) {
             throw new Error(payload?.error || 'Ask request failed');
         }
-        const rendered = renderQuickAskAnswerMarkdown(String(payload?.data?.answer || ''));
-        answer.innerHTML = rendered || '<p class="my-2">No response</p>';
+        updateQuickAskMessage(assistantMessageId, String(payload?.data?.answer || 'No response'), false);
         setQuickAskStatus('ready', 'Aria ready');
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Ask request failed';
-        answer.innerHTML = `<p class="my-2 text-rose-700">${escapeHtml(message)}</p>`;
+        updateQuickAskMessage(assistantMessageId, `Request failed: ${message}`, false);
         setQuickAskStatus('error', 'Request failed');
         window.utils?.showToast?.(message, 'error');
     } finally {
@@ -597,6 +974,7 @@ function initializeQuickAsk() {
 
     const toggleBtn = document.getElementById('quickAskOpenToolsBtn');
     const refreshBtn = document.getElementById('quickAskRefreshBtn');
+    const newChatBtn = document.getElementById('quickAskNewChatBtn');
     const panel = document.getElementById('quickAskToolsPanel');
     const sendBtn = document.getElementById('quickAskSendBtn');
     const input = document.getElementById('quickAskInput');
@@ -606,6 +984,9 @@ function initializeQuickAsk() {
     });
     refreshBtn?.addEventListener('click', () => {
         loadQuickAskContext();
+    });
+    newChatBtn?.addEventListener('click', () => {
+        quickAskCreateNewChat();
     });
     sendBtn?.addEventListener('click', () => {
         sendQuickAskPrompt();
@@ -619,6 +1000,17 @@ function initializeQuickAsk() {
         });
     }
 
+    mountQuickAskSidebarSectionWithRetry();
+    loadQuickAskChats()
+        .then(() => {
+            renderQuickAskMessages();
+            renderQuickAskSidebarChats();
+            mountQuickAskSidebarSectionWithRetry();
+        })
+        .catch(() => {
+            renderQuickAskMessages();
+            renderQuickAskSidebarChats();
+        });
     loadQuickAskContext();
 }
 

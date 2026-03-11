@@ -35,6 +35,11 @@ type AskServerContext = {
   tools: Array<{ id: string; name: string; description: string }>;
 };
 
+type AskConversationMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 const DEFAULT_ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
 
 export class AskApi {
@@ -46,6 +51,8 @@ export class AskApi {
 
   registerRoutes(app: express.Express): void {
     app.get('/api/ask/context', this.getAskContext);
+    app.get('/api/ask/chats', this.getAskChats);
+    app.post('/api/ask/chats', this.saveAskChats);
     app.post('/api/ask', this.askWithSelectedTools);
   }
 
@@ -56,6 +63,11 @@ export class AskApi {
   private resolveServerOwner(ctx: AuthContext): string {
     if (this.isSaasMode()) return ctx.workspaceId;
     return ctx.workspaceId || ctx.username;
+  }
+
+  private resolveChatWorkspace(_ctx: AuthContext): string {
+    if (this.isSaasMode()) return 'admin';
+    return 'default';
   }
 
   private async loadServerContext(store: IDataStore, ownerUsername: string): Promise<AskServerContext[]> {
@@ -173,6 +185,109 @@ export class AskApi {
     }
   }
 
+  private sanitizeChatPayload(rawChats: any): any[] {
+    if (!Array.isArray(rawChats)) return [];
+    const out: any[] = [];
+    for (const item of rawChats) {
+      if (!item || typeof item !== 'object') continue;
+      const id = String((item as any).id || '').trim();
+      if (!id) continue;
+      const title = String((item as any).title || 'New chat').trim() || 'New chat';
+      const createdAt = String((item as any).createdAt || new Date().toISOString());
+      const updatedAt = String((item as any).updatedAt || createdAt);
+      const messages = Array.isArray((item as any).messages)
+        ? (item as any).messages
+            .filter((msg: any) => msg && typeof msg === 'object')
+            .map((msg: any) => ({
+              id: String(msg.id || ''),
+              role: msg.role === 'assistant' ? 'assistant' : 'user',
+              content: String(msg.content || ''),
+              createdAt: String(msg.createdAt || new Date().toISOString())
+            }))
+        : [];
+      out.push({ id, title, createdAt, updatedAt, messages });
+      if (out.length >= 100) break;
+    }
+    return out;
+  }
+
+  private sanitizeConversationPayload(rawConversation: any, prompt: string): AskConversationMessage[] {
+    const out: AskConversationMessage[] = [];
+    if (Array.isArray(rawConversation)) {
+      for (const item of rawConversation) {
+        if (!item || typeof item !== 'object') continue;
+        const roleRaw = String((item as any).role || '').trim().toLowerCase();
+        const role = roleRaw === 'assistant' ? 'assistant' : (roleRaw === 'user' ? 'user' : '');
+        if (!role) continue;
+        const content = String((item as any).content || '').trim();
+        if (!content) continue;
+        out.push({ role, content: content.slice(0, 12000) });
+        if (out.length >= 40) break;
+      }
+    }
+
+    const safePrompt = String(prompt || '').trim();
+    if (out.length === 0 && safePrompt) {
+      out.push({ role: 'user', content: safePrompt.slice(0, 12000) });
+      return out;
+    }
+
+    if (safePrompt) {
+      const last = out[out.length - 1];
+      if (!last || last.role !== 'user' || last.content !== safePrompt) {
+        out.push({ role: 'user', content: safePrompt.slice(0, 12000) });
+      }
+    }
+
+    return out.slice(-40);
+  }
+
+  private getAskChats = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    const ctx = await this.deps.resolveAuthContext(req, res);
+    if (!ctx) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      const store = this.deps.ensureDataStore();
+      const workspaceId = this.resolveChatWorkspace(ctx);
+      const state = await store.getQuickAskState(workspaceId);
+      res.json({
+        success: true,
+        data: {
+          chats: Array.isArray(state?.chats) ? state?.chats : [],
+          currentChatId: String(state?.currentChatId || '')
+        }
+      });
+    } catch (error) {
+      logger.error('Ask chats load failed:', error);
+      res.status(500).json({ success: false, error: 'Failed to load chats' });
+    }
+  };
+
+  private saveAskChats = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
+    const ctx = await this.deps.resolveAuthContext(req, res);
+    if (!ctx) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      const workspaceId = this.resolveChatWorkspace(ctx);
+      const chats = this.sanitizeChatPayload((req.body as any)?.chats);
+      const currentChatId = String((req.body as any)?.currentChatId || '').trim();
+      const persistedCurrentChatId = chats.some((chat: any) => String(chat?.id || '') === currentChatId)
+        ? currentChatId
+        : String(chats[0]?.id || '');
+      await this.deps.ensureDataStore().saveQuickAskState(workspaceId, chats, persistedCurrentChatId);
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Ask chats save failed:', error);
+      res.status(500).json({ success: false, error: 'Failed to save chats' });
+    }
+  };
+
   private getAskContext = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
     const ctx = await this.deps.resolveAuthContext(req, res);
     if (!ctx) {
@@ -238,6 +353,7 @@ export class AskApi {
       const selectedToolIds = selectedToolIdsInput.filter((id: string) => allToolIdSet.has(id));
       const selectedServerIdSet = new Set(selectedServerIdsInput);
       const hasExplicitSelection = selectedToolIds.length > 0 || selectedServerIdSet.size > 0;
+      const conversation = this.sanitizeConversationPayload((req.body as any)?.conversation, prompt);
 
       const selectedTools = hasExplicitSelection
         ? allTools.filter((tool) => {
@@ -257,7 +373,7 @@ export class AskApi {
         return;
       }
 
-      const answer = await this.executeClaudeAsk(prompt, selectedTools, aiConfig);
+      const answer = await this.executeClaudeAsk(conversation, selectedTools, aiConfig);
       res.json({
         success: true,
         data: {
@@ -273,13 +389,7 @@ export class AskApi {
     }
   };
 
-  private async executeClaudeAsk(prompt: string, selectedTools: AskToolContext[], aiConfig: WorkspaceAiConfig): Promise<string> {
-    const toolLines = selectedTools.length > 0
-      ? selectedTools
-          .map((tool) => `- ${tool.serverName} / ${tool.name}${tool.description ? `: ${tool.description}` : ''} [id=${tool.id}]`)
-          .join('\n')
-      : '- No MCP tool selected.';
-
+  private async executeClaudeAsk(conversation: AskConversationMessage[], selectedTools: AskToolContext[], aiConfig: WorkspaceAiConfig): Promise<string> {
     const systemPrompt = [
       'You are QuickMCP assistant.',
       'Answer user requests using only the selected MCP/tool context as actionable capabilities.',
@@ -289,17 +399,10 @@ export class AskApi {
 
     const baseUrl = String(aiConfig.baseUrl || DEFAULT_ANTHROPIC_BASE_URL).replace(/\/+$/, '');
     const { anthropicTools, toolLookup } = this.buildAnthropicTools(selectedTools);
-    const messages: any[] = [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `${prompt}`
-          }
-        ]
-      }
-    ];
+    const messages: any[] = conversation.map((item) => ({
+      role: item.role,
+      content: [{ type: 'text', text: item.content }]
+    }));
 
     let toolExecutor: DynamicMCPExecutor | null = null;
 

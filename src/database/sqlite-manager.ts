@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { IDataStore, LogEntry, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
+import { IDataStore, LogEntry, QuickAskStateRecord, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 
 export class SQLiteManager implements IDataStore {
   private db: Database.Database;
@@ -170,6 +170,25 @@ export class SQLiteManager implements IDataStore {
         message TEXT NOT NULL,
         datetime TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         additional_info TEXT
+      )
+    `);
+
+    const hasQuickAskState = this.db
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'quick_ask_state'`)
+      .get() as any;
+    const hasChatState = this.db
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'chat_state'`)
+      .get() as any;
+    if (!hasChatState && hasQuickAskState) {
+      this.db.exec(`ALTER TABLE quick_ask_state RENAME TO chat_state`);
+    }
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS chat_state (
+        workspace_id TEXT PRIMARY KEY,
+        chats_json TEXT NOT NULL DEFAULT '[]',
+        current_chat_id TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -661,6 +680,39 @@ export class SQLiteManager implements IDataStore {
 
   async getWorkspaceAiConfig(_workspaceId: string): Promise<WorkspaceAiConfig | null> {
     return null;
+  }
+
+  async getQuickAskState(workspaceId: string): Promise<QuickAskStateRecord | null> {
+    const stmt = this.db.prepare('SELECT workspace_id, chats_json, current_chat_id, updated_at FROM chat_state WHERE workspace_id = ?');
+    const row = stmt.get(workspaceId) as any;
+    if (!row) return null;
+
+    let chats: any[] = [];
+    try {
+      chats = JSON.parse(row.chats_json || '[]');
+      if (!Array.isArray(chats)) chats = [];
+    } catch {
+      chats = [];
+    }
+
+    return {
+      workspaceId: String(row.workspace_id || workspaceId),
+      chats,
+      currentChatId: String(row.current_chat_id || ''),
+      updatedAt: String(row.updated_at || new Date().toISOString())
+    };
+  }
+
+  async saveQuickAskState(workspaceId: string, chats: any[], currentChatId: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT INTO chat_state (workspace_id, chats_json, current_chat_id, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(workspace_id) DO UPDATE SET
+        chats_json = excluded.chats_json,
+        current_chat_id = excluded.current_chat_id,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(workspaceId, JSON.stringify(Array.isArray(chats) ? chats : []), String(currentChatId || ''));
   }
 
   async writeLog(entry: LogEntry): Promise<void> {
