@@ -361,7 +361,7 @@ export class AskApi {
             if (selectedServerIdSet.size > 0) return selectedServerIdSet.has(tool.serverId);
             return false;
           })
-        : allTools;
+        : [];
 
       const aiConfig = await this.resolveAiConfig(store);
       if (!aiConfig?.apiToken) {
