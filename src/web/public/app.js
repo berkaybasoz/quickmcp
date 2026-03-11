@@ -527,6 +527,10 @@ function persistQuickAskChats() {
 async function loadQuickAskChats() {
     quickAskChats = [];
     quickAskCurrentChatId = '';
+    const search = new URLSearchParams(window.location.search || '');
+    const requestedChatId = String(search.get('chat') || '').trim();
+    const requestNewChat = search.get('new') === '1';
+    let consumedQuery = false;
     try {
         const response = await fetch('/api/ask/chats');
         const payload = await response.json().catch(() => ({}));
@@ -537,6 +541,14 @@ async function loadQuickAskChats() {
         }
     } catch {}
 
+    if (requestNewChat) {
+        const chat = quickAskCreateChat('New chat');
+        quickAskChats.unshift(chat);
+        quickAskCurrentChatId = chat.id;
+        persistQuickAskChats();
+        consumedQuery = true;
+    }
+
     if (quickAskChats.length === 0) {
         const chat = quickAskCreateChat('New chat');
         quickAskChats = [chat];
@@ -545,6 +557,16 @@ async function loadQuickAskChats() {
     }
 
     normalizeQuickAskChatsState();
+
+    if (requestedChatId && quickAskChats.some((chat) => chat.id === requestedChatId)) {
+        quickAskCurrentChatId = requestedChatId;
+        consumedQuery = true;
+    }
+
+    if (consumedQuery) {
+        const cleanUrl = `${window.location.pathname}${window.location.hash || ''}`;
+        window.history.replaceState(null, '', cleanUrl);
+    }
 }
 
 function getCurrentQuickAskChat() {

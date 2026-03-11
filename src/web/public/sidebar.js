@@ -47,6 +47,98 @@
     `;
   }
 
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function normalizeChatTitle(chat) {
+    const directTitle = String(chat?.title || '').trim();
+    if (directTitle) return directTitle;
+    const firstUserMessage = Array.isArray(chat?.messages)
+      ? chat.messages.find((msg) => msg?.role === 'user' && String(msg?.content || '').trim())
+      : null;
+    const base = firstUserMessage ? String(firstUserMessage.content || '').trim() : '';
+    return base ? base.slice(0, 80) : 'New chat';
+  }
+
+  function normalizeChatPreview(chat) {
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const text = String(messages[i]?.content || '').trim();
+      if (text) return text.slice(0, 96);
+    }
+    return 'No messages yet';
+  }
+
+  async function mountSharedQuickAskSidebar() {
+    // Quick Ask page (and pages embedding full Quick Ask UI) use app.js native sidebar logic.
+    if (document.getElementById('quickAskSection')) return;
+
+    const navList = document.getElementById('sidebarNavList');
+    if (!navList) return;
+
+    let section = document.getElementById('sharedQuickAskSidebarChats');
+    if (!section) {
+      section = document.createElement('div');
+      section.id = 'sharedQuickAskSidebarChats';
+      section.className = 'mt-3 pt-3 border-t border-slate-200/60 space-y-2';
+      navList.appendChild(section);
+    }
+
+    section.innerHTML = `
+      <div class="pt-1 flex items-center justify-between gap-2">
+        <p class="text-[11px] tracking-[0.14em] uppercase text-slate-500 font-semibold">Your Chats</p>
+        <a href="/quick-ask?new=1" class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">
+          <i class="fas fa-plus text-[10px]"></i>
+          New
+        </a>
+      </div>
+      <div id="sharedQuickAskSidebarChatList" class="space-y-1">
+        <p class="px-2 py-2 text-xs text-slate-500">Loading chats...</p>
+      </div>
+    `;
+
+    const list = section.querySelector('#sharedQuickAskSidebarChatList');
+    if (!list) return;
+
+    try {
+      const response = await fetch('/api/ask/chats');
+      const payload = await response.json().catch(() => ({}));
+      const chatsRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
+        ? payload.data.chats
+        : [];
+      const chats = chatsRaw
+        .map((chat) => ({
+          id: String(chat?.id || '').trim(),
+          title: normalizeChatTitle(chat),
+          preview: normalizeChatPreview(chat),
+          updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
+        }))
+        .filter((chat) => chat.id)
+        .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+        .slice(0, 8);
+
+      if (chats.length === 0) {
+        list.innerHTML = '<p class="px-2 py-2 text-xs text-slate-500">No chats yet.</p>';
+        return;
+      }
+
+      list.innerHTML = chats.map((chat) => `
+        <a href="/quick-ask?chat=${encodeURIComponent(chat.id)}" class="group block rounded-lg border border-slate-200 bg-white px-2 py-2 hover:bg-slate-50">
+          <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(chat.title)}</p>
+          <p class="mt-0.5 text-[11px] text-slate-500 truncate">${escapeHtml(chat.preview)}</p>
+        </a>
+      `).join('');
+    } catch {
+      list.innerHTML = '<p class="px-2 py-2 text-xs text-slate-500">Unable to load chats.</p>';
+    }
+  }
+
   function getSidebarPanelIconSvg() {
     return `
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 flex-shrink-0" aria-hidden="true">
@@ -303,6 +395,7 @@
     if (typeof window.updateUserAvatar === 'function') {
       window.updateUserAvatar();
     }
+    await mountSharedQuickAskSidebar();
     root.setAttribute('data-ready', '1');
   }
 

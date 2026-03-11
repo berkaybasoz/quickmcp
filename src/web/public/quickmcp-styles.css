@@ -398,6 +398,9 @@ body {
   height: 2rem !important;
   font-size: 0.75rem !important;
 }
+#sidebar.collapsed #sharedQuickAskSidebarChats {
+  display: none !important;
+}
 
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
