@@ -207,6 +207,78 @@ body {
   border-color: rgb(96 165 250); /* blue-400 */
 }
 
+/* Quick Ask markdown output */
+.qa-markdown {
+  line-height: 1.75;
+  color: #1e293b;
+}
+
+.qa-markdown p {
+  margin: 0.55rem 0;
+}
+
+.qa-markdown h1,
+.qa-markdown h2,
+.qa-markdown h3,
+.qa-markdown h4,
+.qa-markdown h5,
+.qa-markdown h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.qa-markdown ul,
+.qa-markdown ol {
+  margin: 0.45rem 0 0.75rem 1.2rem;
+}
+
+.qa-markdown li {
+  margin: 0.2rem 0;
+}
+
+.qa-markdown hr {
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.9rem 0;
+}
+
+.qa-markdown blockquote {
+  margin: 0.65rem 0;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.qa-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+
+.qa-markdown thead th {
+  background: #f8fafc;
+  color: #334155;
+}
+
+.qa-markdown th,
+.qa-markdown td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+}
+
+.qa-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.qa-markdown pre {
+  margin: 0;
+}
+
 /* Collapsed sidebar icon layout (common across pages) */
 #sidebar.collapsed .nav-item { 
   display: flex !important;

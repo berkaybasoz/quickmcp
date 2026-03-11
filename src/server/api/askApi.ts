@@ -262,6 +262,9 @@ export class AskApi {
     return String(input || '')
       .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
       .replace(/<tool_response>[\s\S]*?<\/tool_response>/gi, '')
+      .replace(/^.*<tool_call.*$/gim, '')
+      .replace(/^.*<tool_response.*$/gim, '')
+      .replace(/```(?:tool_call|tool_response|jsonrpc)[\s\S]*?```/gi, '')
       .replace(/```json[\s\S]*?```/gi, (block) => {
         const lower = block.toLowerCase();
         if (lower.includes('tool_call') || lower.includes('tool_response') || lower.includes('"method"') || lower.includes('"jsonrpc"')) {

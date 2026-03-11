@@ -211,7 +211,21 @@ function renderInlineMarkdown(text) {
     out = out.replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 text-slate-800 text-[12px]">$1</code>');
     out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     out = out.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    out = out.replace(/_([^_]+)_/g, '<em>$1</em>');
+    out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:text-blue-800 underline">$1</a>');
     return out;
+}
+
+function splitMarkdownTableRow(line) {
+    const trimmed = String(line || '').trim().replace(/^\|/, '').replace(/\|$/, '');
+    return trimmed.split('|').map((cell) => cell.trim());
+}
+
+function isMarkdownTableSeparator(line) {
+    const cells = splitMarkdownTableRow(line);
+    if (!cells.length) return false;
+    return cells.every((cell) => /^:?-{3,}:?$/.test(cell));
 }
 
 function renderMarkdownTextBlock(raw) {
@@ -219,6 +233,7 @@ function renderMarkdownTextBlock(raw) {
     const html = [];
     let inUl = false;
     let inOl = false;
+    let paragraphLines = [];
 
     const closeLists = () => {
         if (inUl) {
@@ -231,15 +246,60 @@ function renderMarkdownTextBlock(raw) {
         }
     };
 
-    for (const line of lines) {
+    const flushParagraph = () => {
+        if (paragraphLines.length === 0) return;
+        const merged = paragraphLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (merged) {
+            html.push(`<p class="my-2">${renderInlineMarkdown(merged)}</p>`);
+        }
+        paragraphLines = [];
+    };
+
+    for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i];
         const trimmed = line.trim();
         if (!trimmed) {
+            flushParagraph();
             closeLists();
+            continue;
+        }
+
+        const nextLine = String(lines[i + 1] || '').trim();
+        const maybeTable = trimmed.includes('|') && nextLine.includes('|') && isMarkdownTableSeparator(nextLine);
+        if (maybeTable) {
+            flushParagraph();
+            closeLists();
+            const headerCells = splitMarkdownTableRow(trimmed);
+            const rows = [];
+            i += 2; // skip header + separator
+            while (i < lines.length) {
+                const rowLine = String(lines[i] || '').trim();
+                if (!rowLine || !rowLine.includes('|')) {
+                    i -= 1;
+                    break;
+                }
+                rows.push(splitMarkdownTableRow(rowLine));
+                i += 1;
+            }
+
+            html.push(`
+                <div class="my-3 overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>${headerCells.map((cell) => `<th class="px-3 py-2 text-left font-semibold text-slate-700 border-b border-slate-200">${renderInlineMarkdown(cell)}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((row) => `<tr class="odd:bg-white even:bg-slate-50/40">${row.map((cell) => `<td class="px-3 py-2 align-top border-b last:border-b-0 border-slate-100">${renderInlineMarkdown(cell)}</td>`).join('')}</tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `);
             continue;
         }
 
         const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
         if (heading) {
+            flushParagraph();
             closeLists();
             const level = Math.min(6, heading[1].length);
             const sizeMap = {
@@ -257,6 +317,7 @@ function renderMarkdownTextBlock(raw) {
 
         const unordered = trimmed.match(/^[-*+]\s+(.+)$/);
         if (unordered) {
+            flushParagraph();
             if (inOl) {
                 html.push('</ol>');
                 inOl = false;
@@ -271,6 +332,7 @@ function renderMarkdownTextBlock(raw) {
 
         const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
         if (ordered) {
+            flushParagraph();
             if (inUl) {
                 html.push('</ul>');
                 inUl = false;
@@ -285,21 +347,24 @@ function renderMarkdownTextBlock(raw) {
 
         const quote = trimmed.match(/^>\s?(.+)$/);
         if (quote) {
+            flushParagraph();
             closeLists();
             html.push(`<blockquote class="border-l-4 border-slate-300 pl-3 text-slate-700 italic my-2">${renderInlineMarkdown(quote[1])}</blockquote>`);
             continue;
         }
 
         if (/^---+$/.test(trimmed)) {
+            flushParagraph();
             closeLists();
             html.push('<hr class="my-4 border-slate-200">');
             continue;
         }
 
         closeLists();
-        html.push(`<p class="my-2">${renderInlineMarkdown(trimmed)}</p>`);
+        paragraphLines.push(trimmed);
     }
 
+    flushParagraph();
     closeLists();
     return html.join('');
 }
