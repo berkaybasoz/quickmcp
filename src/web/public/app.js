@@ -1101,7 +1101,9 @@ async function loadQuickAskContext() {
         const enabled = quickAskContext?.askEnabled === true;
         input.disabled = !enabled;
         sendBtn.disabled = !enabled;
-        panel.classList.toggle('hidden', !enabled);
+        if (!enabled) {
+            panel.classList.add('hidden');
+        }
         hint.textContent = quickAskContext?.reason || 'Select one or more tools to narrow the answer context.';
 
         if (enabled) {
