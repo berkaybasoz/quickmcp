@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { AppUserRole, AuthContext, CreateMcpTokenResult } from '../../auth/auth-utils';
 import { AuthMode, LiteAdminUser } from '../../config/auth-config';
 import { IDataStore, McpTokenPolicyScope } from '../../database/datastore';
-import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyMcpToken, verifyMcpTokenRS256 } from '../../auth/token-utils';
+import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyAccessTokenAllowExpired, verifyMcpToken, verifyMcpTokenRS256 } from '../../auth/token-utils';
 import { getJwks, getRsaPublicKey, getRsaPrivateKey, getKid } from '../../auth/jwks-provider';
 import { AuthProperty } from './authProperty';
 import { logger } from '../../utils/logger';
@@ -847,7 +847,10 @@ export class AuthApi {
     }
     const cookies = this.deps.parseCookies(req);
     const accessToken = cookies[this.deps.accessCookieName];
-    const payload = accessToken ? verifyAccessToken(accessToken, this.deps.authCookieSecret) : null;
+    const payload = accessToken
+      ? (verifyAccessToken(accessToken, this.deps.authCookieSecret)
+        || verifyAccessTokenAllowExpired(accessToken, this.deps.authCookieSecret))
+      : null;
     let storeUser: any = null;
     try {
       storeUser = await this.deps.ensureDataStore().getUser(ctx.username);
@@ -1578,7 +1581,8 @@ export class AuthApi {
     const refreshToken = cookies[this.deps.refreshCookieName];
     const currentAccessToken = cookies[this.deps.accessCookieName];
     const currentPayload = currentAccessToken
-      ? verifyAccessToken(currentAccessToken, this.deps.authCookieSecret)
+      ? (verifyAccessToken(currentAccessToken, this.deps.authCookieSecret)
+        || verifyAccessTokenAllowExpired(currentAccessToken, this.deps.authCookieSecret))
       : null;
     if (!refreshToken) {
       res.status(401).json({ success: false, error: 'Missing refresh token' });

@@ -4,7 +4,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { IDataStore } from '../database/datastore';
 import { AuthMode, LiteAdminUser } from '../config/auth-config';
-import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken } from './token-utils';
+import { createAccessToken, createRefreshToken, hashRefreshToken, verifyAccessToken, verifyAccessTokenAllowExpired } from './token-utils';
 import { getRsaPrivateKey, getKid } from './jwks-provider';
 
 export type AppUserRole = 'admin' | 'user';
@@ -298,6 +298,11 @@ export class AuthUtils {
 
     const cookies = this.parseCookies(req);
     const refreshToken = cookies[this.refreshCookieName];
+    const currentAccessToken = cookies[this.accessCookieName];
+    const currentPayload = currentAccessToken
+      ? (verifyAccessToken(currentAccessToken, this.authCookieSecret)
+        || verifyAccessTokenAllowExpired(currentAccessToken, this.authCookieSecret))
+      : null;
     if (!refreshToken) {
       return null;
     }
@@ -332,7 +337,12 @@ export class AuthUtils {
       this.authCookieSecret,
       this.authAccessTtlSec,
       refreshedWorkspaceId,
-      refreshedRole
+      refreshedRole,
+      currentPayload?.displayName || record.username,
+      currentPayload?.email,
+      currentPayload?.avatarUrl,
+      currentPayload?.createdDate,
+      currentPayload?.lastSignInDate
     );
     this.setCookie(res, this.accessCookieName, newAccessToken, this.authAccessTtlSec);
     this.setCookie(res, this.refreshCookieName, newRefreshToken, this.authRefreshTtlSec);

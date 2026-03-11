@@ -79,7 +79,7 @@ export function createAccessToken(
   return `${payloadEncoded}.${signature}`;
 }
 
-export function verifyAccessToken(token: string, secret: string): AccessTokenPayload | null {
+function verifyAccessTokenInternal(token: string, secret: string, allowExpired: boolean): AccessTokenPayload | null {
   const [payloadEncoded, signature] = token.split('.');
   if (!payloadEncoded || !signature) {
     return null;
@@ -94,13 +94,24 @@ export function verifyAccessToken(token: string, secret: string): AccessTokenPay
 
   try {
     const payload = JSON.parse(base64UrlDecode(payloadEncoded)) as AccessTokenPayload;
-    if (!payload?.sub || !payload?.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+    if (!payload?.sub || !payload?.exp) {
+      return null;
+    }
+    if (!allowExpired && payload.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
     return payload;
   } catch {
     return null;
   }
+}
+
+export function verifyAccessToken(token: string, secret: string): AccessTokenPayload | null {
+  return verifyAccessTokenInternal(token, secret, false);
+}
+
+export function verifyAccessTokenAllowExpired(token: string, secret: string): AccessTokenPayload | null {
+  return verifyAccessTokenInternal(token, secret, true);
 }
 
 export function verifyMcpToken(token: string, secret: string): McpTokenPayload | null {

@@ -373,10 +373,9 @@ function initBrandHomeLink() {
 function syncSidebarUserDetails(name, email, isSignedIn = false, role = '') {
     const nameEl = document.getElementById('sidebarUserName');
     const emailEl = document.getElementById('sidebarUserEmail');
-    const roleText = typeof role === 'string' ? role.trim() : '';
     const subtitle = email
         ? email
-        : (isSignedIn ? (roleText ? roleText : 'Signed in') : 'Not signed in');
+        : (isSignedIn ? 'Signed in' : 'Not signed in');
     if (nameEl) nameEl.textContent = name || 'Guest';
     if (emailEl) emailEl.textContent = subtitle;
 }
