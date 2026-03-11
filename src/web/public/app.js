@@ -1043,13 +1043,20 @@ function renderQuickAskTools() {
         const tools = Array.isArray(server?.tools) ? server.tools : [];
         const checkedServer = quickAskSelectedServerIds.has(serverId);
         return `
-            <details class="border border-slate-200 rounded-lg bg-slate-50/60" ${checkedServer ? 'open' : ''}>
-                <summary class="cursor-pointer px-3 py-2.5 flex items-center justify-between gap-3 text-sm">
-                    <label class="inline-flex items-center gap-2 text-slate-800 font-medium">
-                        <input type="checkbox" data-quick-ask-server data-server-id="${serverId}" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" ${checkedServer ? 'checked' : ''}>
-                        <span>${server?.name || serverId}</span>
-                        <span class="text-[11px] text-slate-500 uppercase tracking-wide">${server?.type || ''}</span>
-                    </label>
+            <details class="quick-ask-server-details border border-slate-200 rounded-lg bg-slate-50/60" ${checkedServer ? 'open' : ''}>
+                <summary class="quick-ask-server-summary cursor-pointer px-3 py-2.5 flex items-center justify-between gap-3 text-sm">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="quick-ask-server-chevron fas fa-chevron-down text-[11px] text-slate-500"></i>
+                        <label class="inline-flex items-center gap-2 text-slate-800 font-medium min-w-0" onclick="event.stopPropagation()">
+                            <span class="relative inline-flex h-5 w-9 flex-shrink-0">
+                                <input type="checkbox" data-quick-ask-server data-server-id="${serverId}" class="peer sr-only quick-ask-toggle-input" ${checkedServer ? 'checked' : ''}>
+                                <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600"></span>
+                                <span class="quick-ask-toggle-thumb absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                            </span>
+                            <span class="truncate">${server?.name || serverId}</span>
+                            <span class="text-[11px] text-slate-500 uppercase tracking-wide flex-shrink-0">${server?.type || ''}</span>
+                        </label>
+                    </div>
                     <span class="text-xs text-slate-500">${tools.length} tools</span>
                 </summary>
                 <div class="px-4 pb-3 space-y-2">
@@ -1058,7 +1065,11 @@ function renderQuickAskTools() {
                         const checkedTool = quickAskSelectedToolIds.has(toolId);
                         return `
                             <label class="flex items-start gap-2 text-xs text-slate-700">
-                                <input type="checkbox" data-quick-ask-tool data-server-id="${serverId}" data-tool-id="${toolId}" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" ${checkedTool ? 'checked' : ''}>
+                                <span class="relative inline-flex h-5 w-9 mt-0.5 flex-shrink-0">
+                                    <input type="checkbox" data-quick-ask-tool data-server-id="${serverId}" data-tool-id="${toolId}" class="peer sr-only quick-ask-toggle-input" ${checkedTool ? 'checked' : ''}>
+                                    <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600"></span>
+                                    <span class="quick-ask-toggle-thumb absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
+                                </span>
                                 <span>
                                     <span class="font-semibold text-slate-800">${tool?.name || ''}</span>
                                     <span class="text-slate-500">${tool?.description ? ` - ${tool.description}` : ''}</span>
