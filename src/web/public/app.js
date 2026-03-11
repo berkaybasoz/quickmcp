@@ -776,12 +776,12 @@ function ensureQuickAskSidebarSection() {
     const existing = document.getElementById('quickAskSidebarChats');
     if (existing) return true;
 
-    const userSection = document.getElementById('sidebarUserSection');
-    if (!userSection) return false;
+    const navList = document.getElementById('sidebarNavList');
+    if (!navList) return false;
 
     const section = document.createElement('div');
     section.id = 'quickAskSidebarChats';
-    section.className = 'px-3 pb-3 border-t border-slate-200/60 bg-white space-y-2';
+    section.className = 'mt-3 pt-3 border-t border-slate-200/60 space-y-2';
     section.innerHTML = `
         <div class="pt-3 flex items-center justify-between gap-2">
             <p class="text-[11px] tracking-[0.14em] uppercase text-slate-500 font-semibold">Your Chats</p>
@@ -794,9 +794,9 @@ function ensureQuickAskSidebarSection() {
             <i class="fas fa-search absolute left-2.5 top-2.5 text-[11px] text-slate-400"></i>
             <input id="quickAskChatSearchInput" type="text" placeholder="Search chats" class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-7 pr-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200">
         </div>
-        <div id="quickAskChatList" class="max-h-56 overflow-y-auto scrollbar-modern space-y-1"></div>
+        <div id="quickAskChatList" class="space-y-1"></div>
     `;
-    sidebar.insertBefore(section, userSection);
+    navList.appendChild(section);
 
     const newBtn = document.getElementById('quickAskSidebarNewChatBtn');
     const searchInput = document.getElementById('quickAskChatSearchInput');
