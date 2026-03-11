@@ -1050,7 +1050,7 @@ function renderQuickAskTools() {
                         <label class="inline-flex items-center gap-2 text-slate-800 font-medium min-w-0" onclick="event.stopPropagation()">
                             <span class="relative inline-flex h-5 w-9 flex-shrink-0">
                                 <input type="checkbox" data-quick-ask-server data-server-id="${serverId}" class="peer sr-only quick-ask-toggle-input" ${checkedServer ? 'checked' : ''}>
-                                <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600"></span>
+                                <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500"></span>
                                 <span class="quick-ask-toggle-thumb absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                             </span>
                             <span class="truncate">${server?.name || serverId}</span>
@@ -1067,7 +1067,7 @@ function renderQuickAskTools() {
                             <label class="flex items-start gap-2 text-xs text-slate-700">
                                 <span class="relative inline-flex h-5 w-9 mt-0.5 flex-shrink-0">
                                     <input type="checkbox" data-quick-ask-tool data-server-id="${serverId}" data-tool-id="${toolId}" class="peer sr-only quick-ask-toggle-input" ${checkedTool ? 'checked' : ''}>
-                                    <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600"></span>
+                                    <span class="quick-ask-toggle-track absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500"></span>
                                     <span class="quick-ask-toggle-thumb absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></span>
                                 </span>
                                 <span>
