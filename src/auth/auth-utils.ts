@@ -402,13 +402,16 @@ export class AuthUtils {
     req: express.Request & { authUser?: string; authWorkspace?: string; authRole?: AppUserRole },
     res: express.Response
   ): Promise<boolean> {
+    const nextTarget = String(req.originalUrl || req.path || '/').trim();
+    const safeNext = nextTarget.startsWith('/') ? nextTarget : '/';
+    const loginRedirect = `/login?next=${encodeURIComponent(safeNext)}`;
     const username = this.getAuthenticatedUser(req);
     const effectiveUser = username || await this.tryRefreshAuthAsync(req, res);
     if (!effectiveUser) {
       if (req.path.startsWith('/api/')) {
         res.status(401).json({ success: false, error: 'Unauthorized' });
       } else {
-        res.redirect('/login');
+        res.redirect(loginRedirect);
       }
       return false;
     }
@@ -419,7 +422,7 @@ export class AuthUtils {
       if (req.path.startsWith('/api/')) {
         res.status(401).json({ success: false, error: 'Unauthorized' });
       } else {
-        res.redirect('/login');
+        res.redirect(loginRedirect);
       }
       return false;
     }
