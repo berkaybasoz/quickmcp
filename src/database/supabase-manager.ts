@@ -115,8 +115,10 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   private mapUserRow(row: any): UserRecord {
+    const displayName = typeof row?.display_name === 'string' ? row.display_name.trim() : '';
     return {
       username: String(row.username),
+      displayName: displayName || undefined,
       workspaceId: String(row.workspace_id || row.username),
       passwordHash: String(row.password_hash),
       role: row.role as UserRole,
@@ -290,44 +292,68 @@ export class SupabaseDataStore implements IDataStore {
   }
 
   async getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
-    return (await this.request<any[]>('users?select=username,workspace_id,role,created_at,updated_at&order=username.asc')).map((row) => ({
-      username: String(row.username),
-      workspaceId: String(row.workspace_id || row.username),
-      role: row.role as UserRole,
-      createdAt: String(row.created_at),
-      updatedAt: String(row.updated_at)
-    }));
+    return (await this.request<any[]>('users?select=*&order=username.asc')).map((row) => {
+      const user = this.mapUserRow(row);
+      const { passwordHash: _passwordHash, ...publicUser } = user;
+      return publicUser;
+    });
   }
 
   async getAllUsersByWorkspace(workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
     return (await this.request<any[]>(
-      `users?select=username,workspace_id,role,created_at,updated_at&workspace_id=eq.${encodeURIComponent(workspaceId)}&order=username.asc`
-    )).map((row) => ({
-      username: String(row.username),
-      workspaceId: String(row.workspace_id || row.username),
-      role: row.role as UserRole,
-      createdAt: String(row.created_at),
-      updatedAt: String(row.updated_at)
-    }));
+      `users?select=*&workspace_id=eq.${encodeURIComponent(workspaceId)}&order=username.asc`
+    )).map((row) => {
+      const user = this.mapUserRow(row);
+      const { passwordHash: _passwordHash, ...publicUser } = user;
+      return publicUser;
+    });
   }
 
-  async createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
-    await this.request('users', 'POST', {
+  async createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void> {
+    const payload: Record<string, any> = {
       username,
       workspace_id: workspaceId,
       password_hash: passwordHash,
       role
-    }, { Prefer: 'return=minimal' });
+    };
+    const trimmedDisplayName = String(displayName || '').trim();
+    if (trimmedDisplayName) payload.display_name = trimmedDisplayName;
+    try {
+      await this.request('users', 'POST', payload, { Prefer: 'return=minimal' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || '');
+      const missingDisplayNameColumn = /display_name/i.test(message) && /(column|schema|unknown|does not exist)/i.test(message);
+      if (trimmedDisplayName && missingDisplayNameColumn) {
+        delete payload.display_name;
+        await this.request('users', 'POST', payload, { Prefer: 'return=minimal' });
+        return;
+      }
+      throw error;
+    }
   }
 
-  async upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
-    await this.request('users?on_conflict=username', 'POST', {
+  async upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void> {
+    const payload: Record<string, any> = {
       username,
       workspace_id: workspaceId,
       password_hash: passwordHash,
       role,
       updated_at: new Date().toISOString()
-    }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+    };
+    const trimmedDisplayName = String(displayName || '').trim();
+    if (trimmedDisplayName) payload.display_name = trimmedDisplayName;
+    try {
+      await this.request('users?on_conflict=username', 'POST', payload, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || '');
+      const missingDisplayNameColumn = /display_name/i.test(message) && /(column|schema|unknown|does not exist)/i.test(message);
+      if (trimmedDisplayName && missingDisplayNameColumn) {
+        delete payload.display_name;
+        await this.request('users?on_conflict=username', 'POST', payload, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+        return;
+      }
+      throw error;
+    }
   }
 
   async updateUserRole(username: string, workspaceId: string, role: UserRole): Promise<void> {

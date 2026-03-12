@@ -312,10 +312,18 @@
       return 'fa-server';
     }
 
+    function getUserLabel(user) {
+      const username = String(user?.username || '').trim();
+      if (!username) return '';
+      if (!isSaasMode) return username;
+      const displayName = String(user?.displayName || '').trim();
+      return displayName || username;
+    }
+
     function renderUsers() {
       const select = byId('subjectUserSelect');
       const prev = select.value;
-      const options = (authContext.users || []).map((u) => `<option value="${u.username}">${u.username} (${u.role})</option>`);
+      const options = (authContext.users || []).map((u) => `<option value="${u.username}">${getUserLabel(u)} (${u.role})</option>`);
       select.innerHTML = options.join('');
       if (prev && Array.from(select.options).some((o) => o.value === prev)) {
         select.value = prev;
@@ -329,6 +337,7 @@
       const servers = authContext.servers || [];
       const grouped = users.map((u) => ({
         username: u.username,
+        displayName: getUserLabel(u),
         role: u.role,
         servers: servers.filter((s) => serverOwnerFromId(s.id) === u.username)
       }));
@@ -362,7 +371,7 @@
                   </select>
                   <span class="flex items-center gap-2">
                     <i class="fas fa-user text-slate-500"></i>
-                    <span>${g.username}</span>
+                    <span>${g.displayName}</span>
                     <span class="text-[11px] text-slate-500">(${g.role})</span>
                   </span>
                 </summary>
@@ -517,6 +526,7 @@
       const servers = authContext.servers || [];
       const grouped = users.map((u) => ({
         username: u.username,
+        displayName: getUserLabel(u),
         role: u.role,
         servers: servers.filter((s) => serverOwnerFromId(s.id) === u.username)
       }));
@@ -544,7 +554,7 @@
                   </select>
                   <span class="flex items-center gap-2">
                     <i class="fas fa-user text-slate-500"></i>
-                    <span>${g.username}</span>
+                    <span>${g.displayName}</span>
                     <span class="text-[11px] text-slate-500">(${g.role})</span>
                   </span>
                 </summary>

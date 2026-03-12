@@ -39,6 +39,7 @@ export type UserRole = 'admin' | 'user';
 
 export interface UserRecord {
   username: string;
+  displayName?: string;
   workspaceId: string;
   passwordHash: string;
   role: UserRole;
@@ -156,8 +157,8 @@ export interface IDataStore {
   getUserInWorkspace(username: string, workspaceId: string): Promise<UserRecord | null>;
   getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>>;
   getAllUsersByWorkspace(workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>>;
-  createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void>;
-  upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void>;
+  createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void>;
+  upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void>;
   updateUserRole(username: string, workspaceId: string, role: UserRole): Promise<void>;
 
   getServerAuthConfig(serverId: string): Promise<ServerAuthConfig | null>;

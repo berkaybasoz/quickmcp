@@ -941,7 +941,11 @@ export class AuthApi {
       const users = (canManageWorkspace
         ? workspaceUsers
         : workspaceUsers.filter((u) => u.username === ctx.username)
-      ).map((u) => ({ username: u.username, role: u.role }));
+      ).map((u) => ({
+        username: u.username,
+        role: u.role,
+        displayName: String(u.displayName || u.username)
+      }));
 
       const serverRows = await store.getAllServersByOwner(ctx.workspaceId);
       const servers = await Promise.all(serverRows.map(async (server) => {
@@ -1308,11 +1312,13 @@ export class AuthApi {
         res.status(409).json({ success: false, error: `User "${username}" already exists` });
         return;
       }
-      await store.createUser(username, this.deps.hashPassword(password), role, actor.workspaceId);
+      const displayNameInput = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : '';
+      const displayName = displayNameInput || username;
+      await store.createUser(username, this.deps.hashPassword(password), role, actor.workspaceId, displayName);
       res.status(201).json({
         success: true,
         data: {
-          user: { username, role, workspaceId: actor.workspaceId },
+          user: { username, displayName, role, workspaceId: actor.workspaceId },
           createdBy: actor.username
         }
       });
@@ -1381,7 +1387,13 @@ export class AuthApi {
           authenticatedUsername = legacyAdmin.username;
           authenticatedWorkspaceId = legacyAdmin.username;
           authenticatedRole = 'admin';
-          await this.deps.ensureDataStore().upsertUser(legacyAdmin.username, this.deps.hashPassword(legacyAdmin.password), 'admin', legacyAdmin.username);
+          await this.deps.ensureDataStore().upsertUser(
+            legacyAdmin.username,
+            this.deps.hashPassword(legacyAdmin.password),
+            'admin',
+            legacyAdmin.username,
+            legacyAdmin.username
+          );
         }
       }
     } catch (error) {
@@ -1545,7 +1557,8 @@ export class AuthApi {
         username,
         this.deps.hashPassword(`supabase:${userPayload.id}`),
         role,
-        workspaceId
+        workspaceId,
+        displayName || username
       );
       await this.issueSession(res, username, workspaceId, role, {
         displayName: displayName || username,

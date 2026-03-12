@@ -287,7 +287,7 @@ export class AuthUtils {
     for (const admin of this.authAdminUsers) {
       const username = this.normalizeUsername(admin.username);
       if (!username || !admin.password) continue;
-      await store.upsertUser(username, this.hashPassword(admin.password), 'admin', username);
+      await store.upsertUser(username, this.hashPassword(admin.password), 'admin', username, username);
     }
   }
 

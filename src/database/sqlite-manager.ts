@@ -100,6 +100,7 @@ export class SQLiteManager implements IDataStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
+        display_name TEXT,
         workspace_id TEXT NOT NULL DEFAULT 'default',
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
@@ -109,7 +110,11 @@ export class SQLiteManager implements IDataStore {
     `);
 
     const userCols = this.db.prepare(`PRAGMA table_info(users)`).all() as any[];
+    const hasDisplayName = userCols.some((col) => col.name === 'display_name');
     const hasWorkspaceId = userCols.some((col) => col.name === 'workspace_id');
+    if (!hasDisplayName) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN display_name TEXT`);
+    }
     if (!hasWorkspaceId) {
       this.db.exec(`ALTER TABLE users ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default'`);
     }
@@ -444,6 +449,7 @@ export class SQLiteManager implements IDataStore {
 
     return {
       username: row.username,
+      displayName: String(row.display_name || '').trim() || undefined,
       workspaceId: row.workspace_id || row.username,
       passwordHash: row.password_hash,
       role: row.role as UserRole,
@@ -460,6 +466,7 @@ export class SQLiteManager implements IDataStore {
     }
     return {
       username: row.username,
+      displayName: String(row.display_name || '').trim() || undefined,
       workspaceId: row.workspace_id || row.username,
       passwordHash: row.password_hash,
       role: row.role as UserRole,
@@ -469,10 +476,11 @@ export class SQLiteManager implements IDataStore {
   }
 
   async getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
-    const stmt = this.db.prepare('SELECT username, workspace_id, role, created_at, updated_at FROM users ORDER BY username');
+    const stmt = this.db.prepare('SELECT username, display_name, workspace_id, role, created_at, updated_at FROM users ORDER BY username');
     const rows = stmt.all() as any[];
     return rows.map((row) => ({
       username: row.username,
+      displayName: String(row.display_name || '').trim() || undefined,
       workspaceId: row.workspace_id || row.username,
       role: row.role as UserRole,
       createdAt: row.created_at,
@@ -481,10 +489,11 @@ export class SQLiteManager implements IDataStore {
   }
 
   async getAllUsersByWorkspace(workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>> {
-    const stmt = this.db.prepare('SELECT username, workspace_id, role, created_at, updated_at FROM users WHERE workspace_id = ? ORDER BY username');
+    const stmt = this.db.prepare('SELECT username, display_name, workspace_id, role, created_at, updated_at FROM users WHERE workspace_id = ? ORDER BY username');
     const rows = stmt.all(workspaceId) as any[];
     return rows.map((row) => ({
       username: row.username,
+      displayName: String(row.display_name || '').trim() || undefined,
       workspaceId: row.workspace_id || row.username,
       role: row.role as UserRole,
       createdAt: row.created_at,
@@ -492,25 +501,26 @@ export class SQLiteManager implements IDataStore {
     }));
   }
 
-  async createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
+  async createUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO users (username, workspace_id, password_hash, role, created_at, updated_at)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO users (username, display_name, workspace_id, password_hash, role, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
-    stmt.run(username, workspaceId, passwordHash, role);
+    stmt.run(username, String(displayName || '').trim() || null, workspaceId, passwordHash, role);
   }
 
-  async upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string): Promise<void> {
+  async upsertUser(username: string, passwordHash: string, role: UserRole, workspaceId: string, displayName?: string): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO users (username, workspace_id, password_hash, role, created_at, updated_at)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO users (username, display_name, workspace_id, password_hash, role, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT(username) DO UPDATE SET
+        display_name = excluded.display_name,
         workspace_id = excluded.workspace_id,
         password_hash = excluded.password_hash,
         role = excluded.role,
         updated_at = CURRENT_TIMESTAMP
     `);
-    stmt.run(username, workspaceId, passwordHash, role);
+    stmt.run(username, String(displayName || '').trim() || null, workspaceId, passwordHash, role);
   }
 
   async updateUserRole(username: string, workspaceId: string, role: UserRole): Promise<void> {

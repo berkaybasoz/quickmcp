@@ -30,8 +30,8 @@ export class JdbcDataStore implements IDataStore {
   async getUserInWorkspace(_username: string, _workspaceId: string): Promise<UserRecord | null> { throw new Error('Not implemented'); }
   async getAllUsers(): Promise<Array<Omit<UserRecord, 'passwordHash'>>> { throw new Error('Not implemented'); }
   async getAllUsersByWorkspace(_workspaceId: string): Promise<Array<Omit<UserRecord, 'passwordHash'>>> { throw new Error('Not implemented'); }
-  async createUser(_username: string, _passwordHash: string, _role: UserRole, _workspaceId: string): Promise<void> { throw new Error('Not implemented'); }
-  async upsertUser(_username: string, _passwordHash: string, _role: UserRole, _workspaceId: string): Promise<void> { throw new Error('Not implemented'); }
+  async createUser(_username: string, _passwordHash: string, _role: UserRole, _workspaceId: string, _displayName?: string): Promise<void> { throw new Error('Not implemented'); }
+  async upsertUser(_username: string, _passwordHash: string, _role: UserRole, _workspaceId: string, _displayName?: string): Promise<void> { throw new Error('Not implemented'); }
   async updateUserRole(_username: string, _workspaceId: string, _role: UserRole): Promise<void> { throw new Error('Not implemented'); }
   async getServerAuthConfig(_serverId: string): Promise<ServerAuthConfig | null> { throw new Error('Not implemented'); }
   async setServerAuthConfig(_serverId: string, _requireMcpToken: boolean): Promise<void> { throw new Error('Not implemented'); }
