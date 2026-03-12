@@ -93,7 +93,7 @@ function initializeManageServersPage() {
             </div>
         </div>
         <div class="flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6">
-            <div class="card p-4 bg-blue-50 border-blue-100">
+            <div class="card p-4 bg-blue-50 border-blue-100 server-details-empty-hint">
                 <div class="flex items-start gap-3 text-sm text-slate-700">
                     <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
                     <div>
@@ -103,7 +103,7 @@ function initializeManageServersPage() {
                 </div>
             </div>
             <div class="space-y-3">
-                <div class="card p-3 bg-white border border-slate-200 rounded-xl">
+                <div class="card p-3 bg-white border border-slate-200 rounded-xl server-details-empty-note">
                     <div class="text-xs text-slate-500">No server selected</div>
                 </div>
             </div>
@@ -2678,16 +2678,16 @@ function displayServers(servers) {
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.toolsCount ?? 0}</div>
             <div class="md:col-span-2 text-slate-700 text-sm mt-2 md:mt-0">${server.resourcesCount ?? 0}</div>
             <div class="md:col-span-1 mt-3 md:mt-0 flex items-center justify-between md:justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                <button class="bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
+                <button class="server-row-action-btn server-row-action-view bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="viewServer('${server.id}')" title="View">
                     <i class="fas fa-eye"></i>
                 </button>
-                <button class="bg-white border border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" title="Rename">
+                <button class="server-row-action-btn server-row-action-rename bg-white border border-slate-200 hover:border-emerald-400 text-slate-700 hover:text-emerald-600 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" title="Rename">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
+                <button class="server-row-action-btn server-row-action-test bg-gray-100 text-gray-700 hover:bg-gray-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="testServer('${server.id}')" title="Test">
                     <i class="fas fa-vial"></i>
                 </button>
-                <button class="bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="deleteServer('${server.id}')" title="Delete">
+                <button class="server-row-action-btn server-row-action-delete bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors" onclick="deleteServer('${server.id}')" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -3702,16 +3702,16 @@ function showServerDetailsPanel(serverData, serverIdArg) {
             <!-- Horizontal action bar above Tools -->
             <div class="pt-1 pb-2">
                 <div class="flex items-center gap-2">
-                    <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                    <button title="Tools" onclick="document.getElementById('details-tools')?.scrollIntoView({behavior:'smooth', block:'start'})" class="server-details-action-btn server-details-action-tools w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
                         <i class="fas fa-wrench"></i>
                     </button>
-                    <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                    <button title="Resources" onclick="document.getElementById('details-resources')?.scrollIntoView({behavior:'smooth', block:'start'})" class="server-details-action-btn server-details-action-resources w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
                         <i class="fas fa-cubes"></i>
                     </button>
-                    <button title="Test" onclick="testServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
+                    <button title="Test" onclick="testServer('${serverId}')" class="server-details-action-btn server-details-action-test w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm">
                         <i class="fas fa-vial"></i>
                     </button>
-                    <button title="Delete" onclick="deleteServer('${serverId}')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
+                    <button title="Delete" onclick="deleteServer('${serverId}')" class="server-details-action-btn server-details-action-delete w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-red-600 hover:border-red-300 hover:text-red-600 shadow-sm">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -3731,7 +3731,7 @@ function showServerDetailsPanel(serverData, serverIdArg) {
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-shrink-0">
-                                <button title="Test this tool" onclick="testTool('${serverId}', '${tool.name?.replace(/['"`]/g, '') || ''}')" class="w-8 h-8 inline-flex items-center justify-center rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-900 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-gray-800">
+                                <button title="Test this tool" onclick="testTool('${serverId}', '${tool.name?.replace(/['"`]/g, '') || ''}')" class="server-tool-test-btn w-8 h-8 inline-flex items-center justify-center rounded-md border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-900 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-gray-800">
                                     <i class="fas fa-vial"></i>
                                 </button>
                             </div>

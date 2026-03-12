@@ -599,6 +599,23 @@ html.dark .shadow-inner.shadow-slate-200\/30 {
 #sidebar.collapsed .quick-ask-collapsed-add {
   display: inline-flex !important;
 }
+html.dark #sidebar.collapsed .quick-ask-collapsed-add {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+  color: #94a3b8 !important;
+}
+html.dark #sidebar.collapsed .quick-ask-collapsed-add i {
+  color: inherit !important;
+}
+html.dark #sidebar.collapsed .quick-ask-collapsed-add:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(96, 165, 250, 0.9) !important;
+  color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+}
+html.dark #sidebar.collapsed .quick-ask-collapsed-add:hover i {
+  color: #60a5fa !important;
+}
 
 /* Center collapsed nav within the narrow sidebar */
 #sidebar.collapsed { width: 3rem !important; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
@@ -713,6 +730,56 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 }
 
 /* Right details panel collapsed state */
+#server-details-panel {
+  background: #ffffff;
+}
+
+html.dark #server-details-panel {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95)) !important;
+  border-left-color: rgba(71, 85, 105, 0.85) !important;
+  box-shadow: -18px 0 40px rgba(2, 6, 23, 0.5) !important;
+}
+
+html.dark #server-details-panel #serverDetailsHeaderRow {
+  background-image: linear-gradient(140deg, rgba(30, 41, 59, 0.92), rgba(51, 65, 85, 0.82)) !important;
+  border-bottom-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark #server-details-panel #serverDetailsHeaderMain h2 {
+  color: #f1f5f9 !important;
+}
+
+html.dark #server-details-panel #serverDetailsHeaderMain p {
+  color: #94a3b8 !important;
+}
+
+html.dark #server-details-panel #rightPanelCollapseBtn {
+  color: #94a3b8 !important;
+  border: 1px solid rgba(71, 85, 105, 0.75) !important;
+  border-radius: 0.5rem !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+}
+
+html.dark #server-details-panel #rightPanelCollapseBtn:hover {
+  color: #cbd5e1 !important;
+  border-color: rgba(96, 165, 250, 0.8) !important;
+  background: rgba(30, 41, 59, 0.85) !important;
+}
+
+html.dark #server-details-panel .server-details-empty-hint {
+  background: rgba(30, 58, 138, 0.22) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+}
+
+html.dark #server-details-panel .server-details-empty-hint .text-blue-900 {
+  color: #bfdbfe !important;
+}
+
+html.dark #server-details-panel .server-details-empty-note {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
 #server-details-panel.collapsed { width: 3rem !important; overflow: hidden; }
 #server-details-panel.collapsed #serverDetailsHeaderRow { justify-content: center !important; padding: 0.25rem !important; }
 #server-details-panel.collapsed #rightPanelCollapseBtn { display: inline-flex !important; color: #94a3b8 !important; }
@@ -723,6 +790,23 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 #server-details-panel.collapsed #serverDetailsMiniIcon:hover { border-color: #c4b5fd !important; }
 #server-details-panel.collapsed #serverDetailsMiniIcon:hover::before { background: rgba(124, 58, 237, 0.22); }
 #server-details-panel.collapsed #serverDetailsMiniIcon i { color: #7c3aed !important; font-size: 1.05rem; line-height: 1; }
+
+html.dark #server-details-panel.collapsed #serverDetailsMiniIcon {
+  border-color: rgba(71, 85, 105, 0.85) !important;
+  background: rgba(15, 23, 42, 0.76) !important;
+}
+
+html.dark #server-details-panel.collapsed #serverDetailsMiniIcon::before {
+  background: rgba(139, 92, 246, 0.2) !important;
+}
+
+html.dark #server-details-panel.collapsed #serverDetailsMiniIcon:hover {
+  border-color: rgba(167, 139, 250, 0.9) !important;
+}
+
+html.dark #server-details-panel.collapsed #serverDetailsMiniIcon i {
+  color: #c4b5fd !important;
+}
 #server-details-panel.collapsed #serverDetailsHeaderMain { display: none !important; }
 #server-details-panel.collapsed .flex-1 { display: none !important; }
 #server-details-panel #rightPanelCollapseBtn { width: 2rem; height: 2rem; }
@@ -753,6 +837,22 @@ header .flex > button[onclick*="window.location.href='/'"]:not(#headerNewServerB
 .details-rail .rail-btn:hover { border-color: #93c5fd; color: #2563eb; }
 .details-rail .rail-btn.danger { color: #dc2626; }
 .details-rail .rail-btn.danger:hover { border-color: #fecaca; color: #dc2626; }
+
+html.dark .details-rail {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-left-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark .details-rail .rail-btn {
+  background: rgba(15, 23, 42, 0.78) !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+  color: #94a3b8 !important;
+}
+
+html.dark .details-rail .rail-btn:hover {
+  border-color: rgba(96, 165, 250, 0.9) !important;
+  color: #93c5fd !important;
+}
 
 /* Minimal Sidebar Theme */
 #sidebar:not(.collapsed) #sidebarNavList .nav-item {
@@ -849,6 +949,16 @@ html.dark #sidebar.collapsed #sidebarNavList .nav-item:hover .relative > div::be
   background: rgba(148, 163, 184, 0.22) !important;
 }
 
+html.dark #sidebar.collapsed #sidebarNavList .nav-item.active i,
+html.dark #sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] i {
+  color: #93c5fd !important;
+}
+
+html.dark #sidebar.collapsed #sidebarNavList .nav-item.active .relative > div::before,
+html.dark #sidebar.collapsed #sidebarNavList .nav-item[aria-current="page"] .relative > div::before {
+  background: rgba(37, 99, 235, 0.28) !important;
+}
+
 html.dark #sharedQuickAskSidebarChatList a:hover,
 html.dark #quickAskChatList .group:hover {
   background: rgba(51, 65, 85, 0.45) !important;
@@ -859,6 +969,26 @@ html.dark #quickAskChatList .group:hover {
 html.dark #generate-tab .card {
   background-color: rgba(15, 23, 42, 0.96) !important;
   border-color: rgba(71, 85, 105, 0.7) !important;
+}
+
+/* Dark mode: Manage Servers filter card should match Generate top card style */
+html.dark #manageFiltersCard {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.95)) !important;
+  border-color: rgba(71, 85, 105, 0.76) !important;
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.38) !important;
+}
+
+html.dark #manageFiltersCard .input {
+  background-color: rgba(15, 23, 42, 0.72) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark #manageFiltersCard .input:hover {
+  border-color: rgba(96, 165, 250, 0.65) !important;
+}
+
+html.dark #manageFiltersCard .input::placeholder {
+  color: #94a3b8 !important;
 }
 
 html.dark #generate-tab [id^="step-"][id$="-indicator"] {
@@ -1216,6 +1346,32 @@ html.dark #wizard-step-3 #data-preview .hover\:bg-slate-50:hover {
   background-color: rgba(51, 65, 85, 0.55) !important;
 }
 
+/* Dark mode: CSV/XLSX file dropzone states */
+html.dark #fileUpload {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark #fileUpload:hover {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.78), rgba(30, 58, 138, 0.2)) !important;
+  border-color: rgba(96, 165, 250, 0.92) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+}
+
+html.dark #fileUpload.bg-blue-50 {
+  background: rgba(30, 58, 138, 0.28) !important;
+  border-color: rgba(96, 165, 250, 0.96) !important;
+}
+
+html.dark #fileUpload.bg-emerald-50\/30 {
+  background: rgba(6, 95, 70, 0.26) !important;
+  border-color: rgba(52, 211, 153, 0.95) !important;
+}
+
+html.dark #fileUpload .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.92) !important;
+}
+
 /* Dark mode: Quick Ask hero card should not keep light white tones */
 html.dark #quickAskSection > .relative {
   background-image: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96)) !important;
@@ -1237,4 +1393,179 @@ html.dark #quickAskSection > .relative > .-top-16.-right-14 {
 
 html.dark #quickAskSection > .relative > .-bottom-24.-left-16 {
   background: rgba(34, 211, 238, 0.14) !important;
+}
+
+/* Dark mode: Manage Servers table/list */
+html.dark #server-list > .bg-white {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+  border: 1px solid rgba(71, 85, 105, 0.82) !important;
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.44) !important;
+}
+
+html.dark #server-list > .bg-white > div:first-child,
+html.dark #server-list > .bg-white > div:nth-child(2) {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark #server-list > .bg-white > div:last-child > div {
+  background: rgba(15, 23, 42, 0.64) !important;
+  border-color: rgba(71, 85, 105, 0.72) !important;
+}
+
+html.dark #server-list > .bg-white > div:last-child > div:nth-child(even) {
+  background: rgba(30, 41, 59, 0.5) !important;
+}
+
+html.dark #server-list > .bg-white > div:last-child > div:hover {
+  background: rgba(51, 65, 85, 0.66) !important;
+}
+
+html.dark #server-list .bg-gray-100 {
+  background-color: rgba(51, 65, 85, 0.86) !important;
+}
+
+html.dark #server-list .hover\:bg-gray-200:hover {
+  background-color: rgba(71, 85, 105, 0.95) !important;
+}
+
+html.dark #server-list .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark #server-list .bg-red-100 {
+  background-color: rgba(127, 29, 29, 0.38) !important;
+}
+
+html.dark #server-list .hover\:bg-red-200:hover {
+  background-color: rgba(153, 27, 27, 0.52) !important;
+}
+
+html.dark #server-list .text-red-700 {
+  color: #fca5a5 !important;
+}
+
+/* Action icon hover feedback: Manage list + Server Details */
+#server-list .server-row-action-btn,
+#server-details-panel .server-details-action-btn {
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+#server-list .server-row-action-btn:hover,
+#server-details-panel .server-details-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+#server-list .server-row-action-view:hover {
+  border-color: #60a5fa;
+  color: #2563eb;
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.18);
+}
+
+#server-list .server-row-action-rename:hover {
+  border-color: #34d399;
+  color: #059669;
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.16);
+}
+
+#server-list .server-row-action-test:hover {
+  background-color: #e2e8f0;
+}
+
+#server-list .server-row-action-delete:hover {
+  background-color: #fecaca;
+}
+
+#server-details-panel .server-details-action-tools:hover,
+#server-details-panel .server-details-action-resources:hover,
+#server-details-panel .server-details-action-test:hover {
+  border-color: #60a5fa;
+  color: #2563eb;
+  background-color: #eff6ff;
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.18);
+}
+
+#server-details-panel .server-details-action-delete:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+  background-color: #fee2e2;
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.16);
+}
+
+html.dark #server-list .server-row-action-view,
+html.dark #server-list .server-row-action-rename,
+html.dark #server-details-panel .server-details-action-tools,
+html.dark #server-details-panel .server-details-action-resources,
+html.dark #server-details-panel .server-details-action-test {
+  background: rgba(15, 23, 42, 0.84) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark #server-list .server-row-action-view:hover,
+html.dark #server-details-panel .server-details-action-tools:hover,
+html.dark #server-details-panel .server-details-action-resources:hover,
+html.dark #server-details-panel .server-details-action-test:hover {
+  border-color: rgba(96, 165, 250, 0.92) !important;
+  color: #93c5fd !important;
+  background: rgba(30, 41, 59, 0.96) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16) !important;
+}
+
+html.dark #server-list .server-row-action-rename:hover {
+  border-color: rgba(52, 211, 153, 0.92) !important;
+  color: #6ee7b7 !important;
+  background: rgba(6, 78, 59, 0.36) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16) !important;
+}
+
+html.dark #server-list .server-row-action-test {
+  background: rgba(51, 65, 85, 0.86) !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark #server-list .server-row-action-test:hover {
+  background: rgba(71, 85, 105, 0.98) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark #server-list .server-row-action-delete,
+html.dark #server-details-panel .server-details-action-delete {
+  background: rgba(127, 29, 29, 0.38) !important;
+  border-color: rgba(220, 38, 38, 0.42) !important;
+  color: #fca5a5 !important;
+}
+
+html.dark #server-list .server-row-action-delete:hover,
+html.dark #server-details-panel .server-details-action-delete:hover {
+  background: rgba(153, 27, 27, 0.56) !important;
+  border-color: rgba(248, 113, 113, 0.84) !important;
+  color: #fecaca !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+/* Server details tool-row test button hover feedback */
+#server-details-panel .server-tool-test-btn {
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+#server-details-panel .server-tool-test-btn:hover {
+  transform: translateY(-1px);
+  border-color: #60a5fa;
+  color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.18);
+}
+
+html.dark #server-details-panel .server-tool-test-btn {
+  background: rgba(15, 23, 42, 0.84) !important;
+  border-color: rgba(30, 64, 175, 0.7) !important;
+  color: #93c5fd !important;
+}
+
+html.dark #server-details-panel .server-tool-test-btn:hover {
+  background: rgba(30, 41, 59, 0.96) !important;
+  border-color: rgba(96, 165, 250, 0.94) !important;
+  color: #bfdbfe !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
 }
