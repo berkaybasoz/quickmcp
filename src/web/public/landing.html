@@ -837,7 +837,7 @@
       display: none;
     }
 
-    .install-modal.api-key-active .install-modal-panel {
+    .install-modal.detail-active .install-modal-panel {
       padding-top: 56px;
     }
 
@@ -921,6 +921,27 @@
       gap: 10px;
     }
 
+    .install-channel-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+    }
+
+    .install-channel-label {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      padding-left: 2px;
+      flex: 0 0 auto;
+    }
+
+    .install-channel-group .install-channel-row {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
     .install-channel-row {
       width: 100%;
       border: 1px solid var(--line);
@@ -965,6 +986,19 @@
       color: var(--text);
     }
 
+    .install-channel-text {
+      display: grid;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .install-channel-subtitle {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      line-height: 1.2;
+    }
+
     .install-channel-arrow {
       color: var(--muted);
       font-size: 12px;
@@ -972,7 +1006,7 @@
 
     .install-modal-actions {
       margin-top: 14px;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: center;
     }
@@ -1070,9 +1104,51 @@
     .install-step-url {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       color: #0f172a;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 400;
       overflow-wrap: anywhere;
+    }
+
+    .install-steps-scroll {
+      max-height: min(64vh, 560px);
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 999px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .install-guide-media {
+      margin: 10px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .install-guide-media img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #f8fafc;
+    }
+
+    .install-step-details {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-top: 8px;
+      margin-bottom: 0;
+      padding-left: 18px;
     }
 
     .install-copy-btn {
@@ -1182,6 +1258,55 @@
       visibility: visible;
       transform: translateY(0);
       pointer-events: auto;
+    }
+
+    .token-help-wrap.token-help-down .token-help-preview {
+      top: calc(100% + 10px);
+      bottom: auto;
+      right: 0;
+      transform: translateY(-6px);
+    }
+
+    .token-help-wrap.token-help-down:hover .token-help-preview,
+    .token-help-wrap.token-help-down:focus-within .token-help-preview {
+      transform: translateY(0);
+    }
+
+    .token-help-wrap.token-help-global .token-help-preview {
+      display: none;
+    }
+
+    .token-help-floating-preview {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: min(560px, calc(100vw - 24px));
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+      padding: 6px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 260;
+      pointer-events: none;
+    }
+
+    .token-help-floating-preview.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .token-help-floating-preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #f8fafc;
     }
 
     .faq-grid {
@@ -1472,6 +1597,10 @@
         width: 26px;
         height: 26px;
         font-size: 12px;
+      }
+
+      .install-steps-scroll {
+        max-height: min(58vh, 460px);
       }
 
     }
@@ -2070,13 +2199,19 @@
           <button type="button" id="openApiKeyFlowBtn" class="install-primary-btn">Get Api Key</button>
         </div>
         <div class="install-channels">
-          <button type="button" class="install-channel-row">
-            <span class="install-channel-main">
-              <img src="/images/app/openai.png" alt="OpenAI" class="install-channel-icon">
-              <span class="install-channel-title">OpenAI</span>
-            </span>
-            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
-          </button>
+          <div class="install-channel-group">
+            <span class="install-channel-label">OpenAI</span>
+            <button type="button" id="openChatgptFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/openai.png" alt="ChatGPT" class="install-channel-icon">
+                <span class="install-channel-text">
+                  <span class="install-channel-title">ChatGPT</span>
+                  <span class="install-channel-subtitle">Developer Mode</span>
+                </span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+          </div>
           <button type="button" class="install-channel-row">
             <span class="install-channel-main">
               <img src="/images/app/claude.png" alt="Claude" class="install-channel-icon">
@@ -2139,7 +2274,119 @@
           </section>
         </div>
       </div>
+
+      <div id="installModalViewChatgpt" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-comments" aria-hidden="true"></i>
+          ChatGPT Developer Mode
+        </h3>
+        <p class="install-modal-subtitle">Install QuickMCP in ChatGPT by following these steps.</p>
+        <div class="install-steps-scroll">
+          <div class="install-step-list">
+            <section class="install-step">
+              <div class="install-step-index">1</div>
+              <h4 class="install-step-title">Generate Token</h4>
+              <p class="install-step-desc">Sign in to generate an Authorization header token for your MCP client.</p>
+              <div class="install-signin-row">
+                <a href="/authorization" class="install-signin-btn">Sign in and Generate Token</a>
+                <span class="token-help-wrap token-help-down token-help-global">
+                  <button type="button" class="token-help-icon" aria-label="Show token generate guide">
+                    <i class="fas fa-circle-question" aria-hidden="true"></i>
+                  </button>
+                  <span class="token-help-preview" role="tooltip">
+                    <img src="/images/install/token-generate/token-generate.png" alt="Token generate guide preview">
+                  </span>
+                </span>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">2</div>
+              <h4 class="install-step-title">Copy the MCP URL</h4>
+              <div class="install-step-copy-row">
+                <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+                <button type="button" id="copyMcpUrlBtnChatgpt" class="install-copy-btn">Copy</button>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">3</div>
+              <h4 class="install-step-title">Click on Advanced Settings</h4>
+              <p class="install-step-desc">Go to Settings &gt; Apps and click on Advanced Settings.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step0.png" alt="ChatGPT settings page">
+                <img src="/images/install/chatgpt-web/step1.png" alt="ChatGPT advanced settings">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">4</div>
+              <h4 class="install-step-title">Enable Developer mode and click Create app</h4>
+              <p class="install-step-desc">Enable the Developer mode toggle and click on Create app.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step2.png" alt="Enable developer mode in ChatGPT">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">5</div>
+              <h4 class="install-step-title">Enter the details and click Create</h4>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step4.png" alt="Create app form in ChatGPT">
+              </div>
+              <p class="install-step-desc">Fill in the following details:</p>
+              <ul class="install-step-details">
+                <li>Name: QuickMCP</li>
+                <li>MCP Server URL: Paste the URL from step 2</li>
+                <li>Authentication: OAuth</li>
+                <li>Keep Client ID and Client Secret empty</li>
+                <li>Check "I understand and want to continue"</li>
+                <li>Click Create</li>
+              </ul>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">6</div>
+              <h4 class="install-step-title">Click Allow access</h4>
+              <p class="install-step-desc">Click on Allow access to authorize ChatGPT to connect with QuickMCP.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step5.png" alt="Allow access prompt">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">7</div>
+              <h4 class="install-step-title">QuickMCP is now connected</h4>
+              <p class="install-step-desc">QuickMCP is now connected to ChatGPT. You can view the connection details and available actions.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step6.png" alt="QuickMCP connected in ChatGPT">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">8</div>
+              <h4 class="install-step-title">Go back to chat, click + More, and select QuickMCP</h4>
+              <p class="install-step-desc">Go back to chat, click on the + icon, then click More, and select QuickMCP. You'll need to do this for every new chat.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step7.png" alt="Select QuickMCP from chat menu">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">9</div>
+              <h4 class="install-step-title">Try it out!</h4>
+              <p class="install-step-desc">Try something like "Hey QuickMCP, fetch my latest emails from Gmail" and start using 1000+ apps inside ChatGPT.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step8.png" alt="Try QuickMCP in ChatGPT">
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+  <div id="tokenHelpFloatingPreview" class="token-help-floating-preview" aria-hidden="true">
+    <img src="" alt="">
   </div>
 
   <!-- CTA Section -->
@@ -2205,20 +2452,28 @@
       const openInstallAnywhereModal = document.getElementById('openInstallAnywhereModal');
       const installModalViewChooser = document.getElementById('installModalViewChooser');
       const installModalViewApiKey = document.getElementById('installModalViewApiKey');
+      const installModalViewChatgpt = document.getElementById('installModalViewChatgpt');
       const installModalBackBtn = document.getElementById('installModalBackBtn');
       const openApiKeyFlowBtn = document.getElementById('openApiKeyFlowBtn');
+      const openChatgptFlowBtn = document.getElementById('openChatgptFlowBtn');
       const copyMcpUrlBtn = document.getElementById('copyMcpUrlBtn');
+      const copyMcpUrlBtnChatgpt = document.getElementById('copyMcpUrlBtnChatgpt');
+      const tokenHelpFloatingPreview = document.getElementById('tokenHelpFloatingPreview');
+      const tokenHelpFloatingImg = tokenHelpFloatingPreview ? tokenHelpFloatingPreview.querySelector('img') : null;
 
       const setInstallModalView = (view) => {
-        if (!installModalViewChooser || !installModalViewApiKey) return;
+        if (!installModalViewChooser || !installModalViewApiKey || !installModalViewChatgpt) return;
         const isApiKey = view === 'api-key';
-        installModalViewChooser.classList.toggle('hidden', isApiKey);
+        const isChatgpt = view === 'chatgpt';
+        const isChooser = view === 'chooser';
+        installModalViewChooser.classList.toggle('hidden', !isChooser);
         installModalViewApiKey.classList.toggle('hidden', !isApiKey);
+        installModalViewChatgpt.classList.toggle('hidden', !isChatgpt);
         if (installAnywhereModal) {
-          installAnywhereModal.classList.toggle('api-key-active', isApiKey);
+          installAnywhereModal.classList.toggle('detail-active', !isChooser);
         }
         if (installModalBackBtn) {
-          installModalBackBtn.classList.toggle('hidden', !isApiKey);
+          installModalBackBtn.classList.toggle('hidden', isChooser);
         }
       };
 
@@ -2240,11 +2495,16 @@
         if (openApiKeyFlowBtn) {
           openApiKeyFlowBtn.addEventListener('click', () => setInstallModalView('api-key'));
         }
+        if (openChatgptFlowBtn) {
+          openChatgptFlowBtn.addEventListener('click', () => setInstallModalView('chatgpt'));
+        }
         if (installModalBackBtn) {
           installModalBackBtn.addEventListener('click', () => setInstallModalView('chooser'));
         }
-        if (copyMcpUrlBtn) {
-          copyMcpUrlBtn.addEventListener('click', async () => {
+
+        const bindCopyMcpUrl = (button) => {
+          if (!button) return;
+          button.addEventListener('click', async () => {
             const text = 'https://www.quickmcp.ai/mcp';
             try {
               if (navigator.clipboard?.writeText) {
@@ -2260,14 +2520,76 @@
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
               }
-              const original = copyMcpUrlBtn.textContent;
-              copyMcpUrlBtn.textContent = 'Copied';
-              setTimeout(() => { copyMcpUrlBtn.textContent = original || 'Copy'; }, 1200);
+              const original = button.textContent;
+              button.textContent = 'Copied';
+              setTimeout(() => { button.textContent = original || 'Copy'; }, 1200);
             } catch {}
           });
-        }
+        };
+
+        bindCopyMcpUrl(copyMcpUrlBtn);
+        bindCopyMcpUrl(copyMcpUrlBtnChatgpt);
+
+        const hideFloatingPreview = () => {
+          if (!tokenHelpFloatingPreview) return;
+          tokenHelpFloatingPreview.classList.remove('open');
+          tokenHelpFloatingPreview.setAttribute('aria-hidden', 'true');
+        };
+
+        const showFloatingPreview = (wrap) => {
+          if (!tokenHelpFloatingPreview || !tokenHelpFloatingImg || !wrap) return;
+          const sourceImg = wrap.querySelector('.token-help-preview img');
+          if (!sourceImg) return;
+
+          tokenHelpFloatingImg.src = sourceImg.getAttribute('src') || '';
+          tokenHelpFloatingImg.alt = sourceImg.getAttribute('alt') || 'Token generate guide preview';
+          tokenHelpFloatingPreview.classList.add('open');
+          tokenHelpFloatingPreview.setAttribute('aria-hidden', 'false');
+
+          requestAnimationFrame(() => {
+            const padding = 12;
+            const triggerRect = wrap.getBoundingClientRect();
+            const previewRect = tokenHelpFloatingPreview.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let left = triggerRect.right - previewRect.width;
+            if (left < padding) left = padding;
+            if (left + previewRect.width > viewportWidth - padding) {
+              left = Math.max(padding, viewportWidth - previewRect.width - padding);
+            }
+
+            let top = triggerRect.bottom + 10;
+            if (top + previewRect.height > viewportHeight - padding) {
+              top = Math.max(padding, triggerRect.top - previewRect.height - 10);
+            }
+
+            tokenHelpFloatingPreview.style.left = `${left}px`;
+            tokenHelpFloatingPreview.style.top = `${top}px`;
+          });
+        };
+
+        document.querySelectorAll('.token-help-wrap.token-help-global').forEach((wrap) => {
+          const icon = wrap.querySelector('.token-help-icon');
+          wrap.addEventListener('mouseenter', () => showFloatingPreview(wrap));
+          wrap.addEventListener('mouseleave', () => hideFloatingPreview());
+          if (icon) {
+            icon.addEventListener('focus', () => showFloatingPreview(wrap));
+            icon.addEventListener('blur', () => {
+              setTimeout(() => {
+                if (!wrap.matches(':hover')) hideFloatingPreview();
+              }, 80);
+            });
+          }
+        });
+
+        window.addEventListener('resize', hideFloatingPreview);
+        window.addEventListener('scroll', hideFloatingPreview, true);
         document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') setInstallModalOpen(false);
+          if (event.key === 'Escape') {
+            hideFloatingPreview();
+            setInstallModalOpen(false);
+          }
         });
       }
 
