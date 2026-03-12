@@ -134,29 +134,33 @@ if (!process.env.QUICKMCP_DATA_DIR) {
 let safeCreateDataStore;
 try {
   ({ safeCreateDataStore } = require('./dist/database/database-utils.js'));
-} catch (_) {
-  throw new Error('[QuickMCP] Missing dist/database/database-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+} catch (error) {
+  const details = error && error.message ? ` (${error.message})` : '';
+  throw new Error('[QuickMCP] Failed to load dist/database/database-utils.js. Run `npm run build` before starting quickmcp-direct-stdio.js' + details);
 }
 
 let resolveAuthMode;
 try {
   ({ resolveAuthMode } = require('./dist/config/auth-config.js'));
-} catch (_) {
-  throw new Error('[QuickMCP] Missing dist/config/auth-config.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+} catch (error) {
+  const details = error && error.message ? ` (${error.message})` : '';
+  throw new Error('[QuickMCP] Failed to load dist/config/auth-config.js. Run `npm run build` before starting quickmcp-direct-stdio.js' + details);
 }
 
 let DynamicMCPExecutor;
 try {
   ({ DynamicMCPExecutor } = require('./dist/server/dynamic-mcp-executor.js'));
-} catch (_) {
-  throw new Error('[QuickMCP] Missing dist/server/dynamic-mcp-executor.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+} catch (error) {
+  const details = error && error.message ? ` (${error.message})` : '';
+  throw new Error('[QuickMCP] Failed to load dist/server/dynamic-mcp-executor.js. Run `npm run build` before starting quickmcp-direct-stdio.js' + details);
 }
 
 let McpCoreService;
 try {
   ({ McpCoreService } = require('./dist/mcp-core/McpCoreService.js'));
-} catch (_) {
-  throw new Error('[QuickMCP] Missing dist/mcp-core/McpCoreService.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
+} catch (error) {
+  const details = error && error.message ? ` (${error.message})` : '';
+  throw new Error('[QuickMCP] Failed to load dist/mcp-core/McpCoreService.js. Run `npm run build` before starting quickmcp-direct-stdio.js' + details);
 }
 
 let logger;
