@@ -479,7 +479,7 @@ QuickMCP, NPM üzerinden çalıştırıldığında artık varsayılan olarak web
 ### Hızlı başlatma
 
 ```bash
-npx -y @softtech/quickmcp
+npx -y @softtechai/quickmcp
 # UI -> http://localhost:3000
 # Integrated MCP sidecar -> :3001
 ```
@@ -493,7 +493,7 @@ npx -y @softtech/quickmcp
 Örnek:
 
 ```bash
-npx -y @softtech/quickmcp --port=4000 --data-dir=./data
+npx -y @softtechai/quickmcp --port=4000 --data-dir=./data
 ```
 
 ### Ortam değişkenleri
@@ -506,8 +506,19 @@ npx -y @softtech/quickmcp --port=4000 --data-dir=./data
 Örnek:
 
 ```bash
-PORT=4000 QUICKMCP_DATA_DIR=./data npx -y @softtech/quickmcp
+PORT=4000 QUICKMCP_DATA_DIR=./data npx -y @softtechai/quickmcp
 ```
+
+### Varsayılan kalıcı SQLite dizini
+
+`QUICKMCP_DATA_DIR` verilmezse QuickMCP, platforma göre kalıcı bir user-data dizini kullanır:
+
+- macOS: `~/Library/Application Support/QuickMCP/data`
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/quickmcp/data`
+- Windows: `%LOCALAPPDATA%\\QuickMCP\\data` (fallback: `%APPDATA%\\QuickMCP\\data`)
+
+Bu sayede `npx` cache klasörü değişse bile veri dizini değişmez.  
+İsteyen kullanıcı `QUICKMCP_DATA_DIR` veya `--data-dir` ile bu yolu ezebilir.
 
 > Not: Web UI, stdio tabanlı MCP sunucusunun yanında yan servis olarak çalışır; Claude Desktop entegrasyonu ile çakışmaz.
 
@@ -520,7 +531,10 @@ PORT=4000 QUICKMCP_DATA_DIR=./data npx -y @softtech/quickmcp
   "mcpServers": {
     "quickmcp": {
       "command": "npx",
-      "args": ["-y", "@softtechai/quickmcp"]
+      "args": ["-y", "@softtechai/quickmcp"],
+      "env": {
+        "QUICKMCP_DATA_DIR": "/path/to/quickmcp-data"
+      }
     }
   }
 }

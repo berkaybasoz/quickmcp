@@ -4,36 +4,133 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
-const dotenv = require('dotenv');
-
-// Load .env from script directory first (works with Claude Desktop custom CWD),
-// then fallback to process CWD.
-dotenv.config({ path: path.join(__dirname, '.env') });
-dotenv.config();
-
-let logger;
+const normalizedScriptDir = String(__dirname || '').split(path.sep).join('/');
+const isNpxRuntime = normalizedScriptDir.includes('/.npm/_npx/');
+let dotenv = null;
 try {
-  ({ logger } = require('./dist/utils/logger.js'));
+  dotenv = require('dotenv');
 } catch (_) {
-  logger = {
-    trace: (...args) => console.error(...args),
-    debug: (...args) => console.error(...args),
-    info: (...args) => console.error(...args),
-    warn: (...args) => console.error(...args),
-    error: (...args) => console.error(...args)
-  };
+  dotenv = null;
+}
+
+if (dotenv) {
+  // `dotenv` does not override existing process.env values.
+  // Priority:
+  // 1) Explicit path (DOTENV_CONFIG_PATH / QUICKMCP_ENV_FILE)
+  // 2) If running via npx: only package defaults
+  // 3) Otherwise (local/dev): local .env, package .env, then package defaults
+  const explicitEnvPath = process.env.DOTENV_CONFIG_PATH || process.env.QUICKMCP_ENV_FILE;
+
+  if (explicitEnvPath) {
+    dotenv.config({ path: explicitEnvPath });
+  }
+
+  if (isNpxRuntime) {
+    dotenv.config({ path: path.join(__dirname, '.env.onprem.defaults') });
+  } else {
+    dotenv.config({ path: path.join(process.cwd(), '.env') });
+    dotenv.config({ path: path.join(__dirname, '.env') });
+    dotenv.config({ path: path.join(__dirname, '.env.onprem.defaults') });
+  }
 }
 
 // Secure default for direct-stdio: if caller does not provide auth/deploy mode,
 // enforce ONPREM semantics (AUTH_MODE=LITE) so MCP token checks are active.
 if (!process.env.AUTH_MODE && !process.env.DEPLOY_MODE) {
   process.env.DEPLOY_MODE = 'ONPREM';
-  logger.error('[QuickMCP] AUTH_MODE/DEPLOY_MODE not provided, defaulting DEPLOY_MODE=ONPREM (AUTH_MODE=LITE)');
+  // Do not use DB-backed logger here; datastore path bootstrap is not finalized yet.
+  console.error('[QuickMCP] AUTH_MODE/DEPLOY_MODE not provided, defaulting DEPLOY_MODE=ONPREM (AUTH_MODE=LITE)');
 }
 
 // Use the current working directory provided by the caller.
 // Do not change directories; keep paths relative to this script.
 
+// Parse CLI flags for convenience
+// Supported flags:
+//   --web | -w | web         -> explicitly enable web UI (default: enabled)
+//   --no-web                 -> disable web UI
+//   --port=NNNN              -> set PORT for web UI
+//   --data-dir=PATH          -> set QUICKMCP_DATA_DIR for sqlite
+const argv = process.argv.slice(2);
+const wantsWeb = argv.includes('--web') || argv.includes('-w') || argv.includes('web');
+const noWeb = argv.includes('--no-web');
+const portArg = argv.find(a => a.startsWith('--port='));
+const dataDirArg = argv.find(a => a.startsWith('--data-dir='));
+
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function resolveStableDefaultDataDir() {
+  const home = os.homedir() || os.tmpdir();
+  if (process.platform === 'win32') {
+    const base = process.env.LOCALAPPDATA || process.env.APPDATA || path.join(home, 'AppData', 'Local');
+    return path.join(base, 'QuickMCP', 'data');
+  }
+  if (process.platform === 'darwin') {
+    return path.join(home, 'Library', 'Application Support', 'QuickMCP', 'data');
+  }
+  const xdgDataHome = String(process.env.XDG_DATA_HOME || '').trim();
+  const base = xdgDataHome || path.join(home, '.local', 'share');
+  return path.join(base, 'quickmcp', 'data');
+}
+
+function ensureWritableDataDir(preferredDir) {
+  try {
+    fs.mkdirSync(preferredDir, { recursive: true });
+    fs.accessSync(preferredDir, fs.constants.W_OK);
+    return preferredDir;
+  } catch (_) {
+    const fallbackDir = path.join(os.tmpdir(), 'quickmcp', 'data');
+    try {
+      fs.mkdirSync(fallbackDir, { recursive: true });
+    } catch (_) {}
+    return fallbackDir;
+  }
+}
+
+function looksLikeNpxCachePath(dirPath) {
+  const normalized = String(dirPath || '').split(path.sep).join('/').toLowerCase();
+  return normalized.includes('/.npm/_npx/') || normalized.includes('/_npx/');
+}
+
+// Default behavior: Web UI enabled unless explicitly disabled
+if (noWeb || process.env.QUICKMCP_ENABLE_WEB === '0' || process.env.QUICKMCP_DISABLE_WEB === '1') {
+  process.env.QUICKMCP_ENABLE_WEB = '0';
+} else if (wantsWeb || process.env.QUICKMCP_ENABLE_WEB === '1' || process.env.QUICKMCP_ENABLE_WEB === undefined) {
+  process.env.QUICKMCP_ENABLE_WEB = '1';
+}
+if (portArg) {
+  const val = portArg.split('=')[1];
+  if (val) process.env.PORT = val;
+}
+if (dataDirArg) {
+  const val = dataDirArg.split('=')[1];
+  if (val) process.env.QUICKMCP_DATA_DIR = val;
+}
+if (!dataDirArg && looksLikeNpxCachePath(process.env.QUICKMCP_DATA_DIR)) {
+  process.env.QUICKMCP_DATA_DIR = '';
+}
+if (process.env.QUICKMCP_DATA_DIR && !path.isAbsolute(process.env.QUICKMCP_DATA_DIR)) {
+  // Normalize relative env values (e.g. "./data") against caller CWD, not package root.
+  process.env.QUICKMCP_DATA_DIR = path.resolve(process.cwd(), process.env.QUICKMCP_DATA_DIR);
+}
+if (looksLikeNpxCachePath(process.env.QUICKMCP_DATA_DIR)) {
+  // Never persist SQLite under transient npx cache directories.
+  process.env.QUICKMCP_DATA_DIR = ensureWritableDataDir(resolveStableDefaultDataDir());
+}
+if (!process.env.QUICKMCP_DATA_DIR) {
+  process.env.QUICKMCP_DATA_DIR = ensureWritableDataDir(resolveStableDefaultDataDir());
+}
+
+// IMPORTANT: Keep dist imports after QUICKMCP_DATA_DIR bootstrap.
+// If any imported module initializes datastore as a side effect, it must see final env.
 let safeCreateDataStore;
 try {
   ({ safeCreateDataStore } = require('./dist/database/database-utils.js'));
@@ -62,30 +159,17 @@ try {
   throw new Error('[QuickMCP] Missing dist/mcp-core/McpCoreService.js. Run `npm run build` before starting quickmcp-direct-stdio.js');
 }
 
-// Parse CLI flags for convenience
-// Supported flags:
-//   --web | -w | web         -> explicitly enable web UI (default: enabled)
-//   --no-web                 -> disable web UI
-//   --port=NNNN              -> set PORT for web UI
-//   --data-dir=PATH          -> set QUICKMCP_DATA_DIR for sqlite
-const argv = process.argv.slice(2);
-const wantsWeb = argv.includes('--web') || argv.includes('-w') || argv.includes('web');
-const noWeb = argv.includes('--no-web');
-const portArg = argv.find(a => a.startsWith('--port='));
-const dataDirArg = argv.find(a => a.startsWith('--data-dir='));
-// Default behavior: Web UI enabled unless explicitly disabled
-if (noWeb || process.env.QUICKMCP_ENABLE_WEB === '0' || process.env.QUICKMCP_DISABLE_WEB === '1') {
-  process.env.QUICKMCP_ENABLE_WEB = '0';
-} else if (wantsWeb || process.env.QUICKMCP_ENABLE_WEB === '1' || process.env.QUICKMCP_ENABLE_WEB === undefined) {
-  process.env.QUICKMCP_ENABLE_WEB = '1';
-}
-if (portArg) {
-  const val = portArg.split('=')[1];
-  if (val) process.env.PORT = val;
-}
-if (dataDirArg) {
-  const val = dataDirArg.split('=')[1];
-  if (val) process.env.QUICKMCP_DATA_DIR = val;
+let logger;
+try {
+  ({ logger } = require('./dist/utils/logger.js'));
+} catch (_) {
+  logger = {
+    trace: (...args) => console.error(...args),
+    debug: (...args) => console.error(...args),
+    info: (...args) => console.error(...args),
+    warn: (...args) => console.error(...args),
+    error: (...args) => console.error(...args)
+  };
 }
 
 const dataStore = safeCreateDataStore({ logger: (...args) => logger.error(...args) });
@@ -94,6 +178,18 @@ const executor = new DynamicMCPExecutor();
 const mcpAuthMode = resolveAuthMode();
 const mcpTokenSecret = process.env.QUICKMCP_TOKEN_SECRET || process.env.AUTH_COOKIE_SECRET || 'change-me';
 const mcpToken = (process.env.QUICKMCP_TOKEN || '').trim();
+const sqlitePath = (() => {
+  try {
+    if (!dataStore || typeof dataStore !== 'object') return '';
+    const directPath = dataStore.dbPath;
+    if (typeof directPath === 'string' && directPath.trim()) return directPath.trim();
+    const dbNamePath = dataStore.db && typeof dataStore.db.name === 'string' ? dataStore.db.name : '';
+    if (dbNamePath && dbNamePath.trim()) return dbNamePath.trim();
+    return '';
+  } catch (_) {
+    return '';
+  }
+})();
 let startupAuthError = null;
 let mcpCore;
 try {
@@ -117,6 +213,10 @@ try {
 
 logger.error(`[QuickMCP] MCP auth mode: ${mcpAuthMode}`);
 logger.error(`[QuickMCP] MCP token present: ${mcpToken ? 'yes' : 'no'}`);
+logger.error(`[QuickMCP] QUICKMCP_DATA_DIR: ${process.env.QUICKMCP_DATA_DIR || '(unset)'}`);
+if (mcpAuthMode === 'LITE') {
+  logger.error(`[QuickMCP] SQLite path: ${sqlitePath || '(unavailable)'}`);
+}
 if (startupAuthError) {
   logger.error('[QuickMCP] Provided MCP token is invalid/revoked/expired for current workspace.');
 }
@@ -149,38 +249,69 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
     const preferredPort = parseInt(process.env.PORT || '3000', 10);
     const lockPath = path.join(runDir, `ui-${preferredPort}.lock`);
     let hasLock = false;
-    try {
-      const fd = fs.openSync(lockPath, 'wx');
-      fs.closeSync(fd);
-      hasLock = true;
-      const cleanup = () => { try { fs.unlinkSync(lockPath); } catch {} };
-      process.once('exit', cleanup);
-      process.once('SIGINT', () => { cleanup(); process.exit(0); });
-      process.once('SIGTERM', () => { cleanup(); process.exit(0); });
-    } catch (e) {
-      if (e && e.code !== 'EEXIST') {
-        logger.error('[QuickMCP] UI lock error (continuing without UI):', e.message || e);
+    const cleanup = () => { try { fs.unlinkSync(lockPath); } catch {} };
+    const tryAcquireLock = () => {
+      try {
+        const fd = fs.openSync(lockPath, 'wx');
+        fs.writeFileSync(fd, String(process.pid), 'utf8');
+        fs.closeSync(fd);
+        hasLock = true;
+        process.once('exit', cleanup);
+        process.once('SIGINT', () => { cleanup(); process.exit(0); });
+        process.once('SIGTERM', () => { cleanup(); process.exit(0); });
+      } catch (e) {
+        if (e && e.code === 'EEXIST') {
+          let ownerPid = NaN;
+          try {
+            ownerPid = parseInt(String(fs.readFileSync(lockPath, 'utf8')).trim(), 10);
+          } catch (_) {}
+
+          if (!isProcessAlive(ownerPid)) {
+            // Lock file exists but owner is gone (or lock format is empty/invalid): reclaim it.
+            try {
+              fs.unlinkSync(lockPath);
+              const fd = fs.openSync(lockPath, 'wx');
+              fs.writeFileSync(fd, String(process.pid), 'utf8');
+              fs.closeSync(fd);
+              hasLock = true;
+              process.once('exit', cleanup);
+              process.once('SIGINT', () => { cleanup(); process.exit(0); });
+              process.once('SIGTERM', () => { cleanup(); process.exit(0); });
+              logger.error(`[QuickMCP] Reclaimed stale UI lock: ${lockPath}`);
+              return;
+            } catch (reclaimErr) {
+              logger.error('[QuickMCP] Failed to reclaim stale UI lock (continuing without UI):', reclaimErr && reclaimErr.message ? reclaimErr.message : reclaimErr);
+              return;
+            }
+          }
+
+          logger.error(`[QuickMCP] UI lock held by pid ${ownerPid}; skipping Web UI in this process`);
+          return;
+        }
+
+        logger.error('[QuickMCP] UI lock error (continuing without UI):', e && e.message ? e.message : e);
       }
-      // Another process holds the UI lock; skip starting UI in this process
-    }
+    };
+    tryAcquireLock();
 
     if (!hasLock) {
-      logger.error('[QuickMCP] UI lock held by another process; skipping Web UI in this process');
+      logger.error('[QuickMCP] Web UI not started in this process');
     } else {
       // Only start Web UI if preferred port is actually free.
       const probe = net.createServer();
       probe.once('error', (err) => {
         if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) {
           // Port is busy or not permitted; skip starting Web UI to avoid crashing Claude session
+          logger.error(`[QuickMCP] Web UI port ${preferredPort} unavailable (${err.code}); skipping Web UI`);
           try { fs.unlinkSync(lockPath); } catch {}
           return;
         }
         // For other errors, still try starting server; better to attempt than silently skip for unknown cases
-        safeStartWebServer();
+        safeStartWebServer(preferredPort);
       });
       probe.once('listening', () => {
         probe.close(() => {
-          safeStartWebServer();
+          safeStartWebServer(preferredPort);
         });
       });
       try {
@@ -196,12 +327,13 @@ if (process.env.QUICKMCP_ENABLE_WEB === '1') {
 }
 
 // Start the web server but swallow a race-condition EADDRINUSE from Express listen
-function safeStartWebServer() {
+function safeStartWebServer(port) {
   let handled = false;
   const handler = (err) => {
     if (!handled && err && err.code === 'EADDRINUSE' && err.syscall === 'listen') {
       handled = true;
       // Swallow this once so the STDIO server keeps running; another instance already owns :3000
+      logger.error(`[QuickMCP] Web UI port ${port || process.env.PORT || 3000} became busy during startup; continuing without UI`);
       process.removeListener('uncaughtException', handler);
       return;
     }
@@ -212,7 +344,13 @@ function safeStartWebServer() {
   // Install one-time handler to catch immediate async throw from Express
   process.prependOnceListener('uncaughtException', handler);
   try {
-    require('./dist/server/server.js');
+    logger.error(`[QuickMCP] Starting Web UI at http://localhost:${port || process.env.PORT || 3000}`);
+    const webModule = require('./dist/server/server.js');
+    if (webModule && typeof webModule.startServer === 'function') {
+      webModule.startServer();
+    } else {
+      throw new Error('dist/server/server.js does not export startServer()');
+    }
   } catch (e) {
     // Synchronous load error
     process.removeListener('uncaughtException', handler);
@@ -229,18 +367,11 @@ function safeStartWebServer() {
 // Diagnostics: print environment and mssql details to help debug Claude Desktop
 try {
   const resolvedDynExec = require.resolve('./dist/server/dynamic-mcp-executor.js');
-  const mssql = require('mssql');
   const mssqlVersion = require('mssql/package.json').version;
   logger.error('[QuickMCP] Node:', process.version);
   logger.error('[QuickMCP] CWD:', process.cwd());
   logger.error('[QuickMCP] Dynamic executor path:', resolvedDynExec);
   logger.error('[QuickMCP] mssql version:', mssqlVersion);
-  logger.error('[QuickMCP] mssql exports:', {
-    hasDefault: !!mssql.default,
-    hasConnect: typeof mssql.connect,
-    typeofConnectionPool: typeof (mssql.ConnectionPool),
-    keys: Object.keys(mssql).slice(0, 10)
-  });
 } catch (e) {
   logger.error('[QuickMCP] Diagnostic init error:', e && e.message);
 }

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { IDataStore, LogEntry, QuickAskStateRecord, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 
 export class SQLiteManager implements IDataStore {
@@ -9,12 +10,26 @@ export class SQLiteManager implements IDataStore {
 
   constructor() {
     const projectRoot = path.resolve(__dirname, '..', '..');
-    const configuredDir = process.env.QUICKMCP_DATA_DIR;
-    const dbDir = configuredDir
-      ? (path.isAbsolute(configuredDir)
-          ? configuredDir
-          : path.join(projectRoot, configuredDir))
-      : path.join(projectRoot, 'data');
+    const configuredDirRaw = String(process.env.QUICKMCP_DATA_DIR || '').trim();
+    const configuredDir = configuredDirRaw
+      ? (path.isAbsolute(configuredDirRaw) ? configuredDirRaw : path.resolve(process.cwd(), configuredDirRaw))
+      : '';
+    const normalizedRoot = projectRoot.split(path.sep).join('/').toLowerCase();
+    const isNpxProjectRoot = normalizedRoot.includes('/.npm/_npx/') || normalizedRoot.includes('/_npx/');
+    const resolveStableDefaultDataDir = (): string => {
+      const home = os.homedir() || os.tmpdir();
+      if (process.platform === 'win32') {
+        const base = process.env.LOCALAPPDATA || process.env.APPDATA || path.join(home, 'AppData', 'Local');
+        return path.join(base, 'QuickMCP', 'data');
+      }
+      if (process.platform === 'darwin') {
+        return path.join(home, 'Library', 'Application Support', 'QuickMCP', 'data');
+      }
+      const xdgDataHome = String(process.env.XDG_DATA_HOME || '').trim();
+      const base = xdgDataHome || path.join(home, '.local', 'share');
+      return path.join(base, 'quickmcp', 'data');
+    };
+    const dbDir = configuredDir || (isNpxProjectRoot ? resolveStableDefaultDataDir() : path.join(projectRoot, 'data'));
 
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });

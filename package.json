@@ -1,6 +1,6 @@
 {
   "name": "@softtechai/quickmcp",
-  "version": "1.0.16",
+  "version": "1.2.0",
   "description": "An application to generate MCP servers from various data sources and test them",
   "main": "dist/index.js",
   "bin": {
@@ -21,6 +21,7 @@
   "files": [
     "dist",
     "quickmcp-direct-stdio.js",
+    ".env.onprem.defaults",
     "src/web/public",
     "README.md",
     "LICENSE"
@@ -40,6 +41,7 @@
     "better-sqlite3": "^12.4.1",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.18.0",
     "imapflow": "^1.2.6",
@@ -63,7 +65,6 @@
     "@types/ws": "^8.5.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "dotenv": "^16.4.5",
     "eslint": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
