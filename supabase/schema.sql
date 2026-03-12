@@ -41,6 +41,7 @@ create table if not exists public.refresh_tokens (
 
 create table if not exists public.users (
   username text primary key,
+  display_name text,
   workspace_id text not null,
   password_hash text not null,
   role text not null check (role in ('admin','user')),
