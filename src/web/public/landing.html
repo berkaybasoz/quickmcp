@@ -562,6 +562,7 @@
     .integrations-wrap {
       background: var(--card);
       border: 1px solid var(--line);
+      border-bottom: none;
       border-radius: 20px;
       padding: 32px;
       overflow: hidden;
@@ -698,8 +699,418 @@
     /* FAQ Section */
     .faq-section {
       padding: 80px 0;
-      background: var(--bg-soft);
-      border-top: 1px solid var(--line);
+      background: transparent;
+      border-top: none;
+    }
+
+    .install-anywhere-spotlight {
+      position: relative;
+      margin: -22px auto 28px;
+      max-width: 660px;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(120deg, #1d4ed8, #2563eb, #38bdf8, #1d4ed8);
+      background-size: 240% 240%;
+      animation: installGradientShift 7s ease infinite;
+      box-shadow: 0 14px 30px rgba(14, 116, 248, 0.2);
+    }
+
+    .install-anywhere-spotlight::before {
+      content: '';
+      position: absolute;
+      inset: -16px;
+      border-radius: 24px;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.3), transparent 70%);
+      filter: blur(14px);
+      pointer-events: none;
+    }
+
+    .install-anywhere-trigger {
+      width: 100%;
+      border: none;
+      border-radius: 17px;
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.95), rgba(3, 105, 161, 0.95));
+      color: #ffffff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+      position: relative;
+    }
+
+    .install-anywhere-trigger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 36px rgba(15, 23, 42, 0.28);
+    }
+
+    .install-anywhere-copy {
+      display: grid;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+      padding: 0 44px;
+    }
+
+    .install-anywhere-title {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .install-anywhere-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .install-anywhere-chevron {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.14);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    @keyframes installGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .install-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .install-modal.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .install-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.48);
+      backdrop-filter: blur(2px);
+    }
+
+    .install-modal-panel {
+      position: relative;
+      width: min(560px, 100%);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .install-modal-view.hidden {
+      display: none;
+    }
+
+    .install-modal.api-key-active .install-modal-panel {
+      padding-top: 56px;
+    }
+
+    .install-modal-back {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .install-modal-back:hover {
+      color: var(--text);
+      border-color: rgba(37, 99, 235, 0.35);
+      background: #eff6ff;
+    }
+
+    .install-modal-back.hidden {
+      display: none;
+    }
+
+    .install-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .install-modal-close:hover {
+      color: var(--text);
+      border-color: rgba(37, 99, 235, 0.35);
+      background: #eff6ff;
+    }
+
+    .install-modal-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .install-modal-heading i {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .install-modal-subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .install-channels {
+      display: grid;
+      gap: 10px;
+    }
+
+    .install-channel-row {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .install-channel-row:hover {
+      border-color: rgba(37, 99, 235, 0.36);
+      background: #f8fbff;
+      transform: translateX(2px);
+    }
+
+    .install-channel-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .install-channel-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      object-fit: contain;
+      background: #fff;
+      flex-shrink: 0;
+      padding: 3px;
+    }
+
+    .install-channel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .install-channel-arrow {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .install-modal-actions {
+      margin-top: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .install-primary-btn {
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1d4ed8, #0369a1);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 20px rgba(29, 78, 216, 0.22);
+    }
+
+    .install-primary-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(29, 78, 216, 0.28);
+    }
+
+    .install-step-list {
+      display: grid;
+      gap: 14px;
+      position: relative;
+      padding-left: 52px;
+      margin-top: 6px;
+    }
+
+    .install-step-list::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.45), rgba(14, 165, 233, 0.15));
+      border-radius: 999px;
+    }
+
+    .install-step {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .install-step-index {
+      position: absolute;
+      left: -52px;
+      top: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+      margin-bottom: 0;
+      line-height: 1;
+    }
+
+    .install-step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .install-step-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .install-step-copy-row {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .install-step-url {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .install-copy-btn {
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .install-copy-btn:hover {
+      background: #eff6ff;
+      border-color: rgba(37, 99, 235, 0.45);
+    }
+
+    .install-signin-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+    }
+
+    .install-signin-btn:hover {
+      background: #1e293b;
+      transform: translateY(-1px);
     }
 
     .faq-grid {
@@ -950,6 +1361,48 @@
       .cta-actions .btn {
         width: 100%;
       }
+
+      .install-anywhere-spotlight {
+        margin: -14px auto 16px;
+        border-radius: 16px;
+      }
+
+      .install-anywhere-trigger {
+        border-radius: 15px;
+        padding: 12px 14px;
+      }
+
+      .install-anywhere-copy {
+        padding: 0 34px;
+      }
+
+      .install-anywhere-title {
+        font-size: 18px;
+      }
+
+      .install-anywhere-subtitle {
+        font-size: 11px;
+      }
+
+      .install-modal-panel {
+        padding: 18px;
+      }
+
+      .install-step-list {
+        padding-left: 44px;
+      }
+
+      .install-step-list::before {
+        left: 13px;
+      }
+
+      .install-step-index {
+        left: -44px;
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+      }
+
     }
   </style>
 </head>
@@ -1458,6 +1911,21 @@
     </div>
   </section>
 
+  <div class="install-anywhere-spotlight">
+    <button type="button" id="openInstallAnywhereModal" class="install-anywhere-trigger">
+      <span class="install-anywhere-copy">
+        <span class="install-anywhere-title">
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Install QuickMCP Anywhere
+        </span>
+        <span class="install-anywhere-subtitle">OpenAI, Claude, IDEs, MCP</span>
+      </span>
+      <span class="install-anywhere-chevron" aria-hidden="true">
+        <i class="fas fa-arrow-right"></i>
+      </span>
+    </button>
+  </div>
+
   <!-- FAQ Section -->
   <section id="faq" class="faq-section">
     <div class="container">
@@ -1510,6 +1978,88 @@
       </div>
     </div>
   </section>
+
+  <div id="installAnywhereModal" class="install-modal" aria-hidden="true">
+    <div class="install-modal-backdrop" data-install-modal-close></div>
+    <div class="install-modal-panel" role="dialog" aria-modal="true" aria-labelledby="installAnywhereTitle">
+      <button type="button" id="installModalBackBtn" class="install-modal-back hidden" aria-label="Back to install options">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Back
+      </button>
+      <button type="button" class="install-modal-close" data-install-modal-close aria-label="Close installation modal">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+      <div id="installModalViewChooser" class="install-modal-view">
+        <h3 id="installAnywhereTitle" class="install-modal-heading">
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Install QuickMCP Anywhere
+        </h3>
+        <p class="install-modal-subtitle">Choose where you want to install QuickMCP integrations.</p>
+        <div class="install-modal-actions">
+          <button type="button" id="openApiKeyFlowBtn" class="install-primary-btn">Get Api Key</button>
+        </div>
+        <div class="install-channels">
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/openai.png" alt="OpenAI" class="install-channel-icon">
+              <span class="install-channel-title">OpenAI</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/claude.png" alt="Claude" class="install-channel-icon">
+              <span class="install-channel-title">Claude</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/vscode.png" alt="IDEs" class="install-channel-icon">
+              <span class="install-channel-title">IDEs</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/mcp.png" alt="MCP" class="install-channel-icon">
+              <span class="install-channel-title">MCP</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="installModalViewApiKey" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-key" aria-hidden="true"></i>
+          Get Api Key
+        </h3>
+        <div class="install-step-list">
+          <section class="install-step">
+            <div class="install-step-index">1</div>
+            <h4 class="install-step-title">Copy the MCP URL</h4>
+            <div class="install-step-copy-row">
+              <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+              <button type="button" id="copyMcpUrlBtn" class="install-copy-btn">Copy</button>
+            </div>
+          </section>
+
+          <section class="install-step">
+            <div class="install-step-index">2</div>
+            <h4 class="install-step-title">Generate a signed token for Authorization header</h4>
+            <p class="install-step-desc">Sign in to generate an Authorization header token for your MCP client.</p>
+            <a href="/login" class="install-signin-btn">Sign in and Generate Token</a>
+          </section>
+
+          <section class="install-step">
+            <div class="install-step-index">3</div>
+            <h4 class="install-step-title">Use it with your favourite agentic SDK or MCP client</h4>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- CTA Section -->
   <section class="cta-section">
@@ -1570,6 +2120,76 @@
 
       const navMenuToggle = document.getElementById('navMenuToggle');
       const navMobileMenu = document.getElementById('navMobileMenu');
+      const installAnywhereModal = document.getElementById('installAnywhereModal');
+      const openInstallAnywhereModal = document.getElementById('openInstallAnywhereModal');
+      const installModalViewChooser = document.getElementById('installModalViewChooser');
+      const installModalViewApiKey = document.getElementById('installModalViewApiKey');
+      const installModalBackBtn = document.getElementById('installModalBackBtn');
+      const openApiKeyFlowBtn = document.getElementById('openApiKeyFlowBtn');
+      const copyMcpUrlBtn = document.getElementById('copyMcpUrlBtn');
+
+      const setInstallModalView = (view) => {
+        if (!installModalViewChooser || !installModalViewApiKey) return;
+        const isApiKey = view === 'api-key';
+        installModalViewChooser.classList.toggle('hidden', isApiKey);
+        installModalViewApiKey.classList.toggle('hidden', !isApiKey);
+        if (installAnywhereModal) {
+          installAnywhereModal.classList.toggle('api-key-active', isApiKey);
+        }
+        if (installModalBackBtn) {
+          installModalBackBtn.classList.toggle('hidden', !isApiKey);
+        }
+      };
+
+      const setInstallModalOpen = (isOpen) => {
+        if (!installAnywhereModal) return;
+        installAnywhereModal.classList.toggle('open', isOpen);
+        installAnywhereModal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        if (!isOpen) setInstallModalView('chooser');
+      };
+
+      if (installAnywhereModal && openInstallAnywhereModal) {
+        openInstallAnywhereModal.addEventListener('click', () => {
+          setInstallModalView('chooser');
+          setInstallModalOpen(true);
+        });
+        installAnywhereModal.querySelectorAll('[data-install-modal-close]').forEach((node) => {
+          node.addEventListener('click', () => setInstallModalOpen(false));
+        });
+        if (openApiKeyFlowBtn) {
+          openApiKeyFlowBtn.addEventListener('click', () => setInstallModalView('api-key'));
+        }
+        if (installModalBackBtn) {
+          installModalBackBtn.addEventListener('click', () => setInstallModalView('chooser'));
+        }
+        if (copyMcpUrlBtn) {
+          copyMcpUrlBtn.addEventListener('click', async () => {
+            const text = 'https://www.quickmcp.ai/mcp';
+            try {
+              if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+              } else {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                tempInput.setAttribute('readonly', 'true');
+                tempInput.style.position = 'absolute';
+                tempInput.style.left = '-9999px';
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+              }
+              const original = copyMcpUrlBtn.textContent;
+              copyMcpUrlBtn.textContent = 'Copied';
+              setTimeout(() => { copyMcpUrlBtn.textContent = original || 'Copy'; }, 1200);
+            } catch {}
+          });
+        }
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') setInstallModalOpen(false);
+        });
+      }
+
       if (navMenuToggle && navMobileMenu) {
         navMenuToggle.addEventListener('click', () => {
           const isOpen = navMobileMenu.classList.toggle('open');

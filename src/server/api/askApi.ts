@@ -65,9 +65,10 @@ export class AskApi {
     return ctx.workspaceId || ctx.username;
   }
 
-  private resolveChatWorkspace(_ctx: AuthContext): string {
-    if (this.isSaasMode()) return 'admin';
-    return 'default';
+  private resolveChatWorkspace(ctx: AuthContext): string {
+    const workspaceId = String(ctx.workspaceId || '').trim();
+    if (!workspaceId) return '';
+    return workspaceId;
   }
 
   private async loadServerContext(store: IDataStore, ownerUsername: string): Promise<AskServerContext[]> {
@@ -267,6 +268,10 @@ export class AskApi {
     try {
       const store = this.deps.ensureDataStore();
       const workspaceId = this.resolveChatWorkspace(ctx);
+      if (!workspaceId) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+        return;
+      }
       const state = await store.getQuickAskState(workspaceId);
       res.json({
         success: true,
@@ -290,6 +295,10 @@ export class AskApi {
 
     try {
       const workspaceId = this.resolveChatWorkspace(ctx);
+      if (!workspaceId) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+        return;
+      }
       const chats = this.sanitizeChatPayload((req.body as any)?.chats);
       const currentChatId = String((req.body as any)?.currentChatId || '').trim();
       const persistedCurrentChatId = chats.some((chat: any) => String(chat?.id || '') === currentChatId)
