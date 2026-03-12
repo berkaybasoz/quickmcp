@@ -620,7 +620,6 @@ async function loadQuickAskChats() {
         if (response.ok && payload?.success) {
             const chatsRaw = Array.isArray(payload?.data?.chats) ? payload.data.chats : [];
             quickAskChats = chatsRaw.map((chat) => quickAskNormalizeChat(chat)).filter(Boolean);
-            quickAskCurrentChatId = String(payload?.data?.currentChatId || '').trim();
         }
     } catch {}
 
@@ -632,14 +631,10 @@ async function loadQuickAskChats() {
         consumedQuery = true;
     }
 
-    if (quickAskChats.length === 0) {
-        const chat = quickAskCreateChat('New chat');
-        quickAskChats = [chat];
-        quickAskCurrentChatId = chat.id;
-        persistQuickAskChats();
+    quickAskSortChats();
+    if (quickAskChats.length > QUICK_ASK_MAX_CHATS) {
+        quickAskChats = quickAskChats.slice(0, QUICK_ASK_MAX_CHATS);
     }
-
-    normalizeQuickAskChatsState();
 
     if (requestedChatId && quickAskChats.some((chat) => chat.id === requestedChatId)) {
         quickAskCurrentChatId = requestedChatId;
