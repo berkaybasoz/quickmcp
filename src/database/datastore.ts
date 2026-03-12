@@ -175,6 +175,8 @@ export interface IDataStore {
   getWorkspaceAiConfig(workspaceId: string): Promise<WorkspaceAiConfig | null>;
   getQuickAskState(workspaceId: string): Promise<QuickAskStateRecord | null>;
   saveQuickAskState(workspaceId: string, chats: any[], currentChatId: string): Promise<void>;
+  getUserPreference(userId: string, key: string): Promise<string | null>;
+  setUserPreference(userId: string, key: string, value: string): Promise<void>;
 
   writeLog(entry: LogEntry): Promise<void>;
 

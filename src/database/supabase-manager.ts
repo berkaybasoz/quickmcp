@@ -525,6 +525,33 @@ export class SupabaseDataStore implements IDataStore {
     }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
   }
 
+  async getUserPreference(userId: string, key: string): Promise<string | null> {
+    const safeUserId = String(userId || '').trim();
+    const safeKey = String(key || '').trim();
+    if (!safeUserId || !safeKey) return null;
+    try {
+      const rows = await this.request<any[]>(
+        `user_preferences?select=pref_value&user_id=eq.${encodeURIComponent(safeUserId)}&pref_key=eq.${encodeURIComponent(safeKey)}&limit=1`
+      );
+      if (!rows.length) return null;
+      return String(rows[0]?.pref_value || '');
+    } catch {
+      return null;
+    }
+  }
+
+  async setUserPreference(userId: string, key: string, value: string): Promise<void> {
+    const safeUserId = String(userId || '').trim();
+    const safeKey = String(key || '').trim();
+    if (!safeUserId || !safeKey) return;
+    await this.request('user_preferences?on_conflict=user_id,pref_key', 'POST', {
+      user_id: safeUserId,
+      pref_key: safeKey,
+      pref_value: String(value || ''),
+      updated_at: new Date().toISOString()
+    }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+  }
+
   async writeLog(entry: LogEntry): Promise<void> {
     await this.request('app_logs', 'POST', {
       username: entry.username,

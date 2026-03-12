@@ -112,6 +112,14 @@ create table if not exists public.chat_state (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.user_preferences (
+  user_id text not null,
+  pref_key text not null,
+  pref_value text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (user_id, pref_key)
+);
+
 create index if not exists idx_servers_owner on public.servers(owner_username);
 create index if not exists idx_refresh_tokens_user on public.refresh_tokens(username);
 create index if not exists idx_users_workspace on public.users(workspace_id);
@@ -124,3 +132,4 @@ create index if not exists idx_app_logs_datetime on public.app_logs(datetime);
 create index if not exists idx_app_logs_username on public.app_logs(username);
 create index if not exists idx_workspace_ai_provider on public.workspace_ai_config(provider);
 create index if not exists idx_chat_state_updated_at on public.chat_state(updated_at);
+create index if not exists idx_user_preferences_updated_at on public.user_preferences(updated_at);
