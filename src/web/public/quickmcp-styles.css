@@ -1569,3 +1569,40 @@ html.dark #server-details-panel .server-tool-test-btn:hover {
   color: #bfdbfe !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
 }
+
+/* Dark mode: Test Suite tab strip + result panel */
+html.dark #test-tab .card.mb-6,
+html.dark #test-tab .card.mt-8 {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.4) !important;
+}
+
+html.dark #test-tab .card.mb-6 > div:first-child,
+html.dark #test-tab .card.mt-8 > div:first-child {
+  background: rgba(30, 41, 59, 0.84) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark #test-tab [data-test-mode-tab] {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+html.dark #test-tab [data-test-mode-tab]:not([disabled]):hover {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #93c5fd !important;
+}
+
+html.dark #test-tab [data-test-mode-tab].bg-white {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border-color: rgba(71, 85, 105, 0.9) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.98) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark #test-tab #test-results {
+  background: rgba(15, 23, 42, 0.94) !important;
+  border-color: rgba(71, 85, 105, 0.84) !important;
+}
