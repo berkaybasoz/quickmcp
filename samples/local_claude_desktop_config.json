@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "quickmcp-local": {
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/berkaybasoz/Documents/apps/quickmcp/quickmcp-direct-stdio.js"
+      ],
+      "env": {
+        "QUICKMCP_TOKEN": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImEwYzdlZmEyOGYyNDc5YzMifQ.eyJqdGkiOiJlNzc3MTNhOS02NTk2LTRmNTktYmM1NS1lNWQxMDZhZTU3ZmYiLCJzdWIiOiJhZG1pbiIsIndzIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NzM2NTU3MTN9.TTC9LpLxwzhMx77QG9138UfIdUd-aIoyHvdyw4klzGu2GJyRFK9eC3sWZYyXW27jytxS1k7Vv5KxakV1dsZv3x1AGtpvLMZSyj_r0KzeEZA-8dv3l1p5138Xh2IDn7MtppUU8l9epxfK-ZJ2Dp0Aa5M5fc3GID5uz7G8jJa2TSoku9CYsfJI93Yn7KpXl_HaPyqxeNXO5FtgeIGth1-LhuomhwxyG-M8YUeh38Nvk2jIcXAu0t5pEqnapuBx12rEGvNkclkWLAmOTp2VjxjTX_cVKLwKCUScfK1q6-DwBu4dfs7hJ6oqvEhAArZ3ysYTkOEauxzzoLXGtgqRzFH3RA"
+      }
+    },
+     "quickmcp-npx": {
+      "command": "npx",
+      "args": ["-y", "@softtechai/quickmcp"],
+      "env": {
+        "QUICKMCP_TOKEN": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjZkYjBhOTIyNzkwMjlkN2YifQ.eyJqdGkiOiI2ZWQyYjE3MS1lMjVkLTRlN2QtYTYwYS05ZTk5ZTdmNDlkZTYiLCJzdWIiOiJhZG1pbiIsIndzIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NzMzMDc2Mjh9.JKM8VsUYPmgDXozCbptOYjRCPvp4aKOgfBvuYSiCtyt7Aw9vLmWyVvmrYK-t0DX9G9z5qRatlPX3VExENe6v3Ji9Buxy9-DnE0Nl0ZaFmpqcdAj6zc3PcyHVh5qsA0pRh-0iL5eFD8Oxxq0175-OW9LZNc_ObG2wtSpILAXjj75BtX2sDx0D8dBF6-5AycBhPMi58TnbJB5xHRZkMAMnqNLVGSM2UhKOC7zKU8o9x1Zh-GqNttJvg6UFDBdtTaPTTubiZydCjvPJ2D3S1ZadJfI6MyvXwpx4YnKGa0G5GhcdE3ixLflJxGJW02uKsxyLHRAP1ZNzpl5yRW08t46P4A"
+      }
+    }
+  },
+  "preferences": {
+    "menuBarEnabled": false,
+    "quickEntryShortcut": "off",
+    "coworkScheduledTasksEnabled": true,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "coworkWebSearchEnabled": true,
+    "chromeExtensionEnabled": true
+  }
+}

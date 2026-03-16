@@ -34,6 +34,7 @@ import { PreferenceApi } from './api/preferenceApi';
 import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
 import { logger } from '../utils/logger';
+import { resolveAppVersion } from '../utils/version-util';
 import { DynamicMCPExecutor } from './dynamic-mcp-executor';
 import { McpCoreService, McpAuthContext } from '../mcp-core/McpCoreService';
 const app = express();
@@ -566,6 +567,7 @@ indexApi.registerRoutes(app);
 
 export function startServer(): void {
   console.log('[quickmcp] startup config');
+  console.log(`[quickmcp] APP_VERSION=${resolveAppVersion()}`);
   console.log(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
   console.log(`[quickmcp] AUTH_MODE=${authMode}`);
   console.log(`[quickmcp] DATA_PROVIDER=${dataProvider}`);

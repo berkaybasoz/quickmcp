@@ -67,37 +67,15 @@ function isProcessAlive(pid) {
   }
 }
 
-function resolveStableDefaultDataDir() {
-  const home = os.homedir() || os.tmpdir();
-  if (process.platform === 'win32') {
-    const base = process.env.LOCALAPPDATA || process.env.APPDATA || path.join(home, 'AppData', 'Local');
-    return path.join(base, 'QuickMCP', 'data');
-  }
-  if (process.platform === 'darwin') {
-    return path.join(home, 'Library', 'Application Support', 'QuickMCP', 'data');
-  }
-  const xdgDataHome = String(process.env.XDG_DATA_HOME || '').trim();
-  const base = xdgDataHome || path.join(home, '.local', 'share');
-  return path.join(base, 'quickmcp', 'data');
-}
-
-function ensureWritableDataDir(preferredDir) {
-  try {
-    fs.mkdirSync(preferredDir, { recursive: true });
-    fs.accessSync(preferredDir, fs.constants.W_OK);
-    return preferredDir;
-  } catch (_) {
-    const fallbackDir = path.join(os.tmpdir(), 'quickmcp', 'data');
-    try {
-      fs.mkdirSync(fallbackDir, { recursive: true });
-    } catch (_) {}
-    return fallbackDir;
-  }
-}
-
-function looksLikeNpxCachePath(dirPath) {
-  const normalized = String(dirPath || '').split(path.sep).join('/').toLowerCase();
-  return normalized.includes('/.npm/_npx/') || normalized.includes('/_npx/');
+let resolveQuickMcpDataDir;
+let ensureWritableDataDir;
+let resolveAppVersion;
+try {
+  ({ resolveQuickMcpDataDir, ensureWritableDataDir } = require('./dist/utils/data-dir.js'));
+  ({ resolveAppVersion } = require('./dist/utils/version-util.js'));
+} catch (error) {
+  const details = error && error.message ? ` (${error.message})` : '';
+  throw new Error('[QuickMCP] Failed to load dist/utils/*.js helpers. Run `npm run build` before starting quickmcp-direct-stdio.js' + details);
 }
 
 // Default behavior: Web UI enabled unless explicitly disabled
@@ -114,20 +92,9 @@ if (dataDirArg) {
   const val = dataDirArg.split('=')[1];
   if (val) process.env.QUICKMCP_DATA_DIR = val;
 }
-if (!dataDirArg && looksLikeNpxCachePath(process.env.QUICKMCP_DATA_DIR)) {
-  process.env.QUICKMCP_DATA_DIR = '';
-}
-if (process.env.QUICKMCP_DATA_DIR && !path.isAbsolute(process.env.QUICKMCP_DATA_DIR)) {
-  // Normalize relative env values (e.g. "./data") against caller CWD, not package root.
-  process.env.QUICKMCP_DATA_DIR = path.resolve(process.cwd(), process.env.QUICKMCP_DATA_DIR);
-}
-if (looksLikeNpxCachePath(process.env.QUICKMCP_DATA_DIR)) {
-  // Never persist SQLite under transient npx cache directories.
-  process.env.QUICKMCP_DATA_DIR = ensureWritableDataDir(resolveStableDefaultDataDir());
-}
-if (!process.env.QUICKMCP_DATA_DIR) {
-  process.env.QUICKMCP_DATA_DIR = ensureWritableDataDir(resolveStableDefaultDataDir());
-}
+process.env.QUICKMCP_DATA_DIR = ensureWritableDataDir(
+  resolveQuickMcpDataDir(process.env.QUICKMCP_DATA_DIR, process.cwd())
+);
 
 // IMPORTANT: Keep dist imports after QUICKMCP_DATA_DIR bootstrap.
 // If any imported module initializes datastore as a side effect, it must see final env.
@@ -372,6 +339,7 @@ function safeStartWebServer(port) {
 try {
   const resolvedDynExec = require.resolve('./dist/server/dynamic-mcp-executor.js');
   const mssqlVersion = require('mssql/package.json').version;
+  logger.error('[QuickMCP] Version:', resolveAppVersion());
   logger.error('[QuickMCP] Node:', process.version);
   logger.error('[QuickMCP] CWD:', process.cwd());
   logger.error('[QuickMCP] Dynamic executor path:', resolvedDynExec);
