@@ -2591,7 +2591,7 @@ const SERVER_TYPE_IMAGE_BASENAMES = new Set([
     'maven', 'microsoftteams', 'mistral', 'monday', 'mongodb', 'mssql', 'mysql', 'n8n', 'notion', 'npm', 'nuget',
     'obsidian', 'openai', 'openrouter', 'opensearch', 'openshift', 'oracle', 'perplexity', 'postgresql',
     'prometheus', 'reddit', 'redis', 'rss', 'signal', 'slack', 'soap', 'sqlite', 'supabase', 'telegram', 'things3',
-    'threads', 'tiktok', 'together', 'trello', 'webhook', 'whatsappbusiness', 'x', 'youtube', 'zoom'
+    'threads', 'tiktok', 'together', 'trello', 'webhook', 'webpage', 'whatsappbusiness', 'x', 'youtube', 'zoom'
 ]);
 
 function getServerTypeIconMeta(serverType) {
@@ -2599,8 +2599,7 @@ function getServerTypeIconMeta(serverType) {
     const aliases = {
         azureopenai: 'azureai',
         googlecalendar: 'googlecalender',
-        rest: 'webhook',
-        webpage: 'webhook'
+        rest: 'webhook'
     };
     const normalized = aliases[type] || type;
 
@@ -2670,7 +2669,7 @@ function displayServers(servers) {
     const rowsHtml = servers.map(server => {
         const safeType = String(server.type || '').toLowerCase() || 'unknown';
         const iconMeta = getServerTypeIconMeta(safeType);
-        const isWebPageLike = ['webpage', 'webhook'].includes(String(safeType).toLowerCase());
+        const isWebPageLike = ['webhook'].includes(String(safeType).toLowerCase());
         const iconHtml = isWebPageLike
             ? `<div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
                     <i class="fas fa-rocket text-lg"></i>
