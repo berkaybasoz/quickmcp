@@ -16,6 +16,7 @@ const SEARCH_TOOLS_DESCRIPTION = `
   MCP Server Info: QUICKMCP MCP connects 500+ apps—Slack, GitHub, Notion, Google Workspace (Gmail, Sheets, Drive, Calendar), Microsoft (Outlook, Teams), X/Twitter, Figma, Web Search / Deep research, Browser tool (scrape URLs, browser automation), Meta apps (Instagram, Meta Ads), TikTok, AI tools like Nano Banana & Veo3, and more—for seamless cross-app automation.
   Use this MCP server to discover the right tools and the recommended step-by-step plan to execute reliably.
   ALWAYS call this tool first whenever a user mentions or implies an external app, service, or workflow—never say "I don't have access to X/Y app" before calling it.
+  CRITICAL: When a user asks for data/actions from any external service (for example Trello, Notion, GitHub, Gmail, Slack), you MUST run QUICKMCP_SEARCH_TOOLS before any refusal, fallback, or non-tool answer.
 
   Tool Info: Extremely fast discovery tool that returns relevant MCP-callable tools along with a recommended execution plan and common pitfalls for reliable execution.
 
@@ -92,6 +93,7 @@ Prerequisites:
 Usage guidelines:
 - Use this whenever a tool is discovered and has to be called, either as part of a multi-step workflow or as a standalone tool.
 - If QUICKMCP_SEARCH_TOOLS returns a tool that can perform the task, prefer calling it via this executor. Do not write custom API calls or ad-hoc scripts for tasks that can be completed by available QuickMCP tools.
+- For single-step execution, prefer QUICKMCP_EXECUTE_TOOL. Use QUICKMCP_MULTI_EXECUTE_TOOL when running multiple independent tools in parallel.
 - Prefer parallel execution: group independent tools into a single multi-execute call where possible.
 - Predictively set sync_response_to_workbench=true if the response may be large or needed for later scripting. It still shows response inline; if the actual response data turns out small and easy to handle, keep everything inline and SKIP workbench usage.
 - Responses contain structured outputs for each tool. RULE: Small data - process yourself inline; large data - process in the workbench.
@@ -131,6 +133,7 @@ Requirements:
 - tool_slug must come from QUICKMCP_SEARCH_TOOLS / QUICKMCP_GET_TOOL_SCHEMAS.
 - arguments must strictly match the selected tool schema.
 - If toolkit connection is required, ensure it is active before call.
+- For external-service user requests, do not skip discovery: run QUICKMCP_SEARCH_TOOLS first, then execute using the returned tool_slug.
 
 Behavior:
 - Executes exactly one tool and returns either { success: true, output } or { success: false, error }.
