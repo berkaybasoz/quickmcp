@@ -31,6 +31,7 @@ import { IndexApi } from './api/indexApi';
 import { LogsApi } from './api/logsApi';
 import { AskApi } from './api/askApi';
 import { PreferenceApi } from './api/preferenceApi';
+import { FaviconApi } from './api/faviconApi';
 import { PortUtils } from './port-utils';
 import { getAuthProperty } from './api/authProperty';
 import { logger } from '../utils/logger';
@@ -227,6 +228,7 @@ const preferenceApi = new PreferenceApi({
   ensureDataStore,
   resolveAuthContext
 });
+const faviconApi = new FaviconApi({ publicDir });
 const portUtils = new PortUtils(process.env);
 const { port: PORT, mcpPort: MCP_PORT } = portUtils.resolveServerPorts();
 const configApi = new ConfigApi(authMode, authProperty.providerUrl, MCP_PORT);
@@ -528,6 +530,7 @@ seedLiteAdminsAsync().catch((error) => {
 app.use((req, res, next) => {
   authMiddleware(req as AuthenticatedRequest, res, next).catch(next);
 });
+faviconApi.registerRoutes(app);
 app.use(express.static(publicDir, { index: false }));
 
 configApi.registerRoutes(app);
