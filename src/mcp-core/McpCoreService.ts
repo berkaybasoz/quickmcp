@@ -13,6 +13,11 @@ import { IDataStore, McpTokenRecord } from '../database/datastore';
 import { DynamicMCPExecutor } from '../server/dynamic-mcp-executor';
 import { DeploymentUtil } from '../utils/deployment-util';
 import { logger } from '../utils/logger';
+import {
+  QUICKMCP_META_TOOLS,
+  QUICKMCP_META_TOOL_NAMES,
+  isQuickMcpMetaToolName
+} from './quickmcp-meta-tools';
 
 export type JsonRpcMessage = {
   jsonrpc?: string;
@@ -55,6 +60,7 @@ export class McpCoreService {
   private readonly defaultToken: string;
   private readonly rsaPublicKey: crypto.KeyObject | undefined;
   private readonly liteAdminUsernames: Set<string>;
+  private readonly useStaticQuickMcpTools: boolean;
 
   constructor(deps: McpCoreServiceDeps) {
     this.executor = deps.executor;
@@ -65,6 +71,9 @@ export class McpCoreService {
     this.defaultToken = (deps.defaultToken || '').trim();
     this.rsaPublicKey = deps.rsaPublicKey;
     this.liteAdminUsernames = resolveLiteAdminUsernames();
+    const rawStaticToolsFlag = String(process.env.QUICKMCP_STATIC_META_TOOLS || '').trim().toLowerCase();
+    const staticToolsFlagEnabled = rawStaticToolsFlag === '1' || rawStaticToolsFlag === 'true' || rawStaticToolsFlag === 'yes';
+    this.useStaticQuickMcpTools = this.deploymentUtil.isSaasMode() || staticToolsFlagEnabled;
   }
 
   parseIncomingMessage(body: any): JsonRpcMessage {
@@ -134,6 +143,10 @@ export class McpCoreService {
       }
 
       case 'tools/list': {
+        if (this.useStaticQuickMcpTools) {
+          logger.info(`[MCP] tools/list ${who} → ${QUICKMCP_META_TOOLS.length}/${QUICKMCP_META_TOOLS.length} tools (static quickmcp meta tools)`);
+          return { jsonrpc: '2.0', id: messageData.id, result: { tools: QUICKMCP_META_TOOLS } };
+        }
         const allTools = await this.executor.getAllTools();
         const tools = await this.getAuthorizedTools(allTools, authContext);
         const toolsWithSecuritySchemes = await this.withToolSecuritySchemes(tools);
@@ -160,6 +173,25 @@ export class McpCoreService {
       case 'tools/call': {
         const toolName = String(messageData.params?.name || '');
         logger.info(`[MCP] tools/call tool=${toolName} ${who}`);
+        if (this.useStaticQuickMcpTools && isQuickMcpMetaToolName(toolName)) {
+          const metaResult = await this.executeQuickMcpMetaTool(
+            toolName,
+            messageData.params?.arguments || {},
+            authContext
+          );
+          return {
+            jsonrpc: '2.0',
+            id: messageData.id,
+            result: {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(metaResult, null, 2)
+                }
+              ]
+            }
+          };
+        }
         if (this.deploymentUtil.isSaasMode() && toolName === AUTH_RETRY_PROBE_TOOL_NAME) {
           if (!authContext.identity) {
             logger.info(`[MCP] auth-retry-probe invoked without token; forcing insufficient_scope challenge`);
@@ -307,6 +339,246 @@ export class McpCoreService {
       throw new Error(`Invalid qualified name format: ${name}`);
     }
     return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
+  }
+
+  private normalizeMetaSessionId(args: any): string {
+    const requestedSessionId = String(args?.session?.id || args?.session_id || '').trim();
+    const wantsNewSession = args?.session?.generate_id === true || !requestedSessionId;
+    return wantsNewSession ? `qms_${crypto.randomUUID()}` : requestedSessionId;
+  }
+
+  private async getAuthorizedRuntimeToolsForMeta(authContext: McpAuthContext): Promise<any[]> {
+    const allTools = await this.executor.getAllTools();
+    const authorized = await this.getAuthorizedTools(allTools, authContext);
+    return this.withToolSecuritySchemes(authorized);
+  }
+
+  private scoreToolAgainstQueries(tool: any, queries: string[]): number {
+    if (queries.length === 0) return 1;
+    const haystack = `${String(tool?.name || '')} ${String(tool?.description || '')}`.toLowerCase();
+    let score = 0;
+    for (const query of queries) {
+      const normalized = String(query || '').toLowerCase().trim();
+      if (!normalized) continue;
+      if (haystack.includes(normalized)) {
+        score += 8;
+        continue;
+      }
+      const tokens = normalized.split(/[\s,.:;|/-]+/g).filter(Boolean);
+      for (const token of tokens) {
+        if (token.length < 2) continue;
+        if (haystack.includes(token)) score += 1;
+      }
+    }
+    return score;
+  }
+
+  private normalizeMetaToolResult(tool: any): any {
+    return {
+      tool_slug: String(tool?.name || ''),
+      name: String(tool?.name || ''),
+      description: String(tool?.description || ''),
+      input_schema: tool?.inputSchema || { type: 'object', properties: {}, required: [] }
+    };
+  }
+
+  private parseSearchQueryText(args: any): string[] {
+    const queries = Array.isArray(args?.queries) ? args.queries : [];
+    const out: string[] = [];
+    for (const item of queries) {
+      const useCase = String(item?.use_case || '').trim();
+      const knownFields = String(item?.known_fields || '').trim();
+      const joined = `${useCase} ${knownFields}`.trim();
+      if (joined) out.push(joined);
+    }
+    return out;
+  }
+
+  private async executeQuickMcpMetaTool(
+    toolName: string,
+    args: any,
+    authContext: McpAuthContext
+  ): Promise<any> {
+    if (!isQuickMcpMetaToolName(toolName)) {
+      throw new Error(`Unsupported QuickMCP meta tool: ${toolName}`);
+    }
+
+    switch (toolName) {
+      case QUICKMCP_META_TOOL_NAMES.SEARCH_TOOLS:
+        return this.executeQuickMcpSearchTools(args, authContext);
+      case QUICKMCP_META_TOOL_NAMES.GET_TOOL_SCHEMAS:
+        return this.executeQuickMcpGetToolSchemas(args, authContext);
+      case QUICKMCP_META_TOOL_NAMES.MANAGE_CONNECTIONS:
+        return this.executeQuickMcpManageConnections(args);
+      case QUICKMCP_META_TOOL_NAMES.MULTI_EXECUTE_TOOL:
+        return this.executeQuickMcpMultiExecuteTool(args, authContext);
+      case QUICKMCP_META_TOOL_NAMES.FIND_TOOL:
+        return this.executeQuickMcpFindTool(args, authContext);
+      default:
+        throw new Error(`Unknown QuickMCP meta tool: ${toolName}`);
+    }
+  }
+
+  private async executeQuickMcpSearchTools(args: any, authContext: McpAuthContext): Promise<any> {
+    const queries = this.parseSearchQueryText(args);
+    const sessionId = this.normalizeMetaSessionId(args);
+    const tools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const scored = tools
+      .map((tool) => ({ tool, score: this.scoreToolAgainstQueries(tool, queries) }))
+      .filter((row) => row.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    const maxCount = Math.max(10, Math.min(100, queries.length * 10 || 20));
+    const selected = scored.slice(0, maxCount).map((row) => this.normalizeMetaToolResult(row.tool));
+
+    return {
+      session_id: sessionId,
+      utc_time: new Date().toISOString(),
+      query_count: queries.length,
+      tools_count: selected.length,
+      tools: selected,
+      memory: {},
+      plan: [
+        'Review returned tools and choose the smallest set needed.',
+        'Call QUICKMCP_GET_TOOL_SCHEMAS if you need exact schemas before execution.',
+        'Run selected tools with QUICKMCP_MULTI_EXECUTE_TOOL.'
+      ]
+    };
+  }
+
+  private async executeQuickMcpGetToolSchemas(args: any, authContext: McpAuthContext): Promise<any> {
+    const requestedSlugs = Array.isArray(args?.tool_slugs)
+      ? args.tool_slugs.map((slug: any) => String(slug || '').trim()).filter(Boolean)
+      : [];
+    const tools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const byExact = new Map<string, any>(tools.map((tool) => [String(tool?.name || ''), tool]));
+    const byLower = new Map<string, any>(tools.map((tool) => [String(tool?.name || '').toLowerCase(), tool]));
+
+    const schemas: any[] = [];
+    const missing: string[] = [];
+
+    for (const slug of requestedSlugs) {
+      const found = byExact.get(slug) || byLower.get(slug.toLowerCase());
+      if (!found) {
+        missing.push(slug);
+        continue;
+      }
+      schemas.push({
+        tool_slug: slug,
+        name: String(found?.name || ''),
+        description: String(found?.description || ''),
+        input_schema: found?.inputSchema || { type: 'object', properties: {}, required: [] }
+      });
+    }
+
+    return {
+      session_id: String(args?.session_id || '').trim() || null,
+      schemas,
+      missing
+    };
+  }
+
+  private async executeQuickMcpManageConnections(args: any): Promise<any> {
+    const toolkits = Array.isArray(args?.toolkits)
+      ? args.toolkits.map((toolkit: any) => String(toolkit || '').trim()).filter(Boolean)
+      : [];
+    const reinitiateAll = args?.reinitiate_all === true;
+
+    return {
+      session_id: String(args?.session_id || '').trim() || null,
+      reinitiate_all: reinitiateAll,
+      connections: toolkits.map((toolkit) => ({
+        toolkit,
+        status: 'active',
+        message: 'QuickMCP executes through workspace-managed integrations; no additional OAuth link required here.'
+      }))
+    };
+  }
+
+  private async executeQuickMcpMultiExecuteTool(args: any, authContext: McpAuthContext): Promise<any> {
+    const toolsToRun = Array.isArray(args?.tools) ? args.tools : [];
+    if (toolsToRun.length === 0) {
+      return {
+        session_id: String(args?.session_id || '').trim() || null,
+        success_count: 0,
+        error_count: 0,
+        results: []
+      };
+    }
+
+    const availableTools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const byExact = new Map<string, any>(availableTools.map((tool) => [String(tool?.name || ''), tool]));
+    const byLower = new Map<string, any>(availableTools.map((tool) => [String(tool?.name || '').toLowerCase(), tool]));
+    const results: any[] = [];
+
+    for (const item of toolsToRun) {
+      const requestedSlug = String(item?.tool_slug || '').trim();
+      const resolvedTool = byExact.get(requestedSlug) || byLower.get(requestedSlug.toLowerCase());
+      if (!requestedSlug || !resolvedTool) {
+        results.push({
+          tool_slug: requestedSlug,
+          success: false,
+          error: `Unknown or unauthorized tool_slug: ${requestedSlug}`
+        });
+        continue;
+      }
+
+      const qualifiedName = String(resolvedTool.name || '').trim();
+      try {
+        await this.ensureToolAllowed(qualifiedName, authContext);
+        const output = await this.executor.executeTool(qualifiedName, item?.arguments || {});
+        results.push({
+          tool_slug: requestedSlug,
+          success: true,
+          output
+        });
+      } catch (error) {
+        results.push({
+          tool_slug: requestedSlug,
+          success: false,
+          error: error instanceof Error ? error.message : 'Tool execution failed'
+        });
+      }
+    }
+
+    const successCount = results.filter((result) => result.success).length;
+    const errorCount = results.length - successCount;
+    return {
+      session_id: String(args?.session_id || '').trim() || null,
+      success_count: successCount,
+      error_count: errorCount,
+      sync_response_to_workbench: args?.sync_response_to_workbench === true,
+      results
+    };
+  }
+
+  private async executeQuickMcpFindTool(args: any, authContext: McpAuthContext): Promise<any> {
+    const query = String(args?.query || '').trim();
+    const limit = Number(args?.limit || 5);
+    const boundedLimit = Math.max(1, Math.min(20, Number.isFinite(limit) ? limit : 5));
+    const includeDetails = args?.include_details === true;
+    const tools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const scored = tools
+      .map((tool) => ({ tool, score: this.scoreToolAgainstQueries(tool, [query]) }))
+      .filter((row) => row.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, boundedLimit);
+
+    return {
+      successful: true,
+      total_tools_searched: tools.length,
+      query_interpretation: query,
+      tools: scored.map((row) => {
+        const payload: any = {
+          tool_id: String(row.tool?.name || ''),
+          name: String(row.tool?.name || ''),
+          description: String(row.tool?.description || ''),
+          relevance_score: Math.min(100, row.score * 10)
+        };
+        if (includeDetails) payload.input_schema = row.tool?.inputSchema || {};
+        return payload;
+      })
+    };
   }
 
   private async getAuthorizedTools(tools: any[], authContext: McpAuthContext): Promise<any[]> {
