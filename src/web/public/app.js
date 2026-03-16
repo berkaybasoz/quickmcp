@@ -2583,10 +2583,10 @@ async function loadServers() {
 
 // Display servers
 const SERVER_TYPE_IMAGE_BASENAMES = new Set([
-    'airtable', 'applenotes', 'applereminders', 'asana', 'azureai', 'bearnotes', 'bitbucket', 'claude', 'clickup',
+    'airtable', 'applenotes', 'applereminders', 'asana', 'azureai', 'azure_openai', 'bearnotes', 'bitbucket', 'claude', 'clickup',
     'cohere', 'confluence', 'confluence2', 'curl', 'db2', 'deepseek', 'discord', 'docker', 'dockerhub', 'dropbox',
     'elasticsearch', 'facebook', 'falai', 'fireworks', 'gdrive', 'gemini', 'github', 'gitlab', 'gmail',
-    'googlecalender', 'googledocs', 'googlesheets', 'gradle', 'grafana', 'graphql', 'grok', 'groq', 'hazelcast',
+    'googlecalender', 'googlecalendar', 'googledocs', 'googlesheets', 'gradle', 'grafana', 'graphql', 'grok', 'groq', 'hazelcast',
     'huggingface', 'imessage', 'instagram', 'jenkins', 'jira', 'kafka', 'kubernetes', 'linear', 'linkedin', 'llama',
     'maven', 'microsoftteams', 'mistral', 'monday', 'mongodb', 'mssql', 'mysql', 'n8n', 'notion', 'npm', 'nuget',
     'obsidian', 'openai', 'openrouter', 'opensearch', 'openshift', 'oracle', 'perplexity', 'postgresql',
@@ -2596,12 +2596,7 @@ const SERVER_TYPE_IMAGE_BASENAMES = new Set([
 
 function getServerTypeIconMeta(serverType) {
     const type = String(serverType || '').toLowerCase();
-    const aliases = {
-        azureopenai: 'azureai',
-        googlecalendar: 'googlecalender',
-        rest: 'webhook'
-    };
-    const normalized = aliases[type] || type;
+    const normalized = type;
 
     if (normalized === 'curl') {
         return { image: 'images/app/curl_mini.png', icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
@@ -2617,6 +2612,12 @@ function getServerTypeIconMeta(serverType) {
     }
     if (normalized === 'excel') {
         return { image: '', icon: 'fa-file-excel', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    }
+    if (normalized === 'azure_openai') {
+        return { image: 'images/app/azure_openai.png', icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+    }
+    if (normalized === 'rest') {
+        return { image: '', icon: 'fa-network-wired', bg: 'bg-cyan-100', text: 'text-cyan-700' };
     }
     if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
         return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
@@ -13708,7 +13709,7 @@ function displayAzureOpenAIPreview(config) {
             <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                        <img src="images/app/azureai.png" alt="Azure OpenAI" class="w-8 h-8 object-contain" />
+                        <img src="images/app/azure_openai.png" alt="Azure OpenAI" class="w-8 h-8 object-contain" />
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Azure OpenAI Configuration</h3>
@@ -14799,7 +14800,7 @@ function displayGoogleCalendarPreview(gcalConfig) {
             <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                        <img src="images/app/googlecalender.png" alt="Google Calendar" class="w-8 h-8 object-contain" />
+                        <img src="images/app/googlecalendar.png" alt="Google Calendar" class="w-8 h-8 object-contain" />
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-slate-900 text-lg mb-2">Google Calendar Configuration</h3>
