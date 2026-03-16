@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "quickmcp-npx": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "https://quickmcp.com/mcp"],
+      "env": {
+        "QUICKMCP_TOKEN": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImFjMTRkMTU3YjgxMDY5ZDAifQ.eyJqdGkiOiI1YzNlOTNjNC0yZGFkLTQ5NmUtOTJhMC1hMThiM2M0NGM2ODciLCJzdWIiOiJhZG1pbiIsIndzIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NzM2NTg4ODN9.WffNuOjQyQWU9Elk-bNPJS6VbntO0Vg6dFa6L5zyMj8Las8WFNEdTq0vJ6Ftqt_d3XTKAZ9qK3zd8ZF4SlsIPyIl88sYsktdESii8Jh65JDkH9AuwE56ob2217C1CZjSdhos4PdxitbC07MTZNooGEwTS3xqXOGpsP4FFSRaqgKG4O5FBRZgMHH9qVsMGI6TBhj-KY8VokXGvf_zJk1xQrLJeKIvCMvCQaSlUXFKxDiclVD7ydhaY4vs97x3fnOMDbfPaiAB4m4ZjNzLNQ3IiECfOMiJtZex-VDqU-Aybf1VN8inzx7kh5jc1eRqa3Jgn9krfxn0v48mn_8gvkIrRQ"
+      }
+    }
+  },
+  "preferences": {
+    "menuBarEnabled": false,
+    "quickEntryShortcut": "off",
+    "coworkScheduledTasksEnabled": true,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "coworkWebSearchEnabled": true,
+    "chromeExtensionEnabled": true
+  }
+}
