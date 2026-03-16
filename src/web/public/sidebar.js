@@ -356,7 +356,7 @@
             </div>
           </div>
           <div id="sidebarHeaderToggleWrap" class="flex items-center ml-auto">
-            <button id="sidebarHeaderToggle" type="button" class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-600 hover:shadow-sm transition-all" title="Toggle sidebar">
+            <button id="sidebarHeaderToggle" type="button" class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-600 hover:shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-blue-300 transition-all" title="Toggle sidebar">
               <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
             </button>
           </div>

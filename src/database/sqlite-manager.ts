@@ -212,6 +212,16 @@ export class SQLiteManager implements IDataStore {
       )
     `);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        user_id TEXT NOT NULL,
+        pref_key TEXT NOT NULL,
+        pref_value TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, pref_key)
+      )
+    `);
+
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_servers_owner ON servers(owner_username)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(username)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
@@ -223,6 +233,7 @@ export class SQLiteManager implements IDataStore {
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_severity ON app_logs(severity)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_datetime ON app_logs(datetime)`);
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_app_logs_username ON app_logs(username)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_user_preferences_updated_at ON user_preferences(updated_at)`);
   }
 
   async saveServer(server: ServerConfig): Promise<void> {
@@ -738,6 +749,30 @@ export class SQLiteManager implements IDataStore {
         updated_at = CURRENT_TIMESTAMP
     `);
     stmt.run(workspaceId, JSON.stringify(Array.isArray(chats) ? chats : []), String(currentChatId || ''));
+  }
+
+  async getUserPreference(userId: string, key: string): Promise<string | null> {
+    const safeUserId = String(userId || '').trim();
+    const safeKey = String(key || '').trim();
+    if (!safeUserId || !safeKey) return null;
+    const stmt = this.db.prepare('SELECT pref_value FROM user_preferences WHERE user_id = ? AND pref_key = ?');
+    const row = stmt.get(safeUserId, safeKey) as any;
+    if (!row) return null;
+    return String(row.pref_value || '');
+  }
+
+  async setUserPreference(userId: string, key: string, value: string): Promise<void> {
+    const safeUserId = String(userId || '').trim();
+    const safeKey = String(key || '').trim();
+    if (!safeUserId || !safeKey) return;
+    const stmt = this.db.prepare(`
+      INSERT INTO user_preferences (user_id, pref_key, pref_value, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id, pref_key) DO UPDATE SET
+        pref_value = excluded.pref_value,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(safeUserId, safeKey, String(value || ''));
   }
 
   async writeLog(entry: LogEntry): Promise<void> {

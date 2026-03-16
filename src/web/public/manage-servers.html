@@ -12,12 +12,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="theme-bootstrap.js"></script>
   <!-- Shared CSS -->
-  <link rel="stylesheet" href="quickmcp-styles.css">
+  <link rel="stylesheet" href="quickmcp-styles.css?v=20260316-sidebar-hover-fix-1">
   <script>tailwind.config = { darkMode: 'class' };</script>
 </head>
 
-<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+<body class="manage-page h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
   <!-- App Bar -->
   <header class="backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
     <div class="flex items-center gap-6">
@@ -66,7 +67,7 @@
       <div class="flex-1 overflow-y-auto scrollbar-modern p-8 pr-20 relative z-0">
         <div class="max-w-6xl mx-auto space-y-8 pb-20">
           <!-- Filters -->
-          <div class="card p-4">
+          <div id="manageFiltersCard" class="card p-4">
             <div class="flex flex-wrap items-end gap-3">
               <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Search</label>

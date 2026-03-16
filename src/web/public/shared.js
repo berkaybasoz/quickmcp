@@ -309,7 +309,7 @@ function renderSharedAppBar() {
     if (!header || header.dataset.commonAppBar === 'true') return;
 
     header.dataset.commonAppBar = 'true';
-    const baseClass = 'backdrop-blur-sm bg-white/80 border-b border-slate-200/60 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
+    const baseClass = 'backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-700/70 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
     header.className = baseClass;
 
     const subtitle = getAppBarSubtitle();
@@ -318,27 +318,40 @@ function renderSharedAppBar() {
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl font-bold gradient-text leading-tight">QuickMCP</h1>
-            <p class="text-xs text-slate-500 font-medium">${subtitle}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">${subtitle}</p>
           </div>
         </div>
-        <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent hidden md:block"></div>
-        <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600">
-          <button id="headerNewServerBtn" onclick="window.location.href='/generate'" class="md:inline-flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+        <div class="h-8 w-px bg-gradient-to-b from-transparent via-slate-300 dark:via-slate-700 to-transparent hidden md:block"></div>
+        <div class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+          <button id="headerNewServerBtn" onclick="window.location.href='/generate'" class="md:inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-400 text-slate-700 dark:text-slate-100 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
             <i class="fas fa-plus"></i>
             <span>New Server</span>
           </button>
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50">
+        <div class="hidden sm:flex items-center gap-2 bg-green-50 dark:bg-emerald-950/45 text-green-700 dark:text-emerald-300 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200/50 dark:border-emerald-800/60">
           <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           <span>System Online</span>
         </div>
-        <button class="p-2 rounded-lg hover:bg-slate-100 transition-colors relative text-slate-500 hover:text-slate-700">
+        <button id="themeToggleBtn" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative" aria-label="Switch theme" title="Switch theme">
+          <span data-theme-icon="sun" class="hidden" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.55 1.55M17.52 17.52l1.55 1.55M2 12h2.2M19.8 12H22M4.93 19.07l1.55-1.55M17.52 6.48l1.55-1.55"></path>
+            </svg>
+          </span>
+          <span data-theme-icon="moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7.1 7.1 0 0 0 9.8 9.8z"></path>
+            </svg>
+          </span>
+        </button>
+        <button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-100">
           <i class="fas fa-bell"></i>
           <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
-        <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+        <button id="openSidebar" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-300">
           <i class="fas fa-bars"></i>
         </button>
       </div>
@@ -504,7 +517,7 @@ function getOrCreateUserMenu() {
 
     menu = document.createElement('div');
     menu.id = 'userAvatarMenu';
-    menu.className = 'hidden fixed z-[120] w-52 rounded-xl border border-slate-200 bg-white shadow-xl p-2';
+    menu.className = 'hidden fixed z-[120] w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2';
     document.body.appendChild(menu);
     return menu;
 }
@@ -545,15 +558,15 @@ function renderUserMenu(menu) {
     const showLogout = currentAuthMode !== 'NONE';
 
     menu.innerHTML = `
-        <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 mb-2">
-            <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Signed In</div>
-            <div class="text-sm font-semibold text-slate-800">${signedInLabel}</div>
+        <div class="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 mb-2">
+            <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">Signed In</div>
+            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">${signedInLabel}</div>
         </div>
-        <button type="button" id="userMenuOptionsBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">
+        <button type="button" id="userMenuOptionsBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
             Settings
         </button>
         ${showLogout ? `
-        <button type="button" id="userMenuLogoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">
+        <button type="button" id="userMenuLogoutBtn" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30">
             Sign out
         </button>
         ` : ''}
@@ -612,7 +625,7 @@ function getOrCreateUserSettingsPanel() {
 
     panel = document.createElement('div');
     panel.id = 'userSettingsPanel';
-    panel.className = 'w-[42rem] max-w-[96vw] rounded-2xl border border-slate-200 bg-white shadow-2xl p-0 overflow-hidden';
+    panel.className = 'w-[42rem] max-w-[96vw] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-0 overflow-hidden';
     panel.addEventListener('click', (event) => event.stopPropagation());
 
     modal.appendChild(panel);
@@ -695,21 +708,25 @@ function renderSettingsTabContent(activeTab = 'account') {
 function renderUserSettingsPanel(activeTab = 'account') {
     const panel = getOrCreateUserSettingsPanel();
     const tabButtonClass = (tab) => (
-        `w-full text-left px-3 py-2 rounded-lg text-sm ${activeTab === tab ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700 hover:bg-slate-100'}`
+        `w-full text-left px-3 py-2 rounded-lg text-sm ${
+            activeTab === tab
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-semibold'
+                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`
     );
 
     panel.innerHTML = `
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-        <h3 class="text-base font-semibold text-slate-900">Settings</h3>
-        <button id="closeUserSettingsBtn" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">Settings</h3>
+        <button id="closeUserSettingsBtn" class="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/60">
           <i class="fas fa-times"></i>
         </button>
       </div>
       <div class="flex min-h-[24rem]">
-        <div class="w-40 border-r border-slate-200 p-3 bg-slate-50/50">
+        <div class="w-40 border-r border-slate-200 dark:border-slate-700 p-3 bg-slate-50/50 dark:bg-slate-800/40">
           <button id="settingsTabAccount" class="${tabButtonClass('account')}">Account</button>
         </div>
-        <div class="flex-1 p-5 bg-white overflow-auto">
+        <div class="flex-1 p-5 bg-white dark:bg-slate-900 overflow-auto">
           ${renderSettingsTabContent(activeTab)}
         </div>
       </div>

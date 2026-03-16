@@ -46,6 +46,8 @@ export class JdbcDataStore implements IDataStore {
   async getWorkspaceAiConfig(_workspaceId: string): Promise<WorkspaceAiConfig | null> { throw new Error('Not implemented'); }
   async getQuickAskState(_workspaceId: string): Promise<QuickAskStateRecord | null> { throw new Error('Not implemented'); }
   async saveQuickAskState(_workspaceId: string, _chats: any[], _currentChatId: string): Promise<void> { throw new Error('Not implemented'); }
+  async getUserPreference(_userId: string, _key: string): Promise<string | null> { throw new Error('Not implemented'); }
+  async setUserPreference(_userId: string, _key: string, _value: string): Promise<void> { throw new Error('Not implemented'); }
 
   async writeLog(_entry: LogEntry): Promise<void> { throw new Error('Not implemented'); }
 

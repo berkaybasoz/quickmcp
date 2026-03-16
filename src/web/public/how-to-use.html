@@ -14,8 +14,61 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <script src="theme-bootstrap.js"></script>
+
     <!-- Custom Archdraw Styles -->
-    <link rel="stylesheet" href="quickmcp-styles.css">
+    <link rel="stylesheet" href="quickmcp-styles.css?v=20260316-sidebar-hover-fix-1">
+    <style>
+      html.dark body.howto-page {
+        background-color: rgb(2 6 23) !important;
+        background-image: linear-gradient(135deg, rgb(15 23 42), rgb(2 6 23)) !important;
+      }
+      html.dark body.howto-page .card {
+        border-color: rgba(71, 85, 105, 0.82) !important;
+        background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+      }
+      html.dark body.howto-page .border-slate-200,
+      html.dark body.howto-page .border-slate-200\/60 {
+        border-color: rgba(71, 85, 105, 0.82) !important;
+      }
+      html.dark body.howto-page #howtoTabsWrap {
+        background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+        border-color: rgba(71, 85, 105, 0.82) !important;
+        box-shadow: 0 14px 34px rgba(2, 6, 23, 0.4) !important;
+      }
+      html.dark body.howto-page #howtoTabsRow {
+        border-bottom-color: rgba(71, 85, 105, 0.82) !important;
+      }
+      html.dark body.howto-page #howtoTabsRow .howto-tab-btn {
+        color: #94a3b8 !important;
+        background: transparent !important;
+        border-bottom-color: transparent !important;
+      }
+      html.dark body.howto-page #howtoTabsRow .howto-tab-btn:hover {
+        background: rgba(30, 41, 59, 0.8) !important;
+        color: #93c5fd !important;
+      }
+      html.dark body.howto-page #howtoTabsRow .howto-tab-btn.border-r {
+        border-right-color: rgba(71, 85, 105, 0.82) !important;
+      }
+      html.dark body.howto-page #howtoTabsRow .howto-tab-btn.bg-blue-50\/50 {
+        background: rgba(30, 58, 138, 0.28) !important;
+        color: #bfdbfe !important;
+        border-bottom-color: rgba(96, 165, 250, 0.9) !important;
+      }
+      html.dark body.howto-page .howto-alert-tools {
+        background: rgba(127, 29, 29, 0.30) !important;
+        border-color: rgba(248, 113, 113, 0.45) !important;
+      }
+      html.dark body.howto-page .howto-alert-offline {
+        background: rgba(146, 64, 14, 0.30) !important;
+        border-color: rgba(251, 191, 36, 0.45) !important;
+      }
+      html.dark body.howto-page .howto-alert-tools .text-slate-600,
+      html.dark body.howto-page .howto-alert-offline .text-slate-600 {
+        color: #e2e8f0 !important;
+      }
+    </style>
 
     <script>
         tailwind.config = {
@@ -42,7 +95,7 @@
     </script>
 </head>
 
-<body class="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
+<body class="howto-page h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden text-slate-900">
 
     <!-- Header -->
     <header
@@ -95,7 +148,7 @@
     </header>
 
     <!-- Main Body -->
-    <div class="app-main-layout flex flex-1 overflow-x-hidden">
+    <div class="app-main-layout flex flex-1 overflow-x-hidden" style="--sidebar-gutter: 0rem;">
 
         <!-- Left Sidebar (shared) -->
         <div id="sidebar"
@@ -105,9 +158,7 @@
         <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"></div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 relative bg-slate-50/50 overflow-hidden flex flex-col min-w-0">
-            <!-- Inner Shadow -->
-            <div class="absolute inset-0 shadow-inner shadow-slate-200/30 pointer-events-none z-10"></div>
+        <div class="flex-1 relative overflow-hidden flex flex-col min-w-0">
 
             <!-- Scrollable Content -->
             <div class="flex-1 overflow-y-auto scrollbar-modern p-8 relative z-0">
@@ -121,20 +172,20 @@
                     </div>
 
                     <!-- Tabs Navigation -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-                        <div class="flex border-b border-slate-200">
+                    <div id="howtoTabsWrap" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                        <div id="howtoTabsRow" class="flex border-b border-slate-200">
                             <button id="tabBtnInstallation"
-                                class="flex-1 px-6 py-4 text-sm font-semibold text-blue-600 bg-blue-50/50 border-r border-slate-200 border-b-2 border-b-blue-500 transition-all"
+                                class="howto-tab-btn flex-1 px-6 py-4 text-sm font-semibold text-blue-600 bg-blue-50/50 border-r border-slate-200 border-b-2 border-b-blue-500 transition-all"
                                 onclick="switchTab('installation')">
                                 <i class="fas fa-download mr-2"></i>Installation
                             </button>
                             <button id="tabBtnData"
-                                class="flex-1 px-6 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 border-r border-slate-200 border-b-2 border-b-transparent transition-all"
+                                class="howto-tab-btn flex-1 px-6 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 border-r border-slate-200 border-b-2 border-b-transparent transition-all"
                                 onclick="switchTab('data')">
                                 <i class="fas fa-database mr-2"></i>Data Configuration
                             </button>
                             <button id="tabBtnSetup"
-                                class="flex-1 px-6 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-b-transparent transition-all"
+                                class="howto-tab-btn flex-1 px-6 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-b-transparent transition-all"
                                 onclick="switchTab('setup')">
                                 <i class="fas fa-cog mr-2"></i>Claude Desktop Setup
                             </button>
@@ -394,7 +445,7 @@
                     <!-- Issue 1 -->
                     <div class="space-y-2">
                         <label class="block text-slate-700 font-semibold text-sm">Tools not showing up?</label>
-                        <div class="card p-3 bg-red-50 border-red-100">
+                        <div class="howto-alert-tools card p-3 bg-red-50 border-red-100">
                             <ul class="space-y-2 text-xs text-slate-600">
                                 <li class="flex gap-2">
                                     <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
@@ -415,7 +466,7 @@
                     <!-- Issue 2 -->
                     <div class="space-y-2">
                         <label class="block text-slate-700 font-semibold text-sm">Server Offline?</label>
-                        <div class="card p-3 bg-orange-50 border-orange-100">
+                        <div class="howto-alert-offline card p-3 bg-orange-50 border-orange-100">
                             <p class="text-xs text-slate-600 mb-2">If the status indicator is red:</p>
                             <ul class="space-y-2 text-xs text-slate-600">
                                 <li class="flex gap-2">
