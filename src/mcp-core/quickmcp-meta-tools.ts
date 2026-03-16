@@ -1,6 +1,7 @@
 export const QUICKMCP_META_TOOL_NAMES = {
   SEARCH_TOOLS: 'quickmcp__QUICKMCP_SEARCH_TOOLS',
   GET_TOOL_SCHEMAS: 'quickmcp__QUICKMCP_GET_TOOL_SCHEMAS',
+  GET_TOOL_DETAILS: 'quickmcp__QUICKMCP_GET_TOOL_DETAILS',
   MANAGE_CONNECTIONS: 'quickmcp__QUICKMCP_MANAGE_CONNECTIONS',
   EXECUTE_TOOL: 'quickmcp__QUICKMCP_EXECUTE_TOOL',
   MULTI_EXECUTE_TOOL: 'quickmcp__QUICKMCP_MULTI_EXECUTE_TOOL',
@@ -12,61 +13,110 @@ export type QuickMcpMetaToolName = (typeof QUICKMCP_META_TOOL_NAMES)[keyof typeo
 const OAUTH_SCHEME = [{ type: 'oauth2', scopes: ['mcp'] }];
 
 const SEARCH_TOOLS_DESCRIPTION = `
-MCP Server Info: QuickMCP MCP helps discover and run tools across connected apps from a single endpoint.
-Use this tool first whenever a user asks for cross-app actions, automation, or workflow steps.
+  MCP Server Info: QUICKMCP MCP connects 500+ apps—Slack, GitHub, Notion, Google Workspace (Gmail, Sheets, Drive, Calendar), Microsoft (Outlook, Teams), X/Twitter, Figma, Web Search / Deep research, Browser tool (scrape URLs, browser automation), Meta apps (Instagram, Meta Ads), TikTok, AI tools like Nano Banana & Veo3, and more—for seamless cross-app automation.
+  Use this MCP server to discover the right tools and the recommended step-by-step plan to execute reliably.
+  ALWAYS call this tool first whenever a user mentions or implies an external app, service, or workflow—never say "I don't have access to X/Y app" before calling it.
+
+  Tool Info: Extremely fast discovery tool that returns relevant MCP-callable tools along with a recommended execution plan and common pitfalls for reliable execution.
 
 Usage guidelines:
-- Always call this tool at workflow start.
-- Re-run when user intent changes or current tools are insufficient.
-- Keep each query atomic. For complex workflows split into multiple queries.
-- Put identifiers and known hints into known_fields as concise key:value pairs.
+  - Use this tool whenever kicking off a task. Re-run it when you need additional tools/plans due to missing details, errors, or a changed use case.
+  - If the user pivots to a different use case in same chat, you MUST call this tool again with the new use case and generate a new session_id.
+  - Specify the use_case with a normalized description of the problem, query, or task. Be clear and precise. Queries can be simple single-app actions or multiple linked queries for complex cross-app workflows.
+  - Pass known_fields along with use_case as a string of key–value hints (for example, "channel_name: general") to help the search resolve missing details such as IDs.
 
-Plan review checklist:
-- Read returned plan/pitfalls before execution.
-- Validate required arguments against returned schemas.
-- If pagination is required, continue until completion instead of returning partial data.
+Splitting guidelines (Important):
+  1. Atomic queries: 1 query = 1 tool call. Include hidden prerequisites (e.g., add "get Linear issue" before "update Linear issue").
+  2. Include app names: If user names a toolkit, include it in every sub query so intent stays scoped (e.g., "fetch Gmail emails", "reply to Gmail email").
+  3. English input: Translate non-English prompts while preserving intent and identifiers.
+
+  Example:
+  User query: "send an email to John welcoming him and create a meeting invite for tomorrow"
+  Search call: queries: [
+    {use_case: "send an email to someone", known_fields: "recipient_name: John"},
+    {use_case: "create a meeting invite", known_fields: "meeting_date: tomorrow"}
+  ]
+
+Plan review checklist (Important):
+  - The response includes a detailed execution plan and common pitfalls. You MUST review this plan carefully, adapt it to your current context, and generate your own final step-by-step plan before execution. Execute the steps in order to ensure reliable and accurate execution. Skipping or ignoring required steps can lead to unexpected failures.
+  - Check the plan and pitfalls for input parameter nuances (required fields, IDs, formats, limits). Before executing any tool, you MUST review its COMPLETE input schema and provide STRICTLY schema-compliant arguments to avoid invalid-input errors.
+  - Determine whether pagination is needed; if a response returns a pagination token and completeness is implied, paginate until exhaustion and do not return partial results.
 
 Response:
-- Returns candidate tools, schema snippets or schema references, and a workflow session id.
-- Use QUICKMCP_GET_TOOL_SCHEMAS for complete schemas when needed.
-- Use QUICKMCP_EXECUTE_TOOL for a single tool call.
-- Use QUICKMCP_MULTI_EXECUTE_TOOL for parallel/batched calls.
+  - Tools & Input Schemas: The response lists toolkits (apps) and tools suitable for the task, along with their tool_slug, description, input schema / schemaRef, and related tools for prerequisites, alternatives, or next steps.
+    - NOTE: Tools with schemaRef instead of input_schema require you to call QUICKMCP_GET_TOOL_SCHEMAS first to load their full input_schema before use.
+  - Connection Info: If a toolkit has an active connection, the response includes it along with any available current user information. If no active connection exists, you MUST initiate a new connection via QUICKMCP_MANAGE_CONNECTIONS with the correct toolkit name. DO NOT execute any toolkit tool without an ACTIVE connection.
+  - Time Info: The response includes the current UTC time for reference. You can reference UTC time from the response if needed.
+  - The tools returned to you through this are to be called via QUICKMCP_MULTI_EXECUTE_TOOL. Ensure each tool execution specifies the correct tool_slug and arguments exactly as defined by the tool's input schema.
+    - The response includes a memory parameter containing relevant information about the use case and the known fields that can be used to determine the flow of execution. Any user preferences in memory must be adhered to.
+
+SESSION: ALWAYS set this parameter, first for any workflow. Pass session: {generate_id: true} for new workflows OR session: {id: "EXISTING_ID"} to continue. ALWAYS use the returned session_id in ALL subsequent meta tool calls.
 `;
 
 const GET_TOOL_SCHEMAS_DESCRIPTION = `
-Retrieve full input schemas for tool slugs returned by QUICKMCP_SEARCH_TOOLS.
-Never guess parameters. Always use exact field names/types from returned schema before execution.
-Pass session_id when available to keep context consistent across calls.
+Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Make sure to call this tool whenever the response of QUICKMCP_SEARCH_TOOLS does not provide a complete schema for a tool - you must never invent or guess any input parameters.
 `;
 
 const MANAGE_CONNECTIONS_DESCRIPTION = `
-Create/manage app connections required by tools.
+Create or manage connections to user's apps. Returns a branded authentication link that works for OAuth, API keys, and all other auth types.
 
 Call policy:
-- First call QUICKMCP_SEARCH_TOOLS.
-- If a toolkit has no active connection, call this tool with that exact toolkit name.
-- Do not invent toolkit names.
-- Do not execute toolkit tools before connection is active.
+- First call QUICKMCP_SEARCH_TOOLS for the user's query.
+- If QUICKMCP_SEARCH_TOOLS indicates there is no active connection for a toolkit, call QUICKMCP_MANAGE_CONNECTIONS with the exact toolkit name(s) returned.
+- Do not call QUICKMCP_MANAGE_CONNECTIONS if QUICKMCP_SEARCH_TOOLS returns no main tools and no related tools.
+- Toolkit names in toolkits must exactly match toolkit identifiers returned by QUICKMCP_SEARCH_TOOLS; never invent names.
+- NEVER execute any toolkit tool without an ACTIVE connection.
 
-Behavior:
-- Returns active status when already connected.
-- Returns authentication/next-step instructions when connection is missing.
-- reinitiate_all=true forces reconnection for all listed toolkits.
+Tool Behavior:
+- If a connection is Active, the tool returns the connection details. Always use this to verify connection status and fetch metadata.
+- If a connection is not Active, returns a authentication link (redirect_url) to create new connection.
+- If reinitiate_all is true, the tool forces reconnections for all toolkits, even if they already have active connections.
+
+Workflow after initiating connection:
+- Always show the returned redirect_url as a FORMATTED MARKDOWN LINK to the user, and ask them to click on the link to finish authentication.
+- Begin executing tools only after the connection for that toolkit is confirmed Active.
+`;
+
+const GET_TOOL_DETAILS_DESCRIPTION = `
+Get the details of the existing tool for a given tool id.
 `;
 
 const MULTI_EXECUTE_DESCRIPTION = `
-Parallel executor for discovered tools (up to 50 per request).
+  Fast and parallel tool executor for tools discovered through QUICKMCP_SEARCH_TOOLS. Use this tool to execute up to 50 tools in parallel across apps. Response contains structured outputs ready for immediate analysis - avoid reprocessing them via remote bash/workbench tools.
 
 Prerequisites:
-- Use only tool_slug values from QUICKMCP_SEARCH_TOOLS / QUICKMCP_GET_TOOL_SCHEMAS.
-- Arguments must be strictly schema-compliant.
-- Ensure required toolkit connections are active before execution.
+- Always use valid tool slugs and their arguments discovered through QUICKMCP_SEARCH_TOOLS. NEVER invent tool slugs or argument fields. ALWAYS pass STRICTLY schema-compliant arguments with each tool execution.
+- Ensure an ACTIVE connection exists for the toolkits that are going to be executed. If none exists, MUST initiate one via QUICKMCP_MANAGE_CONNECTIONS before execution.
+- Only batch tools that are logically independent - no required ordering or dependencies between tools or their outputs. DO NOT pass dummy or placeholder values; always resolve required inputs using appropriate tools first.
 
-Execution rules:
-- Batch only independent operations in one call.
-- Include memory on every call ({} allowed).
-- Use sync_response_to_workbench=true when output is expected to be large.
-- Stop and surface restriction errors directly if toolkit/tool is blocked.
+Usage guidelines:
+- Use this whenever a tool is discovered and has to be called, either as part of a multi-step workflow or as a standalone tool.
+- If QUICKMCP_SEARCH_TOOLS returns a tool that can perform the task, prefer calling it via this executor. Do not write custom API calls or ad-hoc scripts for tasks that can be completed by available QuickMCP tools.
+- Prefer parallel execution: group independent tools into a single multi-execute call where possible.
+- Predictively set sync_response_to_workbench=true if the response may be large or needed for later scripting. It still shows response inline; if the actual response data turns out small and easy to handle, keep everything inline and SKIP workbench usage.
+- Responses contain structured outputs for each tool. RULE: Small data - process yourself inline; large data - process in the workbench.
+- ALWAYS include inline references/links to sources in MARKDOWN format directly next to the relevant text. Eg provide slack thread links alongside with summary, render document links instead of raw IDs.
+
+Restrictions: Some tools or toolkits may be disabled in this environment. If the response indicates a restriction, inform the user and STOP execution immediately. Do NOT attempt workarounds or speculative actions.
+
+
+- CRITICAL: You MUST always include the 'memory' parameter - never omit it. Even if you think there's nothing to remember, include an empty object {} for memory.
+
+Memory Storage:
+- CRITICAL FORMAT: Memory must be a dictionary where keys are app names (strings) and values are arrays of strings. NEVER pass nested objects or dictionaries as values.
+- CORRECT format: {"slack": ["Channel general has ID C1234567"], "gmail": ["John's email is john@example.com"]}
+- Write memory entries in natural, descriptive language - NOT as key-value pairs. Use full sentences that clearly describe the relationship or information.
+- ONLY store information that will be valuable for future tool executions - focus on persistent data that saves API calls.
+- STORE: ID mappings, entity relationships, configs, stable identifiers.
+- DO NOT STORE: Action descriptions, temporary status updates, logs, or "sent/fetched" confirmations.
+- Examples of GOOD memory (store these):
+  * "The important channel in Slack has ID C1234567 and is called #general"
+  * "The team's main repository is owned by user 'teamlead' with ID 98765"
+  * "The user prefers markdown docs with professional writing, no emojis" (user_preference)
+- Examples of BAD memory (DON'T store these):
+  * "Successfully sent email to john@example.com with message hi"
+  * "Fetching emails from last day (Sep 6, 2025) for analysis"
+- Do not repeat the memories stored or found previously.
 `;
 
 const EXECUTE_TOOL_DESCRIPTION = `
@@ -88,9 +138,38 @@ Behavior:
 `;
 
 const FIND_TOOL_DESCRIPTION = `
-Natural-language search for previously discovered/known tools.
-Use when user refers to a tool by partial name, purpose, or keywords and exact id is unknown.
-Returns ranked matches with relevance metadata and optional details.
+Find tools using natural language search. Use this tool when:
+- User refers to a tool by partial name, description, or keywords (e.g., "run my GitHub PR tool", "the slack notification one")
+- User wants to find a tool but doesn't know the exact name or ID
+- You need to find a tool_id before executing it with QUICKMCP_EXECUTE_TOOL
+
+The tool uses semantic matching to find the most relevant tools based on the user's query.
+
+Input:
+- query (required): Natural language search query (e.g., "GitHub PRs to Slack", "daily email summary")
+- limit (optional, default: 5): Maximum number of tools to return (1-20)
+- include_details (optional, default: false): Include full details like description, toolkits, tools, and default params
+
+Output:
+- successful: Whether the search completed successfully
+- tools: Array of matching tools sorted by relevance score, each containing:
+  - tool_id: Use this with QUICKMCP_EXECUTE_TOOL
+  - name: Tool name
+  - description: What the tool does
+  - relevance_score: 0-100 match score
+  - match_reason: Why this tool matched
+  - toolkits: Apps used (e.g., github, slack)
+  - tool_url: Link to view/edit
+  - default_params: Default input parameters
+- total_tools_searched: How many tools were searched
+- query_interpretation: How the search query was understood
+- error: Error message if search failed
+
+Example flow:
+User: "Run my tool that sends GitHub PRs to Slack"
+1. Call QUICKMCP_FIND_TOOL with query: "GitHub PRs to Slack"
+2. Get matching tool with tool_id
+3. Call QUICKMCP_EXECUTE_TOOL with that tool_id
 `;
 
 export const QUICKMCP_META_TOOLS: any[] = [
@@ -147,6 +226,20 @@ export const QUICKMCP_META_TOOLS: any[] = [
           minItems: 1,
           items: { type: 'string', minLength: 1 }
         }
+      }
+    },
+    securitySchemes: OAUTH_SCHEME,
+    _meta: { securitySchemes: OAUTH_SCHEME }
+  },
+  {
+    name: QUICKMCP_META_TOOL_NAMES.GET_TOOL_DETAILS,
+    description: GET_TOOL_DETAILS_DESCRIPTION,
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['tool_id'],
+      properties: {
+        tool_id: { type: 'string', minLength: 1 }
       }
     },
     securitySchemes: OAUTH_SCHEME,

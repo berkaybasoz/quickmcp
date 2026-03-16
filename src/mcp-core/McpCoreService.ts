@@ -408,6 +408,8 @@ export class McpCoreService {
         return this.executeQuickMcpSearchTools(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.GET_TOOL_SCHEMAS:
         return this.executeQuickMcpGetToolSchemas(args, authContext);
+      case QUICKMCP_META_TOOL_NAMES.GET_TOOL_DETAILS:
+        return this.executeQuickMcpGetToolDetails(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.MANAGE_CONNECTIONS:
         return this.executeQuickMcpManageConnections(args);
       case QUICKMCP_META_TOOL_NAMES.EXECUTE_TOOL:
@@ -477,6 +479,39 @@ export class McpCoreService {
       session_id: String(args?.session_id || '').trim() || null,
       schemas,
       missing
+    };
+  }
+
+  private async executeQuickMcpGetToolDetails(args: any, authContext: McpAuthContext): Promise<any> {
+    const toolId = String(args?.tool_id || '').trim();
+    if (!toolId) {
+      return {
+        successful: false,
+        error: 'tool_id is required'
+      };
+    }
+
+    const tools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const byExact = new Map<string, any>(tools.map((tool) => [String(tool?.name || ''), tool]));
+    const byLower = new Map<string, any>(tools.map((tool) => [String(tool?.name || '').toLowerCase(), tool]));
+    const match = byExact.get(toolId) || byLower.get(toolId.toLowerCase()) || null;
+
+    if (!match) {
+      return {
+        successful: false,
+        tool_id: toolId,
+        error: `Tool not found for tool_id: ${toolId}`
+      };
+    }
+
+    return {
+      successful: true,
+      tool: {
+        tool_id: toolId,
+        name: String(match?.name || ''),
+        description: String(match?.description || ''),
+        input_schema: match?.inputSchema || { type: 'object', properties: {}, required: [] }
+      }
     };
   }
 
