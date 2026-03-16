@@ -10,6 +10,140 @@ let currentUserAvatarUrl = '';
 let currentCreatedDate = '';
 let currentLastSignInDate = '';
 let userMenuAnchor = null;
+const QUICKMCP_AUTH_ME_CACHE_KEY = 'quickmcp.cache.auth.me';
+const QUICKMCP_AUTH_CONFIG_CACHE_KEY = 'quickmcp.cache.auth.config';
+const QUICKMCP_UI_THEME_CACHE_KEY = 'quickmcp.cache.ui.theme';
+
+function quickMcpReadCache(key) {
+    const storageApi = window.QuickMCPStorageCache;
+    if (storageApi && typeof storageApi.readJson === 'function') {
+        return storageApi.readJson(key);
+    }
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+function quickMcpWriteCache(key, value) {
+    const storageApi = window.QuickMCPStorageCache;
+    if (storageApi && typeof storageApi.writeJson === 'function') {
+        storageApi.writeJson(key, value);
+        return;
+    }
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
+}
+
+function quickMcpRemoveCache(key) {
+    const storageApi = window.QuickMCPStorageCache;
+    if (storageApi && typeof storageApi.remove === 'function') {
+        storageApi.remove(key);
+        return;
+    }
+    try {
+        localStorage.removeItem(key);
+    } catch {}
+}
+
+async function quickMcpGetOrFetchObject(key, fetcher) {
+    const storageApi = window.QuickMCPStorageCache;
+    if (storageApi && typeof storageApi.getOrFetch === 'function') {
+        const result = await storageApi.getOrFetch(key, async () => {
+            const value = await fetcher();
+            if (!value || typeof value !== 'object') return null;
+            return value;
+        });
+        const value = result?.value;
+        return value && typeof value === 'object' ? value : null;
+    }
+
+    const cached = quickMcpReadCache(key);
+    if (cached && typeof cached === 'object') return cached;
+    const fresh = await fetcher();
+    if (fresh && typeof fresh === 'object') {
+        quickMcpWriteCache(key, fresh);
+        return fresh;
+    }
+    return null;
+}
+
+function getCachedAuthMe() {
+    const data = quickMcpReadCache(QUICKMCP_AUTH_ME_CACHE_KEY);
+    return data && typeof data === 'object' ? data : null;
+}
+
+function setCachedAuthMe(data) {
+    if (!data || typeof data !== 'object') return;
+    quickMcpWriteCache(QUICKMCP_AUTH_ME_CACHE_KEY, data);
+}
+
+function clearCachedAuthMe() {
+    quickMcpRemoveCache(QUICKMCP_AUTH_ME_CACHE_KEY);
+}
+
+function getCachedAuthConfig() {
+    const data = quickMcpReadCache(QUICKMCP_AUTH_CONFIG_CACHE_KEY);
+    return data && typeof data === 'object' ? data : null;
+}
+
+function setCachedAuthConfig(data) {
+    if (!data || typeof data !== 'object') return;
+    quickMcpWriteCache(QUICKMCP_AUTH_CONFIG_CACHE_KEY, data);
+}
+
+function clearCachedAuthConfig() {
+    quickMcpRemoveCache(QUICKMCP_AUTH_CONFIG_CACHE_KEY);
+}
+
+function setCachedUiTheme(theme) {
+    const next = String(theme || '').trim().toLowerCase();
+    if (next !== 'light' && next !== 'dark') return;
+    quickMcpWriteCache(QUICKMCP_UI_THEME_CACHE_KEY, { theme: next });
+}
+
+function getCachedUiTheme() {
+    const data = quickMcpReadCache(QUICKMCP_UI_THEME_CACHE_KEY);
+    const raw = String(data?.theme || '').trim().toLowerCase();
+    return raw === 'dark' || raw === 'light' ? raw : '';
+}
+
+function clearCachedUiTheme() {
+    quickMcpRemoveCache(QUICKMCP_UI_THEME_CACHE_KEY);
+}
+
+function clearQuickMcpClientCache() {
+    clearCachedAuthMe();
+    clearCachedAuthConfig();
+    clearCachedUiTheme();
+}
+
+async function getOrFetchAuthMe(fetcher) {
+    return quickMcpGetOrFetchObject(QUICKMCP_AUTH_ME_CACHE_KEY, fetcher);
+}
+
+async function getOrFetchAuthConfig(fetcher) {
+    return quickMcpGetOrFetchObject(QUICKMCP_AUTH_CONFIG_CACHE_KEY, fetcher);
+}
+
+window.QuickMCPClientCache = {
+    getAuthMe: getCachedAuthMe,
+    getOrFetchAuthMe,
+    setAuthMe: setCachedAuthMe,
+    clearAuthMe: clearCachedAuthMe,
+    getAuthConfig: getCachedAuthConfig,
+    getOrFetchAuthConfig,
+    setAuthConfig: setCachedAuthConfig,
+    clearAuthConfig: clearCachedAuthConfig,
+    getTheme: getCachedUiTheme,
+    setTheme: setCachedUiTheme,
+    clearTheme: clearCachedUiTheme,
+    clearAll: clearQuickMcpClientCache
+};
 
 // DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
 const DataSourceType = {
@@ -416,19 +550,7 @@ async function updateUserAvatar() {
         return path !== '/login' && path !== '/landing' && path !== '/';
     };
 
-    try {
-        const response = await fetch('/api/auth/me');
-        if (!response.ok) {
-            if (shouldRedirectToLogin()) {
-                window.location.href = '/login';
-                return;
-            }
-            initializeUserMenu();
-            return;
-        }
-
-        const payload = await response.json();
-        const data = payload?.data || {};
+    const applyProfile = (data) => {
         const username = data?.username;
         const authMode = data?.authMode;
         currentAuthMode = typeof authMode === 'string' ? authMode : 'NONE';
@@ -458,7 +580,33 @@ async function updateUserAvatar() {
             currentUserRole
         );
         initializeUserMenu();
+    };
+
+    try {
+        const cacheApi = window.QuickMCPClientCache;
+        const data = (cacheApi && typeof cacheApi.getOrFetchAuthMe === 'function')
+            ? await cacheApi.getOrFetchAuthMe(async () => {
+                const response = await fetch('/api/auth/me');
+                if (!response.ok) return null;
+                const payload = await response.json().catch(() => ({}));
+                const next = payload?.data;
+                return next && typeof next === 'object' ? next : null;
+            })
+            : null;
+
+        if (!data) {
+            clearCachedAuthMe();
+            if (shouldRedirectToLogin()) {
+                window.location.href = '/login';
+                return;
+            }
+            initializeUserMenu();
+            return;
+        }
+
+        applyProfile(data);
     } catch {
+        clearCachedAuthMe();
         if (shouldRedirectToLogin()) {
             window.location.href = '/login';
             return;
@@ -585,6 +733,7 @@ function renderUserMenu(menu) {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (event) => {
             event.stopPropagation();
+            clearQuickMcpClientCache();
             try {
                 await fetch('/api/auth/logout', { method: 'POST' });
             } catch {}

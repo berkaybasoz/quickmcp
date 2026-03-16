@@ -2,12 +2,20 @@
 (function () {
   async function resolveAuthMode() {
     try {
-      const response = await fetch('/api/auth/config');
-      if (!response.ok) return null;
-      const payload = await response.json();
-      const mode = payload?.data?.authMode;
-      const deployMode = payload?.data?.deployMode;
-      const usersEnabled = payload?.data?.usersEnabled;
+      const cacheApi = window.QuickMCPClientCache;
+      const data = (cacheApi && typeof cacheApi.getOrFetchAuthConfig === 'function')
+        ? await cacheApi.getOrFetchAuthConfig(async () => {
+            const response = await fetch('/api/auth/config');
+            if (!response.ok) return null;
+            const payload = await response.json().catch(() => ({}));
+            const next = payload?.data;
+            return next && typeof next === 'object' ? next : null;
+          })
+        : null;
+      if (!data) return null;
+      const mode = data?.authMode;
+      const deployMode = data?.deployMode;
+      const usersEnabled = data?.usersEnabled;
       return {
         authMode: typeof mode === 'string' ? mode : null,
         deployMode: typeof deployMode === 'string' ? deployMode : '',

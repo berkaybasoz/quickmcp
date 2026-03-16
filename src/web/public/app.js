@@ -2012,12 +2012,24 @@ function isOnPremOnlySource(type) {
 async function getAuthConfigOnce() {
     if (authConfigCache) return authConfigCache;
     if (authConfigPromise) return authConfigPromise;
+    const cacheApi = window.QuickMCPClientCache;
 
     authConfigPromise = (async () => {
         try {
-            const response = await fetch('/api/auth/config');
-            const payload = await response.json();
-            authConfigCache = payload?.data || {};
+            if (cacheApi && typeof cacheApi.getOrFetchAuthConfig === 'function') {
+                const data = await cacheApi.getOrFetchAuthConfig(async () => {
+                    const response = await fetch('/api/auth/config');
+                    if (!response.ok) return null;
+                    const payload = await response.json().catch(() => ({}));
+                    const next = payload?.data;
+                    return next && typeof next === 'object' ? next : null;
+                });
+                authConfigCache = data || {};
+            } else {
+                const response = await fetch('/api/auth/config');
+                const payload = await response.json();
+                authConfigCache = payload?.data || {};
+            }
         } catch {
             authConfigCache = {};
         } finally {

@@ -271,6 +271,20 @@
     const googleLoginBtn = document.getElementById('googleLoginBtn');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
+    const AUTH_CONFIG_CACHE_KEY = 'quickmcp.cache.auth.config';
+    const AUTH_ME_CACHE_KEY = 'quickmcp.cache.auth.me';
+    const UI_THEME_CACHE_KEY = 'quickmcp.cache.ui.theme';
+
+    function clearClientCaches() {
+      try { localStorage.removeItem(AUTH_CONFIG_CACHE_KEY); } catch {}
+      try { localStorage.removeItem(AUTH_ME_CACHE_KEY); } catch {}
+      try { localStorage.removeItem(UI_THEME_CACHE_KEY); } catch {}
+    }
+
+    function cacheAuthConfig(configData) {
+      if (!configData || typeof configData !== 'object') return;
+      try { localStorage.setItem(AUTH_CONFIG_CACHE_KEY, JSON.stringify(configData)); } catch {}
+    }
 
     function showError(message) {
       errorText.textContent = message || 'Login failed';
@@ -303,6 +317,7 @@
       const next = queryNext && queryNext.startsWith('/')
         ? queryNext
         : (apiNext.startsWith('/') ? apiNext : '/');
+      clearClientCaches();
       window.location.replace(next);
       return true;
     }
@@ -310,6 +325,7 @@
     async function initLoginMode() {
       const configRes = await fetch('/api/auth/config');
       const config = await configRes.json().catch(() => ({}));
+      if (config?.data) cacheAuthConfig(config.data);
       const authMode = config?.data?.authMode || 'LITE';
 
       if (authMode === 'SUPABASE_GOOGLE') {
@@ -356,6 +372,7 @@
           throw new Error(body.error || 'Login failed');
         }
 
+        clearClientCaches();
         const next = new URLSearchParams(window.location.search).get('next');
         window.location.href = next && next.startsWith('/') ? next : '/';
       } catch (error) {
