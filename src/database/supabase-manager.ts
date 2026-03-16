@@ -28,6 +28,8 @@ function safeJsonParse<T>(value: unknown, fallback: T): T {
 export class SupabaseDataStore implements IDataStore {
   private readonly restBaseUrl: string;
   private readonly apiKey: string;
+  private readonly requestTimingLogsEnabled: boolean;
+  private readonly requestTimingSlowThresholdMs: number;
 
   constructor() {
     const rawUrl = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
@@ -42,6 +44,32 @@ export class SupabaseDataStore implements IDataStore {
 
     this.restBaseUrl = rawUrl.endsWith('/rest/v1') ? rawUrl : `${rawUrl}/rest/v1`;
     this.apiKey = rawKey;
+    this.requestTimingLogsEnabled = String(process.env.SUPABASE_LOG_REQUEST_TIMINGS || '1').trim() !== '0';
+    const threshold = Number(process.env.SUPABASE_SLOW_REQUEST_MS || '100');
+    this.requestTimingSlowThresholdMs = Number.isFinite(threshold) && threshold >= 0 ? threshold : 100;
+  }
+
+  private shouldSkipTimingLog(tablePath: string): boolean {
+    const normalized = String(tablePath || '').trim().replace(/^\/+/, '').toLowerCase();
+    return normalized.startsWith('app_logs');
+  }
+
+  private logRequestTiming(
+    tablePath: string,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    status: number,
+    durationMs: number,
+    outcome: 'ok' | 'error'
+  ): void {
+    if (!this.requestTimingLogsEnabled) return;
+    if (this.shouldSkipTimingLog(tablePath)) return;
+    const cleanPath = String(tablePath || '').trim().replace(/^\/+/, '');
+    const msg = `[supabase] ${method} ${cleanPath} -> ${status} ${outcome} in ${durationMs.toFixed(1)}ms`;
+    if (durationMs >= this.requestTimingSlowThresholdMs || outcome === 'error') {
+      console.error(msg);
+      return;
+    }
+    console.log(msg);
   }
 
   private async request<T = any>(
@@ -58,21 +86,32 @@ export class SupabaseDataStore implements IDataStore {
       ...headers
     };
 
-    const response = await fetch(url, {
-      method,
-      headers: requestHeaders,
-      body: typeof body !== 'undefined' ? JSON.stringify(body) : undefined
-    });
-    const bodyText = (await response.text()).trim();
-    if (!response.ok) {
-      throw new Error(`Supabase HTTP ${response.status}: ${bodyText || 'request failed'}`);
-    }
-    if (!bodyText) return [] as T;
-
+    const startedAt = Date.now();
+    let statusCode = 0;
     try {
-      return JSON.parse(bodyText) as T;
-    } catch {
-      return bodyText as T;
+      const response = await fetch(url, {
+        method,
+        headers: requestHeaders,
+        body: typeof body !== 'undefined' ? JSON.stringify(body) : undefined
+      });
+      statusCode = response.status;
+      const bodyText = (await response.text()).trim();
+      const durationMs = Date.now() - startedAt;
+      if (!response.ok) {
+        throw new Error(`Supabase HTTP ${response.status}: ${bodyText || 'request failed'}`);
+      }
+      this.logRequestTiming(tablePath, method, statusCode, durationMs, 'ok');
+      if (!bodyText) return [] as T;
+
+      try {
+        return JSON.parse(bodyText) as T;
+      } catch {
+        return bodyText as T;
+      }
+    } catch (error) {
+      const durationMs = Date.now() - startedAt;
+      this.logRequestTiming(tablePath, method, statusCode || 0, durationMs, 'error');
+      throw error;
     }
   }
 
