@@ -2212,13 +2212,23 @@
               <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
             </button>
           </div>
-          <button type="button" class="install-channel-row">
-            <span class="install-channel-main">
-              <img src="/images/app/claude.png" alt="Claude" class="install-channel-icon">
-              <span class="install-channel-title">Claude</span>
-            </span>
-            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
-          </button>
+          <div class="install-channel-group">
+            <span class="install-channel-label">Claude</span>
+            <button type="button" id="openClaudeWebFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/claude.png" alt="Claude Web" class="install-channel-icon">
+                <span class="install-channel-title">Claude Web</span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+            <button type="button" id="openClaudeDesktopFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/claude.png" alt="Claude Desktop" class="install-channel-icon">
+                <span class="install-channel-title">Claude Desktop</span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+          </div>
           <button type="button" class="install-channel-row">
             <span class="install-channel-main">
               <img src="/images/app/vscode.png" alt="IDEs" class="install-channel-icon">
@@ -2383,6 +2393,73 @@
           </div>
         </div>
       </div>
+
+      <div id="installModalViewClaudeWeb" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-globe" aria-hidden="true"></i>
+          Claude Web
+        </h3>
+        <p class="install-modal-subtitle">Install QuickMCP in Claude Web by following these steps.</p>
+        <div class="install-steps-scroll">
+          <div class="install-step-list">
+            <section class="install-step">
+              <div class="install-step-index">1</div>
+              <h4 class="install-step-title">Copy the MCP URL</h4>
+              <div class="install-step-copy-row">
+                <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+                <button type="button" id="copyMcpUrlBtnClaudeWeb" class="install-copy-btn">Copy</button>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">2</div>
+              <h4 class="install-step-title">In Claude Web Settings, under Connectors click on “Add custom connector"</h4>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step0.png" alt="Claude Web connectors settings">
+                <img src="/images/install/claude-web/step1.png" alt="Add custom connector in Claude Web">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">3</div>
+              <h4 class="install-step-title">Add QuickMCP to Claude Web</h4>
+              <p class="install-step-desc">Paste the MCP URL and token into Claude Web MCP settings, then save and start using your tools.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step2.png" alt="Claude Web custom connector form">
+                <img src="/images/install/claude-web/step3.png" alt="Claude Web connector saved">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">4</div>
+              <h4 class="install-step-title">Click on "Connect" or if it is connected click "Disconnect" then "Connect".</h4>
+              <p class="install-step-desc">Sometimes Claude Web does not show tools until the connector is reconnected.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step4.png" alt="Reconnect connector in Claude Web">
+                <img src="/images/install/claude-web/step5.png" alt="Tools visible after reconnect in Claude Web">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">5</div>
+              <h4 class="install-step-title">Click Allow access</h4>
+              <p class="install-step-desc">Click on Allow access to authorize Claude to connect with QuickMCP.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step5.png" alt="Allow access prompt">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">6</div>
+              <h4 class="install-step-title">QuickMCP is now connected</h4>
+              <p class="install-step-desc">QuickMCP is now connected to Claude Web. You can view the connector details and available tools.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step6.png" alt="QuickMCP connected in Claude Web">
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div id="tokenHelpFloatingPreview" class="token-help-floating-preview" aria-hidden="true">
@@ -2453,22 +2530,27 @@
       const installModalViewChooser = document.getElementById('installModalViewChooser');
       const installModalViewApiKey = document.getElementById('installModalViewApiKey');
       const installModalViewChatgpt = document.getElementById('installModalViewChatgpt');
+      const installModalViewClaudeWeb = document.getElementById('installModalViewClaudeWeb');
       const installModalBackBtn = document.getElementById('installModalBackBtn');
       const openApiKeyFlowBtn = document.getElementById('openApiKeyFlowBtn');
       const openChatgptFlowBtn = document.getElementById('openChatgptFlowBtn');
+      const openClaudeWebFlowBtn = document.getElementById('openClaudeWebFlowBtn');
       const copyMcpUrlBtn = document.getElementById('copyMcpUrlBtn');
       const copyMcpUrlBtnChatgpt = document.getElementById('copyMcpUrlBtnChatgpt');
+      const copyMcpUrlBtnClaudeWeb = document.getElementById('copyMcpUrlBtnClaudeWeb');
       const tokenHelpFloatingPreview = document.getElementById('tokenHelpFloatingPreview');
       const tokenHelpFloatingImg = tokenHelpFloatingPreview ? tokenHelpFloatingPreview.querySelector('img') : null;
 
       const setInstallModalView = (view) => {
-        if (!installModalViewChooser || !installModalViewApiKey || !installModalViewChatgpt) return;
+        if (!installModalViewChooser || !installModalViewApiKey || !installModalViewChatgpt || !installModalViewClaudeWeb) return;
         const isApiKey = view === 'api-key';
         const isChatgpt = view === 'chatgpt';
+        const isClaudeWeb = view === 'claude-web';
         const isChooser = view === 'chooser';
         installModalViewChooser.classList.toggle('hidden', !isChooser);
         installModalViewApiKey.classList.toggle('hidden', !isApiKey);
         installModalViewChatgpt.classList.toggle('hidden', !isChatgpt);
+        installModalViewClaudeWeb.classList.toggle('hidden', !isClaudeWeb);
         if (installAnywhereModal) {
           installAnywhereModal.classList.toggle('detail-active', !isChooser);
         }
@@ -2497,6 +2579,9 @@
         }
         if (openChatgptFlowBtn) {
           openChatgptFlowBtn.addEventListener('click', () => setInstallModalView('chatgpt'));
+        }
+        if (openClaudeWebFlowBtn) {
+          openClaudeWebFlowBtn.addEventListener('click', () => setInstallModalView('claude-web'));
         }
         if (installModalBackBtn) {
           installModalBackBtn.addEventListener('click', () => setInstallModalView('chooser'));
@@ -2529,6 +2614,7 @@
 
         bindCopyMcpUrl(copyMcpUrlBtn);
         bindCopyMcpUrl(copyMcpUrlBtnChatgpt);
+        bindCopyMcpUrl(copyMcpUrlBtnClaudeWeb);
 
         const hideFloatingPreview = () => {
           if (!tokenHelpFloatingPreview) return;
