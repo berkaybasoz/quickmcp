@@ -281,11 +281,6 @@
       try { localStorage.removeItem(UI_THEME_CACHE_KEY); } catch {}
     }
 
-    function cacheAuthConfig(configData) {
-      if (!configData || typeof configData !== 'object') return;
-      try { localStorage.setItem(AUTH_CONFIG_CACHE_KEY, JSON.stringify(configData)); } catch {}
-    }
-
     function showError(message) {
       errorText.textContent = message || 'Login failed';
       errorText.classList.remove('hidden');
@@ -325,7 +320,6 @@
     async function initLoginMode() {
       const configRes = await fetch('/api/auth/config');
       const config = await configRes.json().catch(() => ({}));
-      if (config?.data) cacheAuthConfig(config.data);
       const authMode = config?.data?.authMode || 'LITE';
 
       if (authMode === 'SUPABASE_GOOGLE') {
