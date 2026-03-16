@@ -682,12 +682,22 @@ function buildQuickAskConversationForRequest(chat) {
         .slice(-24);
 }
 
-function quickAskCreateNewChat() {
+function quickAskCreateNewChat(options = {}) {
+    const preserveSelections = options?.preserveSelections === true;
+    const shouldRenderTools = options?.renderTools !== false;
+    const selectedServerIds = preserveSelections
+        ? quickAskNormalizeIdArray(options?.selectedServerIds ?? Array.from(quickAskSelectedServerIds))
+        : [];
+    const selectedToolIds = preserveSelections
+        ? quickAskNormalizeIdArray(options?.selectedToolIds ?? Array.from(quickAskSelectedToolIds))
+        : [];
     const chat = quickAskCreateChat('New chat');
+    chat.selectedServerIds = selectedServerIds;
+    chat.selectedToolIds = selectedToolIds;
     quickAskChats.unshift(chat);
     quickAskCurrentChatId = chat.id;
     quickAskApplySelectionsFromChat(chat);
-    if (quickAskContext?.askEnabled === true) {
+    if (shouldRenderTools && quickAskContext?.askEnabled === true) {
         renderQuickAskTools();
     }
     persistQuickAskChats();
@@ -1280,12 +1290,21 @@ async function sendQuickAskPrompt() {
     sendBtn.disabled = true;
     setQuickAskStatus('busy', 'Aria is thinking');
     collectQuickAskSelectionsFromDom();
+    const selectedServerIdsSnapshot = Array.from(quickAskSelectedServerIds);
+    const selectedToolIdsSnapshot = Array.from(quickAskSelectedToolIds);
     const userMessage = prompt;
     input.value = '';
 
     if (!getCurrentQuickAskChat()) {
-        quickAskCreateNewChat();
+        quickAskCreateNewChat({
+            preserveSelections: true,
+            selectedServerIds: selectedServerIdsSnapshot,
+            selectedToolIds: selectedToolIdsSnapshot,
+            renderTools: false
+        });
     }
+    const selectedServerIdsForRequest = Array.from(quickAskSelectedServerIds);
+    const selectedToolIdsForRequest = Array.from(quickAskSelectedToolIds);
     appendQuickAskMessage('user', userMessage, false);
     const assistantMessageId = appendQuickAskMessage('assistant', 'Thinking...', true);
     const conversation = buildQuickAskConversationForRequest(getCurrentQuickAskChat());
@@ -1297,8 +1316,8 @@ async function sendQuickAskPrompt() {
             body: JSON.stringify({
                 prompt: userMessage,
                 conversation,
-                selectedServerIds: Array.from(quickAskSelectedServerIds),
-                selectedToolIds: Array.from(quickAskSelectedToolIds)
+                selectedServerIds: selectedServerIdsForRequest,
+                selectedToolIds: selectedToolIdsForRequest
             })
         });
         const payload = await response.json().catch(() => ({}));
