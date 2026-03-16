@@ -566,18 +566,18 @@ app.delete('/mcp', (_req, res) => {
 indexApi.registerRoutes(app);
 
 export function startServer(): void {
-  console.log('[quickmcp] startup config');
-  console.log(`[quickmcp] APP_VERSION=${resolveAppVersion()}`);
-  console.log(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
-  console.log(`[quickmcp] AUTH_MODE=${authMode}`);
-  console.log(`[quickmcp] DATA_PROVIDER=${dataProvider}`);
+  console.error('[quickmcp] startup config');
+  console.error(`[quickmcp] APP_VERSION=${resolveAppVersion()}`);
+  console.error(`[quickmcp] DEPLOY_MODE=${process.env.DEPLOY_MODE || '(unset)'}`);
+  console.error(`[quickmcp] AUTH_MODE=${authMode}`);
+  console.error(`[quickmcp] DATA_PROVIDER=${dataProvider}`);
   if (authMode === 'SUPABASE_GOOGLE') {
-    console.log(`[quickmcp] SUPABASE_URL=${authProperty.providerUrl || '(unset)'}`);
-    console.log(`[quickmcp] SUPABASE_ANON_KEY=${authProperty.publicKey ? '(set)' : '(unset)'}`);
-    console.log(`[quickmcp] APP_BASE_URL=${authProperty.appBaseUrl}`);
+    console.error(`[quickmcp] SUPABASE_URL=${authProperty.providerUrl || '(unset)'}`);
+    console.error(`[quickmcp] SUPABASE_ANON_KEY=${authProperty.publicKey ? '(set)' : '(unset)'}`);
+    console.error(`[quickmcp] APP_BASE_URL=${authProperty.appBaseUrl}`);
   }
-  console.log(`[quickmcp] PORT=${PORT}`);
-  console.log(`[quickmcp] MCP_PORT=${MCP_PORT}`);
+  console.error(`[quickmcp] PORT=${PORT}`);
+  console.error(`[quickmcp] MCP_PORT=${MCP_PORT}`);
 
   // Initialize integrated MCP server (optional in environments without native deps)
   let integratedMCPServer: IntegratedMCPServer | null = null;
