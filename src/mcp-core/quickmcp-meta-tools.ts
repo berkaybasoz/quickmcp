@@ -2,6 +2,7 @@ export const QUICKMCP_META_TOOL_NAMES = {
   SEARCH_TOOLS: 'quickmcp__QUICKMCP_SEARCH_TOOLS',
   GET_TOOL_SCHEMAS: 'quickmcp__QUICKMCP_GET_TOOL_SCHEMAS',
   MANAGE_CONNECTIONS: 'quickmcp__QUICKMCP_MANAGE_CONNECTIONS',
+  EXECUTE_TOOL: 'quickmcp__QUICKMCP_EXECUTE_TOOL',
   MULTI_EXECUTE_TOOL: 'quickmcp__QUICKMCP_MULTI_EXECUTE_TOOL',
   FIND_TOOL: 'quickmcp__QUICKMCP_FIND_TOOL'
 } as const;
@@ -28,7 +29,8 @@ Plan review checklist:
 Response:
 - Returns candidate tools, schema snippets or schema references, and a workflow session id.
 - Use QUICKMCP_GET_TOOL_SCHEMAS for complete schemas when needed.
-- Use QUICKMCP_MULTI_EXECUTE_TOOL to run selected tools.
+- Use QUICKMCP_EXECUTE_TOOL for a single tool call.
+- Use QUICKMCP_MULTI_EXECUTE_TOOL for parallel/batched calls.
 `;
 
 const GET_TOOL_SCHEMAS_DESCRIPTION = `
@@ -65,6 +67,24 @@ Execution rules:
 - Include memory on every call ({} allowed).
 - Use sync_response_to_workbench=true when output is expected to be large.
 - Stop and surface restriction errors directly if toolkit/tool is blocked.
+`;
+
+const EXECUTE_TOOL_DESCRIPTION = `
+Single-tool executor for one discovered tool call.
+
+When to use:
+- You only need one tool execution now.
+- You want deterministic sequential orchestration step-by-step.
+- You do not need parallel batching.
+
+Requirements:
+- tool_slug must come from QUICKMCP_SEARCH_TOOLS / QUICKMCP_GET_TOOL_SCHEMAS.
+- arguments must strictly match the selected tool schema.
+- If toolkit connection is required, ensure it is active before call.
+
+Behavior:
+- Executes exactly one tool and returns either { success: true, output } or { success: false, error }.
+- Returns explicit errors for unknown/unauthorized tool_slug.
 `;
 
 const FIND_TOOL_DESCRIPTION = `
@@ -143,6 +163,25 @@ export const QUICKMCP_META_TOOLS: any[] = [
         toolkits: { type: 'array', items: { type: 'string' } },
         reinitiate_all: { type: 'boolean', default: false },
         session_id: { type: 'string' }
+      }
+    },
+    securitySchemes: OAUTH_SCHEME,
+    _meta: { securitySchemes: OAUTH_SCHEME }
+  },
+  {
+    name: QUICKMCP_META_TOOL_NAMES.EXECUTE_TOOL,
+    description: EXECUTE_TOOL_DESCRIPTION,
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['tool_slug'],
+      properties: {
+        tool_slug: { type: 'string', minLength: 1 },
+        arguments: { type: 'object', properties: {}, additionalProperties: true },
+        session_id: { type: 'string' },
+        thought: { type: 'string' },
+        current_step: { type: 'string' },
+        current_step_metric: { type: 'string' }
       }
     },
     securitySchemes: OAUTH_SCHEME,

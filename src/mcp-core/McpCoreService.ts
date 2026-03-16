@@ -410,6 +410,8 @@ export class McpCoreService {
         return this.executeQuickMcpGetToolSchemas(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.MANAGE_CONNECTIONS:
         return this.executeQuickMcpManageConnections(args);
+      case QUICKMCP_META_TOOL_NAMES.EXECUTE_TOOL:
+        return this.executeQuickMcpExecuteTool(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.MULTI_EXECUTE_TOOL:
         return this.executeQuickMcpMultiExecuteTool(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.FIND_TOOL:
@@ -493,6 +495,51 @@ export class McpCoreService {
         message: 'QuickMCP executes through workspace-managed integrations; no additional OAuth link required here.'
       }))
     };
+  }
+
+  private async executeQuickMcpExecuteTool(args: any, authContext: McpAuthContext): Promise<any> {
+    const requestedSlug = String(args?.tool_slug || '').trim();
+    if (!requestedSlug) {
+      return {
+        session_id: String(args?.session_id || '').trim() || null,
+        tool_slug: '',
+        success: false,
+        error: 'tool_slug is required'
+      };
+    }
+
+    const availableTools = await this.getAuthorizedRuntimeToolsForMeta(authContext);
+    const byExact = new Map<string, any>(availableTools.map((tool) => [String(tool?.name || ''), tool]));
+    const byLower = new Map<string, any>(availableTools.map((tool) => [String(tool?.name || '').toLowerCase(), tool]));
+    const resolvedTool = byExact.get(requestedSlug) || byLower.get(requestedSlug.toLowerCase());
+
+    if (!resolvedTool) {
+      return {
+        session_id: String(args?.session_id || '').trim() || null,
+        tool_slug: requestedSlug,
+        success: false,
+        error: `Unknown or unauthorized tool_slug: ${requestedSlug}`
+      };
+    }
+
+    const qualifiedName = String(resolvedTool.name || '').trim();
+    try {
+      await this.ensureToolAllowed(qualifiedName, authContext);
+      const output = await this.executor.executeTool(qualifiedName, args?.arguments || {});
+      return {
+        session_id: String(args?.session_id || '').trim() || null,
+        tool_slug: requestedSlug,
+        success: true,
+        output
+      };
+    } catch (error) {
+      return {
+        session_id: String(args?.session_id || '').trim() || null,
+        tool_slug: requestedSlug,
+        success: false,
+        error: error instanceof Error ? error.message : 'Tool execution failed'
+      };
+    }
   }
 
   private async executeQuickMcpMultiExecuteTool(args: any, authContext: McpAuthContext): Promise<any> {
