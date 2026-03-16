@@ -50,6 +50,7 @@ type McpCoreServiceDeps = {
 };
 
 const AUTH_RETRY_PROBE_TOOL_NAME = 'quickmcp__auth_retry_probe';
+const QUICKMCP_ROUTING_PROMPT_NAME = 'quickmcp_external_service_policy';
 
 export class McpCoreService {
   private readonly executor: DynamicMCPExecutor;
@@ -168,7 +169,57 @@ export class McpCoreService {
       }
 
       case 'prompts/list':
-        return { jsonrpc: '2.0', id: messageData.id, result: { prompts: [] } };
+        return {
+          jsonrpc: '2.0',
+          id: messageData.id,
+          result: {
+            prompts: [
+              {
+                name: QUICKMCP_ROUTING_PROMPT_NAME,
+                description: 'Routing policy for external service queries in QuickMCP.',
+                arguments: [
+                  {
+                    name: 'user_query',
+                    description: 'Original user query (optional).',
+                    required: false
+                  }
+                ]
+              }
+            ]
+          }
+        };
+
+      case 'prompts/get': {
+        const promptName = String(messageData.params?.name || '').trim();
+        if (promptName !== QUICKMCP_ROUTING_PROMPT_NAME) {
+          return {
+            jsonrpc: '2.0',
+            id: messageData.id,
+            error: {
+              code: -32602,
+              message: `Unknown prompt: ${promptName}`
+            }
+          };
+        }
+        const userQuery = String(messageData.params?.arguments?.user_query || '').trim();
+        const promptText = this.buildQuickMcpRoutingPromptText(userQuery);
+        return {
+          jsonrpc: '2.0',
+          id: messageData.id,
+          result: {
+            description: 'QuickMCP routing policy for external integrations.',
+            messages: [
+              {
+                role: 'user',
+                content: {
+                  type: 'text',
+                  text: promptText
+                }
+              }
+            ]
+          }
+        };
+      }
 
       case 'tools/call': {
         const toolName = String(messageData.params?.name || '');
@@ -339,6 +390,23 @@ export class McpCoreService {
       throw new Error(`Invalid qualified name format: ${name}`);
     }
     return [name.slice(0, sepIndex), name.slice(sepIndex + 2)];
+  }
+
+  private buildQuickMcpRoutingPromptText(userQuery: string): string {
+    const trimmed = String(userQuery || '').trim();
+    const queryLine = trimmed ? `User query: "${trimmed}"` : 'User query was not provided.';
+    return [
+      'QuickMCP External Service Routing Policy',
+      '',
+      queryLine,
+      '',
+      'Rules you MUST follow:',
+      '1. If the user asks for external app/service data or actions (for example Trello, Notion, GitHub, Gmail, Slack), call quickmcp__QUICKMCP_SEARCH_TOOLS first.',
+      '2. Do not claim missing access/connectors/tools before running quickmcp__QUICKMCP_SEARCH_TOOLS.',
+      '3. Use quickmcp__QUICKMCP_GET_TOOL_SCHEMAS if full schema is needed.',
+      '4. Execute with quickmcp__QUICKMCP_EXECUTE_TOOL (single) or quickmcp__QUICKMCP_MULTI_EXECUTE_TOOL (parallel).',
+      '5. If no suitable tool is found after search, then ask a focused clarification question.'
+    ].join('\n');
   }
 
   private normalizeMetaSessionId(args: any): string {
