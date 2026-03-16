@@ -1612,7 +1612,8 @@ body.test-page .app-main-layout,
 body.quick-ask-page .app-main-layout,
 body.generate-page .app-main-layout,
 body.manage-page .app-main-layout,
-body.users-page .app-main-layout {
+body.users-page .app-main-layout,
+body.howto-page .app-main-layout {
   --sidebar-gutter: 0rem !important;
 }
 
@@ -1622,7 +1623,8 @@ html.dark body.test-page,
 html.dark body.quick-ask-page,
 html.dark body.generate-page,
 html.dark body.manage-page,
-html.dark body.users-page {
+html.dark body.users-page,
+html.dark body.howto-page {
   background-color: rgb(2 6 23) !important;
   background-image: linear-gradient(135deg, rgb(15 23 42), rgb(2 6 23)) !important;
 }
@@ -1690,13 +1692,15 @@ html.dark body.users-page #usersTableWrap .text-slate-700 {
 /* Remove extra dark overlay layer behind content on these pages */
 html.dark body.quick-ask-page .app-main-layout > .flex-1.relative,
 html.dark body.generate-page .app-main-layout > .flex-1.relative,
-html.dark body.manage-page .app-main-layout > .flex-1.relative {
+html.dark body.manage-page .app-main-layout > .flex-1.relative,
+html.dark body.howto-page .app-main-layout > .flex-1.relative {
   background: transparent !important;
 }
 
 html.dark body.quick-ask-page .app-main-layout > .flex-1.relative > .absolute.inset-0.shadow-inner.shadow-slate-200\/30,
 html.dark body.generate-page .app-main-layout > .flex-1.relative > .absolute.inset-0.shadow-inner.shadow-slate-200\/30,
-html.dark body.manage-page .app-main-layout > .flex-1.relative > .absolute.inset-0.shadow-inner.shadow-slate-200\/30 {
+html.dark body.manage-page .app-main-layout > .flex-1.relative > .absolute.inset-0.shadow-inner.shadow-slate-200\/30,
+html.dark body.howto-page .app-main-layout > .flex-1.relative > .absolute.inset-0.shadow-inner.shadow-slate-200\/30 {
   display: none !important;
 }
 
