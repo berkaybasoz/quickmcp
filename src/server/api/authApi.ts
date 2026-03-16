@@ -351,6 +351,7 @@ export class AuthApi {
 
   private getOAuthAuthorizationServerMetadata = (req: express.Request, res: express.Response): void => {
     const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    const logoUri = `${issuer}/favicon.png`;
     res.json({
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
@@ -364,12 +365,15 @@ export class AuthApi {
       grant_types_supported: ['authorization_code', 'refresh_token'],
       code_challenge_methods_supported: ['S256'],
       scopes_supported: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
-      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic']
+      token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+      service_documentation: 'https://www.quickmcp.ai/docs',
+      logo_uri: logoUri
     });
   };
 
   private getOAuthProtectedResourceMetadata = (req: express.Request, res: express.Response): void => {
     const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    const logoUri = `${issuer}/favicon.png`;
     res.json({
       resource: `${issuer}/mcp`,
       authorization_servers: [issuer],
@@ -377,12 +381,15 @@ export class AuthApi {
       jwks_uri: `${issuer}/oauth/jwks`,
       bearer_methods_supported: ['header', 'body'],
       resource_documentation: 'https://www.quickmcp.ai/docs',
-      resource_registration: `${issuer}/oauth/register`
+      resource_registration: `${issuer}/oauth/register`,
+      resource_name: 'QuickMCP',
+      logo_uri: logoUri
     });
   };
 
   private getOpenIdConfigurationMetadata = (req: express.Request, res: express.Response): void => {
     const issuer = this.resolveAppBaseUrl(req).replace(/\/+$/, '');
+    const logoUri = `${issuer}/favicon.png`;
     res.json({
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
@@ -400,7 +407,9 @@ export class AuthApi {
       request_uri_parameter_supported: false,
       require_request_uri_registration: false,
       request_parameter_supported: false,
-      authorization_response_iss_parameter_supported: true
+      authorization_response_iss_parameter_supported: true,
+      service_documentation: 'https://www.quickmcp.ai/docs',
+      logo_uri: logoUri
     });
   };
 
