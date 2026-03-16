@@ -17,6 +17,7 @@ interface PreferenceApiDeps {
 const UI_THEME_PREF_KEY = 'ui.theme';
 const UI_THEME_LIGHT = 'light';
 const UI_THEME_DARK = 'dark';
+const UI_THEME_COOKIE_NAME = 'quickmcp_ui_theme';
 
 export class PreferenceApi {
   constructor(private readonly deps: PreferenceApiDeps) {}
@@ -28,6 +29,14 @@ export class PreferenceApi {
 
   private resolvePreferenceUserId(ctx: AuthContext): string {
     return String(ctx.username || '').trim();
+  }
+
+  private setThemeCookie(res: express.Response, theme: string): void {
+    res.cookie(UI_THEME_COOKIE_NAME, theme, {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 365
+    });
   }
 
   private getUiTheme = async (req: AuthenticatedRequest, res: express.Response): Promise<void> => {
@@ -47,6 +56,11 @@ export class PreferenceApi {
       const normalized = storedValue === UI_THEME_DARK || storedValue === UI_THEME_LIGHT
         ? storedValue
         : '';
+      if (normalized) {
+        this.setThemeCookie(res, normalized);
+      } else {
+        res.clearCookie(UI_THEME_COOKIE_NAME, { path: '/' });
+      }
       res.json({ success: true, data: { theme: normalized } });
     } catch (error) {
       logger.error('UI theme load failed:', error);
@@ -73,6 +87,7 @@ export class PreferenceApi {
         return;
       }
       await this.deps.ensureDataStore().setUserPreference(userId, UI_THEME_PREF_KEY, requested);
+      this.setThemeCookie(res, requested);
       res.json({ success: true });
     } catch (error) {
       logger.error('UI theme save failed:', error);
@@ -80,4 +95,3 @@ export class PreferenceApi {
     }
   };
 }
-

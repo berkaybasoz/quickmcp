@@ -189,10 +189,10 @@ function setQuickAskStatus(kind, text) {
     const el = document.getElementById('quickAskStatus');
     if (!el) return;
     const styles = {
-        idle: 'bg-slate-100 text-slate-600 border border-slate-200',
-        ready: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-        busy: 'bg-amber-50 text-amber-700 border border-amber-200',
-        error: 'bg-rose-50 text-rose-700 border border-rose-200'
+        idle: 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+        ready: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/45 dark:text-emerald-300 dark:border-emerald-800/60',
+        busy: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/45 dark:text-amber-300 dark:border-amber-800/60',
+        error: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/45 dark:text-rose-300 dark:border-rose-800/60'
     };
     const dots = {
         idle: 'bg-slate-400',

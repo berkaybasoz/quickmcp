@@ -530,12 +530,15 @@ html.dark .shadow-inner.shadow-slate-200\/30 {
 #sidebar.collapsed #sidebarHeaderMain {
   display: flex !important;
   opacity: 1;
+  pointer-events: auto;
   transition: opacity 120ms ease;
 }
 #sidebar.collapsed #sidebarHeaderToggleWrap {
   position: absolute !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
+  margin-left: 0 !important;
+  z-index: 2;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
@@ -545,6 +548,7 @@ html.dark .shadow-inner.shadow-slate-200\/30 {
 }
 #sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderMain {
   opacity: 0;
+  pointer-events: none;
 }
 #sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderToggleWrap {
   opacity: 1;
@@ -559,11 +563,52 @@ html.dark .shadow-inner.shadow-slate-200\/30 {
   justify-content: center !important;
   line-height: 1 !important;
 }
+#sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderToggle {
+  background: #e2e8f0 !important;
+  color: #2563eb !important;
+  border: 1px solid #93c5fd !important;
+}
+html.dark #sidebar.collapsed #sidebarHeaderToggle {
+  background: rgba(30, 41, 59, 0.96) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(71, 85, 105, 0.8) !important;
+}
+html.dark #sidebar.collapsed #sidebarHeaderRow:hover #sidebarHeaderToggle {
+  background: rgba(51, 65, 85, 0.98) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.7) !important;
+}
+html.dark #sidebar.collapsed #sidebarHeaderToggle:hover {
+  background: rgba(51, 65, 85, 0.98) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.7) !important;
+}
 #sidebar.collapsed #sidebarCollapseBtn { display: inline-flex !important; }
 #sidebar.collapsed #closeSidebar { display: none !important; }
 
 #sidebar #sidebarCollapseBtn { width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; }
 #sidebar #sidebarCollapseBtn i { font-size: 1rem; }
+#sidebar #sidebarHeaderToggle {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid transparent !important;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease !important;
+}
+#sidebar #sidebarHeaderToggle:hover {
+  background: #e2e8f0 !important;
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+}
+html.dark #sidebar #sidebarHeaderToggle {
+  background: rgba(30, 41, 59, 0.96) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+}
+html.dark #sidebar #sidebarHeaderToggle:hover {
+  background: rgba(51, 65, 85, 0.98) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.7) !important;
+}
 
 #sidebarUserSection {
   margin-top: auto;

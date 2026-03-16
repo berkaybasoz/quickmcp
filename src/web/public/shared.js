@@ -10,92 +10,6 @@ let currentUserAvatarUrl = '';
 let currentCreatedDate = '';
 let currentLastSignInDate = '';
 let userMenuAnchor = null;
-let currentTheme = 'light';
-
-function getSystemTheme() {
-    try {
-        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light';
-    } catch {
-        return 'light';
-    }
-}
-
-function sanitizeThemeValue(value) {
-    const raw = String(value || '').trim().toLowerCase();
-    return raw === 'dark' ? 'dark' : 'light';
-}
-
-function getPreferredTheme() {
-    return getSystemTheme();
-}
-
-async function getThemeFromDataStore() {
-    try {
-        const response = await fetch('/api/ui/theme', { method: 'GET' });
-        if (!response.ok) return '';
-        const payload = await response.json().catch(() => ({}));
-        if (!payload?.success) return '';
-        const raw = String(payload?.data?.theme || '').trim().toLowerCase();
-        if (raw === 'dark' || raw === 'light') return raw;
-        return '';
-    } catch {
-        return '';
-    }
-}
-
-async function saveThemeToDataStore(theme) {
-    const next = sanitizeThemeValue(theme);
-    try {
-        await fetch('/api/ui/theme', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme: next })
-        });
-    } catch {}
-}
-
-function applyTheme(mode) {
-    const theme = sanitizeThemeValue(mode);
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    root.setAttribute('data-theme', theme);
-    currentTheme = theme;
-    syncThemeToggleButton(theme);
-}
-
-function syncThemeToggleButton(currentTheme) {
-    const button = document.getElementById('themeToggleBtn');
-    if (!button) return;
-    const theme = currentTheme === 'dark' ? 'dark' : 'light';
-    const sunIcon = button.querySelector('[data-theme-icon="sun"]');
-    const moonIcon = button.querySelector('[data-theme-icon="moon"]');
-    if (sunIcon) sunIcon.classList.toggle('hidden', theme !== 'dark');
-    if (moonIcon) moonIcon.classList.toggle('hidden', theme === 'dark');
-    const nextLabel = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-    button.setAttribute('aria-label', nextLabel);
-    button.setAttribute('title', nextLabel);
-}
-
-function setupThemeToggle() {
-    const button = document.getElementById('themeToggleBtn');
-    if (!button || button.dataset.boundThemeToggle === 'true') {
-        syncThemeToggleButton(currentTheme);
-        return;
-    }
-    button.dataset.boundThemeToggle = 'true';
-    button.addEventListener('click', () => {
-        const isDark = document.documentElement.classList.contains('dark');
-        const next = isDark ? 'light' : 'dark';
-        applyTheme(next);
-        saveThemeToDataStore(next);
-    });
-    syncThemeToggleButton(currentTheme);
-}
-
-// Apply theme immediately to reduce light flash during load.
-applyTheme(getPreferredTheme());
 
 // DataSourceType enum mirror (matches TypeScript enum in types/index.ts)
 const DataSourceType = {
@@ -331,17 +245,11 @@ async function consumeSupabaseHashSessionIfPresent() {
 
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', async function() {
-    applyTheme(getPreferredTheme());
     initializeDesktopSidebarLayoutBase();
     const handledSupabaseHash = await consumeSupabaseHashSessionIfPresent();
     if (handledSupabaseHash) return;
 
     renderSharedAppBar();
-    setupThemeToggle();
-    const storedTheme = await getThemeFromDataStore();
-    if (storedTheme) {
-        applyTheme(storedTheme);
-    }
     updateUserAvatar();
     initBrandHomeLink();
 
