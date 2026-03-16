@@ -427,6 +427,11 @@ npm run typecheck
 - `PORT` - Web server port (default: 3000)
 - `MCP_PORT` - MCP server port (default: 3001)
 - `NODE_ENV` - Environment (development/production)
+- `QUICKMCP_AI_PROVIDER` - Quick Ask AI provider (example: `claude`)
+- `QUICKMCP_AI_MODEL` - Quick Ask model name (example: `claude-sonnet-4-6`)
+- `QUICKMCP_AI_TOKEN` - Quick Ask API token
+- `QUICKMCP_AI_VERSION` - Provider API version (example: `2023-06-01`)
+- `QUICKMCP_AI_BASE_URL` - Provider base URL (example: `https://api.anthropic.com/v1`)
 
 ## 🤝 Contributing
 

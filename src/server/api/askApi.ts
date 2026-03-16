@@ -112,9 +112,47 @@ export class AskApi {
     return out;
   }
 
+  private resolveAiConfigFromEnv(): WorkspaceAiConfig | null {
+    const provider = String(
+      process.env.QUICKMCP_AI_PROVIDER
+    ).trim().toLowerCase();
+
+    const model = String(
+      process.env.QUICKMCP_AI_MODEL
+      || ''
+    ).trim();
+
+    const apiToken = String(
+      process.env.QUICKMCP_AI_TOKEN
+      || ''
+    ).trim();
+
+    const apiVersion = String(
+      process.env.QUICKMCP_AI_VERSION
+      || ''
+    ).trim();
+
+    const baseUrl = String(
+      process.env.QUICKMCP_AI_BASE_URL
+      || ''
+    ).trim();
+
+    if (!apiToken || !model) return null;
+
+    return {
+      provider: provider,
+      model,
+      apiToken,
+      apiVersion: apiVersion || undefined,
+      baseUrl: baseUrl || undefined
+    };
+  }
+
   private async resolveAiConfig(store: IDataStore): Promise<WorkspaceAiConfig | null> {
     if (!this.isSaasMode()) return null;
-    return store.getWorkspaceAiConfig('admin');
+    const envConfig = this.resolveAiConfigFromEnv();
+    return envConfig;
+    //return store.getWorkspaceAiConfig('admin');
   }
 
   private normalizeInputSchema(raw: any): Record<string, any> {
