@@ -4120,12 +4120,14 @@ export class MCPServerGenerator {
       method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
       extraProperties?: Record<string, any>;
       requiredExtra?: string[];
+      allowAdditionalProperties?: boolean;
     };
 
     const createInputSchema = (
       endpoint: string,
       extraProperties: Record<string, any> = {},
-      requiredExtra: string[] = []
+      requiredExtra: string[] = [],
+      allowAdditionalProperties = true
     ): Record<string, any> => {
       const pathParams = Array.from(endpoint.matchAll(/\{([a-zA-Z0-9_]+)\}/g)).map((match) => match[1]);
       const pathProperties = pathParams.reduce<Record<string, any>>((acc, paramName) => {
@@ -4135,7 +4137,7 @@ export class MCPServerGenerator {
       const required = [...pathParams, ...requiredExtra];
       return {
         type: 'object',
-        additionalProperties: true,
+        additionalProperties: allowAdditionalProperties,
         properties: {
           ...pathProperties,
           ...extraProperties
@@ -4169,11 +4171,41 @@ export class MCPServerGenerator {
       { name: 'get_execution_tags', description: 'Get execution tags', endpoint: '/executions/{id}/tags', method: 'GET' },
       { name: 'update_execution_tags', description: 'Update tags of an execution', endpoint: '/executions/{id}/tags', method: 'PUT', extraProperties: { tags: { type: 'array', items: { type: 'string' }, description: 'Tag IDs or names' } }, requiredExtra: ['tags'] },
 
-      { name: 'create_workflow', description: 'Create a workflow', endpoint: '/workflows', method: 'POST' },
+      {
+        name: 'create_workflow',
+        description: 'Create a workflow',
+        endpoint: '/workflows',
+        method: 'POST',
+        allowAdditionalProperties: false,
+        extraProperties: {
+          name: { type: 'string', description: 'Workflow name' },
+          nodes: { type: 'array', items: { type: 'object' }, description: 'Workflow nodes array' },
+          connections: { type: 'object', description: 'Workflow connections object' },
+          settings: { type: 'object', description: 'Workflow settings object' },
+          staticData: { type: 'object', description: 'Workflow static data (optional)' },
+          pinData: { type: 'object', description: 'Workflow pinData (optional)' }
+        },
+        requiredExtra: ['name', 'nodes', 'connections', 'settings']
+      },
       { name: 'list_workflows', description: 'Retrieve all workflows', endpoint: '/workflows', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max results (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' }, includeArchived: { type: 'boolean', description: 'Include archived workflows (optional)' }, excludePinnedData: { type: 'boolean', description: 'Exclude pinned data (optional)' } } },
       { name: 'get_workflow', description: 'Retrieve a workflow', endpoint: '/workflows/{id}', method: 'GET', extraProperties: { excludePinnedData: { type: 'boolean', description: 'Exclude pinned data (optional)' } } },
       { name: 'delete_workflow', description: 'Delete a workflow', endpoint: '/workflows/{id}', method: 'DELETE' },
-      { name: 'update_workflow', description: 'Update a workflow', endpoint: '/workflows/{id}', method: 'PUT' },
+      {
+        name: 'update_workflow',
+        description: 'Update a workflow',
+        endpoint: '/workflows/{workflowId}',
+        method: 'PUT',
+        allowAdditionalProperties: false,
+        extraProperties: {
+          name: { type: 'string', description: 'Workflow name' },
+          nodes: { type: 'array', items: { type: 'object' }, description: 'Workflow nodes array' },
+          connections: { type: 'object', description: 'Workflow connections object' },
+          settings: { type: 'object', description: 'Workflow settings object' },
+          staticData: { type: 'object', description: 'Workflow static data (optional)' },
+          pinData: { type: 'object', description: 'Workflow pinData (optional)' }
+        },
+        requiredExtra: ['workflowId', 'name', 'nodes', 'connections', 'settings']
+      },
       { name: 'get_workflow_version', description: 'Retrieve a specific workflow version', endpoint: '/workflows/{id}/{versionId}', method: 'GET' },
       { name: 'activate_workflow', description: 'Publish a workflow', endpoint: '/workflows/{id}/activate', method: 'POST', extraProperties: { versionId: { type: 'string', description: 'Version to publish (optional)' }, versionName: { type: 'string', description: 'Version name (optional)' }, description: { type: 'string', description: 'Version description (optional)' } } },
       { name: 'deactivate_workflow', description: 'Deactivate a workflow', endpoint: '/workflows/{id}/deactivate', method: 'POST' },
@@ -4234,7 +4266,12 @@ export class MCPServerGenerator {
       server_id: serverId,
       name: template.name,
       description: template.description,
-      inputSchema: createInputSchema(template.endpoint, template.extraProperties, template.requiredExtra),
+      inputSchema: createInputSchema(
+        template.endpoint,
+        template.extraProperties,
+        template.requiredExtra,
+        template.allowAdditionalProperties !== false
+      ),
       sqlQuery: JSON.stringify({ ...baseConfig, endpoint: template.endpoint, method: template.method }),
       operation: operationByMethod(template.method)
     }));
