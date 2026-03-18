@@ -6709,6 +6709,7 @@ async function handleNextToStep3() {
     if (selectedType === DataSourceType.N8n) {
         const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
+        const apiPath = document.getElementById('n8nApiPath')?.value?.trim() || '/api/v1';
 
         if (!baseUrl || !apiKey) {
             showError('n8n-parse-error', 'Please enter base URL and API key');
@@ -6719,7 +6720,8 @@ async function handleNextToStep3() {
             type: DataSourceType.N8n,
             name: 'n8n',
             baseUrl,
-            apiKey
+            apiKey,
+            apiPath
         };
         currentParsedData = [{
             tableName: 'n8n_tools',
@@ -9689,6 +9691,7 @@ function toggleDataSourceFields() {
         n8nSection?.classList.remove('hidden');
         const n8nBaseUrlInput = document.getElementById('n8nBaseUrl');
         const n8nApiKeyInput = document.getElementById('n8nApiKey');
+        const n8nApiPathInput = document.getElementById('n8nApiPath');
         if (n8nBaseUrlInput && !n8nBaseUrlInput.dataset.listenerAttached) {
             n8nBaseUrlInput.addEventListener('input', updateWizardNavigation);
             n8nBaseUrlInput.dataset.listenerAttached = 'true';
@@ -9696,6 +9699,10 @@ function toggleDataSourceFields() {
         if (n8nApiKeyInput && !n8nApiKeyInput.dataset.listenerAttached) {
             n8nApiKeyInput.addEventListener('input', updateWizardNavigation);
             n8nApiKeyInput.dataset.listenerAttached = 'true';
+        }
+        if (n8nApiPathInput && !n8nApiPathInput.dataset.listenerAttached) {
+            n8nApiPathInput.addEventListener('input', updateWizardNavigation);
+            n8nApiPathInput.dataset.listenerAttached = 'true';
         }
     } else if (selectedType === DataSourceType.Supabase) {
         supabaseSection?.classList.remove('hidden');

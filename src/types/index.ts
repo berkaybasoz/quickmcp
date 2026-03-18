@@ -551,6 +551,7 @@ export interface HuggingFaceConnection {
 export interface N8nConnection {
   baseUrl: string;
   apiKey: string;
+  apiPath?: string;
   type: DataSourceType.N8n;
 }
 
@@ -1128,6 +1129,7 @@ export interface N8nGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.N8n;
   baseUrl: string;
   apiKey: string;
+  apiPath?: string;
 }
 
 export interface SupabaseGeneratorConfig extends BaseGeneratorConfig {
@@ -2100,12 +2102,14 @@ export function createHuggingFaceGeneratorConfig(
 
 export function createN8nGeneratorConfig(
   baseUrl: string,
-  apiKey: string
+  apiKey: string,
+  apiPath?: string
 ): N8nGeneratorConfig {
   return {
     type: DataSourceType.N8n,
     baseUrl,
-    apiKey
+    apiKey,
+    apiPath
   };
 }
 

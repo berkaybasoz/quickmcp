@@ -467,7 +467,8 @@ export class GenerateApi {
           parsedForGen = {};
           dbConfForGen = createN8nGeneratorConfig(
             dataSource.baseUrl,
-            dataSource.apiKey
+            dataSource.apiKey,
+            dataSource.apiPath
           );
         } else if (dataSource?.type === DataSourceType.Supabase) {
           parsedForGen = {};

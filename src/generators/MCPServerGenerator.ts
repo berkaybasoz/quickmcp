@@ -4098,9 +4098,9 @@ export class MCPServerGenerator {
   }
 
   private generateToolsForN8n(serverId: string, sourceConfig: any): ToolDefinition[] {
-    const { baseUrl, apiKey } = sourceConfig;
+    const { baseUrl, apiKey, apiPath } = sourceConfig;
     const tools: ToolDefinition[] = [];
-    const baseConfig = { type: DataSourceType.N8n, baseUrl, apiKey };
+    const baseConfig = { type: DataSourceType.N8n, baseUrl, apiKey, apiPath };
 
     tools.push({
       server_id: serverId,

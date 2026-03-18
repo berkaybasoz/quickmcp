@@ -2049,7 +2049,7 @@ export class ParseApi {
                 }
             });
         } else if (type === DataSourceType.N8n) {
-            const { n8nBaseUrl, n8nApiKey } = req.body as any;
+            const { n8nBaseUrl, n8nApiKey, n8nApiPath } = req.body as any;
     
             if (!n8nBaseUrl || !n8nApiKey) {
                 throw new Error('Missing n8n base URL or API key');
@@ -2059,7 +2059,8 @@ export class ParseApi {
                 type: DataSourceType.N8n,
                 name: 'n8n',
                 baseUrl: n8nBaseUrl,
-                apiKey: n8nApiKey
+                apiKey: n8nApiKey,
+                apiPath: String(n8nApiPath || '/api/v1').trim() || '/api/v1'
             };
     
             const parsedData = [{

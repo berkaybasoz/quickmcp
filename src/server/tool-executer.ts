@@ -4116,21 +4116,50 @@ export class ToolExecuter {
   }
 
   private async executeN8nCall(queryConfig: any, args: any): Promise<any> {
-    const { baseUrl, apiKey, endpoint, method } = queryConfig;
+    const { baseUrl, apiKey, apiPath, endpoint, method } = queryConfig;
     if (!baseUrl || !apiKey || !endpoint) {
       return { success: false, error: 'Missing n8n baseUrl/apiKey/endpoint', data: [], rowCount: 0 };
     }
 
-    let url = `${String(baseUrl).replace(/\/$/, '')}${endpoint}`;
-    if (args.workflow_id && url.includes('{workflow_id}')) {
-      url = url.replace('{workflow_id}', encodeURIComponent(String(args.workflow_id)));
-    } else if (url.includes('{workflow_id}')) {
+    const endpointRaw = String(endpoint || '');
+    if (endpointRaw.includes('{workflow_id}') && !args.workflow_id) {
       return { success: false, error: 'Missing workflow_id', data: [], rowCount: 0 };
     }
+
+    const normalizeApiPath = (rawPath: string): string => {
+      const trimmed = String(rawPath || '').trim();
+      if (!trimmed) return '';
+      const withLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+      return withLeading.replace(/\/+$/, '');
+    };
+
+    const baseClean = String(baseUrl || '').trim().replace(/\/+$/, '');
+    let apiPrefix = normalizeApiPath(String(apiPath || '').trim());
+    if (!apiPrefix) {
+      // Default n8n REST prefix when caller only provides host (e.g. https://example.com).
+      const lowerBase = baseClean.toLowerCase();
+      apiPrefix = /\/api\/v\d+$/i.test(lowerBase) || lowerBase.includes('/api/')
+        ? ''
+        : '/api/v1';
+    }
+    if (apiPrefix && baseClean.toLowerCase().endsWith(apiPrefix.toLowerCase())) {
+      apiPrefix = '';
+    }
+
+    let resolvedEndpoint = endpointRaw;
+    if (args.workflow_id && resolvedEndpoint.includes('{workflow_id}')) {
+      resolvedEndpoint = resolvedEndpoint.replace('{workflow_id}', encodeURIComponent(String(args.workflow_id)));
+    }
+    if (!resolvedEndpoint.startsWith('/')) {
+      resolvedEndpoint = `/${resolvedEndpoint}`;
+    }
+
+    let url = `${baseClean}${apiPrefix}${resolvedEndpoint}`;
 
     const methodUpper = (method || 'GET').toUpperCase();
     const headers: Record<string, string> = {
       'X-N8N-API-KEY': String(apiKey).trim(),
+      'Accept': 'application/json',
       'Content-Type': 'application/json'
     };
 
@@ -4160,18 +4189,24 @@ export class ToolExecuter {
     logger.error(`🧩 n8n API call: ${methodUpper} ${url}`);
 
     const response = await fetch(url, { method: methodUpper, headers, body });
-    const responseData: any = await response.json().catch(() => null);
+    const rawText = await response.text().catch(() => '');
+    const parsedJson = (() => {
+      if (!rawText) return null;
+      try { return JSON.parse(rawText); } catch { return null; }
+    })();
 
     if (!response.ok) {
       return {
         success: false,
         error: `n8n API error: ${response.status}`,
-        data: [{ status: response.status, message: responseData || response.statusText }],
+        data: [{ status: response.status, message: parsedJson || rawText || response.statusText }],
         rowCount: 1
       };
     }
 
-    const dataArray = Array.isArray(responseData) ? responseData : (responseData ? [responseData] : []);
+    const dataArray = Array.isArray(parsedJson)
+      ? parsedJson
+      : (Array.isArray(parsedJson?.data) ? parsedJson.data : (parsedJson ? [parsedJson] : []));
     return { success: true, data: dataArray, rowCount: dataArray.length };
   }
 
