@@ -169,55 +169,141 @@ export class AskApi {
       return { type: 'object', properties: {}, additionalProperties: true };
     }
 
-    const sanitizeNode = (node: any): Record<string, any> => {
-      if (!node || typeof node !== 'object' || Array.isArray(node)) return {};
+    const validTypes = new Set(['null', 'boolean', 'object', 'array', 'number', 'integer', 'string']);
+    const normalizeTypeValue = (value: any): string | string[] | undefined => {
+      if (typeof value === 'string') {
+        const v = value.trim().toLowerCase();
+        return validTypes.has(v) ? v : undefined;
+      }
+      if (Array.isArray(value)) {
+        const list = Array.from(
+          new Set(
+            value
+              .map((item) => String(item || '').trim().toLowerCase())
+              .filter((item) => validTypes.has(item))
+          )
+        );
+        if (list.length === 0) return undefined;
+        if (list.length === 1) return list[0];
+        return list;
+      }
+      return undefined;
+    };
 
-      const out: Record<string, any> = { ...node };
+    const ensureObject = (value: any): Record<string, any> =>
+      value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+
+    const coerceString = (value: any): string | undefined =>
+      typeof value === 'string' ? value : undefined;
+
+    const coerceBoolean = (value: any): boolean | undefined =>
+      typeof value === 'boolean' ? value : undefined;
+
+    const coerceNumber = (value: any): number | undefined =>
+      typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+    const coerceNonNegativeInteger = (value: any): number | undefined =>
+      (typeof value === 'number' && Number.isInteger(value) && value >= 0) ? value : undefined;
+
+    const sanitizeNode = (node: any): Record<string, any> => {
+      if (!node || typeof node !== 'object') return {};
+      if (Array.isArray(node)) return {};
+
+      const out: Record<string, any> = {};
 
       // Avoid hard-binding to draft-07 in Anthropic tool validation.
-      delete out.$schema;
-      delete out.$id;
+      const normalizedType = normalizeTypeValue((node as any).type);
+      if (typeof normalizedType !== 'undefined') out.type = normalizedType;
 
-      const typeValue = out.type;
-      const typeList = Array.isArray(typeValue)
-        ? typeValue.map((v) => String(v || '').toLowerCase())
-        : [String(typeValue || '').toLowerCase()];
+      const typeList = Array.isArray(out.type) ? out.type : [out.type];
       const hasArrayType = typeList.includes('array');
       const hasObjectType = typeList.includes('object');
 
+      const title = coerceString((node as any).title);
+      if (typeof title !== 'undefined') out.title = title;
+      const description = coerceString((node as any).description);
+      if (typeof description !== 'undefined') out.description = description;
+      const format = coerceString((node as any).format);
+      if (typeof format !== 'undefined') out.format = format;
+      const pattern = coerceString((node as any).pattern);
+      if (typeof pattern !== 'undefined') out.pattern = pattern;
+
+      const minLength = coerceNonNegativeInteger((node as any).minLength);
+      if (typeof minLength !== 'undefined') out.minLength = minLength;
+      const maxLength = coerceNonNegativeInteger((node as any).maxLength);
+      if (typeof maxLength !== 'undefined') out.maxLength = maxLength;
+      const minimum = coerceNumber((node as any).minimum);
+      if (typeof minimum !== 'undefined') out.minimum = minimum;
+      const maximum = coerceNumber((node as any).maximum);
+      if (typeof maximum !== 'undefined') out.maximum = maximum;
+      const exclusiveMinimum = coerceNumber((node as any).exclusiveMinimum);
+      if (typeof exclusiveMinimum !== 'undefined') out.exclusiveMinimum = exclusiveMinimum;
+      const exclusiveMaximum = coerceNumber((node as any).exclusiveMaximum);
+      if (typeof exclusiveMaximum !== 'undefined') out.exclusiveMaximum = exclusiveMaximum;
+      const multipleOf = coerceNumber((node as any).multipleOf);
+      if (typeof multipleOf !== 'undefined' && multipleOf > 0) out.multipleOf = multipleOf;
+      const minItems = coerceNonNegativeInteger((node as any).minItems);
+      if (typeof minItems !== 'undefined') out.minItems = minItems;
+      const maxItems = coerceNonNegativeInteger((node as any).maxItems);
+      if (typeof maxItems !== 'undefined') out.maxItems = maxItems;
+      const uniqueItems = coerceBoolean((node as any).uniqueItems);
+      if (typeof uniqueItems !== 'undefined') out.uniqueItems = uniqueItems;
+      const minProperties = coerceNonNegativeInteger((node as any).minProperties);
+      if (typeof minProperties !== 'undefined') out.minProperties = minProperties;
+      const maxProperties = coerceNonNegativeInteger((node as any).maxProperties);
+      if (typeof maxProperties !== 'undefined') out.maxProperties = maxProperties;
+
+      if (Array.isArray((node as any).enum) && (node as any).enum.length > 0) out.enum = (node as any).enum;
+      if (Object.prototype.hasOwnProperty.call(node as any, 'const')) out.const = (node as any).const;
+      if (Object.prototype.hasOwnProperty.call(node as any, 'default')) out.default = (node as any).default;
+      if (Array.isArray((node as any).examples)) out.examples = (node as any).examples;
+
       if (hasArrayType) {
-        if (Array.isArray(out.items)) {
-          out.items = sanitizeNode(out.items[0] || {});
-        } else if (!out.items || typeof out.items !== 'object' || Array.isArray(out.items)) {
+        const rawItems = (node as any).items;
+        if (Array.isArray(rawItems)) {
+          out.items = sanitizeNode(rawItems[0] || {});
+        } else if (!rawItems || typeof rawItems !== 'object' || Array.isArray(rawItems)) {
           out.items = {};
         } else {
-          out.items = sanitizeNode(out.items);
+          out.items = sanitizeNode(rawItems);
+        }
+        if (Array.isArray((node as any).prefixItems)) {
+          out.prefixItems = (node as any).prefixItems.map((v: any) => sanitizeNode(v));
         }
       }
 
       if (hasObjectType) {
-        if (!out.properties || typeof out.properties !== 'object' || Array.isArray(out.properties)) {
-          out.properties = {};
-        }
+        const rawProps = ensureObject((node as any).properties);
         const nextProps: Record<string, any> = {};
-        for (const [key, value] of Object.entries(out.properties)) {
+        for (const [key, value] of Object.entries(rawProps)) {
           nextProps[key] = sanitizeNode(value);
         }
         out.properties = nextProps;
-        if (typeof out.additionalProperties === 'object' && out.additionalProperties) {
-          out.additionalProperties = sanitizeNode(out.additionalProperties);
+
+        const rawAdditional = (node as any).additionalProperties;
+        if (typeof rawAdditional === 'boolean') {
+          out.additionalProperties = rawAdditional;
+        } else if (rawAdditional && typeof rawAdditional === 'object' && !Array.isArray(rawAdditional)) {
+          out.additionalProperties = sanitizeNode(rawAdditional);
         }
+
+        const requiredRaw = Array.isArray((node as any).required)
+          ? (node as any).required.map((v: any) => String(v || '').trim()).filter((v: string) => !!v)
+          : [];
+        const requiredSet = new Set(requiredRaw.filter((v: string) => Object.prototype.hasOwnProperty.call(nextProps, v)));
+        if (requiredSet.size > 0) out.required = Array.from(requiredSet);
       }
 
-      if (Array.isArray(out.oneOf)) out.oneOf = out.oneOf.map((v: any) => sanitizeNode(v));
-      if (Array.isArray(out.anyOf)) out.anyOf = out.anyOf.map((v: any) => sanitizeNode(v));
-      if (Array.isArray(out.allOf)) out.allOf = out.allOf.map((v: any) => sanitizeNode(v));
-      if (Array.isArray(out.prefixItems)) out.prefixItems = out.prefixItems.map((v: any) => sanitizeNode(v));
-
-      if (Array.isArray(out.required)) {
-        out.required = out.required.map((v: any) => String(v)).filter((v: string) => !!v);
-      } else if (typeof out.required !== 'undefined') {
-        out.required = [];
+      if (Array.isArray((node as any).oneOf)) {
+        const oneOf = (node as any).oneOf.map((v: any) => sanitizeNode(v)).filter((v: any) => Object.keys(v).length > 0);
+        if (oneOf.length > 0) out.oneOf = oneOf;
+      }
+      if (Array.isArray((node as any).anyOf)) {
+        const anyOf = (node as any).anyOf.map((v: any) => sanitizeNode(v)).filter((v: any) => Object.keys(v).length > 0);
+        if (anyOf.length > 0) out.anyOf = anyOf;
+      }
+      if (Array.isArray((node as any).allOf)) {
+        const allOf = (node as any).allOf.map((v: any) => sanitizeNode(v)).filter((v: any) => Object.keys(v).length > 0);
+        if (allOf.length > 0) out.allOf = allOf;
       }
 
       return out;
@@ -514,7 +600,9 @@ export class AskApi {
     ].join(' ');
 
     const baseUrl = String(aiConfig.baseUrl || DEFAULT_ANTHROPIC_BASE_URL).replace(/\/+$/, '');
-    const { anthropicTools, toolLookup } = this.buildAnthropicTools(selectedTools);
+    const built = this.buildAnthropicTools(selectedTools);
+    let anthropicTools = built.anthropicTools;
+    const toolLookup = built.toolLookup;
     const messages: any[] = conversation.map((item) => ({
       role: item.role,
       content: [{ type: 'text', text: item.content }]
@@ -548,6 +636,16 @@ export class AskApi {
         const payload: any = await response.json().catch(() => ({} as any));
         if (!response.ok) {
           const errorMessage = String(payload?.error?.message || payload?.error || `Claude API returned ${response.status}`);
+          const invalidSchemaMatch = errorMessage.match(/tools\.(\d+)\.custom\.input_schema/i);
+          if (invalidSchemaMatch) {
+            const badIndex = Number.parseInt(invalidSchemaMatch[1], 10);
+            if (Number.isInteger(badIndex) && badIndex >= 0 && badIndex < anthropicTools.length) {
+              const removed = anthropicTools[badIndex];
+              anthropicTools = anthropicTools.filter((_tool, idx) => idx !== badIndex);
+              logger.warn(`[ask] dropped invalid tool schema before retry: idx=${badIndex} name=${removed?.name || 'unknown'}`);
+              continue;
+            }
+          }
           throw new Error(errorMessage);
         }
 

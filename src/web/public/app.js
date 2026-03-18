@@ -584,6 +584,24 @@ function quickAskNowIso() {
     return new Date().toISOString();
 }
 
+function quickAskIsSameDay(a, b) {
+    if (!(a instanceof Date) || Number.isNaN(a.getTime())) return false;
+    if (!(b instanceof Date) || Number.isNaN(b.getTime())) return false;
+    return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+}
+
+function quickAskFormatMessageMeta(isoValue) {
+    const date = new Date(String(isoValue || ''));
+    if (Number.isNaN(date.getTime())) return '';
+    const now = new Date();
+    const timeText = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (quickAskIsSameDay(date, now)) return timeText;
+    const dateText = date.toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' });
+    return `${dateText} ${timeText}`;
+}
+
 function quickAskCreateId(prefix = 'qa') {
     return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -1038,6 +1056,7 @@ function renderQuickAskMessages() {
             ? 'bg-slate-900 text-white border border-slate-800'
             : 'bg-white text-slate-800 border border-slate-200';
         const wrapper = isUser ? 'justify-end' : 'justify-start';
+        const metaText = isUser ? quickAskFormatMessageMeta(msg?.createdAt) : '';
         const contentHtml = isUser
             ? `<p class="text-sm leading-6 whitespace-pre-wrap">${escapeHtml(String(msg.content || ''))}</p>`
             : `<div class="qa-markdown text-sm">${msg.pending ? `
@@ -1048,11 +1067,29 @@ function renderQuickAskMessages() {
                     </span>
                 </div>
             ` : (renderQuickAskAnswerMarkdown(String(msg.content || '')) || '<p class="my-2">No response</p>')}</div>`;
+        const userActionButtons = isUser ? `
+            <div class="absolute -top-2 right-2 hidden items-center gap-1 rounded-md border border-slate-200 bg-white p-1 shadow-sm group-hover:flex group-focus-within:flex">
+                <button type="button" data-quick-ask-msg-action="retry" data-quick-ask-message-id="${msg.id}" title="Retry" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                    <i class="fas fa-rotate-right text-[10px]"></i>
+                </button>
+                <button type="button" data-quick-ask-msg-action="edit" data-quick-ask-message-id="${msg.id}" title="Edit" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                    <i class="fas fa-pen text-[10px]"></i>
+                </button>
+                <button type="button" data-quick-ask-msg-action="copy" data-quick-ask-message-id="${msg.id}" title="Copy" class="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                    <i class="fas fa-copy text-[10px]"></i>
+                </button>
+            </div>
+        ` : '';
+        const userMeta = isUser && metaText
+            ? `<div class="mt-1.5 hidden items-center justify-end group-hover:flex group-focus-within:flex"><span class="text-[11px] text-slate-300">${escapeHtml(metaText)}</span></div>`
+            : '';
 
         return `
             <div class="flex ${wrapper} w-full">
-                <div class="max-w-[84%] rounded-2xl px-4 py-3 shadow-sm ${bubbleBase}">
+                <div class="group relative max-w-[84%] rounded-2xl px-4 py-3 shadow-sm ${bubbleBase}">
                     ${contentHtml}
+                    ${userMeta}
+                    ${userActionButtons}
                 </div>
             </div>
         `;
@@ -1276,6 +1313,45 @@ function appendQuickAskMessage(role, content, pending = false) {
     return msg.id;
 }
 
+function quickAskSetInputValue(value) {
+    const input = document.getElementById('quickAskInput');
+    if (!(input instanceof HTMLTextAreaElement)) return;
+    input.value = String(value || '');
+    input.focus();
+    const endPos = input.value.length;
+    try {
+        input.setSelectionRange(endPos, endPos);
+    } catch {}
+}
+
+async function quickAskCopyText(value) {
+    const text = String(value || '');
+    if (!text) return;
+    try {
+        if (navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+    } catch {}
+
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.setAttribute('readonly', 'true');
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.select();
+    try { document.execCommand('copy'); } catch {}
+    temp.remove();
+}
+
+function quickAskFindMessageById(chat, messageId) {
+    if (!chat || !Array.isArray(chat.messages)) return null;
+    const id = String(messageId || '').trim();
+    if (!id) return null;
+    return chat.messages.find((item) => String(item?.id || '') === id) || null;
+}
+
 function updateQuickAskMessage(messageId, content, pending = false) {
     const chat = getCurrentQuickAskChat();
     if (!chat) return;
@@ -1441,13 +1517,15 @@ async function loadQuickAskContext() {
     }
 }
 
-async function sendQuickAskPrompt() {
+async function sendQuickAskPrompt(promptOverride = '') {
     const input = document.getElementById('quickAskInput');
     const sendBtn = document.getElementById('quickAskSendBtn');
     if (!(input instanceof HTMLTextAreaElement) || !(sendBtn instanceof HTMLButtonElement)) return;
     if (quickAskBusy) return;
 
-    const prompt = input.value.trim();
+    const overrideText = String(promptOverride || '');
+    const usingOverride = overrideText.trim().length > 0;
+    const prompt = usingOverride ? overrideText.trim() : input.value.trim();
     if (!prompt) {
         window.utils?.showToast?.('Please enter a prompt', 'error');
         return;
@@ -1460,7 +1538,7 @@ async function sendQuickAskPrompt() {
     const selectedServerIdsSnapshot = Array.from(quickAskSelectedServerIds);
     const selectedToolIdsSnapshot = Array.from(quickAskSelectedToolIds);
     const userMessage = prompt;
-    input.value = '';
+    if (!usingOverride) input.value = '';
 
     if (!getCurrentQuickAskChat()) {
         quickAskCreateNewChat({
@@ -1534,6 +1612,38 @@ function initializeQuickAsk() {
                 sendQuickAskPrompt();
             }
         });
+    }
+    const messageList = document.getElementById('quickAskMessages');
+    if (messageList && messageList.dataset.listenerAttached !== 'true') {
+        messageList.addEventListener('click', async (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            const actionBtn = target.closest('button[data-quick-ask-msg-action][data-quick-ask-message-id]');
+            if (!actionBtn) return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const action = String(actionBtn.getAttribute('data-quick-ask-msg-action') || '').trim();
+            const messageId = String(actionBtn.getAttribute('data-quick-ask-message-id') || '').trim();
+            const chat = getCurrentQuickAskChat();
+            const msg = quickAskFindMessageById(chat, messageId);
+            if (!msg || msg.role !== 'user') return;
+
+            if (action === 'copy') {
+                await quickAskCopyText(msg.content);
+                window.utils?.showToast?.('Copied', 'success');
+                return;
+            }
+            if (action === 'edit') {
+                quickAskSetInputValue(msg.content);
+                return;
+            }
+            if (action === 'retry') {
+                if (quickAskBusy) return;
+                await sendQuickAskPrompt(msg.content);
+            }
+        });
+        messageList.dataset.listenerAttached = 'true';
     }
 
     mountQuickAskSidebarSectionWithRetry();
