@@ -169,7 +169,61 @@ export class AskApi {
       return { type: 'object', properties: {}, additionalProperties: true };
     }
 
-    const normalized: Record<string, any> = { ...parsed };
+    const sanitizeNode = (node: any): Record<string, any> => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return {};
+
+      const out: Record<string, any> = { ...node };
+
+      // Avoid hard-binding to draft-07 in Anthropic tool validation.
+      delete out.$schema;
+      delete out.$id;
+
+      const typeValue = out.type;
+      const typeList = Array.isArray(typeValue)
+        ? typeValue.map((v) => String(v || '').toLowerCase())
+        : [String(typeValue || '').toLowerCase()];
+      const hasArrayType = typeList.includes('array');
+      const hasObjectType = typeList.includes('object');
+
+      if (hasArrayType) {
+        if (Array.isArray(out.items)) {
+          out.items = sanitizeNode(out.items[0] || {});
+        } else if (!out.items || typeof out.items !== 'object' || Array.isArray(out.items)) {
+          out.items = {};
+        } else {
+          out.items = sanitizeNode(out.items);
+        }
+      }
+
+      if (hasObjectType) {
+        if (!out.properties || typeof out.properties !== 'object' || Array.isArray(out.properties)) {
+          out.properties = {};
+        }
+        const nextProps: Record<string, any> = {};
+        for (const [key, value] of Object.entries(out.properties)) {
+          nextProps[key] = sanitizeNode(value);
+        }
+        out.properties = nextProps;
+        if (typeof out.additionalProperties === 'object' && out.additionalProperties) {
+          out.additionalProperties = sanitizeNode(out.additionalProperties);
+        }
+      }
+
+      if (Array.isArray(out.oneOf)) out.oneOf = out.oneOf.map((v: any) => sanitizeNode(v));
+      if (Array.isArray(out.anyOf)) out.anyOf = out.anyOf.map((v: any) => sanitizeNode(v));
+      if (Array.isArray(out.allOf)) out.allOf = out.allOf.map((v: any) => sanitizeNode(v));
+      if (Array.isArray(out.prefixItems)) out.prefixItems = out.prefixItems.map((v: any) => sanitizeNode(v));
+
+      if (Array.isArray(out.required)) {
+        out.required = out.required.map((v: any) => String(v)).filter((v: string) => !!v);
+      } else if (typeof out.required !== 'undefined') {
+        out.required = [];
+      }
+
+      return out;
+    };
+
+    const normalized: Record<string, any> = sanitizeNode(parsed);
     if (String(normalized.type || '').toLowerCase() !== 'object') normalized.type = 'object';
     if (!normalized.properties || typeof normalized.properties !== 'object' || Array.isArray(normalized.properties)) {
       normalized.properties = {};
