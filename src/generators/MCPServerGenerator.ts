@@ -4099,85 +4099,145 @@ export class MCPServerGenerator {
 
   private generateToolsForN8n(serverId: string, sourceConfig: any): ToolDefinition[] {
     const { baseUrl, apiKey, apiPath } = sourceConfig;
-    const tools: ToolDefinition[] = [];
     const baseConfig = { type: DataSourceType.N8n, baseUrl, apiKey, apiPath };
+    const defaultEnabledToolNames = new Set([
+      'list_workflows',
+      'get_workflow',
+      'activate_workflow',
+      'deactivate_workflow',
+      'list_executions'
+    ]);
+    const requestedToolNames = Array.isArray(sourceConfig?.enabledTools)
+      ? sourceConfig.enabledTools
+          .map((value: unknown) => String(value || '').trim())
+          .filter((value: string) => value.length > 0)
+      : [];
 
-    tools.push({
-      server_id: serverId,
-      name: 'list_workflows',
-      description: 'List workflows',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', description: 'Max results (optional)' },
-          offset: { type: 'number', description: 'Offset (optional)' }
-        }
-      },
-      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows', method: 'GET' }),
-      operation: 'SELECT'
-    });
+    type N8nToolTemplate = {
+      name: string;
+      description: string;
+      endpoint: string;
+      method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+      extraProperties?: Record<string, any>;
+      requiredExtra?: string[];
+    };
 
-    tools.push({
-      server_id: serverId,
-      name: 'get_workflow',
-      description: 'Get workflow details',
-      inputSchema: {
+    const createInputSchema = (
+      endpoint: string,
+      extraProperties: Record<string, any> = {},
+      requiredExtra: string[] = []
+    ): Record<string, any> => {
+      const pathParams = Array.from(endpoint.matchAll(/\{([a-zA-Z0-9_]+)\}/g)).map((match) => match[1]);
+      const pathProperties = pathParams.reduce<Record<string, any>>((acc, paramName) => {
+        acc[paramName] = { type: 'string', description: `${paramName} path parameter` };
+        return acc;
+      }, {});
+      const required = [...pathParams, ...requiredExtra];
+      return {
         type: 'object',
+        additionalProperties: true,
         properties: {
-          workflow_id: { type: 'string', description: 'Workflow ID' }
+          ...pathProperties,
+          ...extraProperties
         },
-        required: ['workflow_id']
-      },
-      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}', method: 'GET' }),
-      operation: 'SELECT'
-    });
+        ...(required.length ? { required } : {})
+      };
+    };
 
-    tools.push({
+    const operationByMethod = (method: N8nToolTemplate['method']): ToolDefinition['operation'] => {
+      if (method === 'GET') return 'SELECT';
+      if (method === 'POST') return 'INSERT';
+      if (method === 'DELETE') return 'DELETE';
+      return 'UPDATE';
+    };
+
+    const templates: N8nToolTemplate[] = [
+      { name: 'list_users', description: 'Retrieve all users', endpoint: '/users', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max results (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' } } },
+      { name: 'create_users', description: 'Create multiple users', endpoint: '/users', method: 'POST', extraProperties: { users: { type: 'array', items: { type: 'object' }, description: 'Users payload (optional)' } } },
+      { name: 'get_user', description: 'Get user by ID/Email', endpoint: '/users/{id}', method: 'GET' },
+      { name: 'delete_user', description: 'Delete a user', endpoint: '/users/{id}', method: 'DELETE' },
+      { name: 'change_user_role', description: "Change a user's global role", endpoint: '/users/{id}/role', method: 'PATCH', extraProperties: { role: { type: 'string', description: 'Target role' } }, requiredExtra: ['role'] },
+
+      { name: 'generate_audit', description: 'Generate an audit', endpoint: '/audit', method: 'POST', extraProperties: { additionalOptions: { type: 'object', description: 'Audit options (optional)' } } },
+
+      { name: 'list_executions', description: 'Retrieve all executions', endpoint: '/executions', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max results (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' }, status: { type: 'string', description: 'Status filter (optional)' }, workflowId: { type: 'string', description: 'Workflow ID filter (optional)' } } },
+      { name: 'get_execution', description: 'Retrieve an execution', endpoint: '/executions/{id}', method: 'GET' },
+      { name: 'delete_execution', description: 'Delete an execution', endpoint: '/executions/{id}', method: 'DELETE' },
+      { name: 'retry_execution', description: 'Retry an execution', endpoint: '/executions/{id}/retry', method: 'POST', extraProperties: { loadWorkflow: { type: 'boolean', description: 'Retry with latest workflow version (optional)' } } },
+      { name: 'stop_execution', description: 'Stop an execution', endpoint: '/executions/{id}/stop', method: 'POST' },
+      { name: 'stop_multiple_executions', description: 'Stop multiple executions', endpoint: '/executions/stop', method: 'POST', extraProperties: { statuses: { type: 'array', items: { type: 'string' }, description: 'Execution statuses to stop (optional)' }, workflowId: { type: 'string', description: 'Workflow ID filter (optional)' }, startedAfter: { type: 'string', description: 'ISO timestamp filter (optional)' }, startedBefore: { type: 'string', description: 'ISO timestamp filter (optional)' } } },
+      { name: 'get_execution_tags', description: 'Get execution tags', endpoint: '/executions/{id}/tags', method: 'GET' },
+      { name: 'update_execution_tags', description: 'Update tags of an execution', endpoint: '/executions/{id}/tags', method: 'PUT', extraProperties: { tags: { type: 'array', items: { type: 'string' }, description: 'Tag IDs or names' } }, requiredExtra: ['tags'] },
+
+      { name: 'create_workflow', description: 'Create a workflow', endpoint: '/workflows', method: 'POST' },
+      { name: 'list_workflows', description: 'Retrieve all workflows', endpoint: '/workflows', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max results (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' }, includeArchived: { type: 'boolean', description: 'Include archived workflows (optional)' }, excludePinnedData: { type: 'boolean', description: 'Exclude pinned data (optional)' } } },
+      { name: 'get_workflow', description: 'Retrieve a workflow', endpoint: '/workflows/{id}', method: 'GET', extraProperties: { excludePinnedData: { type: 'boolean', description: 'Exclude pinned data (optional)' } } },
+      { name: 'delete_workflow', description: 'Delete a workflow', endpoint: '/workflows/{id}', method: 'DELETE' },
+      { name: 'update_workflow', description: 'Update a workflow', endpoint: '/workflows/{id}', method: 'PUT' },
+      { name: 'get_workflow_version', description: 'Retrieve a specific workflow version', endpoint: '/workflows/{id}/{versionId}', method: 'GET' },
+      { name: 'activate_workflow', description: 'Publish a workflow', endpoint: '/workflows/{id}/activate', method: 'POST', extraProperties: { versionId: { type: 'string', description: 'Version to publish (optional)' }, versionName: { type: 'string', description: 'Version name (optional)' }, description: { type: 'string', description: 'Version description (optional)' } } },
+      { name: 'deactivate_workflow', description: 'Deactivate a workflow', endpoint: '/workflows/{id}/deactivate', method: 'POST' },
+      { name: 'transfer_workflow', description: 'Transfer a workflow to another project', endpoint: '/workflows/{id}/transfer', method: 'PUT', extraProperties: { destinationProjectId: { type: 'string', description: 'Destination project ID' } }, requiredExtra: ['destinationProjectId'] },
+      { name: 'get_workflow_tags', description: 'Get workflow tags', endpoint: '/workflows/{id}/tags', method: 'GET' },
+      { name: 'update_workflow_tags', description: 'Update tags of a workflow', endpoint: '/workflows/{id}/tags', method: 'PUT', extraProperties: { tags: { type: 'array', items: { type: 'string' }, description: 'Tag IDs or names' } }, requiredExtra: ['tags'] },
+
+      { name: 'list_credentials', description: 'List credentials', endpoint: '/credentials', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max results (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' } } },
+      { name: 'create_credential', description: 'Create a credential', endpoint: '/credentials', method: 'POST' },
+      { name: 'update_credential', description: 'Update credential by ID', endpoint: '/credentials/{id}', method: 'PATCH' },
+      { name: 'delete_credential', description: 'Delete credential by ID', endpoint: '/credentials/{id}', method: 'DELETE' },
+      { name: 'get_credential_schema', description: 'Show credential data schema', endpoint: '/credentials/schema/{credentialTypeName}', method: 'GET' },
+      { name: 'transfer_credential', description: 'Transfer a credential to another project', endpoint: '/credentials/{id}/transfer', method: 'PUT', extraProperties: { destinationProjectId: { type: 'string', description: 'Destination project ID' } }, requiredExtra: ['destinationProjectId'] },
+
+      { name: 'create_tag', description: 'Create a tag', endpoint: '/tags', method: 'POST' },
+      { name: 'list_tags', description: 'Retrieve all tags', endpoint: '/tags', method: 'GET' },
+      { name: 'get_tag', description: 'Retrieve a tag', endpoint: '/tags/{id}', method: 'GET' },
+      { name: 'delete_tag', description: 'Delete a tag', endpoint: '/tags/{id}', method: 'DELETE' },
+      { name: 'update_tag', description: 'Update a tag', endpoint: '/tags/{id}', method: 'PUT' },
+
+      { name: 'source_control_pull', description: 'Pull changes from source control', endpoint: '/source-control/pull', method: 'POST' },
+
+      { name: 'create_variable', description: 'Create a variable', endpoint: '/variables', method: 'POST' },
+      { name: 'list_variables', description: 'Retrieve variables', endpoint: '/variables', method: 'GET' },
+      { name: 'delete_variable', description: 'Delete a variable', endpoint: '/variables/{id}', method: 'DELETE' },
+      { name: 'update_variable', description: 'Update a variable', endpoint: '/variables/{id}', method: 'PUT' },
+
+      { name: 'list_data_tables', description: 'List all data tables', endpoint: '/data-tables', method: 'GET' },
+      { name: 'create_data_table', description: 'Create a new data table', endpoint: '/data-tables', method: 'POST' },
+      { name: 'get_data_table', description: 'Get a data table', endpoint: '/data-tables/{dataTableId}', method: 'GET' },
+      { name: 'update_data_table', description: 'Update a data table', endpoint: '/data-tables/{dataTableId}', method: 'PATCH' },
+      { name: 'delete_data_table', description: 'Delete a data table', endpoint: '/data-tables/{dataTableId}', method: 'DELETE' },
+      { name: 'list_data_table_rows', description: 'Retrieve rows from a data table', endpoint: '/data-tables/{dataTableId}/rows', method: 'GET', extraProperties: { limit: { type: 'number', description: 'Max rows (optional)' }, cursor: { type: 'string', description: 'Cursor (optional)' } } },
+      { name: 'insert_data_table_rows', description: 'Insert rows into a data table', endpoint: '/data-tables/{dataTableId}/rows', method: 'POST' },
+      { name: 'update_data_table_rows', description: 'Update rows in a data table', endpoint: '/data-tables/{dataTableId}/rows/update', method: 'PATCH' },
+      { name: 'upsert_data_table_rows', description: 'Upsert rows in a data table', endpoint: '/data-tables/{dataTableId}/rows/upsert', method: 'POST' },
+      { name: 'delete_data_table_rows', description: 'Delete rows from a data table', endpoint: '/data-tables/{dataTableId}/rows/delete', method: 'DELETE' },
+
+      { name: 'create_project', description: 'Create a project', endpoint: '/projects', method: 'POST' },
+      { name: 'list_projects', description: 'Retrieve projects', endpoint: '/projects', method: 'GET' },
+      { name: 'delete_project', description: 'Delete a project', endpoint: '/projects/{projectId}', method: 'DELETE' },
+      { name: 'update_project', description: 'Update a project', endpoint: '/projects/{projectId}', method: 'PUT' },
+      { name: 'list_project_users', description: 'List project members', endpoint: '/projects/{projectId}/users', method: 'GET' },
+      { name: 'add_project_users', description: 'Add users to a project', endpoint: '/projects/{projectId}/users', method: 'POST', extraProperties: { users: { type: 'array', items: { type: 'object' }, description: 'Users to add with role' } }, requiredExtra: ['users'] },
+      { name: 'delete_project_user', description: 'Delete a user from a project', endpoint: '/projects/{projectId}/users/{userId}', method: 'DELETE' },
+      { name: 'update_project_user_role', description: "Change a user's project role", endpoint: '/projects/{projectId}/users/{userId}', method: 'PATCH', extraProperties: { role: { type: 'string', description: 'Target role' } }, requiredExtra: ['role'] }
+    ];
+
+    const selectedToolNames = requestedToolNames.length > 0
+      ? new Set(requestedToolNames)
+      : defaultEnabledToolNames;
+    const selectedTemplates = templates.filter((template) => selectedToolNames.has(template.name));
+    const finalTemplates = selectedTemplates.length > 0
+      ? selectedTemplates
+      : templates.filter((template) => defaultEnabledToolNames.has(template.name));
+
+    return finalTemplates.map((template) => ({
       server_id: serverId,
-      name: 'activate_workflow',
-      description: 'Activate a workflow',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          workflow_id: { type: 'string', description: 'Workflow ID' }
-        },
-        required: ['workflow_id']
-      },
-      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}/activate', method: 'POST' }),
-      operation: 'UPDATE'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'deactivate_workflow',
-      description: 'Deactivate a workflow',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          workflow_id: { type: 'string', description: 'Workflow ID' }
-        },
-        required: ['workflow_id']
-      },
-      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/workflows/{workflow_id}/deactivate', method: 'POST' }),
-      operation: 'UPDATE'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'list_executions',
-      description: 'List executions',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', description: 'Max results (optional)' },
-          status: { type: 'string', description: 'Status filter (optional)' }
-        }
-      },
-      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: '/executions', method: 'GET' }),
-      operation: 'SELECT'
-    });
-
-    return tools;
+      name: template.name,
+      description: template.description,
+      inputSchema: createInputSchema(template.endpoint, template.extraProperties, template.requiredExtra),
+      sqlQuery: JSON.stringify({ ...baseConfig, endpoint: template.endpoint, method: template.method }),
+      operation: operationByMethod(template.method)
+    }));
   }
 
   private generateToolsForSupabase(serverId: string, sourceConfig: any): ToolDefinition[] {

@@ -4122,8 +4122,11 @@ export class ToolExecuter {
     }
 
     const endpointRaw = String(endpoint || '');
-    if (endpointRaw.includes('{workflow_id}') && !args.workflow_id) {
-      return { success: false, error: 'Missing workflow_id', data: [], rowCount: 0 };
+    const endpointParams = Array.from(endpointRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)).map((m) => m[1]);
+    for (const paramName of endpointParams) {
+      if (args?.[paramName] === undefined || args?.[paramName] === null || String(args[paramName]).trim() === '') {
+        return { success: false, error: `Missing ${paramName}`, data: [], rowCount: 0 };
+      }
     }
 
     const normalizeApiPath = (rawPath: string): string => {
@@ -4146,10 +4149,9 @@ export class ToolExecuter {
       apiPrefix = '';
     }
 
-    let resolvedEndpoint = endpointRaw;
-    if (args.workflow_id && resolvedEndpoint.includes('{workflow_id}')) {
-      resolvedEndpoint = resolvedEndpoint.replace('{workflow_id}', encodeURIComponent(String(args.workflow_id)));
-    }
+    let resolvedEndpoint = endpointRaw.replace(/\{([a-zA-Z0-9_]+)\}/g, (_match: string, paramName: string) => {
+      return encodeURIComponent(String(args?.[paramName]));
+    });
     if (!resolvedEndpoint.startsWith('/')) {
       resolvedEndpoint = `/${resolvedEndpoint}`;
     }
@@ -4168,14 +4170,14 @@ export class ToolExecuter {
     if (methodUpper === 'GET') {
       for (const [key, value] of Object.entries(args || {})) {
         if (value === undefined || value === null) continue;
-        if (['workflow_id'].includes(key)) continue;
+        if (endpointParams.includes(key)) continue;
         queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
       }
     } else {
       const payload: Record<string, any> = {};
       for (const [key, value] of Object.entries(args || {})) {
         if (value === undefined || value === null) continue;
-        if (['workflow_id'].includes(key)) continue;
+        if (endpointParams.includes(key)) continue;
         payload[key] = value;
       }
       body = JSON.stringify(payload);

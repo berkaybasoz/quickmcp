@@ -377,6 +377,173 @@ function renderMarkdownTextBlock(raw) {
     return html.join('');
 }
 
+const N8N_TOOL_CATALOG = [
+    { name: 'list_users', description: 'Retrieve all users', category: 'admin', defaultEnabled: false },
+    { name: 'create_users', description: 'Create multiple users', category: 'admin', defaultEnabled: false },
+    { name: 'get_user', description: 'Get user by ID/Email', category: 'admin', defaultEnabled: false },
+    { name: 'delete_user', description: 'Delete a user', category: 'admin', defaultEnabled: false },
+    { name: 'change_user_role', description: "Change a user's global role", category: 'admin', defaultEnabled: false },
+    { name: 'generate_audit', description: 'Generate an audit', category: 'admin', defaultEnabled: false },
+
+    { name: 'list_executions', description: 'Retrieve all executions', category: 'core', defaultEnabled: true },
+    { name: 'get_execution', description: 'Retrieve an execution', category: 'core', defaultEnabled: true },
+    { name: 'delete_execution', description: 'Delete an execution', category: 'admin', defaultEnabled: false },
+    { name: 'retry_execution', description: 'Retry an execution', category: 'builder', defaultEnabled: false },
+    { name: 'stop_execution', description: 'Stop an execution', category: 'builder', defaultEnabled: false },
+    { name: 'stop_multiple_executions', description: 'Stop multiple executions', category: 'builder', defaultEnabled: false },
+    { name: 'get_execution_tags', description: 'Get execution tags', category: 'core', defaultEnabled: true },
+    { name: 'update_execution_tags', description: 'Update tags of an execution', category: 'builder', defaultEnabled: false },
+
+    { name: 'create_workflow', description: 'Create a workflow', category: 'builder', defaultEnabled: false },
+    { name: 'list_workflows', description: 'Retrieve all workflows', category: 'core', defaultEnabled: true },
+    { name: 'get_workflow', description: 'Retrieve a workflow', category: 'core', defaultEnabled: true },
+    { name: 'delete_workflow', description: 'Delete a workflow', category: 'admin', defaultEnabled: false },
+    { name: 'update_workflow', description: 'Update a workflow', category: 'builder', defaultEnabled: false },
+    { name: 'get_workflow_version', description: 'Retrieve a specific workflow version', category: 'core', defaultEnabled: false },
+    { name: 'activate_workflow', description: 'Publish a workflow', category: 'builder', defaultEnabled: false },
+    { name: 'deactivate_workflow', description: 'Deactivate a workflow', category: 'builder', defaultEnabled: false },
+    { name: 'transfer_workflow', description: 'Transfer a workflow to another project', category: 'admin', defaultEnabled: false },
+    { name: 'get_workflow_tags', description: 'Get workflow tags', category: 'core', defaultEnabled: true },
+    { name: 'update_workflow_tags', description: 'Update tags of a workflow', category: 'builder', defaultEnabled: false },
+
+    { name: 'list_credentials', description: 'List credentials', category: 'admin', defaultEnabled: false },
+    { name: 'create_credential', description: 'Create a credential', category: 'admin', defaultEnabled: false },
+    { name: 'update_credential', description: 'Update credential by ID', category: 'admin', defaultEnabled: false },
+    { name: 'delete_credential', description: 'Delete credential by ID', category: 'admin', defaultEnabled: false },
+    { name: 'get_credential_schema', description: 'Show credential data schema', category: 'admin', defaultEnabled: false },
+    { name: 'transfer_credential', description: 'Transfer credential to another project', category: 'admin', defaultEnabled: false },
+
+    { name: 'create_tag', description: 'Create a tag', category: 'builder', defaultEnabled: false },
+    { name: 'list_tags', description: 'Retrieve all tags', category: 'core', defaultEnabled: true },
+    { name: 'get_tag', description: 'Retrieve a tag', category: 'core', defaultEnabled: false },
+    { name: 'delete_tag', description: 'Delete a tag', category: 'admin', defaultEnabled: false },
+    { name: 'update_tag', description: 'Update a tag', category: 'builder', defaultEnabled: false },
+
+    { name: 'source_control_pull', description: 'Pull changes from source control', category: 'admin', defaultEnabled: false },
+
+    { name: 'create_variable', description: 'Create a variable', category: 'builder', defaultEnabled: false },
+    { name: 'list_variables', description: 'Retrieve variables', category: 'core', defaultEnabled: true },
+    { name: 'delete_variable', description: 'Delete a variable', category: 'admin', defaultEnabled: false },
+    { name: 'update_variable', description: 'Update a variable', category: 'builder', defaultEnabled: false },
+
+    { name: 'list_data_tables', description: 'List all data tables', category: 'core', defaultEnabled: true },
+    { name: 'create_data_table', description: 'Create a data table', category: 'builder', defaultEnabled: false },
+    { name: 'get_data_table', description: 'Get a data table', category: 'core', defaultEnabled: true },
+    { name: 'update_data_table', description: 'Update a data table', category: 'builder', defaultEnabled: false },
+    { name: 'delete_data_table', description: 'Delete a data table', category: 'admin', defaultEnabled: false },
+    { name: 'list_data_table_rows', description: 'Retrieve rows from a data table', category: 'core', defaultEnabled: true },
+    { name: 'insert_data_table_rows', description: 'Insert rows into a data table', category: 'builder', defaultEnabled: false },
+    { name: 'update_data_table_rows', description: 'Update rows in a data table', category: 'builder', defaultEnabled: false },
+    { name: 'upsert_data_table_rows', description: 'Upsert rows in a data table', category: 'builder', defaultEnabled: false },
+    { name: 'delete_data_table_rows', description: 'Delete rows from a data table', category: 'admin', defaultEnabled: false },
+
+    { name: 'create_project', description: 'Create a project', category: 'admin', defaultEnabled: false },
+    { name: 'list_projects', description: 'Retrieve projects', category: 'core', defaultEnabled: true },
+    { name: 'delete_project', description: 'Delete a project', category: 'admin', defaultEnabled: false },
+    { name: 'update_project', description: 'Update a project', category: 'admin', defaultEnabled: false },
+    { name: 'list_project_users', description: 'List project members', category: 'core', defaultEnabled: false },
+    { name: 'add_project_users', description: 'Add users to a project', category: 'admin', defaultEnabled: false },
+    { name: 'delete_project_user', description: 'Delete a user from a project', category: 'admin', defaultEnabled: false },
+    { name: 'update_project_user_role', description: "Change a user's role in a project", category: 'admin', defaultEnabled: false }
+];
+
+let n8nSelectedTools = new Set(N8N_TOOL_CATALOG.filter((tool) => tool.defaultEnabled).map((tool) => tool.name));
+
+function getSelectedN8nToolNames() {
+    return Array.from(n8nSelectedTools);
+}
+
+function getSelectedN8nTools() {
+    const selected = n8nSelectedTools;
+    return N8N_TOOL_CATALOG.filter((tool) => selected.has(tool.name));
+}
+
+function syncN8nCategoryToggles() {
+    const categories = ['core', 'builder', 'admin'];
+    categories.forEach((category) => {
+        const toggle = document.getElementById(`n8n-toggle-${category}`);
+        if (!toggle) return;
+        const categoryTools = N8N_TOOL_CATALOG.filter((tool) => tool.category === category);
+        if (categoryTools.length === 0) {
+            toggle.checked = false;
+            toggle.indeterminate = false;
+            return;
+        }
+        const selectedCount = categoryTools.filter((tool) => n8nSelectedTools.has(tool.name)).length;
+        toggle.checked = selectedCount === categoryTools.length;
+        toggle.indeterminate = selectedCount > 0 && selectedCount < categoryTools.length;
+    });
+}
+
+function updateN8nToolsCountLabel() {
+    const label = document.getElementById('n8n-tools-count-label');
+    if (!label) return;
+    label.textContent = `${n8nSelectedTools.size} tools`;
+}
+
+function renderN8nToolSelector() {
+    const container = document.getElementById('n8n-tool-list');
+    if (!container) return;
+
+    container.innerHTML = N8N_TOOL_CATALOG.map((tool) => `
+        <label class="flex items-start gap-3 rounded-md p-2 hover:bg-white transition-colors border border-transparent hover:border-slate-200">
+            <input type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" data-n8n-tool-name="${tool.name}" ${n8nSelectedTools.has(tool.name) ? 'checked' : ''}>
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">${tool.name}</code>
+                    <span class="text-[10px] uppercase tracking-wide font-semibold ${tool.category === 'core' ? 'text-emerald-600' : tool.category === 'builder' ? 'text-blue-600' : 'text-amber-600'}">${tool.category}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">${tool.description}</p>
+            </div>
+        </label>
+    `).join('');
+
+    container.querySelectorAll('input[data-n8n-tool-name]').forEach((checkbox) => {
+        if (checkbox.dataset.listenerAttached === 'true') return;
+        checkbox.addEventListener('change', () => {
+            const toolName = checkbox.getAttribute('data-n8n-tool-name');
+            if (!toolName) return;
+            if (checkbox.checked) n8nSelectedTools.add(toolName);
+            else n8nSelectedTools.delete(toolName);
+            syncN8nCategoryToggles();
+            updateN8nToolsCountLabel();
+            updateWizardNavigation();
+        });
+        checkbox.dataset.listenerAttached = 'true';
+    });
+
+    syncN8nCategoryToggles();
+    updateN8nToolsCountLabel();
+}
+
+function applyN8nCategorySelection(category, enabled) {
+    N8N_TOOL_CATALOG
+        .filter((tool) => tool.category === category)
+        .forEach((tool) => {
+            if (enabled) n8nSelectedTools.add(tool.name);
+            else n8nSelectedTools.delete(tool.name);
+        });
+    renderN8nToolSelector();
+    updateWizardNavigation();
+}
+
+function initializeN8nToolSelector(resetSelection = false) {
+    if (resetSelection) {
+        n8nSelectedTools = new Set(
+            N8N_TOOL_CATALOG
+                .filter((tool) => tool.defaultEnabled)
+                .map((tool) => tool.name)
+        );
+    }
+    ['core', 'builder', 'admin'].forEach((category) => {
+        const toggle = document.getElementById(`n8n-toggle-${category}`);
+        if (!toggle || toggle.dataset.listenerAttached === 'true') return;
+        toggle.addEventListener('change', () => applyN8nCategorySelection(category, toggle.checked));
+        toggle.dataset.listenerAttached = 'true';
+    });
+    renderN8nToolSelector();
+}
+
 function renderQuickAskAnswerMarkdown(markdown) {
     const input = String(markdown || '').trim();
     if (!input) return '';
@@ -2560,6 +2727,7 @@ function resetForm() {
     currentParsedData = null;
     currentDataSource = null;
     currentWizardStep = 1;
+    initializeN8nToolSelector(true);
 
     // Reset wizard to step 1
     goToWizardStep(1);
@@ -6710,9 +6878,14 @@ async function handleNextToStep3() {
         const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
         const apiPath = document.getElementById('n8nApiPath')?.value?.trim() || '/api/v1';
+        const enabledTools = getSelectedN8nToolNames();
 
         if (!baseUrl || !apiKey) {
             showError('n8n-parse-error', 'Please enter base URL and API key');
+            return;
+        }
+        if (enabledTools.length === 0) {
+            showError('n8n-parse-error', 'Please select at least one n8n tool');
             return;
         }
 
@@ -6721,20 +6894,16 @@ async function handleNextToStep3() {
             name: 'n8n',
             baseUrl,
             apiKey,
-            apiPath
+            apiPath,
+            enabledTools
         };
+        const selectedToolRows = getSelectedN8nTools().map((tool) => [tool.name, tool.description]);
         currentParsedData = [{
             tableName: 'n8n_tools',
             headers: ['tool', 'description'],
-            rows: [
-                ['list_workflows', 'List workflows'],
-                ['get_workflow', 'Get workflow details'],
-                ['activate_workflow', 'Activate a workflow'],
-                ['deactivate_workflow', 'Deactivate a workflow'],
-                ['list_executions', 'List executions']
-            ],
+            rows: selectedToolRows,
             metadata: {
-                rowCount: 5,
+                rowCount: selectedToolRows.length,
                 columnCount: 2,
                 dataTypes: { tool: 'string', description: 'string' }
             }
@@ -8770,7 +8939,7 @@ function updateWizardNavigation() {
     } else if (selectedType === DataSourceType.N8n) {
         const baseUrl = document.getElementById('n8nBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('n8nApiKey')?.value?.trim();
-        canProceed = !!baseUrl && !!apiKey;
+        canProceed = !!baseUrl && !!apiKey && getSelectedN8nToolNames().length > 0;
     } else if (selectedType === DataSourceType.Supabase) {
         const baseUrl = document.getElementById('supabaseBaseUrl')?.value?.trim();
         const apiKey = document.getElementById('supabaseApiKey')?.value?.trim();
@@ -9689,6 +9858,7 @@ function toggleDataSourceFields() {
         }
     } else if (selectedType === DataSourceType.N8n) {
         n8nSection?.classList.remove('hidden');
+        initializeN8nToolSelector(false);
         const n8nBaseUrlInput = document.getElementById('n8nBaseUrl');
         const n8nApiKeyInput = document.getElementById('n8nApiKey');
         const n8nApiPathInput = document.getElementById('n8nApiPath');
@@ -14199,13 +14369,14 @@ function displayN8nPreview(n8nConfig) {
     if (!preview) return;
 
     const baseUrl = n8nConfig?.baseUrl || 'Not set';
-    const tools = [
-        { name: 'list_workflows', desc: 'List workflows' },
-        { name: 'get_workflow', desc: 'Get workflow details' },
-        { name: 'activate_workflow', desc: 'Activate a workflow' },
-        { name: 'deactivate_workflow', desc: 'Deactivate a workflow' },
-        { name: 'list_executions', desc: 'List executions' }
-    ];
+    const apiPath = n8nConfig?.apiPath || '/api/v1';
+    const selectedToolNames = Array.isArray(n8nConfig?.enabledTools)
+        ? n8nConfig.enabledTools.map((value) => String(value || '').trim()).filter((value) => value)
+        : getSelectedN8nToolNames();
+    const selectedSet = new Set(selectedToolNames);
+    const tools = N8N_TOOL_CATALOG
+        .filter((tool) => selectedSet.has(tool.name))
+        .map((tool) => ({ name: tool.name, desc: tool.description }));
 
     const html = `
         <div class="space-y-4">
@@ -14223,6 +14394,10 @@ function displayN8nPreview(n8nConfig) {
                                 <div>
                                     <span class="text-slate-500">Base URL:</span>
                                     <span class="ml-2 font-mono text-slate-700">${baseUrl}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">API Path:</span>
+                                    <span class="ml-2 font-mono text-slate-700">${apiPath}</span>
                                 </div>
                             </div>
                         </div>

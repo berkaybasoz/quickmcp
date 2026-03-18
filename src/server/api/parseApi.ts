@@ -2049,32 +2049,43 @@ export class ParseApi {
                 }
             });
         } else if (type === DataSourceType.N8n) {
-            const { n8nBaseUrl, n8nApiKey, n8nApiPath } = req.body as any;
+            const { n8nBaseUrl, n8nApiKey, n8nApiPath, n8nEnabledTools } = req.body as any;
     
             if (!n8nBaseUrl || !n8nApiKey) {
                 throw new Error('Missing n8n base URL or API key');
             }
     
+            const enabledTools = Array.isArray(n8nEnabledTools)
+                ? n8nEnabledTools.map((value: unknown) => String(value || '').trim()).filter((value: string) => value.length > 0)
+                : [];
+
             const dataSource = {
                 type: DataSourceType.N8n,
                 name: 'n8n',
                 baseUrl: n8nBaseUrl,
                 apiKey: n8nApiKey,
-                apiPath: String(n8nApiPath || '/api/v1').trim() || '/api/v1'
+                apiPath: String(n8nApiPath || '/api/v1').trim() || '/api/v1',
+                ...(enabledTools.length ? { enabledTools } : {})
             };
-    
+            const fallbackRows: [string, string][] = [
+                ['list_workflows', 'Retrieve all workflows'],
+                ['get_workflow', 'Retrieve a workflow'],
+                ['activate_workflow', 'Publish a workflow'],
+                ['deactivate_workflow', 'Deactivate a workflow'],
+                ['list_executions', 'Retrieve all executions']
+            ];
+            const dynamicRows: [string, string][] = enabledTools.map((toolName: string) => [
+                toolName,
+                toolName.replace(/_/g, ' ')
+            ]);
+            const toolRows = dynamicRows.length ? dynamicRows : fallbackRows;
+
             const parsedData = [{
                 tableName: 'n8n_tools',
                 headers: ['tool', 'description'],
-                rows: [
-                    ['list_workflows', 'List workflows'],
-                    ['get_workflow', 'Get workflow details'],
-                    ['activate_workflow', 'Activate a workflow'],
-                    ['deactivate_workflow', 'Deactivate a workflow'],
-                    ['list_executions', 'List executions']
-                ],
+                rows: toolRows,
                 metadata: {
-                    rowCount: 5,
+                    rowCount: toolRows.length,
                     columnCount: 2,
                     dataTypes: { tool: 'string', description: 'string' }
                 }

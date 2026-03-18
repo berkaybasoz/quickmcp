@@ -468,7 +468,8 @@ export class GenerateApi {
           dbConfForGen = createN8nGeneratorConfig(
             dataSource.baseUrl,
             dataSource.apiKey,
-            dataSource.apiPath
+            dataSource.apiPath,
+            Array.isArray(dataSource.enabledTools) ? dataSource.enabledTools : undefined
           );
         } else if (dataSource?.type === DataSourceType.Supabase) {
           parsedForGen = {};

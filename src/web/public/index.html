@@ -2900,10 +2900,43 @@
                                                 <input type="text" id="n8nApiPath" value="/api/v1" class="input" autocomplete="off">
                                             </div>
                                         </div>
+                                        <div class="bg-white rounded-lg p-4 border border-slate-200 space-y-4">
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Groups</label>
+                                                <p class="text-xs text-slate-500">Toggle groups, then fine-tune each tool from the checklist.</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                                    <div>
+                                                        <div class="text-sm font-semibold text-slate-800">Core</div>
+                                                        <div class="text-xs text-slate-500">Read-focused safe tools</div>
+                                                    </div>
+                                                    <input id="n8n-toggle-core" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                </label>
+                                                <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                                    <div>
+                                                        <div class="text-sm font-semibold text-slate-800">Builder</div>
+                                                        <div class="text-xs text-slate-500">Create/update workflow data</div>
+                                                    </div>
+                                                    <input id="n8n-toggle-builder" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                </label>
+                                                <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                                                    <div>
+                                                        <div class="text-sm font-semibold text-slate-800">Admin</div>
+                                                        <div class="text-xs text-slate-500">Users, credentials, projects</div>
+                                                    </div>
+                                                    <input id="n8n-toggle-admin" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                </label>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Selection</label>
+                                                <div id="n8n-tool-list" class="max-h-64 overflow-y-auto rounded-lg border border-slate-200 p-3 bg-slate-50"></div>
+                                            </div>
+                                        </div>
                                         <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
                                             <p class="text-sm text-blue-700">
                                                 <i class="fas fa-tools mr-2"></i>
-                                                <strong>5 tools</strong> will be created: list_workflows, get_workflow, activate_workflow, deactivate_workflow, list_executions
+                                                <strong id="n8n-tools-count-label">0 tools</strong> selected for generation.
                                             </p>
                                         </div>
                                         <div id="n8n-parse-error" class="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"></div>
