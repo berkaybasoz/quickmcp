@@ -74,7 +74,7 @@ sftp
 sftp://select.datascope.refinitiv.com
 user: r9039747
 port: 22
-Şifre: Ca..raC..e2...!
+Şifre: <<TOKEN>>
 NAME: SFTP
 
 ********************************************************************************************************************
@@ -85,7 +85,7 @@ imap port: 993
 smtp sunucu: smtp.gmail.com
 smtp port: 587
 mail: archdrawcontact@gmail.com
-pwd: jxxl ufwl klup ckrk
+pwd: <<TOKEN>>
 NAME: GMAIL-BERKAY
 
 ********************************************************************************************************************
@@ -101,4 +101,4 @@ NAME: MONGODB
 
 N8N
 "N8N_API_URL": "https://9hret5g2.rcsrv.com",
-"N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYTI2YTQ2ZS00YjAyLTQ0OWUtYjhiYi1iNTFlNWRmYmQ1ZGQiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1Mzg1MzIyfQ.DdoBrhxlTW1XcG7uGgpKWsdHk7X394KI7V8CV8pY0HI"
+"N8N_API_KEY": <<TOKEN>>
