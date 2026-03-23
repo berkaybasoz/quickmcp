@@ -50,6 +50,7 @@ import {
   createJenkinsGeneratorConfig,
   createJiraGeneratorConfig,
   createKubernetesGeneratorConfig,
+  createKafkaGeneratorConfig,
   createLinearGeneratorConfig,
   createLlamaGeneratorConfig,
   createLocalFSGeneratorConfig,
@@ -80,11 +81,13 @@ import {
   createSoapGeneratorConfig,
   createSpotifyGeneratorConfig,
   createSupabaseGeneratorConfig,
+  createHazelcastGeneratorConfig,
   createTelegramGeneratorConfig,
   createThings3GeneratorConfig,
   createTikTokGeneratorConfig,
   createTogetherGeneratorConfig,
   createTrelloGeneratorConfig,
+  createRedisGeneratorConfig,
   createWebpageGeneratorConfig,
   createXGeneratorConfig,
   createZoomGeneratorConfig
@@ -715,6 +718,34 @@ export class GenerateApi {
             dataSource.ocPath,
             dataSource.kubeconfig,
             dataSource.namespace
+          );
+        } else if (dataSource?.type === DataSourceType.Redis) {
+          parsedForGen = {};
+          dbConfForGen = createRedisGeneratorConfig(
+            dataSource.host,
+            dataSource.port,
+            dataSource.database,
+            dataSource.username,
+            dataSource.password
+          );
+        } else if (dataSource?.type === DataSourceType.Hazelcast) {
+          parsedForGen = {};
+          dbConfForGen = createHazelcastGeneratorConfig(
+            dataSource.host,
+            dataSource.port,
+            dataSource.clusterName,
+            dataSource.username,
+            dataSource.password
+          );
+        } else if (dataSource?.type === DataSourceType.Kafka) {
+          parsedForGen = {};
+          dbConfForGen = createKafkaGeneratorConfig(
+            dataSource.host,
+            dataSource.port,
+            dataSource.clientId,
+            dataSource.username,
+            dataSource.password,
+            dataSource.topic
           );
         } else if (dataSource?.type === DataSourceType.CSV) {
           const fullParsedData = parsedData || await parser.parse(dataSource);

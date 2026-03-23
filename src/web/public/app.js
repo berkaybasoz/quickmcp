@@ -2391,6 +2391,78 @@ function syncDataSourceCardSelectionState() {
     });
 }
 
+function isConnectionTemplateSource(type) {
+    return type === DataSourceType.Redis
+        || type === DataSourceType.Hazelcast
+        || type === DataSourceType.Kafka;
+}
+
+function usesDatabaseConnectionForm(type) {
+    return isDatabase(type) || isConnectionTemplateSource(type);
+}
+
+function configureDatabaseConnectionForm(selectedType) {
+    const hint = document.getElementById('db-connection-hint');
+    const dbHostLabel = document.getElementById('dbHostLabel');
+    const dbPortLabel = document.getElementById('dbPortLabel');
+    const dbNameLabel = document.getElementById('dbNameLabel');
+    const dbUserLabel = document.getElementById('dbUserLabel');
+    const dbPasswordLabel = document.getElementById('dbPasswordLabel');
+    const dbHost = document.getElementById('dbHost');
+    const dbPort = document.getElementById('dbPort');
+    const dbName = document.getElementById('dbName');
+    const dbUser = document.getElementById('dbUser');
+    const dbPassword = document.getElementById('dbPassword');
+
+    if (!dbHostLabel || !dbPortLabel || !dbNameLabel || !dbUserLabel || !dbPasswordLabel || !dbHost || !dbPort || !dbName || !dbUser || !dbPassword) {
+        return;
+    }
+
+    dbHostLabel.textContent = 'Host';
+    dbPortLabel.textContent = 'Port';
+    dbNameLabel.textContent = 'Database Name';
+    dbUserLabel.textContent = 'Username';
+    dbPasswordLabel.textContent = 'Password';
+    dbHost.placeholder = 'localhost';
+    dbName.placeholder = 'my_database';
+    dbUser.placeholder = 'root';
+    dbPassword.placeholder = '••••••••';
+    if (hint) hint.textContent = '';
+
+    if (selectedType === DataSourceType.Redis) {
+        dbNameLabel.textContent = 'DB Index (Optional)';
+        dbUserLabel.textContent = 'Username (Optional)';
+        dbPasswordLabel.textContent = 'Password (Optional)';
+        dbName.placeholder = '0';
+        dbUser.placeholder = 'default';
+        if (hint) hint.textContent = 'Redis uses host/port and optional DB index + auth.';
+        return;
+    }
+
+    if (selectedType === DataSourceType.Hazelcast) {
+        dbHostLabel.textContent = 'Member Host';
+        dbPortLabel.textContent = 'Member Port';
+        dbNameLabel.textContent = 'Cluster Name (Optional)';
+        dbUserLabel.textContent = 'Username (Optional)';
+        dbPasswordLabel.textContent = 'Password (Optional)';
+        dbName.placeholder = 'dev';
+        dbUser.placeholder = 'username';
+        if (hint) hint.textContent = 'Hazelcast uses member host/port and optional cluster/auth fields.';
+        return;
+    }
+
+    if (selectedType === DataSourceType.Kafka) {
+        dbHostLabel.textContent = 'Bootstrap Host';
+        dbPortLabel.textContent = 'Bootstrap Port';
+        dbNameLabel.textContent = 'Topic (Optional)';
+        dbUserLabel.textContent = 'SASL Username (Optional)';
+        dbPasswordLabel.textContent = 'SASL Password (Optional)';
+        dbName.placeholder = 'events.topic';
+        dbUser.placeholder = 'sasl_user';
+        if (hint) hint.textContent = 'Kafka uses bootstrap host/port and optional topic/SASL auth.';
+    }
+}
+
 // Update default port based on database type
 function updateDefaultPort() {
     // Determine selected DB type from source cards
@@ -2417,6 +2489,85 @@ function updateDefaultPort() {
     }
 }
 
+
+// Hazelcast preview with group/tool selection
+function displayHazelcastPreview(parsedData) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const groups = Array.isArray(parsedData) ? parsedData : [];
+    let html = '<div class="space-y-4">';
+
+    html += `
+        <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-network-wired text-cyan-600 mt-1"></i>
+                <div>
+                    <h3 class="font-semibold text-cyan-900 mb-1">Configure Hazelcast Tool Groups</h3>
+                    <p class="text-cyan-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, SETS, LISTS, TOPICS, DIAGNOSTICS.</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    groups.forEach((group, index) => {
+        const groupName = escapeHtml(group?.tableName || `GROUP_${index + 1}`);
+        const rows = Array.isArray(group?.rows) ? group.rows : [];
+
+        html += `
+            <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
+                <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox"
+                                   id="hazelcast-group-select-${index}"
+                                   class="w-5 h-5 text-cyan-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-cyan-500"
+                                   checked
+                                   onchange="toggleHazelcastGroupSelection(${index})">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 text-lg">${groupName}</h4>
+                                <p class="text-sm text-gray-600">${rows.length} tool(s)</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="hazelcast-group-tools-${index}" class="p-4 bg-cyan-50/50 space-y-2">
+                    ${rows.map((row, toolIndex) => {
+                        const rawTool = String(row?.[0] || '').trim();
+                        const toolName = escapeHtml(rawTool);
+                        const toolDesc = escapeHtml(String(row?.[1] || ''));
+                        return `
+                            <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors">
+                                <input type="checkbox"
+                                       id="hazelcast-tool-${index}-${toolIndex}"
+                                       class="mt-0.5 w-4 h-4 text-cyan-600 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500"
+                                       data-tool-name="${toolName}"
+                                       checked>
+                                <div>
+                                    <div class="text-sm font-mono text-gray-900">${toolName}</div>
+                                    <div class="text-xs text-gray-600">${toolDesc}</div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+
+                    <div class="pt-2 flex items-center gap-4">
+                        <button onclick="selectAllHazelcastGroupTools(${index})" class="text-sm text-cyan-700 hover:text-cyan-900 font-medium">
+                            <i class="fas fa-check-square mr-1"></i>Select All
+                        </button>
+                        <button onclick="deselectAllHazelcastGroupTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fas fa-square mr-1"></i>Deselect All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    preview.innerHTML = html;
+}
 
 // Display data preview
 function displayDataPreview(parsedData) {
@@ -2678,6 +2829,39 @@ function toggleTableSelection(tableIndex) {
     }
 }
 
+function toggleHazelcastGroupSelection(groupIndex) {
+    const checkbox = document.getElementById(`hazelcast-group-select-${groupIndex}`);
+    const toolsPanel = document.getElementById(`hazelcast-group-tools-${groupIndex}`);
+    if (!(checkbox instanceof HTMLInputElement)) return;
+
+    const toolInputs = toolsPanel?.querySelectorAll('input[type="checkbox"][data-tool-name]') || [];
+    if (checkbox.checked) {
+        toolsPanel?.classList.remove('opacity-50');
+        toolInputs.forEach((input) => {
+            input.disabled = false;
+        });
+    } else {
+        toolsPanel?.classList.add('opacity-50');
+        toolInputs.forEach((input) => {
+            input.disabled = true;
+        });
+    }
+}
+
+function selectAllHazelcastGroupTools(groupIndex) {
+    const toolInputs = document.querySelectorAll(`#hazelcast-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
+    toolInputs.forEach((input) => {
+        if (!input.disabled) input.checked = true;
+    });
+}
+
+function deselectAllHazelcastGroupTools(groupIndex) {
+    const toolInputs = document.querySelectorAll(`#hazelcast-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
+    toolInputs.forEach((input) => {
+        if (!input.disabled) input.checked = false;
+    });
+}
+
 // Tool selection helper functions
 function selectAllTools(tableIndex) {
     const toolInputs = document.querySelectorAll(`#table-tools-${tableIndex} input[type="checkbox"]`);
@@ -2708,6 +2892,32 @@ function selectOnlyBasicTools(tableIndex) {
 // Get selected tables and their tools configuration
 function getSelectedTablesAndTools() {
     const selectedTables = [];
+    if (currentDataSource?.type === DataSourceType.Hazelcast && Array.isArray(currentParsedData)) {
+        document.querySelectorAll('[id^="hazelcast-group-select-"]').forEach((groupCheckbox) => {
+            if (!(groupCheckbox instanceof HTMLInputElement) || !groupCheckbox.checked) return;
+
+            const rawIndex = Number(groupCheckbox.id.replace('hazelcast-group-select-', ''));
+            if (!Number.isFinite(rawIndex) || rawIndex < 0) return;
+            const index = Math.trunc(rawIndex);
+
+            const selectedToolNames = [];
+            document.querySelectorAll(`#hazelcast-group-tools-${index} input[type="checkbox"][data-tool-name]`).forEach((toolCheckbox) => {
+                if (!(toolCheckbox instanceof HTMLInputElement) || !toolCheckbox.checked || toolCheckbox.disabled) return;
+                const toolName = String(toolCheckbox.dataset.toolName || '').trim();
+                if (toolName) selectedToolNames.push(toolName);
+            });
+
+            if (selectedToolNames.length === 0) return;
+            selectedTables.push({
+                index,
+                tableName: currentParsedData[index]?.tableName || `GROUP_${index + 1}`,
+                selectedToolNames
+            });
+        });
+
+        return selectedTables;
+    }
+
     // REST mode: collect selected endpoints
     if (currentDataSource?.type === DataSourceType.Rest && Array.isArray(currentParsedData)) {
         currentParsedData.forEach((_, idx) => {
@@ -8465,7 +8675,7 @@ async function handleNextToStep3() {
             } else if (selectedPath) {
                 formData.append('filePath', selectedPath);
             }
-        } else if (isDatabase(selectedType)) {
+        } else if (usesDatabaseConnectionForm(selectedType)) {
             const connection = {
                 type: selectedType,
                 host: document.getElementById('dbHost')?.value,
@@ -8474,6 +8684,11 @@ async function handleNextToStep3() {
                 username: document.getElementById('dbUser')?.value,
                 password: document.getElementById('dbPassword')?.value
             };
+            if (selectedType === DataSourceType.Hazelcast) {
+                connection.clusterName = connection.database;
+            } else if (selectedType === DataSourceType.Kafka) {
+                connection.topic = connection.database;
+            }
             formData.append('connection', JSON.stringify(connection));
             formData.set('type', selectedType);
             // Güvenli olması için metin alanlarını da ekle (multer text fields)
@@ -8682,6 +8897,8 @@ async function handleNextToStep3() {
                 displayElasticsearchPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenSearch) {
                 displayOpenSearchPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Hazelcast) {
+                displayHazelcastPreview(currentParsedData);
             } else {
                 displayDataPreview(result.data.parsedData);
             }
@@ -8822,6 +9039,9 @@ function updateWizardNavigation() {
         const dbUser = document.getElementById('dbUser')?.value;
         const dbPassword = document.getElementById('dbPassword')?.value;
         canProceed = dbType && dbHost && dbName && dbUser && dbPassword;
+    } else if (isConnectionTemplateSource(selectedType)) {
+        const dbHost = document.getElementById('dbHost')?.value?.trim();
+        canProceed = !!dbHost;
     } else if (selectedType === DataSourceType.Rest) {
         const swaggerUrl = document.getElementById('swaggerUrl')?.value?.trim();
         canProceed = !!swaggerUrl;
@@ -9393,8 +9613,9 @@ function toggleDataSourceFields() {
 
     if (selectedType === DataSourceType.CSV || selectedType === DataSourceType.Excel) {
         fileSection?.classList.remove('hidden');
-    } else if (isDatabase(selectedType)) {
+    } else if (usesDatabaseConnectionForm(selectedType)) {
         dbSection?.classList.remove('hidden');
+        configureDatabaseConnectionForm(selectedType);
         updateDefaultPort();
     } else if (selectedType === DataSourceType.Rest) {
         restSection?.classList.remove('hidden');

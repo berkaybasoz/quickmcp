@@ -11,6 +11,9 @@ export enum DataSourceType {
   PostgreSQL = 'postgresql',
   SQLite = 'sqlite',
   Oracle = 'oracle',
+  Redis = 'redis',
+  Hazelcast = 'hazelcast',
+  Kafka = 'kafka',
   CSV = 'csv',
   Excel = 'excel',
   JSON = 'json',
@@ -134,6 +137,9 @@ export function shouldGenerateResources(parsedData: any, sourceConfig: any): boo
     DataSourceType.Discord,
     DataSourceType.Docker,
     DataSourceType.Kubernetes,
+    DataSourceType.Redis,
+    DataSourceType.Hazelcast,
+    DataSourceType.Kafka,
     DataSourceType.Elasticsearch,
     DataSourceType.OpenSearch,
     DataSourceType.OpenShift,
@@ -309,6 +315,34 @@ export interface DatabaseConnection {
   username?: string;
   password?: string;
   type: DataSourceType.MySQL | DataSourceType.PostgreSQL | DataSourceType.SQLite | DataSourceType.MSSQL;
+}
+
+export interface RedisConnection {
+  host: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+  type: DataSourceType.Redis;
+}
+
+export interface HazelcastConnection {
+  host: string;
+  port?: number;
+  clusterName?: string;
+  username?: string;
+  password?: string;
+  type: DataSourceType.Hazelcast;
+}
+
+export interface KafkaConnection {
+  host: string;
+  port?: number;
+  clientId?: string;
+  username?: string;
+  password?: string;
+  topic?: string;
+  type: DataSourceType.Kafka;
 }
 
 export interface GitHubConnection {
@@ -1447,6 +1481,34 @@ export interface KubernetesGeneratorConfig extends BaseGeneratorConfig {
   namespace?: string;
 }
 
+export interface RedisGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Redis;
+  host: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface HazelcastGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Hazelcast;
+  host: string;
+  port?: number;
+  clusterName?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface KafkaGeneratorConfig extends BaseGeneratorConfig {
+  type: DataSourceType.Kafka;
+  host: string;
+  port?: number;
+  clientId?: string;
+  username?: string;
+  password?: string;
+  topic?: string;
+}
+
 export interface ElasticsearchGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Elasticsearch;
   baseUrl: string;
@@ -1557,10 +1619,16 @@ export type GeneratorConfig =
   | DiscordGeneratorConfig
   | DockerGeneratorConfig
   | KubernetesGeneratorConfig
+  | RedisGeneratorConfig
+  | HazelcastGeneratorConfig
+  | KafkaGeneratorConfig
   | ElasticsearchGeneratorConfig
   | OpenSearchGeneratorConfig
   | OpenShiftGeneratorConfig
   | DatabaseConnection
+  | RedisConnection
+  | HazelcastConnection
+  | KafkaConnection
   | GitHubConnection
   | XConnection
   | PrometheusConnection
@@ -2668,6 +2736,59 @@ export function createKubernetesGeneratorConfig(
     kubectlPath: kubectlPath || 'kubectl',
     kubeconfig,
     namespace
+  };
+}
+
+export function createRedisGeneratorConfig(
+  host: string,
+  port?: number,
+  database?: string,
+  username?: string,
+  password?: string
+): RedisGeneratorConfig {
+  return {
+    type: DataSourceType.Redis,
+    host,
+    port: port || 6379,
+    database,
+    username,
+    password
+  };
+}
+
+export function createHazelcastGeneratorConfig(
+  host: string,
+  port?: number,
+  clusterName?: string,
+  username?: string,
+  password?: string
+): HazelcastGeneratorConfig {
+  return {
+    type: DataSourceType.Hazelcast,
+    host,
+    port: port || 5701,
+    clusterName,
+    username,
+    password
+  };
+}
+
+export function createKafkaGeneratorConfig(
+  host: string,
+  port?: number,
+  clientId?: string,
+  username?: string,
+  password?: string,
+  topic?: string
+): KafkaGeneratorConfig {
+  return {
+    type: DataSourceType.Kafka,
+    host,
+    port: port || 9092,
+    clientId,
+    username,
+    password,
+    topic
   };
 }
 

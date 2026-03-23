@@ -90,6 +90,12 @@ cd quickmcp-docker
 docker-compose up -d
 ```
 
+### Hazelcast Management Center
+
+- **URL:** http://localhost:8080
+- **Hazelcast Cluster Name:** `dev`
+- **Member Address:** `hazelcast:5701` (or `quickmcp-hazelcast:5701`)
+
 ### Database Connection Details
 
 - **Server:** localhost,1435

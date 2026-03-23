@@ -28,26 +28,257 @@ export class ParseApi {
         const { type, connection, swaggerUrl, curlSetting, filePath } = req.body as any;
         const file = req.file;
         const normalizedFilePath = typeof filePath === 'string' ? filePath.trim() : '';
+        let connectionObj: any = connection;
+        if (typeof connectionObj === 'string') {
+          try { connectionObj = JSON.parse(connectionObj); } catch { connectionObj = null; }
+        }
     
         let dataSource: DataSource | CurlDataSource | CsvDataSource | ExcelDataSource;
     
-        // Accept database parse when database type is selected or a connection payload is present.
-        if (isDatabase(type) || connection) {
-          let connObj: any = connection;
-          if (typeof connObj === 'string') {
-            try { connObj = JSON.parse(connObj); } catch { connObj = null; }
-          }
+        // Strict SQL database parse: selected `type` is the single source of truth.
+        if (isDatabase(type)) {
+          const connObj: any = connectionObj;
           if (!connObj || !connObj.type) {
             throw new Error('Missing or invalid database connection');
           }
-          if (!isDatabase(connObj.type)) {
+
+          const selectedDbType = String(type || '').trim().toLowerCase();
+          const connectionDbType = String(connObj.type || '').trim().toLowerCase();
+
+          if (!isDatabase(connectionDbType)) {
             throw new Error(`Unsupported database type: ${connObj.type}`);
           }
+
+          if (connectionDbType !== selectedDbType) {
+            throw new Error(`Database type mismatch: type=${selectedDbType}, connection.type=${connectionDbType}`);
+          }
+
           dataSource = {
-            type: connObj.type,
-            name: `Database (${connObj.type})`,
+            type: selectedDbType,
+            name: `Database (${selectedDbType})`,
             connection: connObj
           } as any;
+        } else if (type === DataSourceType.Redis) {
+          const host = String(connectionObj?.host || req.body.dbHost || '').trim();
+          if (!host) {
+            throw new Error('Missing Redis host');
+          }
+          const rawPort = connectionObj?.port ?? req.body.dbPort;
+          const parsedPort = Number(rawPort);
+          const port = Number.isFinite(parsedPort) && parsedPort > 0 ? Math.trunc(parsedPort) : 6379;
+          const database = String(connectionObj?.database || req.body.dbName || '').trim() || '0';
+          const username = String(connectionObj?.username || req.body.dbUser || '').trim();
+          const password = String(connectionObj?.password || req.body.dbPassword || '').trim();
+
+          const dataSource = {
+            type: DataSourceType.Redis,
+            name: 'Redis',
+            host,
+            port,
+            database,
+            username,
+            password
+          };
+
+          const parsedData = [{
+            tableName: 'redis_tools',
+            headers: ['tool', 'description'],
+            rows: [
+              ['ping', 'Ping Redis server'],
+              ['get', 'Get value by key'],
+              ['set', 'Set key/value'],
+              ['delete_key', 'Delete key'],
+              ['list_keys', 'List keys by pattern']
+            ],
+            metadata: {
+              rowCount: 5,
+              columnCount: 2,
+              dataTypes: { tool: 'string', description: 'string' }
+            }
+          }];
+
+          return res.json({
+            success: true,
+            data: {
+              dataSource,
+              parsedData
+            }
+          });
+        } else if (type === DataSourceType.Hazelcast) {
+          const host = String(connectionObj?.host || req.body.dbHost || '').trim();
+          if (!host) {
+            throw new Error('Missing Hazelcast host');
+          }
+          const rawPort = connectionObj?.port ?? req.body.dbPort;
+          const parsedPort = Number(rawPort);
+          const port = Number.isFinite(parsedPort) && parsedPort > 0 ? Math.trunc(parsedPort) : 5701;
+          const clusterName = String(connectionObj?.clusterName || connectionObj?.database || req.body.dbName || '').trim() || 'dev';
+          const username = String(connectionObj?.username || req.body.dbUser || '').trim();
+          const password = String(connectionObj?.password || req.body.dbPassword || '').trim();
+
+          const dataSource = {
+            type: DataSourceType.Hazelcast,
+            name: 'Hazelcast',
+            host,
+            port,
+            clusterName,
+            username,
+            password
+          };
+
+          const parsedData = [
+            {
+              tableName: 'DIAGNOSTICS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['check_connection', 'Check Hazelcast client connectivity'],
+                ['connection_status', 'Show Hazelcast connection status'],
+                ['cluster_diagnostics', 'Show Hazelcast cluster diagnostics and health summary'],
+                ['get_config', 'Show current Hazelcast connection configuration']
+              ],
+              metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'MAPS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_maps', 'List Hazelcast map names'],
+                ['map_set', 'Set key/value in a Hazelcast map'],
+                ['map_get', 'Get value by key from a Hazelcast map'],
+                ['map_remove', 'Remove key from a Hazelcast map'],
+                ['map_size', 'Get entry count of a Hazelcast map'],
+                ['map_entries', 'List entries from a Hazelcast map']
+              ],
+              metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'QUEUES',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_queues', 'List Hazelcast queue names'],
+                ['queue_offer', 'Offer value to a Hazelcast queue'],
+                ['queue_poll', 'Poll value from a Hazelcast queue'],
+                ['queue_peek', 'Peek head value of a Hazelcast queue'],
+                ['queue_size', 'Get size of a Hazelcast queue']
+              ],
+              metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'SETS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_sets', 'List Hazelcast set names'],
+                ['set_add', 'Add value to a Hazelcast set'],
+                ['set_remove', 'Remove value from a Hazelcast set'],
+                ['set_contains', 'Check value in a Hazelcast set'],
+                ['set_size', 'Get size of a Hazelcast set'],
+                ['set_values', 'List values from a Hazelcast set']
+              ],
+              metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'LISTS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_lists', 'List Hazelcast list names'],
+                ['list_add', 'Add value to a Hazelcast list'],
+                ['list_get', 'Get value by index from a Hazelcast list'],
+                ['list_size', 'Get size of a Hazelcast list'],
+                ['list_values', 'List values from a Hazelcast list']
+              ],
+              metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'TOPICS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_topics', 'List Hazelcast topic names'],
+                ['topic_publish', 'Publish message to a Hazelcast topic']
+              ],
+              metadata: {
+                rowCount: 2,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            }
+          ];
+
+          return res.json({
+            success: true,
+            data: {
+              dataSource,
+              parsedData
+            }
+          });
+        } else if (type === DataSourceType.Kafka) {
+          const host = String(connectionObj?.host || req.body.dbHost || '').trim();
+          if (!host) {
+            throw new Error('Missing Kafka host');
+          }
+          const rawPort = connectionObj?.port ?? req.body.dbPort;
+          const parsedPort = Number(rawPort);
+          const port = Number.isFinite(parsedPort) && parsedPort > 0 ? Math.trunc(parsedPort) : 9092;
+          const topic = String(connectionObj?.topic || connectionObj?.database || req.body.dbName || '').trim();
+          const clientId = String(connectionObj?.clientId || '').trim() || 'quickmcp';
+          const username = String(connectionObj?.username || req.body.dbUser || '').trim();
+          const password = String(connectionObj?.password || req.body.dbPassword || '').trim();
+
+          const dataSource = {
+            type: DataSourceType.Kafka,
+            name: 'Kafka',
+            host,
+            port,
+            topic,
+            clientId,
+            username,
+            password
+          };
+
+          const parsedData = [{
+            tableName: 'kafka_tools',
+            headers: ['tool', 'description'],
+            rows: [
+              ['check_connection', 'Check Kafka client connectivity'],
+              ['get_config', 'Show current Kafka connection configuration'],
+              ['list_topics', 'List Kafka topics'],
+              ['get_topic_offsets', 'Get partition offsets for a topic'],
+              ['produce_message', 'Produce a message to Kafka topic'],
+              ['consume_messages', 'Consume messages from Kafka topic']
+            ],
+            metadata: {
+              rowCount: 6,
+              columnCount: 2,
+              dataTypes: { tool: 'string', description: 'string' }
+            }
+          }];
+
+          return res.json({
+            success: true,
+            data: {
+              dataSource,
+              parsedData
+            }
+          });
         } else if (type === DataSourceType.Rest) {
           if (!swaggerUrl) throw new Error('Missing swaggerUrl');
           // Fetch OpenAPI spec

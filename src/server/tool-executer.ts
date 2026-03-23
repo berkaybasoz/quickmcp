@@ -107,6 +107,9 @@ export class ToolExecuter {
       if (queryConfig?.type === DataSourceType.Discord) return await this.executeDiscordCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.Docker) return await this.executeDockerCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.Kubernetes) return await this.executeKubernetesCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Redis) return await this.executeRedisCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Hazelcast) return await this.executeHazelcastCall(queryConfig, args);
+      if (queryConfig?.type === DataSourceType.Kafka) return await this.executeKafkaCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.Elasticsearch) return await this.executeElasticsearchCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.OpenSearch) return await this.executeElasticsearchCall(queryConfig, args);
       if (queryConfig?.type === DataSourceType.OpenShift) return await this.executeOpenShiftCall(queryConfig, args);
@@ -633,6 +636,850 @@ export class ToolExecuter {
         rowCount: 1
       };
     }
+  }
+
+  private async executeRedisCall(queryConfig: any, args: any): Promise<any> {
+    const { host, port = 6379, database, username, password, operation } = queryConfig;
+    if (!host) {
+      return {
+        success: false,
+        error: 'Redis host is missing',
+        data: [{ error: 'Redis host is missing' }],
+        rowCount: 1
+      };
+    }
+
+    const parsedDbIndex = Number(database);
+    const dbIndex = Number.isFinite(parsedDbIndex) && parsedDbIndex >= 0 ? Math.trunc(parsedDbIndex) : 0;
+    const redisModule: any = await import('ioredis');
+    const RedisClient = redisModule?.default || redisModule?.Redis || redisModule;
+    const redis = new RedisClient({
+      host: String(host),
+      port: Number(port) || 6379,
+      db: dbIndex,
+      username: username || undefined,
+      password: password || undefined,
+      connectTimeout: 5000,
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1
+    });
+
+    try {
+      await redis.connect();
+
+      switch (operation) {
+        case 'ping': {
+          const pong = args?.message ? await redis.ping(String(args.message)) : await redis.ping();
+          const data = [{ response: pong }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'get': {
+          if (!args?.key) throw new Error('key is required');
+          const value = await redis.get(String(args.key));
+          const data = [{ key: String(args.key), value: value ?? null }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'set': {
+          if (!args?.key) throw new Error('key is required');
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+
+          const ttl = Number(args?.ttlSeconds);
+          let response: string;
+          if (Number.isFinite(ttl) && ttl > 0) {
+            response = await redis.set(String(args.key), String(args.value), 'EX', Math.trunc(ttl));
+          } else {
+            response = await redis.set(String(args.key), String(args.value));
+          }
+          const data = [{ success: String(response || '').toUpperCase() === 'OK' }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'delete': {
+          if (!args?.key) throw new Error('key is required');
+          const deleted = await redis.del(String(args.key));
+          const data = [{ deleted: Number(deleted) || 0 }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'listKeys': {
+          const keys = await redis.keys(args?.pattern ? String(args.pattern) : '*');
+          const data = Array.isArray(keys) ? keys.map((key: string) => ({ key })) : [];
+          return { success: true, data, rowCount: data.length };
+        }
+        default:
+          throw new Error(`Unknown Redis operation: ${operation}`);
+      }
+    } catch (error) {
+      logger.error('❌ Redis error:', error);
+      return {
+        success: false,
+        error: `Redis error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    } finally {
+      try {
+        await redis.quit();
+      } catch {
+        redis.disconnect();
+      }
+    }
+  }
+
+  private async executeHazelcastCall(queryConfig: any, args: any): Promise<any> {
+    const { host, port = 5701, clusterName, username, password, operation } = queryConfig;
+    if (!host) {
+      return {
+        success: false,
+        error: 'Hazelcast host is missing',
+        data: [{ error: 'Hazelcast host is missing' }],
+        rowCount: 1
+      };
+    }
+
+    const member = `${String(host)}:${Number(port) || 5701}`;
+    const hazelcastModule: any = await import('hazelcast-client');
+    const ClientFactory = hazelcastModule?.Client || hazelcastModule?.default?.Client;
+    if (!ClientFactory || typeof ClientFactory.newHazelcastClient !== 'function') {
+      throw new Error('hazelcast-client is not available or incompatible');
+    }
+
+    let client: any | null = null;
+
+    try {
+      if (operation === 'getConfig') {
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          member,
+          username: username || '',
+          passwordConfigured: !!password
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      const connectionConfig: any = {
+        clusterName: clusterName || 'dev',
+        network: {
+          clusterMembers: [member]
+        },
+        properties: {
+          'hazelcast.logging.level': 'OFF'
+        },
+        customLogger: {
+          log: () => undefined,
+          error: () => undefined,
+          warn: () => undefined,
+          info: () => undefined,
+          debug: () => undefined,
+          trace: () => undefined
+        }
+      };
+
+      if (username || password) {
+        connectionConfig.security = {
+          usernamePassword: {
+            username: String(username || ''),
+            password: String(password || '')
+          }
+        };
+      }
+      const startedAt = Date.now();
+      client = await ClientFactory.newHazelcastClient(connectionConfig);
+      const latencyMs = Date.now() - startedAt;
+
+      if (operation === 'checkConnection') {
+        const members = client?.getCluster?.().getMembers?.() || [];
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          reachable: true,
+          latencyMs,
+          memberCount: Array.isArray(members) ? members.length : 0
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'connectionStatus') {
+        const members = client?.getCluster?.().getMembers?.() || [];
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          connected: true,
+          latencyMs,
+          memberCount: Array.isArray(members) ? members.length : 0
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      const listDistributedObjectNames = async (targetServiceName: string, nameField: string): Promise<any[]> => {
+        const distributedObjects = await client.getDistributedObjects();
+        const items = Array.isArray(distributedObjects) ? distributedObjects : [];
+        const rows: any[] = [];
+        const seen = new Set<string>();
+        const normalizedTarget = String(targetServiceName).trim().toLowerCase();
+
+        for (const obj of items) {
+          const serviceName = String(obj?.getServiceName?.() || '').trim();
+          const name = String(obj?.getName?.() || '').trim();
+          const normalizedService = serviceName.toLowerCase();
+          if (!name || normalizedService !== normalizedTarget) continue;
+
+          const key = `${serviceName}::${name}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          rows.push({ [nameField]: name, serviceName });
+        }
+
+        rows.sort((a, b) => String(a[nameField]).localeCompare(String(b[nameField])));
+        return rows;
+      };
+
+      if (operation === 'listMaps') {
+        const rows = await listDistributedObjectNames('hz:impl:mapService', 'mapName');
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      if (operation === 'listQueues') {
+        const rows = await listDistributedObjectNames('hz:impl:queueService', 'queueName');
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      if (operation === 'listSets') {
+        const rows = await listDistributedObjectNames('hz:impl:setService', 'setName');
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      if (operation === 'listLists') {
+        const rows = await listDistributedObjectNames('hz:impl:listService', 'listName');
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      if (operation === 'listTopics') {
+        const rows = await listDistributedObjectNames('hz:impl:reliableTopicService', 'topicName');
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      if (operation === 'clusterDiagnostics') {
+        const members = client?.getCluster?.().getMembers?.() || [];
+        const distributedObjects = await client.getDistributedObjects();
+        const items = Array.isArray(distributedObjects) ? distributedObjects : [];
+
+        const namesByType = {
+          map: new Set<string>(),
+          queue: new Set<string>(),
+          set: new Set<string>(),
+          list: new Set<string>(),
+          topic: new Set<string>()
+        };
+
+        for (const obj of items) {
+          const serviceName = String(obj?.getServiceName?.() || '').trim().toLowerCase();
+          const name = String(obj?.getName?.() || '').trim();
+          if (!name) continue;
+          if (serviceName === 'hz:impl:mapservice') namesByType.map.add(name);
+          if (serviceName === 'hz:impl:queueservice') namesByType.queue.add(name);
+          if (serviceName === 'hz:impl:setservice') namesByType.set.add(name);
+          if (serviceName === 'hz:impl:listservice') namesByType.list.add(name);
+          if (serviceName === 'hz:impl:reliabletopicservice') namesByType.topic.add(name);
+        }
+
+        const includeSizes = args?.includeSizes !== false;
+        const rawLimit = Number(args?.maxObjectsPerType);
+        const maxObjectsPerType = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.trunc(rawLimit))) : 25;
+        const rawThreshold = Number(args?.sizeWarningThreshold);
+        const sizeWarningThreshold = Number.isFinite(rawThreshold) && rawThreshold > 0 ? Math.trunc(rawThreshold) : 100000;
+
+        const collectSizeStats = async (
+          type: 'map' | 'queue' | 'set' | 'list',
+          names: Set<string>,
+          getProxy: (name: string) => Promise<any>
+        ): Promise<{ rows: any[]; failed: number; sampled: number }> => {
+          if (!includeSizes || names.size === 0) return { rows: [], failed: 0, sampled: 0 };
+
+          const sampledNames = Array.from(names).sort((a, b) => a.localeCompare(b)).slice(0, maxObjectsPerType);
+          const sizeResults = await Promise.all(sampledNames.map(async (name) => {
+            try {
+              const proxy = await getProxy(name);
+              const size = await proxy.size();
+              return { ok: true, type, name, size: Number(size) || 0 };
+            } catch {
+              return { ok: false };
+            }
+          }));
+
+          const rows = sizeResults.filter((result) => result.ok).map((result: any) => ({
+            type: result.type,
+            name: result.name,
+            size: result.size
+          }));
+
+          return {
+            rows,
+            failed: sizeResults.length - rows.length,
+            sampled: sampledNames.length
+          };
+        };
+
+        const [mapStats, queueStats, setStats, listStats] = await Promise.all([
+          collectSizeStats('map', namesByType.map, (name: string) => client.getMap(name)),
+          collectSizeStats('queue', namesByType.queue, (name: string) => client.getQueue(name)),
+          collectSizeStats('set', namesByType.set, (name: string) => client.getSet(name)),
+          collectSizeStats('list', namesByType.list, (name: string) => client.getList(name))
+        ]);
+
+        const sampledSizeRows = [...mapStats.rows, ...queueStats.rows, ...setStats.rows, ...listStats.rows];
+        const sizeCollectionErrors = mapStats.failed + queueStats.failed + setStats.failed + listStats.failed;
+        const largeObjects = sampledSizeRows
+          .filter((row) => Number(row.size) >= sizeWarningThreshold)
+          .sort((a, b) => Number(b.size) - Number(a.size))
+          .slice(0, 20);
+        const memberCount = Array.isArray(members) ? members.length : 0;
+        const issues: string[] = [];
+        let health: 'ok' | 'warning' | 'critical' = 'ok';
+
+        if (memberCount === 0) {
+          health = 'critical';
+          issues.push('Cluster returned zero members');
+        }
+        if (latencyMs > 3000) {
+          health = 'critical';
+          issues.push(`High connection latency (${latencyMs} ms)`);
+        } else if (latencyMs > 1000) {
+          if (health === 'ok') health = 'warning';
+          issues.push(`Elevated connection latency (${latencyMs} ms)`);
+        }
+        if (sizeCollectionErrors > 0) {
+          if (health === 'ok') health = 'warning';
+          issues.push(`${sizeCollectionErrors} object size lookups failed`);
+        }
+        if (largeObjects.length > 0) {
+          if (health === 'ok') health = 'warning';
+          issues.push(`${largeObjects.length} sampled objects exceed sizeWarningThreshold (${sizeWarningThreshold})`);
+        }
+
+        const topBySize = (rows: any[]) =>
+          rows
+            .slice()
+            .sort((a, b) => Number(b.size) - Number(a.size))
+            .slice(0, 10)
+            .map((row) => ({ name: row.name, size: row.size }));
+
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          connected: true,
+          health,
+          issues,
+          latencyMs,
+          memberCount,
+          distributedObjectCount: items.length,
+          mapCount: namesByType.map.size,
+          queueCount: namesByType.queue.size,
+          setCount: namesByType.set.size,
+          listCount: namesByType.list.size,
+          topicCount: namesByType.topic.size,
+          sizeSampling: {
+            enabled: includeSizes,
+            maxObjectsPerType,
+            sizeWarningThreshold,
+            sampledObjects: mapStats.sampled + queueStats.sampled + setStats.sampled + listStats.sampled,
+            collectionErrors: sizeCollectionErrors
+          },
+          topMapsBySize: topBySize(mapStats.rows),
+          topQueuesBySize: topBySize(queueStats.rows),
+          topSetsBySize: topBySize(setStats.rows),
+          topListsBySize: topBySize(listStats.rows),
+          largeObjects
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'topicPublish') {
+        const topicName = String(args?.topicName || '').trim();
+        if (!topicName) throw new Error('topicName is required');
+        if (typeof args?.message === 'undefined') throw new Error('message is required');
+
+        const topic = await client.getReliableTopic(topicName);
+        await topic.publish(args.message);
+        const data = [{ topicName, published: true }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'queueOffer' || operation === 'queuePoll' || operation === 'queuePeek' || operation === 'queueSize') {
+        const queueName = String(args?.queueName || '').trim();
+        if (!queueName) throw new Error('queueName is required');
+        const queue = await client.getQueue(queueName);
+
+        if (operation === 'queueOffer') {
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const rawTimeout = Number(args?.timeoutMs);
+          const timeoutMs = Number.isFinite(rawTimeout) ? Math.max(0, Math.min(60000, Math.trunc(rawTimeout))) : undefined;
+          const offered = typeof timeoutMs === 'number'
+            ? await queue.offer(args.value, timeoutMs)
+            : await queue.offer(args.value);
+          const data = [{ queueName, offered: !!offered }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'queuePoll') {
+          const rawTimeout = Number(args?.timeoutMs);
+          const timeoutMs = Number.isFinite(rawTimeout) ? Math.max(0, Math.min(60000, Math.trunc(rawTimeout))) : undefined;
+          const value = typeof timeoutMs === 'number'
+            ? await queue.poll(timeoutMs)
+            : await queue.poll();
+          const data = [{ queueName, value: value ?? null, jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'queuePeek') {
+          const value = await queue.peek();
+          const data = [{ queueName, value: value ?? null, jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        const size = await queue.size();
+        const data = [{ queueName, size: Number(size) || 0 }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'setAdd' || operation === 'setRemove' || operation === 'setContains' || operation === 'setSize' || operation === 'setValues') {
+        const setName = String(args?.setName || '').trim();
+        if (!setName) throw new Error('setName is required');
+        const set = await client.getSet(setName);
+
+        if (operation === 'setAdd') {
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const added = await set.add(args.value);
+          const data = [{ setName, added: !!added }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'setRemove') {
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const removed = await set.remove(args.value);
+          const data = [{ setName, removed: !!removed }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'setContains') {
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const contains = await set.contains(args.value);
+          const data = [{ setName, contains: !!contains }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'setValues') {
+          const requestedLimit = Number(args?.limit);
+          const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(500, Math.trunc(requestedLimit))) : 100;
+          const values = await set.toArray();
+          const rows = (Array.isArray(values) ? values : []).slice(0, limit).map((value: any) => ({
+            setName,
+            value,
+            jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null)
+          }));
+          return { success: true, data: rows, rowCount: rows.length };
+        }
+
+        const size = await set.size();
+        const data = [{ setName, size: Number(size) || 0 }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'listAdd' || operation === 'listGet' || operation === 'listSize' || operation === 'listValues') {
+        const listName = String(args?.listName || '').trim();
+        if (!listName) throw new Error('listName is required');
+        const list = await client.getList(listName);
+
+        if (operation === 'listAdd') {
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const added = await list.add(args.value);
+          const data = [{ listName, added: !!added }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'listGet') {
+          const rawIndex = Number(args?.index);
+          if (!Number.isFinite(rawIndex) || rawIndex < 0) throw new Error('index must be a non-negative number');
+          const index = Math.trunc(rawIndex);
+          const value = await list.get(index);
+          const data = [{ listName, index, value: value ?? null, jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+
+        if (operation === 'listValues') {
+          const requestedLimit = Number(args?.limit);
+          const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(500, Math.trunc(requestedLimit))) : 100;
+          const values = await list.toArray();
+          const rows = (Array.isArray(values) ? values : []).slice(0, limit).map((value: any, index: number) => ({
+            listName,
+            index,
+            value,
+            jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null)
+          }));
+          return { success: true, data: rows, rowCount: rows.length };
+        }
+
+        const size = await list.size();
+        const data = [{ listName, size: Number(size) || 0 }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      const mapName = String(args?.mapName || '').trim();
+      if (!mapName) {
+        throw new Error('mapName is required');
+      }
+      const map = await client.getMap(mapName);
+
+      if (operation === 'mapSet') {
+        if (typeof args?.key === 'undefined') throw new Error('key is required');
+        if (typeof args?.value === 'undefined') throw new Error('value is required');
+        await map.set(String(args.key), args.value);
+        const data = [{ mapName, key: String(args.key), stored: true }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'mapGet') {
+        if (typeof args?.key === 'undefined') throw new Error('key is required');
+        const value = await map.get(String(args.key));
+        const data = [{ mapName, key: String(args.key), value: value ?? null, jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null) }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'mapRemove') {
+        if (typeof args?.key === 'undefined') throw new Error('key is required');
+        const removedValue = await map.remove(String(args.key));
+        const data = [{ mapName, key: String(args.key), removed: typeof removedValue !== 'undefined', removedValue: removedValue ?? null }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'mapSize') {
+        const size = await map.size();
+        const data = [{ mapName, size: Number(size) || 0 }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'mapEntries') {
+        const requestedLimit = Number(args?.limit);
+        const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(500, Math.trunc(requestedLimit))) : 50;
+        const entries = await map.entrySet();
+        const rows = Array.from(entries || []).slice(0, limit).map((entry: any) => {
+          const [key, value] = entry;
+          return { mapName, key: String(key), value, jsonValue: this.parseJsonIfPossible(typeof value === 'string' ? value : null) };
+        });
+        return { success: true, data: rows, rowCount: rows.length };
+      }
+
+      throw new Error(`Unknown Hazelcast operation: ${operation}`);
+    } catch (error) {
+      if (operation === 'connectionStatus') {
+        const message = error instanceof Error ? error.message : String(error);
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          connected: false,
+          error: message
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+      if (operation === 'clusterDiagnostics') {
+        const message = error instanceof Error ? error.message : String(error);
+        const data = [{
+          host,
+          port: Number(port) || 5701,
+          clusterName: clusterName || 'dev',
+          connected: false,
+          health: 'critical',
+          issues: [message],
+          latencyMs: null,
+          memberCount: 0,
+          distributedObjectCount: 0,
+          mapCount: 0,
+          queueCount: 0,
+          setCount: 0,
+          listCount: 0,
+          topicCount: 0
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+      logger.error('❌ Hazelcast error:', error);
+      return {
+        success: false,
+        error: `Hazelcast error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    } finally {
+      if (client) {
+        try {
+          await client.shutdown();
+        } catch {
+          // ignore shutdown errors
+        }
+      }
+    }
+  }
+
+  private async executeKafkaCall(queryConfig: any, args: any): Promise<any> {
+    const { host, port = 9092, clientId, topic, username, password, operation } = queryConfig;
+    if (!host) {
+      return {
+        success: false,
+        error: 'Kafka host is missing',
+        data: [{ error: 'Kafka host is missing' }],
+        rowCount: 1
+      };
+    }
+
+    if ((username && !password) || (!username && password)) {
+      return {
+        success: false,
+        error: 'Kafka SASL requires both username and password',
+        data: [{ error: 'Kafka SASL requires both username and password' }],
+        rowCount: 1
+      };
+    }
+
+    const kafkaModule: any = await import('kafkajs');
+    const KafkaFactory = kafkaModule?.Kafka || kafkaModule?.default?.Kafka;
+    if (!KafkaFactory) {
+      throw new Error('kafkajs is not available or incompatible');
+    }
+
+    const resolvedHost = String(host);
+    const resolvedPort = Number(port) || 9092;
+    const resolvedClientId = String(clientId || 'quickmcp');
+    const hasSasl = !!username && !!password;
+    const useSsl = typeof queryConfig?.ssl === 'boolean' ? queryConfig.ssl : hasSasl;
+    const kafka = new KafkaFactory({
+      clientId: resolvedClientId,
+      brokers: [`${resolvedHost}:${resolvedPort}`],
+      ssl: useSsl,
+      sasl: hasSasl ? { mechanism: 'plain', username: String(username), password: String(password) } : undefined,
+      connectionTimeout: 5000,
+      requestTimeout: 10000,
+      retry: { retries: 1 }
+    });
+
+    try {
+      if (operation === 'getConfig') {
+        const data = [{
+          host: resolvedHost,
+          port: resolvedPort,
+          clientId: resolvedClientId,
+          topic: topic || '',
+          username: username || '',
+          passwordConfigured: !!password,
+          ssl: useSsl,
+          sasl: hasSasl
+        }];
+        return { success: true, data, rowCount: data.length };
+      }
+
+      if (operation === 'checkConnection') {
+        const startedAt = Date.now();
+        const admin = kafka.admin();
+        try {
+          await admin.connect();
+          const topics = await admin.listTopics();
+          const data = [{
+            host: resolvedHost,
+            port: resolvedPort,
+            clientId: resolvedClientId,
+            reachable: true,
+            latencyMs: Date.now() - startedAt,
+            topicCount: topics.length
+          }];
+          return { success: true, data, rowCount: data.length };
+        } finally {
+          await admin.disconnect().catch(() => undefined);
+        }
+      }
+
+      if (operation === 'listTopics') {
+        const admin = kafka.admin();
+        try {
+          await admin.connect();
+          const topics = await admin.listTopics();
+          const data = topics.map((name: string) => ({ topic: name }));
+          return { success: true, data, rowCount: data.length };
+        } finally {
+          await admin.disconnect().catch(() => undefined);
+        }
+      }
+
+      if (operation === 'getTopicOffsets') {
+        const resolvedTopic = String(args?.topic || topic || '').trim();
+        if (!resolvedTopic) throw new Error('topic is required');
+        const admin = kafka.admin();
+        try {
+          await admin.connect();
+          const offsets = await admin.fetchTopicOffsets(resolvedTopic);
+          const data = offsets.map((item: any) => ({
+            topic: resolvedTopic,
+            partition: Number(item.partition) || 0,
+            low: Number(item.low) || 0,
+            high: Number(item.high) || 0
+          }));
+          return { success: true, data, rowCount: data.length };
+        } finally {
+          await admin.disconnect().catch(() => undefined);
+        }
+      }
+
+      if (operation === 'produceMessage') {
+        const resolvedTopic = String(args?.topic || topic || '').trim();
+        if (!resolvedTopic) throw new Error('topic is required');
+        if (typeof args?.value === 'undefined') throw new Error('value is required');
+
+        const producer = kafka.producer();
+        try {
+          await producer.connect();
+
+          const rawValue = args.value;
+          const valueString = typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue);
+          const rawHeaders = (args?.headers && typeof args.headers === 'object') ? args.headers : {};
+          const messageHeaders: Record<string, string> = {};
+          for (const [key, value] of Object.entries(rawHeaders)) {
+            if (typeof value === 'undefined' || value === null) continue;
+            messageHeaders[String(key)] = String(value);
+          }
+
+          const ack = await producer.send({
+            topic: resolvedTopic,
+            messages: [{
+              key: args?.key ? String(args.key) : undefined,
+              value: valueString,
+              headers: Object.keys(messageHeaders).length > 0 ? messageHeaders : undefined
+            }]
+          });
+          const data = ack.map((item: any) => ({
+            topic: item.topicName || resolvedTopic,
+            partition: Number(item.partition) || 0,
+            baseOffset: item.baseOffset || '0'
+          }));
+          return { success: true, data, rowCount: data.length };
+        } finally {
+          await producer.disconnect().catch(() => undefined);
+        }
+      }
+
+      if (operation === 'consumeMessages') {
+        const resolvedTopic = String(args?.topic || topic || '').trim();
+        if (!resolvedTopic) throw new Error('topic is required');
+
+        const requestedLimit = Number(args?.limit);
+        const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(50, Math.trunc(requestedLimit))) : 10;
+        const requestedTimeout = Number(args?.timeoutMs);
+        const timeoutMs = Number.isFinite(requestedTimeout) ? Math.max(1000, Math.min(30000, Math.trunc(requestedTimeout))) : 5000;
+        const fromBeginning = args?.fromBeginning === true;
+        const groupId = String(args?.groupId || `quickmcp-consumer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
+        const consumer = kafka.consumer({ groupId });
+
+        try {
+          await consumer.connect();
+          await consumer.subscribe({ topic: resolvedTopic, fromBeginning });
+
+          const messages: any[] = [];
+          let finished = false;
+          let runError: Error | null = null;
+          let resolveDone: (() => void) | null = null;
+          const done = new Promise<void>((resolve) => { resolveDone = resolve; });
+          const finish = () => {
+            if (finished) return;
+            finished = true;
+            if (resolveDone) resolveDone();
+          };
+
+          const runPromise = consumer.run({
+            autoCommit: false,
+            eachMessage: async ({ topic: currentTopic, partition, message }: any) => {
+              const value = message?.value ? message.value.toString('utf8') : null;
+              const key = message?.key ? message.key.toString('utf8') : null;
+              messages.push({
+                topic: currentTopic,
+                partition: Number(partition) || 0,
+                offset: message?.offset || null,
+                key,
+                value,
+                jsonValue: this.parseJsonIfPossible(value),
+                timestamp: message?.timestamp ? Number(message.timestamp) || null : null,
+                headers: this.normalizeKafkaHeaders(message?.headers)
+              });
+              if (messages.length >= limit) {
+                finish();
+              }
+            }
+          }).catch((err: any) => {
+            runError = err instanceof Error ? err : new Error(String(err));
+            finish();
+          });
+
+          const timeoutHandle = setTimeout(() => finish(), timeoutMs);
+          await done;
+          clearTimeout(timeoutHandle);
+
+          await consumer.stop().catch(() => undefined);
+          await runPromise;
+          if (runError) throw runError;
+
+          return {
+            success: true,
+            data: messages,
+            rowCount: messages.length,
+            metadata: {
+              topic: resolvedTopic,
+              groupId,
+              timeoutMs,
+              limit
+            }
+          };
+        } finally {
+          await consumer.disconnect().catch(() => undefined);
+        }
+      }
+
+      throw new Error(`Unknown Kafka operation: ${operation}`);
+    } catch (error) {
+      logger.error('❌ Kafka error:', error);
+      return {
+        success: false,
+        error: `Kafka error: ${error instanceof Error ? error.message : String(error)}`,
+        data: [{ error: error instanceof Error ? error.message : String(error) }],
+        rowCount: 1
+      };
+    }
+  }
+
+  private parseJsonIfPossible(value: string | null): any {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeKafkaHeaders(headers: Record<string, any> | undefined): Record<string, string> {
+    if (!headers || typeof headers !== 'object') return {};
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(headers)) {
+      if (typeof value === 'undefined' || value === null) continue;
+      if (Buffer.isBuffer(value)) {
+        normalized[key] = value.toString('utf8');
+        continue;
+      }
+      if (Array.isArray(value) && value.every((item) => Buffer.isBuffer(item))) {
+        normalized[key] = value.map((item) => item.toString('utf8')).join(',');
+        continue;
+      }
+      normalized[key] = String(value);
+    }
+    return normalized;
   }
 
   private async executeElasticsearchCall(queryConfig: any, args: any): Promise<any> {

@@ -226,6 +226,12 @@ export class MCPServerGenerator {
         tools = this.generateToolsForDocker(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Kubernetes) {
         tools = this.generateToolsForKubernetes(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Redis) {
+        tools = this.generateToolsForRedis(serverId, sourceConfig);
+      } else if (sourceConfig?.type === DataSourceType.Hazelcast) {
+        tools = this.generateToolsForHazelcast(serverId, sourceConfig, selectedTables);
+      } else if (sourceConfig?.type === DataSourceType.Kafka) {
+        tools = this.generateToolsForKafka(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Elasticsearch) {
         tools = this.generateToolsForElasticsearch(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.OpenSearch) {
@@ -7199,6 +7205,599 @@ export class MCPServerGenerator {
     });
 
     return tools;
+  }
+
+  private generateToolsForRedis(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, port, database, username, password } = sourceConfig || {};
+    const tools: ToolDefinition[] = [];
+    const baseConfig = {
+      type: DataSourceType.Redis,
+      host,
+      port: port || 6379,
+      database: database || '0',
+      username,
+      password
+    };
+
+    tools.push({
+      server_id: serverId,
+      name: 'ping',
+      description: 'Ping Redis server',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', description: 'Optional ping payload' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'ping' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'get',
+      description: 'Get value by key',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Key to read' }
+        },
+        required: ['key']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'get' }),
+      operation: 'SELECT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'set',
+      description: 'Set key/value in Redis',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Key to write' },
+          value: { type: 'string', description: 'Value to store' },
+          ttlSeconds: { type: 'number', description: 'Optional TTL in seconds' }
+        },
+        required: ['key', 'value']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'set' }),
+      operation: 'INSERT'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'delete_key',
+      description: 'Delete key from Redis',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Key to delete' }
+        },
+        required: ['key']
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'delete' }),
+      operation: 'DELETE'
+    });
+
+    tools.push({
+      server_id: serverId,
+      name: 'list_keys',
+      description: 'List keys by pattern',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pattern: { type: 'string', description: 'Redis key pattern', default: '*' }
+        },
+        required: []
+      },
+      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listKeys' }),
+      operation: 'SELECT'
+    });
+
+    return tools;
+  }
+
+  private generateToolsForHazelcast(serverId: string, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
+    const { host, port, clusterName, username, password } = sourceConfig || {};
+    const baseConfig = {
+      type: DataSourceType.Hazelcast,
+      host,
+      port: port || 5701,
+      clusterName: clusterName || 'dev',
+      username,
+      password
+    };
+
+    const allTools: ToolDefinition[] = [
+      {
+        server_id: serverId,
+        name: 'check_connection',
+        description: 'Check Hazelcast client connectivity',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'checkConnection' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'connection_status',
+        description: 'Show Hazelcast connection status',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'connectionStatus' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'cluster_diagnostics',
+        description: 'Show Hazelcast cluster diagnostics and health summary',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            includeSizes: { type: 'boolean', description: 'Include sampled object sizes', default: true },
+            maxObjectsPerType: { type: 'number', description: 'Max objects to sample per type', default: 25 },
+            sizeWarningThreshold: { type: 'number', description: 'Warn if sampled object size exceeds this', default: 100000 }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'clusterDiagnostics' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'get_config',
+        description: 'Show Hazelcast connection configuration',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getConfig' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_maps',
+        description: 'List Hazelcast map names',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listMaps' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'map_set',
+        description: 'Set key/value in a Hazelcast map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Hazelcast map name' },
+            key: { type: 'string', description: 'Entry key' },
+            value: { type: 'string', description: 'Entry value' }
+          },
+          required: ['mapName', 'key', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapSet' }),
+        operation: 'UPDATE'
+      },
+      {
+        server_id: serverId,
+        name: 'map_get',
+        description: 'Get value by key from a Hazelcast map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Hazelcast map name' },
+            key: { type: 'string', description: 'Entry key' }
+          },
+          required: ['mapName', 'key']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapGet' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'map_remove',
+        description: 'Remove key from a Hazelcast map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Hazelcast map name' },
+            key: { type: 'string', description: 'Entry key' }
+          },
+          required: ['mapName', 'key']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapRemove' }),
+        operation: 'DELETE'
+      },
+      {
+        server_id: serverId,
+        name: 'map_size',
+        description: 'Get entry count of a Hazelcast map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Hazelcast map name' }
+          },
+          required: ['mapName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'map_entries',
+        description: 'List entries from a Hazelcast map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Hazelcast map name' },
+            limit: { type: 'number', description: 'Maximum entries to return', default: 50 }
+          },
+          required: ['mapName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapEntries' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_queues',
+        description: 'List Hazelcast queue names',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listQueues' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_offer',
+        description: 'Offer value to a Hazelcast queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Hazelcast queue name' },
+            value: { type: 'string', description: 'Value to enqueue' },
+            timeoutMs: { type: 'number', description: 'Optional offer timeout in milliseconds' }
+          },
+          required: ['queueName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queueOffer' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_poll',
+        description: 'Poll value from a Hazelcast queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Hazelcast queue name' },
+            timeoutMs: { type: 'number', description: 'Optional poll timeout in milliseconds' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queuePoll' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_peek',
+        description: 'Peek head value of a Hazelcast queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Hazelcast queue name' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queuePeek' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_size',
+        description: 'Get size of a Hazelcast queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Hazelcast queue name' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queueSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_sets',
+        description: 'List Hazelcast set names',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listSets' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'set_add',
+        description: 'Add value to a Hazelcast set',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            setName: { type: 'string', description: 'Hazelcast set name' },
+            value: { type: 'string', description: 'Value to add' }
+          },
+          required: ['setName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'setAdd' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'set_remove',
+        description: 'Remove value from a Hazelcast set',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            setName: { type: 'string', description: 'Hazelcast set name' },
+            value: { type: 'string', description: 'Value to remove' }
+          },
+          required: ['setName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'setRemove' }),
+        operation: 'DELETE'
+      },
+      {
+        server_id: serverId,
+        name: 'set_contains',
+        description: 'Check value in a Hazelcast set',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            setName: { type: 'string', description: 'Hazelcast set name' },
+            value: { type: 'string', description: 'Value to check' }
+          },
+          required: ['setName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'setContains' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'set_size',
+        description: 'Get size of a Hazelcast set',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            setName: { type: 'string', description: 'Hazelcast set name' }
+          },
+          required: ['setName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'setSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'set_values',
+        description: 'List values from a Hazelcast set',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            setName: { type: 'string', description: 'Hazelcast set name' },
+            limit: { type: 'number', description: 'Maximum values to return', default: 100 }
+          },
+          required: ['setName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'setValues' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_lists',
+        description: 'List Hazelcast list names',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listLists' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_add',
+        description: 'Add value to a Hazelcast list',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            listName: { type: 'string', description: 'Hazelcast list name' },
+            value: { type: 'string', description: 'Value to append' }
+          },
+          required: ['listName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listAdd' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_get',
+        description: 'Get value by index from a Hazelcast list',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            listName: { type: 'string', description: 'Hazelcast list name' },
+            index: { type: 'number', description: 'Zero-based index' }
+          },
+          required: ['listName', 'index']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listGet' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_size',
+        description: 'Get size of a Hazelcast list',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            listName: { type: 'string', description: 'Hazelcast list name' }
+          },
+          required: ['listName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_values',
+        description: 'List values from a Hazelcast list',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            listName: { type: 'string', description: 'Hazelcast list name' },
+            limit: { type: 'number', description: 'Maximum values to return', default: 100 }
+          },
+          required: ['listName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listValues' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_topics',
+        description: 'List Hazelcast topic names',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listTopics' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'topic_publish',
+        description: 'Publish message to a Hazelcast topic',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            topicName: { type: 'string', description: 'Hazelcast topic name' },
+            message: { type: 'string', description: 'Message payload' }
+          },
+          required: ['topicName', 'message']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'topicPublish' }),
+        operation: 'INSERT'
+      }
+    ];
+
+    if (!Array.isArray(selectedTables) || selectedTables.length === 0) {
+      return allTools;
+    }
+
+    const groupsToTools: Record<string, string[]> = {
+      diagnostics: ['check_connection', 'connection_status', 'cluster_diagnostics', 'get_config'],
+      maps: ['list_maps', 'map_set', 'map_get', 'map_remove', 'map_size', 'map_entries'],
+      queues: ['list_queues', 'queue_offer', 'queue_poll', 'queue_peek', 'queue_size'],
+      sets: ['list_sets', 'set_add', 'set_remove', 'set_contains', 'set_size', 'set_values'],
+      lists: ['list_lists', 'list_add', 'list_get', 'list_size', 'list_values'],
+      topics: ['list_topics', 'topic_publish']
+    };
+
+    const selectedToolNames = new Set<string>();
+
+    for (const selectedTable of selectedTables) {
+      const directTools = Array.isArray(selectedTable?.selectedToolNames) ? selectedTable.selectedToolNames : [];
+      for (const directToolName of directTools) {
+        const normalizedToolName = String(directToolName || '').trim();
+        if (normalizedToolName) selectedToolNames.add(normalizedToolName);
+      }
+
+      const normalizedGroupName = String(selectedTable?.tableName || '').trim().toLowerCase();
+      const groupedTools = groupsToTools[normalizedGroupName] || [];
+      for (const groupedToolName of groupedTools) {
+        selectedToolNames.add(groupedToolName);
+      }
+    }
+
+    if (selectedToolNames.size === 0) {
+      return allTools;
+    }
+
+    return allTools.filter((tool) => selectedToolNames.has(tool.name));
+  }
+
+  private generateToolsForKafka(serverId: string, sourceConfig: any): ToolDefinition[] {
+    const { host, port, clientId, username, password, topic } = sourceConfig || {};
+    const baseConfig = {
+      type: DataSourceType.Kafka,
+      host,
+      port: port || 9092,
+      clientId: clientId || 'quickmcp',
+      username,
+      password,
+      topic
+    };
+
+    return [
+      {
+        server_id: serverId,
+        name: 'check_connection',
+        description: 'Check Kafka client connectivity',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'checkConnection' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'get_config',
+        description: 'Show Kafka connection configuration',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getConfig' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_topics',
+        description: 'List Kafka topics',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listTopics' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'get_topic_offsets',
+        description: 'Get partition offsets for a topic',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            topic: { type: 'string', description: 'Topic name (overrides configured topic)' }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getTopicOffsets' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'produce_message',
+        description: 'Produce a message to Kafka topic',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            topic: { type: 'string', description: 'Topic name (overrides configured topic)' },
+            key: { type: 'string', description: 'Optional message key' },
+            value: { type: 'string', description: 'Message payload' },
+            headers: { type: 'object', description: 'Optional message headers' }
+          },
+          required: ['value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'produceMessage' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'consume_messages',
+        description: 'Consume messages from Kafka topic',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            topic: { type: 'string', description: 'Topic name (overrides configured topic)' },
+            groupId: { type: 'string', description: 'Consumer group id (optional)' },
+            limit: { type: 'number', description: 'Maximum message count', default: 10 },
+            timeoutMs: { type: 'number', description: 'Max wait duration in ms', default: 5000 },
+            fromBeginning: { type: 'boolean', description: 'Read from beginning of topic', default: false }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'consumeMessages' }),
+        operation: 'SELECT'
+      }
+    ];
   }
 
   private generateToolsForElasticsearch(serverId: string, sourceConfig: any): ToolDefinition[] {

@@ -60,6 +60,15 @@ services:
       - hazelcast_data:/data/hazelcast
     restart: unless-stopped
 
+  hazelcast-management-center:
+    image: hazelcast/management-center:5.3.3
+    container_name: quickmcp-hazelcast-mc
+    ports:
+      - "8080:8080"
+    depends_on:
+      - hazelcast
+    restart: unless-stopped
+
   mongodb:
     image: mongo:7
     container_name: quickmcp-mongodb

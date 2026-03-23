@@ -102,3 +102,11 @@ NAME: MONGODB
 N8N
 "N8N_API_URL": "https://9hret5g2.rcsrv.com",
 "N8N_API_KEY": <<TOKEN>>
+
+********************************************************************************************************************
+
+Hazelcast
+Member Host: localhost
+Member Host (Docker içinde): quickmcp-hazelcast
+Member Port: 5701
+Cluster Name (Optional): dev
