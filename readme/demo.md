@@ -106,7 +106,15 @@ N8N
 ********************************************************************************************************************
 
 Hazelcast
+http://localhost:8080/clusters/dev/maps
 Member Host: localhost
 Member Host (Docker içinde): quickmcp-hazelcast
 Member Port: 5701
 Cluster Name (Optional): dev
+
+********************************************************************************************************************
+
+Redis
+http://localhost:5540/
+Host: localhost
+Port: 6379

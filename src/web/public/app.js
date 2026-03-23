@@ -2499,12 +2499,12 @@ function displayHazelcastPreview(parsedData) {
     let html = '<div class="space-y-4">';
 
     html += `
-        <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div class="flex items-start space-x-3">
-                <i class="fas fa-network-wired text-cyan-600 mt-1"></i>
+                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
                 <div>
-                    <h3 class="font-semibold text-cyan-900 mb-1">Configure Hazelcast Tool Groups</h3>
-                    <p class="text-cyan-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, SETS, LISTS, TOPICS, DIAGNOSTICS.</p>
+                    <h3 class="font-semibold text-blue-900 mb-1">Configure Hazelcast Tool Groups</h3>
+                    <p class="text-blue-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, SETS, LISTS, TOPICS, DIAGNOSTICS.</p>
                 </div>
             </div>
         </div>
@@ -2518,7 +2518,7 @@ function displayHazelcastPreview(parsedData) {
 
         html += `
             <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-4 border-b border-gray-200">
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox"
@@ -2537,7 +2537,7 @@ function displayHazelcastPreview(parsedData) {
                     </div>
                 </div>
 
-                <div id="${panelId}" class="hidden p-4 bg-cyan-50/50 space-y-2">
+                <div id="${panelId}" class="hidden p-4 bg-blue-50 border-b border-gray-200 space-y-2">
                     ${rows.map((row, toolIndex) => {
                         const rawTool = String(row?.[0] || '').trim();
                         const toolName = escapeHtml(rawTool);
@@ -2558,7 +2558,7 @@ function displayHazelcastPreview(parsedData) {
                     }).join('')}
 
                     <div class="pt-2 flex items-center gap-4">
-                        <button onclick="selectAllHazelcastGroupTools(${index})" class="text-sm text-cyan-700 hover:text-cyan-900 font-medium">
+                        <button onclick="selectAllHazelcastGroupTools(${index})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                             <i class="fas fa-check-square mr-1"></i>Select All
                         </button>
                         <button onclick="deselectAllHazelcastGroupTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
@@ -2583,12 +2583,12 @@ function displayRedisPreview(parsedData) {
     let html = '<div class="space-y-4">';
 
     html += `
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div class="flex items-start space-x-3">
-                <i class="fas fa-database text-amber-600 mt-1"></i>
+                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
                 <div>
-                    <h3 class="font-semibold text-amber-900 mb-1">Configure Redis Tool Groups</h3>
-                    <p class="text-amber-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, DIAGNOSTICS, STRINGS.</p>
+                    <h3 class="font-semibold text-blue-900 mb-1">Configure Redis Tool Groups</h3>
+                    <p class="text-blue-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, DIAGNOSTICS, STRINGS.</p>
                 </div>
             </div>
         </div>
@@ -2602,7 +2602,7 @@ function displayRedisPreview(parsedData) {
 
         html += `
             <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-4 border-b border-gray-200">
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox"
@@ -2621,7 +2621,7 @@ function displayRedisPreview(parsedData) {
                     </div>
                 </div>
 
-                <div id="${panelId}" class="hidden p-4 bg-amber-50/50 space-y-2">
+                <div id="${panelId}" class="hidden p-4 bg-blue-50 border-b border-gray-200 space-y-2">
                     ${rows.map((row, toolIndex) => {
                         const rawTool = String(row?.[0] || '').trim();
                         const toolName = escapeHtml(rawTool);
@@ -2642,7 +2642,7 @@ function displayRedisPreview(parsedData) {
                     }).join('')}
 
                     <div class="pt-2 flex items-center gap-4">
-                        <button onclick="selectAllRedisGroupTools(${index})" class="text-sm text-amber-700 hover:text-amber-900 font-medium">
+                        <button onclick="selectAllRedisGroupTools(${index})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                             <i class="fas fa-check-square mr-1"></i>Select All
                         </button>
                         <button onclick="deselectAllRedisGroupTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">

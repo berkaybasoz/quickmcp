@@ -1911,3 +1911,19 @@ html.dark body.auth-page #tokenModal > div {
   cursor: not-allowed;
   opacity: 0.55;
 }
+
+/* Dark mode: keep Hazelcast/Redis slider toggles aligned with Step-3 preview palette */
+html.dark #wizard-step-3 #data-preview .qmcp-slide-toggle {
+  background: rgba(30, 41, 59, 0.96) !important;
+  border-color: rgba(71, 85, 105, 0.9) !important;
+}
+
+html.dark #wizard-step-3 #data-preview .qmcp-slide-toggle::after {
+  background: #f8fafc !important;
+  box-shadow: 0 1px 3px rgba(2, 6, 23, 0.65) !important;
+}
+
+html.dark #wizard-step-3 #data-preview .qmcp-slide-toggle:checked {
+  background: rgba(5, 150, 105, 0.9) !important;
+  border-color: rgba(16, 185, 129, 0.96) !important;
+}
