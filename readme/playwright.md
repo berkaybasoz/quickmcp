@@ -12,6 +12,8 @@ tek dosya çalıştırma:
 npx playwright test tests/e2e/mssql.spec.ts
 npx playwright test tests/e2e/mysql.spec.ts
 npx playwright test tests/e2e/postgresql.spec.ts
+npx playwright test tests/e2e/redis.spec.ts
+npx playwright test tests/e2e/hazelcast.spec.ts
 npx playwright test tests/e2e/rest.spec.ts
 npx playwright test tests/e2e/webpage.spec.ts
 npx playwright test tests/e2e/curl.spec.ts
