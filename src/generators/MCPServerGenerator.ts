@@ -227,7 +227,7 @@ export class MCPServerGenerator {
       } else if (sourceConfig?.type === DataSourceType.Kubernetes) {
         tools = this.generateToolsForKubernetes(serverId, sourceConfig);
       } else if (sourceConfig?.type === DataSourceType.Redis) {
-        tools = this.generateToolsForRedis(serverId, sourceConfig);
+        tools = this.generateToolsForRedis(serverId, sourceConfig, selectedTables);
       } else if (sourceConfig?.type === DataSourceType.Hazelcast) {
         tools = this.generateToolsForHazelcast(serverId, sourceConfig, selectedTables);
       } else if (sourceConfig?.type === DataSourceType.Kafka) {
@@ -7207,9 +7207,8 @@ export class MCPServerGenerator {
     return tools;
   }
 
-  private generateToolsForRedis(serverId: string, sourceConfig: any): ToolDefinition[] {
+  private generateToolsForRedis(serverId: string, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {
     const { host, port, database, username, password } = sourceConfig || {};
-    const tools: ToolDefinition[] = [];
     const baseConfig = {
       type: DataSourceType.Redis,
       host,
@@ -7219,84 +7218,289 @@ export class MCPServerGenerator {
       password
     };
 
-    tools.push({
-      server_id: serverId,
-      name: 'ping',
-      description: 'Ping Redis server',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          message: { type: 'string', description: 'Optional ping payload' }
+    const allTools: ToolDefinition[] = [
+      {
+        server_id: serverId,
+        name: 'ping',
+        description: 'Ping Redis server',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', description: 'Optional ping payload' }
+          },
+          required: []
         },
-        required: []
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'ping' }),
+        operation: 'SELECT'
       },
-      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'ping' }),
-      operation: 'SELECT'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'get',
-      description: 'Get value by key',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          key: { type: 'string', description: 'Key to read' }
+      {
+        server_id: serverId,
+        name: 'connection_status',
+        description: 'Show Redis connection status',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'connectionStatus' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'get_config',
+        description: 'Show Redis connection configuration',
+        inputSchema: { type: 'object', properties: {}, required: [] },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'getConfig' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_maps',
+        description: 'List Redis hash keys as maps',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Redis key pattern', default: '*' }
+          },
+          required: []
         },
-        required: ['key']
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listMaps' }),
+        operation: 'SELECT'
       },
-      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'get' }),
-      operation: 'SELECT'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'set',
-      description: 'Set key/value in Redis',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          key: { type: 'string', description: 'Key to write' },
-          value: { type: 'string', description: 'Value to store' },
-          ttlSeconds: { type: 'number', description: 'Optional TTL in seconds' }
+      {
+        server_id: serverId,
+        name: 'map_set',
+        description: 'Set field/value in a Redis hash map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Redis hash key name' },
+            key: { type: 'string', description: 'Hash field key' },
+            value: { type: 'string', description: 'Hash field value' }
+          },
+          required: ['mapName', 'key', 'value']
         },
-        required: ['key', 'value']
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapSet' }),
+        operation: 'UPDATE'
       },
-      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'set' }),
-      operation: 'INSERT'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'delete_key',
-      description: 'Delete key from Redis',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          key: { type: 'string', description: 'Key to delete' }
+      {
+        server_id: serverId,
+        name: 'map_get',
+        description: 'Get field value from a Redis hash map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Redis hash key name' },
+            key: { type: 'string', description: 'Hash field key' }
+          },
+          required: ['mapName', 'key']
         },
-        required: ['key']
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapGet' }),
+        operation: 'SELECT'
       },
-      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'delete' }),
-      operation: 'DELETE'
-    });
-
-    tools.push({
-      server_id: serverId,
-      name: 'list_keys',
-      description: 'List keys by pattern',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          pattern: { type: 'string', description: 'Redis key pattern', default: '*' }
+      {
+        server_id: serverId,
+        name: 'map_remove',
+        description: 'Remove field from a Redis hash map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Redis hash key name' },
+            key: { type: 'string', description: 'Hash field key' }
+          },
+          required: ['mapName', 'key']
         },
-        required: []
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapRemove' }),
+        operation: 'DELETE'
       },
-      sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listKeys' }),
-      operation: 'SELECT'
-    });
+      {
+        server_id: serverId,
+        name: 'map_size',
+        description: 'Get field count of a Redis hash map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Redis hash key name' }
+          },
+          required: ['mapName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'map_entries',
+        description: 'List field/value entries from a Redis hash map',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            mapName: { type: 'string', description: 'Redis hash key name' },
+            limit: { type: 'number', description: 'Maximum entries to return', default: 50 }
+          },
+          required: ['mapName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'mapEntries' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'list_queues',
+        description: 'List Redis list keys as queues',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Redis key pattern', default: '*' }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listQueues' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_offer',
+        description: 'Push value to a Redis queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Redis list key name' },
+            value: { type: 'string', description: 'Value to enqueue' }
+          },
+          required: ['queueName', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queueOffer' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_poll',
+        description: 'Pop value from a Redis queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Redis list key name' },
+            timeoutMs: { type: 'number', description: 'Optional blocking timeout in milliseconds' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queuePoll' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_peek',
+        description: 'Peek head value of a Redis queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Redis list key name' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queuePeek' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'queue_size',
+        description: 'Get size of a Redis queue',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            queueName: { type: 'string', description: 'Redis list key name' }
+          },
+          required: ['queueName']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'queueSize' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'get',
+        description: 'Get value by key',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'Key to read' }
+          },
+          required: ['key']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'get' }),
+        operation: 'SELECT'
+      },
+      {
+        server_id: serverId,
+        name: 'set',
+        description: 'Set key/value in Redis',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'Key to write' },
+            value: { type: 'string', description: 'Value to store' },
+            ttlSeconds: { type: 'number', description: 'Optional TTL in seconds' }
+          },
+          required: ['key', 'value']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'set' }),
+        operation: 'INSERT'
+      },
+      {
+        server_id: serverId,
+        name: 'delete_key',
+        description: 'Delete key from Redis',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'Key to delete' }
+          },
+          required: ['key']
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'delete' }),
+        operation: 'DELETE'
+      },
+      {
+        server_id: serverId,
+        name: 'list_keys',
+        description: 'List keys by pattern',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Redis key pattern', default: '*' }
+          },
+          required: []
+        },
+        sqlQuery: JSON.stringify({ ...baseConfig, operation: 'listKeys' }),
+        operation: 'SELECT'
+      }
+    ];
 
-    return tools;
+    if (!Array.isArray(selectedTables) || selectedTables.length === 0) {
+      return allTools;
+    }
+
+    const groupsToTools: Record<string, string[]> = {
+      diagnostics: ['ping', 'connection_status', 'get_config'],
+      maps: ['list_maps', 'map_set', 'map_get', 'map_remove', 'map_size', 'map_entries'],
+      queues: ['list_queues', 'queue_offer', 'queue_poll', 'queue_peek', 'queue_size'],
+      strings: ['get', 'set', 'delete_key', 'list_keys']
+    };
+
+    const selectedToolNames = new Set<string>();
+    for (const selectedTable of selectedTables) {
+      const directTools = Array.isArray(selectedTable?.selectedToolNames) ? selectedTable.selectedToolNames : [];
+      for (const directToolName of directTools) {
+        const normalizedToolName = String(directToolName || '').trim();
+        if (normalizedToolName) selectedToolNames.add(normalizedToolName);
+      }
+
+      const normalizedGroupName = String(selectedTable?.tableName || '').trim().toLowerCase();
+      const groupedTools = groupsToTools[normalizedGroupName] || [];
+      for (const groupedToolName of groupedTools) {
+        selectedToolNames.add(groupedToolName);
+      }
+    }
+
+    if (selectedToolNames.size === 0) {
+      return allTools;
+    }
+
+    return allTools.filter((tool) => selectedToolNames.has(tool.name));
   }
 
   private generateToolsForHazelcast(serverId: string, sourceConfig: any, selectedTables?: any[]): ToolDefinition[] {

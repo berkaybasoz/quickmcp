@@ -674,6 +674,131 @@ export class ToolExecuter {
           const data = [{ response: pong }];
           return { success: true, data, rowCount: data.length };
         }
+        case 'connectionStatus': {
+          const pong = await redis.ping();
+          const data = [{
+            host: String(host),
+            port: Number(port) || 6379,
+            database: dbIndex,
+            connected: String(pong || '').toUpperCase() === 'PONG'
+          }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'getConfig': {
+          const data = [{
+            host: String(host),
+            port: Number(port) || 6379,
+            database: dbIndex,
+            username: username || '',
+            passwordConfigured: !!password
+          }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'listMaps':
+        case 'listQueues': {
+          const pattern = args?.pattern ? String(args.pattern) : '*';
+          const keys = await redis.keys(pattern);
+          const keyRows = await Promise.all((Array.isArray(keys) ? keys : []).map(async (key: string) => ({
+            key,
+            type: await redis.type(key)
+          })));
+          const targetType = operation === 'listMaps' ? 'hash' : 'list';
+          const data = keyRows
+            .filter((row) => row.type === targetType)
+            .map((row) => (operation === 'listMaps' ? { mapName: row.key } : { queueName: row.key }));
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'mapSet': {
+          const mapName = String(args?.mapName || '').trim();
+          const key = String(args?.key || '').trim();
+          if (!mapName) throw new Error('mapName is required');
+          if (!key) throw new Error('key is required');
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const rawValue = args.value;
+          const value = typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue);
+          await redis.hset(mapName, key, value);
+          const data = [{ mapName, key, stored: true }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'mapGet': {
+          const mapName = String(args?.mapName || '').trim();
+          const key = String(args?.key || '').trim();
+          if (!mapName) throw new Error('mapName is required');
+          if (!key) throw new Error('key is required');
+          const value = await redis.hget(mapName, key);
+          const data = [{ mapName, key, value: value ?? null, jsonValue: this.parseJsonIfPossible(value ?? null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'mapRemove': {
+          const mapName = String(args?.mapName || '').trim();
+          const key = String(args?.key || '').trim();
+          if (!mapName) throw new Error('mapName is required');
+          if (!key) throw new Error('key is required');
+          const removed = await redis.hdel(mapName, key);
+          const data = [{ mapName, key, removed: Number(removed) > 0 }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'mapSize': {
+          const mapName = String(args?.mapName || '').trim();
+          if (!mapName) throw new Error('mapName is required');
+          const size = await redis.hlen(mapName);
+          const data = [{ mapName, size: Number(size) || 0 }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'mapEntries': {
+          const mapName = String(args?.mapName || '').trim();
+          if (!mapName) throw new Error('mapName is required');
+          const requestedLimit = Number(args?.limit);
+          const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(500, Math.trunc(requestedLimit))) : 50;
+          const allEntries = await redis.hgetall(mapName);
+          const rows = Object.entries(allEntries || {})
+            .slice(0, limit)
+            .map(([key, value]) => {
+              const stringValue = typeof value === 'string' ? value : String(value ?? '');
+              return { mapName, key, value: stringValue, jsonValue: this.parseJsonIfPossible(stringValue) };
+            });
+          return { success: true, data: rows, rowCount: rows.length };
+        }
+        case 'queueOffer': {
+          const queueName = String(args?.queueName || '').trim();
+          if (!queueName) throw new Error('queueName is required');
+          if (typeof args?.value === 'undefined') throw new Error('value is required');
+          const rawValue = args.value;
+          const value = typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue);
+          const size = await redis.rpush(queueName, value);
+          const data = [{ queueName, offered: true, size: Number(size) || 0 }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'queuePoll': {
+          const queueName = String(args?.queueName || '').trim();
+          if (!queueName) throw new Error('queueName is required');
+          const rawTimeout = Number(args?.timeoutMs);
+          let value: string | null = null;
+          if (Number.isFinite(rawTimeout) && rawTimeout > 0) {
+            const timeoutSeconds = Math.max(1, Math.min(60, Math.ceil(rawTimeout / 1000)));
+            const result = await redis.blpop(queueName, timeoutSeconds);
+            value = Array.isArray(result) ? String(result[1] ?? '') : null;
+          } else {
+            const popped = await redis.lpop(queueName);
+            value = typeof popped === 'string' ? popped : null;
+          }
+          const data = [{ queueName, value: value ?? null, jsonValue: this.parseJsonIfPossible(value ?? null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'queuePeek': {
+          const queueName = String(args?.queueName || '').trim();
+          if (!queueName) throw new Error('queueName is required');
+          const value = await redis.lindex(queueName, 0);
+          const data = [{ queueName, value: value ?? null, jsonValue: this.parseJsonIfPossible(value ?? null) }];
+          return { success: true, data, rowCount: data.length };
+        }
+        case 'queueSize': {
+          const queueName = String(args?.queueName || '').trim();
+          if (!queueName) throw new Error('queueName is required');
+          const size = await redis.llen(queueName);
+          const data = [{ queueName, size: Number(size) || 0 }];
+          return { success: true, data, rowCount: data.length };
+        }
         case 'get': {
           if (!args?.key) throw new Error('key is required');
           const value = await redis.get(String(args.key));

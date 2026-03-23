@@ -2513,6 +2513,8 @@ function displayHazelcastPreview(parsedData) {
     groups.forEach((group, index) => {
         const groupName = escapeHtml(group?.tableName || `GROUP_${index + 1}`);
         const rows = Array.isArray(group?.rows) ? group.rows : [];
+        const panelId = `hazelcast-group-tools-${index}`;
+        const iconId = `hazelcast-group-icon-${index}`;
 
         html += `
             <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
@@ -2521,7 +2523,7 @@ function displayHazelcastPreview(parsedData) {
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox"
                                    id="hazelcast-group-select-${index}"
-                                   class="w-5 h-5 text-cyan-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-cyan-500"
+                                   class="qmcp-slide-toggle"
                                    checked
                                    onchange="toggleHazelcastGroupSelection(${index})">
                             <div>
@@ -2529,10 +2531,13 @@ function displayHazelcastPreview(parsedData) {
                                 <p class="text-sm text-gray-600">${rows.length} tool(s)</p>
                             </div>
                         </label>
+                        <button class="text-gray-400 hover:text-gray-700 transition-colors" onclick="toggleHazelcastGroupDetails(${index})" title="Expand/Collapse">
+                            <i id="${iconId}" class="fas fa-chevron-down transition-transform"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div id="hazelcast-group-tools-${index}" class="p-4 bg-cyan-50/50 space-y-2">
+                <div id="${panelId}" class="hidden p-4 bg-cyan-50/50 space-y-2">
                     ${rows.map((row, toolIndex) => {
                         const rawTool = String(row?.[0] || '').trim();
                         const toolName = escapeHtml(rawTool);
@@ -2541,7 +2546,7 @@ function displayHazelcastPreview(parsedData) {
                             <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors">
                                 <input type="checkbox"
                                        id="hazelcast-tool-${index}-${toolIndex}"
-                                       class="mt-0.5 w-4 h-4 text-cyan-600 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500"
+                                       class="qmcp-slide-toggle mt-0.5"
                                        data-tool-name="${toolName}"
                                        checked>
                                 <div>
@@ -2557,6 +2562,90 @@ function displayHazelcastPreview(parsedData) {
                             <i class="fas fa-check-square mr-1"></i>Select All
                         </button>
                         <button onclick="deselectAllHazelcastGroupTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                            <i class="fas fa-square mr-1"></i>Deselect All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    preview.innerHTML = html;
+}
+
+// Redis preview with group/tool selection
+function displayRedisPreview(parsedData) {
+    const preview = document.getElementById('data-preview');
+    if (!preview) return;
+
+    const groups = Array.isArray(parsedData) ? parsedData : [];
+    let html = '<div class="space-y-4">';
+
+    html += `
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-database text-amber-600 mt-1"></i>
+                <div>
+                    <h3 class="font-semibold text-amber-900 mb-1">Configure Redis Tool Groups</h3>
+                    <p class="text-amber-800 text-sm">Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, DIAGNOSTICS, STRINGS.</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    groups.forEach((group, index) => {
+        const groupName = escapeHtml(group?.tableName || `GROUP_${index + 1}`);
+        const rows = Array.isArray(group?.rows) ? group.rows : [];
+        const panelId = `redis-group-tools-${index}`;
+        const iconId = `redis-group-icon-${index}`;
+
+        html += `
+            <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
+                <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox"
+                                   id="redis-group-select-${index}"
+                                   class="qmcp-slide-toggle"
+                                   checked
+                                   onchange="toggleRedisGroupSelection(${index})">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 text-lg">${groupName}</h4>
+                                <p class="text-sm text-gray-600">${rows.length} tool(s)</p>
+                            </div>
+                        </label>
+                        <button class="text-gray-400 hover:text-gray-700 transition-colors" onclick="toggleRedisGroupDetails(${index})" title="Expand/Collapse">
+                            <i id="${iconId}" class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="${panelId}" class="hidden p-4 bg-amber-50/50 space-y-2">
+                    ${rows.map((row, toolIndex) => {
+                        const rawTool = String(row?.[0] || '').trim();
+                        const toolName = escapeHtml(rawTool);
+                        const toolDesc = escapeHtml(String(row?.[1] || ''));
+                        return `
+                            <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors">
+                                <input type="checkbox"
+                                       id="redis-tool-${index}-${toolIndex}"
+                                       class="qmcp-slide-toggle mt-0.5"
+                                       data-tool-name="${toolName}"
+                                       checked>
+                                <div>
+                                    <div class="text-sm font-mono text-gray-900">${toolName}</div>
+                                    <div class="text-xs text-gray-600">${toolDesc}</div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+
+                    <div class="pt-2 flex items-center gap-4">
+                        <button onclick="selectAllRedisGroupTools(${index})" class="text-sm text-amber-700 hover:text-amber-900 font-medium">
+                            <i class="fas fa-check-square mr-1"></i>Select All
+                        </button>
+                        <button onclick="deselectAllRedisGroupTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
                             <i class="fas fa-square mr-1"></i>Deselect All
                         </button>
                     </div>
@@ -2848,6 +2937,14 @@ function toggleHazelcastGroupSelection(groupIndex) {
     }
 }
 
+function toggleHazelcastGroupDetails(groupIndex) {
+    const panel = document.getElementById(`hazelcast-group-tools-${groupIndex}`);
+    const icon = document.getElementById(`hazelcast-group-icon-${groupIndex}`);
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+    icon?.classList.toggle('rotate-180');
+}
+
 function selectAllHazelcastGroupTools(groupIndex) {
     const toolInputs = document.querySelectorAll(`#hazelcast-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
     toolInputs.forEach((input) => {
@@ -2857,6 +2954,47 @@ function selectAllHazelcastGroupTools(groupIndex) {
 
 function deselectAllHazelcastGroupTools(groupIndex) {
     const toolInputs = document.querySelectorAll(`#hazelcast-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
+    toolInputs.forEach((input) => {
+        if (!input.disabled) input.checked = false;
+    });
+}
+
+function toggleRedisGroupSelection(groupIndex) {
+    const checkbox = document.getElementById(`redis-group-select-${groupIndex}`);
+    const toolsPanel = document.getElementById(`redis-group-tools-${groupIndex}`);
+    if (!(checkbox instanceof HTMLInputElement)) return;
+
+    const toolInputs = toolsPanel?.querySelectorAll('input[type="checkbox"][data-tool-name]') || [];
+    if (checkbox.checked) {
+        toolsPanel?.classList.remove('opacity-50');
+        toolInputs.forEach((input) => {
+            input.disabled = false;
+        });
+    } else {
+        toolsPanel?.classList.add('opacity-50');
+        toolInputs.forEach((input) => {
+            input.disabled = true;
+        });
+    }
+}
+
+function toggleRedisGroupDetails(groupIndex) {
+    const panel = document.getElementById(`redis-group-tools-${groupIndex}`);
+    const icon = document.getElementById(`redis-group-icon-${groupIndex}`);
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+    icon?.classList.toggle('rotate-180');
+}
+
+function selectAllRedisGroupTools(groupIndex) {
+    const toolInputs = document.querySelectorAll(`#redis-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
+    toolInputs.forEach((input) => {
+        if (!input.disabled) input.checked = true;
+    });
+}
+
+function deselectAllRedisGroupTools(groupIndex) {
+    const toolInputs = document.querySelectorAll(`#redis-group-tools-${groupIndex} input[type="checkbox"][data-tool-name]`);
     toolInputs.forEach((input) => {
         if (!input.disabled) input.checked = false;
     });
@@ -2892,6 +3030,32 @@ function selectOnlyBasicTools(tableIndex) {
 // Get selected tables and their tools configuration
 function getSelectedTablesAndTools() {
     const selectedTables = [];
+    if (currentDataSource?.type === DataSourceType.Redis && Array.isArray(currentParsedData)) {
+        document.querySelectorAll('[id^="redis-group-select-"]').forEach((groupCheckbox) => {
+            if (!(groupCheckbox instanceof HTMLInputElement) || !groupCheckbox.checked) return;
+
+            const rawIndex = Number(groupCheckbox.id.replace('redis-group-select-', ''));
+            if (!Number.isFinite(rawIndex) || rawIndex < 0) return;
+            const index = Math.trunc(rawIndex);
+
+            const selectedToolNames = [];
+            document.querySelectorAll(`#redis-group-tools-${index} input[type="checkbox"][data-tool-name]`).forEach((toolCheckbox) => {
+                if (!(toolCheckbox instanceof HTMLInputElement) || !toolCheckbox.checked || toolCheckbox.disabled) return;
+                const toolName = String(toolCheckbox.dataset.toolName || '').trim();
+                if (toolName) selectedToolNames.push(toolName);
+            });
+
+            if (selectedToolNames.length === 0) return;
+            selectedTables.push({
+                index,
+                tableName: currentParsedData[index]?.tableName || `GROUP_${index + 1}`,
+                selectedToolNames
+            });
+        });
+
+        return selectedTables;
+    }
+
     if (currentDataSource?.type === DataSourceType.Hazelcast && Array.isArray(currentParsedData)) {
         document.querySelectorAll('[id^="hazelcast-group-select-"]').forEach((groupCheckbox) => {
             if (!(groupCheckbox instanceof HTMLInputElement) || !groupCheckbox.checked) return;
@@ -8897,6 +9061,8 @@ async function handleNextToStep3() {
                 displayElasticsearchPreview(currentDataSource);
             } else if (currentDataSource.type === DataSourceType.OpenSearch) {
                 displayOpenSearchPreview(currentDataSource);
+            } else if (currentDataSource.type === DataSourceType.Redis) {
+                displayRedisPreview(currentParsedData);
             } else if (currentDataSource.type === DataSourceType.Hazelcast) {
                 displayHazelcastPreview(currentParsedData);
             } else {

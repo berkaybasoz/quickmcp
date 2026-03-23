@@ -1870,3 +1870,44 @@ html.dark body.auth-page #tokenModal > div {
   border-color: rgba(96, 165, 250, 0.3) !important;
   box-shadow: 0 30px 72px rgba(2, 6, 23, 0.68), 0 0 0 1px rgba(148, 163, 184, 0.1) !important;
 }
+
+.qmcp-slide-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #e2e8f0;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  flex: 0 0 auto;
+}
+
+.qmcp-slide-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.qmcp-slide-toggle:checked {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+
+.qmcp-slide-toggle:checked::after {
+  transform: translateX(18px);
+}
+
+.qmcp-slide-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

@@ -277,7 +277,6 @@ function isNoTableDataSource(type) {
         DataSourceType.Discord,
         DataSourceType.Docker,
         DataSourceType.Kubernetes,
-        DataSourceType.Redis,
         DataSourceType.Kafka,
         DataSourceType.Elasticsearch,
         DataSourceType.OpenSearch,

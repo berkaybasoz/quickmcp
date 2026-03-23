@@ -80,22 +80,70 @@ export class ParseApi {
             password
           };
 
-          const parsedData = [{
-            tableName: 'redis_tools',
-            headers: ['tool', 'description'],
-            rows: [
-              ['ping', 'Ping Redis server'],
-              ['get', 'Get value by key'],
-              ['set', 'Set key/value'],
-              ['delete_key', 'Delete key'],
-              ['list_keys', 'List keys by pattern']
-            ],
-            metadata: {
-              rowCount: 5,
-              columnCount: 2,
-              dataTypes: { tool: 'string', description: 'string' }
+          const parsedData = [
+            {
+              tableName: 'DIAGNOSTICS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['ping', 'Ping Redis server'],
+                ['connection_status', 'Show Redis connection status'],
+                ['get_config', 'Show Redis connection configuration']
+              ],
+              metadata: {
+                rowCount: 3,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'MAPS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_maps', 'List Redis hash keys as maps'],
+                ['map_set', 'Set field/value in a Redis hash map'],
+                ['map_get', 'Get field value from a Redis hash map'],
+                ['map_remove', 'Remove field from a Redis hash map'],
+                ['map_size', 'Get field count of a Redis hash map'],
+                ['map_entries', 'List field/value entries from a Redis hash map']
+              ],
+              metadata: {
+                rowCount: 6,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'QUEUES',
+              headers: ['tool', 'description'],
+              rows: [
+                ['list_queues', 'List Redis list keys as queues'],
+                ['queue_offer', 'Push value to a Redis queue'],
+                ['queue_poll', 'Pop value from a Redis queue'],
+                ['queue_peek', 'Peek head value of a Redis queue'],
+                ['queue_size', 'Get size of a Redis queue']
+              ],
+              metadata: {
+                rowCount: 5,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
+            },
+            {
+              tableName: 'STRINGS',
+              headers: ['tool', 'description'],
+              rows: [
+                ['get', 'Get value by key'],
+                ['set', 'Set key/value'],
+                ['delete_key', 'Delete key'],
+                ['list_keys', 'List keys by pattern']
+              ],
+              metadata: {
+                rowCount: 4,
+                columnCount: 2,
+                dataTypes: { tool: 'string', description: 'string' }
+              }
             }
-          }];
+          ];
 
           return res.json({
             success: true,

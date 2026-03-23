@@ -51,6 +51,17 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: quickmcp-redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    volumes:
+      - redisinsight_data:/data
+    restart: unless-stopped
+
   hazelcast:
     image: hazelcast/hazelcast:5.3-slim
     container_name: quickmcp-hazelcast
@@ -87,5 +98,6 @@ volumes:
   postgres_data:
   mysql_data:
   redis_data:
+  redisinsight_data:
   hazelcast_data:
   mongodb_data:
