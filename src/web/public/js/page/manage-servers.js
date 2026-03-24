@@ -563,8 +563,8 @@ function showServerDetailsPanel(serverData, serverIdArg) {
     const serverType = String(config?.type || '').toLowerCase() || 'unknown';
     const nameIconMeta = getServerTypeIconMeta(serverType);
     const nameIconHtml = nameIconMeta.kind === 'image'
-        ? `<img src="${nameIconMeta.value}" alt="${serverType}" class="w-6 h-6 object-contain" />`
-        : `<i class="fas ${nameIconMeta.value} text-sm"></i>`;
+        ? `<img src="${nameIconMeta.value}" alt="${serverType}" class="w-8 h-8 object-contain" />`
+        : `<i class="fas ${nameIconMeta.value} text-lg"></i>`;
 
     const inner = `
         <div id=\"serverDetailsHeaderRow\" class=\"p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50 flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 inline-flex items-center justify-center leading-none\" title=\"Collapse panel\">\n                    <span id=\"rightPanelCollapseIcon\" class=\"inline-flex items-center justify-center\"></span>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
@@ -578,7 +578,7 @@ function showServerDetailsPanel(serverData, serverIdArg) {
                 </div>\n            </div>\n        </div>
         <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
             <div class="flex items-start gap-3">
-                <span class="inline-flex w-9 h-9 rounded-lg shadow-sm items-center justify-center ${nameIconMeta.bg} ${nameIconMeta.text}">
+                <span class="inline-flex w-11 h-11 rounded-lg shadow-sm items-center justify-center ${nameIconMeta.bg} ${nameIconMeta.text}">
                     ${nameIconHtml}
                 </span>
                 <div class="min-w-0">
