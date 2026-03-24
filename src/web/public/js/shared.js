@@ -970,10 +970,21 @@ window.utils = {
 
     // Show toast notification
     showToast: (message, type = 'info') => {
+        const toastMessage = String(message ?? '');
+        const toastType = String(type || 'info').toLowerCase();
+        const logPrefix = `[QuickMCP][toast:${toastType}]`;
+        if (toastType === 'error') {
+            console.error(logPrefix, toastMessage);
+        } else if (toastType === 'warning') {
+            console.warn(logPrefix, toastMessage);
+        } else {
+            console.info(logPrefix, toastMessage);
+        }
+
         const toast = document.createElement('div');
         toast.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
 
-        switch (type) {
+        switch (toastType) {
             case 'success':
                 toast.classList.add('bg-green-500', 'text-white');
                 break;
@@ -987,7 +998,7 @@ window.utils = {
                 toast.classList.add('bg-blue-500', 'text-white');
         }
 
-        toast.textContent = message;
+        toast.textContent = toastMessage;
         document.body.appendChild(toast);
 
         // Animate in
