@@ -68,11 +68,11 @@ export function AppBar({ onOpenSidebar, style }: AppBarProps) {
           className="flex items-center gap-3 cursor-pointer"
           role="link"
           tabIndex={0}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/quick-ask')}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
-              navigate('/');
+              navigate('/quick-ask');
             }
           }}
           aria-label="Go to home page"

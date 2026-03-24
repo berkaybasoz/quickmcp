@@ -127,7 +127,7 @@ export function Sidebar({
 
   const navItems = useMemo(() => {
     const base = [
-      { href: '/', icon: 'fa-comment-dots', title: 'Quick Ask', subtitle: 'Ask Aria with MCP tools', active: quickAskActive, iconClass: '' },
+      { href: '/quick-ask', icon: 'fa-comment-dots', title: 'Quick Ask', subtitle: 'Ask Aria with MCP tools', active: quickAskActive, iconClass: '' },
       { href: '/generate', icon: 'fa-magic', title: 'Generate Server', subtitle: 'Create new MCP servers', active: isNavPathActive('/generate', location.pathname), iconClass: '' },
       { href: '/manage-servers', icon: 'fa-server', title: 'Manage Servers', subtitle: 'Edit & Control', active: isNavPathActive('/manage-servers', location.pathname), iconClass: '' },
       { href: '/test-servers', icon: 'fa-vial', title: 'Test Servers', subtitle: 'Verify functionality', active: isNavPathActive('/test-servers', location.pathname), iconClass: '' },

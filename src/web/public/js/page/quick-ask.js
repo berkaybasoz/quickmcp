@@ -753,6 +753,9 @@ function renderQuickAskMessages() {
 }
 
 function ensureQuickAskSidebarSection() {
+    if (window.__quickmcpReactShell) {
+        return true;
+    }
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return false;
     const existing = document.getElementById('quickAskSidebarChats');
@@ -859,6 +862,7 @@ function ensureQuickAskSidebarSection() {
 }
 
 function mountQuickAskSidebarSectionWithRetry(attempt = 0) {
+    if (window.__quickmcpReactShell) return;
     if (ensureQuickAskSidebarSection()) {
         renderQuickAskSidebarChats();
         return;
