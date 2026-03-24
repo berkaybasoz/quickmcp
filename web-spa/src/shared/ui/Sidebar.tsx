@@ -61,8 +61,7 @@ export function Sidebar({
   const [chats, setChats] = useState<QuickAskChat[]>([]);
   const [chatStatus, setChatStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
 
-  const showAuthManagement = (config?.authMode || 'NONE') !== 'NONE';
-  const showUsers = showAuthManagement && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
+  const showUsers = (config?.authMode || 'NONE') !== 'NONE' && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
 
   useEffect(() => {
     let cancelled = false;
@@ -131,22 +130,19 @@ export function Sidebar({
       { href: '/generate', icon: 'fa-magic', title: 'Generate Server', subtitle: 'Create new MCP servers', active: isNavPathActive('/generate', location.pathname), iconClass: '' },
       { href: '/manage-servers', icon: 'fa-server', title: 'Manage Servers', subtitle: 'Edit & Control', active: isNavPathActive('/manage-servers', location.pathname), iconClass: '' },
       { href: '/test-servers', icon: 'fa-vial', title: 'Test Servers', subtitle: 'Verify functionality', active: isNavPathActive('/test-servers', location.pathname), iconClass: '' },
-      { href: '/how-to-use', icon: 'fa-book', title: 'How to Use', subtitle: 'Documentation & Guide', active: isNavPathActive('/how-to-use', location.pathname), iconClass: '' }
-    ];
-
-    if (showAuthManagement) {
-      base.splice(4, 0, {
+      {
         href: '/authorization',
         icon: 'fa-key',
         title: 'Authorization',
         subtitle: 'MCP token policy',
         active: isNavPathActive('/authorization', location.pathname),
         iconClass: 'bg-amber-100 text-amber-700 group-hover:bg-amber-200'
-      });
-    }
+      },
+      { href: '/how-to-use', icon: 'fa-book', title: 'How to Use', subtitle: 'Documentation & Guide', active: isNavPathActive('/how-to-use', location.pathname), iconClass: '' }
+    ];
 
     if (showUsers) {
-      base.splice(showAuthManagement ? 5 : 4, 0, {
+      base.splice(5, 0, {
         href: '/users',
         icon: 'fa-users',
         title: 'Users',
@@ -157,7 +153,7 @@ export function Sidebar({
     }
 
     return base;
-  }, [location.pathname, quickAskActive, showAuthManagement, showUsers]);
+  }, [location.pathname, quickAskActive, showUsers]);
 
   const handleResizerMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (collapsed) return;
