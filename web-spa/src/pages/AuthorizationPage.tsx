@@ -224,7 +224,7 @@ export function AuthorizationPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabName>('token');
-  const [isSaasMode, setIsSaasMode] = useState(false);
+  const [isSaasMode, setIsSaasMode] = useState(true);
   const [authSummary, setAuthSummary] = useState(AUTH_SUMMARY);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
 
