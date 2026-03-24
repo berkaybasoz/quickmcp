@@ -1690,7 +1690,7 @@ export class AuthApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'users.html'));
+    res.status(503).send('SPA build not found: users');
   };
 
   private getAuthorizationPage = (_req: express.Request, res: express.Response): void => {
@@ -1698,6 +1698,6 @@ export class AuthApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'authorization.html'));
+    res.status(503).send('SPA build not found: authorization');
   };
 }

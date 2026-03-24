@@ -462,7 +462,7 @@ export class ServerApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'manage-servers.html'));
+    res.status(503).send('SPA build not found: manage-servers');
   };
 
   private getTestServersPage = (_req: express.Request, res: express.Response): void => {
@@ -470,7 +470,7 @@ export class ServerApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'test-servers.html'));
+    res.status(503).send('SPA build not found: test-servers');
   };
 
   private getHowToUsePage = (_req: express.Request, res: express.Response): void => {
@@ -478,6 +478,6 @@ export class ServerApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'how-to-use.html'));
+    res.status(503).send('SPA build not found: how-to-use');
   };
 }

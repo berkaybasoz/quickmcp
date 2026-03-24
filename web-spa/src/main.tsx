@@ -5,6 +5,8 @@ import './app/styles.css';
 
 if (typeof window !== 'undefined') {
   (window as any).__quickmcpReactShell = true;
+  const root = document.getElementById('root');
+  root?.classList.add('h-screen', 'flex', 'flex-col');
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

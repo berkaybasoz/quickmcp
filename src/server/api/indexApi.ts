@@ -18,7 +18,7 @@ export class IndexApi {
       res.sendFile(this.deps.spaIndexFile);
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'page', legacyPageFile));
+    res.status(503).send(`SPA build not found: ${legacyPageFile}`);
   }
 
   registerRoutes(app: express.Express): void {
