@@ -1692,6 +1692,14 @@ body.howto-page .app-main-layout {
   --sidebar-gutter: 0rem !important;
 }
 
+body.users-page #createUserCard,
+body.users-page #usersListCard {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
 /* Dark mode: Authorization page (aligned with Test Suite) */
 html.dark body.auth-page,
 html.dark body.test-page,
@@ -1706,6 +1714,7 @@ html.dark body.howto-page {
 
 /* Dark mode: Users page panels */
 html.dark body.users-page #createUserCard,
+html.dark body.users-page #usersListCard,
 html.dark body.users-page main .card {
   background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
   border-color: rgba(71, 85, 105, 0.82) !important;
