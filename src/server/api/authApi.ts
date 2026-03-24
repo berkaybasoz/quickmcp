@@ -1677,7 +1677,7 @@ export class AuthApi {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
-    res.sendFile(path.join(this.deps.publicDir, 'login.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'login.html'));
   };
 
   private getUsersPage = (_req: express.Request, res: express.Response): void => {
@@ -1685,10 +1685,10 @@ export class AuthApi {
       res.status(404).send('Not Found');
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'users.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'users.html'));
   };
 
   private getAuthorizationPage = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'authorization.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'authorization.html'));
   };
 }

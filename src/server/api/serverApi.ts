@@ -457,14 +457,14 @@ export class ServerApi {
   };
 
   private getManageServersPage = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'manage-servers.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'manage-servers.html'));
   };
 
   private getTestServersPage = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'test-servers.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'test-servers.html'));
   };
 
   private getHowToUsePage = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'how-to-use.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'how-to-use.html'));
   };
 }

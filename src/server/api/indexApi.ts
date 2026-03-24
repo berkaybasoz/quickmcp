@@ -25,16 +25,16 @@ export class IndexApi {
   private serveRoot = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
+      res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'landing.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'landing.html'));
   };
 
   private serveQuickAsk = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
+      res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
       return;
     }
     res.redirect('/landing');
@@ -43,7 +43,7 @@ export class IndexApi {
   private serveGenerate = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'index.html'));
+      res.sendFile(path.join(this.deps.publicDir, 'page', 'index.html'));
       return;
     }
     res.redirect('/landing');
@@ -55,14 +55,14 @@ export class IndexApi {
       res.redirect('/');
       return;
     }
-    res.sendFile(path.join(this.deps.publicDir, 'landing.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'landing.html'));
   };
 
   private servePricing = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'pricing.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'pricing.html'));
   };
 
   private serveApp = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'quick-ask.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
   };
 }

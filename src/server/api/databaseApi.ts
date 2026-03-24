@@ -16,7 +16,7 @@ export class DatabaseApi {
   }
 
   private getDatabaseTablesPage = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'database-tables.html'));
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'database-tables.html'));
   };
 
   private getDatabaseTables = (_req: express.Request, res: express.Response): void => {
