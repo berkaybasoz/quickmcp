@@ -99,6 +99,9 @@ const TTL_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '6mo', label: '6 months' }
 ];
 
+const AUTH_SUMMARY =
+  'Create and manage access tokens to control which users can see and run MCP servers, tools, and resources.';
+
 function isAbortError(error: unknown): boolean {
   if (!error) return false;
   if (typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError') {
@@ -222,7 +225,7 @@ export function AuthorizationPage() {
 
   const [activeTab, setActiveTab] = useState<TabName>('token');
   const [isSaasMode, setIsSaasMode] = useState(false);
-  const [authSummary, setAuthSummary] = useState('');
+  const [authSummary, setAuthSummary] = useState(AUTH_SUMMARY);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   const [authContext, setAuthContext] = useState<AuthorizationContext>({ users: [], servers: [] });
@@ -321,11 +324,7 @@ export function AuthorizationPage() {
       const config = extractApiData<AuthorizationConfig>(configPayload) || {};
       const saas = config.isSaasMode === true;
       setIsSaasMode(saas);
-      setAuthSummary(
-        config.mcpTokenRequired
-          ? 'Create and manage access tokens to control which users can see and run MCP servers, tools, and resources.'
-          : 'You can optionally create access tokens to control who can use MCP servers, tools, and resources.'
-      );
+      setAuthSummary(AUTH_SUMMARY);
       if (saas) setActiveTab('token');
 
       const contextPayload = await fetchJson<any>('/api/authorization/context', { signal });
