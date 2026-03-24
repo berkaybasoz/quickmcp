@@ -162,13 +162,13 @@
       await loadUsers();
     }
 
-    document.getElementById('refreshUsersBtn').addEventListener('click', () => {
+    document.getElementById('refreshUsersBtn')?.addEventListener('click', () => {
       loadUsers().catch((error) => {
         document.getElementById('usersTableWrap').innerHTML = `<p class="text-sm text-red-600">${error.message || 'Failed to load users.'}</p>`;
       });
     });
 
-    document.getElementById('createUserForm').addEventListener('submit', async (event) => {
+    document.getElementById('createUserForm')?.addEventListener('submit', async (event) => {
       try {
         await createUser(event);
       } catch (error) {
@@ -176,7 +176,7 @@
       }
     });
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    async function initializeUsersPage() {
       try {
         const userEl = document.getElementById('newUsername');
         const passEl = document.getElementById('newPassword');
@@ -187,7 +187,14 @@
       } catch (error) {
         document.getElementById('usersTableWrap').innerHTML = `<p class="text-sm text-red-600">${error.message || 'Failed to load users.'}</p>`;
       }
-    });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeUsersPage();
+      }, { once: true });
+    } else {
+      initializeUsersPage();
+    }
   </script>
 </body>
 </html>

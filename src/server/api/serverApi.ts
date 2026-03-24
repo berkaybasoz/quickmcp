@@ -24,6 +24,7 @@ interface ServerApiDeps {
   generatedServers: Map<string, GeneratedServerInfo>;
   startRuntimeMCPServer: (serverId: string, serverPath: string) => Promise<number>;
   publicDir: string;
+  spaIndexFile?: string | null;
 }
 
 export class ServerApi {
@@ -457,14 +458,26 @@ export class ServerApi {
   };
 
   private getManageServersPage = (_req: express.Request, res: express.Response): void => {
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'manage-servers.html'));
   };
 
   private getTestServersPage = (_req: express.Request, res: express.Response): void => {
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'test-servers.html'));
   };
 
   private getHowToUsePage = (_req: express.Request, res: express.Response): void => {
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'how-to-use.html'));
   };
 }

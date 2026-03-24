@@ -5,12 +5,21 @@ import { AuthMode } from '../../config/auth-config';
 
 interface IndexApiDeps {
   publicDir: string;
+  spaIndexFile?: string | null;
   authMode: AuthMode;
   resolveAuthContext: (req: express.Request, res?: express.Response) => Promise<AuthContext | null>;
 }
 
 export class IndexApi {
   constructor(private readonly deps: IndexApiDeps) {}
+
+  private sendAppPage(res: express.Response, legacyPageFile: string): void {
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
+    res.sendFile(path.join(this.deps.publicDir, 'page', legacyPageFile));
+  }
 
   registerRoutes(app: express.Express): void {
     app.get('/', this.serveRoot);
@@ -25,7 +34,7 @@ export class IndexApi {
   private serveRoot = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
+      this.sendAppPage(res, 'quick-ask.html');
       return;
     }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'landing.html'));
@@ -34,7 +43,7 @@ export class IndexApi {
   private serveQuickAsk = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
+      this.sendAppPage(res, 'quick-ask.html');
       return;
     }
     res.redirect('/landing');
@@ -43,7 +52,7 @@ export class IndexApi {
   private serveGenerate = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'page', 'generate.html'));
+      this.sendAppPage(res, 'generate.html');
       return;
     }
     res.redirect('/landing');
@@ -63,6 +72,6 @@ export class IndexApi {
   };
 
   private serveApp = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'quick-ask.html'));
+    this.sendAppPage(res, 'quick-ask.html');
   };
 }

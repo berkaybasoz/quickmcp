@@ -20,6 +20,7 @@ interface AuthApiDeps {
   accessCookieName: string;
   refreshCookieName: string;
   publicDir: string;
+  spaIndexFile?: string | null;
   resolveAuthContext: (req: AuthenticatedRequest, res?: express.Response) => Promise<AuthContext | null>;
   requireAdminApi: (req: AuthenticatedRequest, res: express.Response) => Promise<AuthContext | null>;
   ensureDataStore: () => IDataStore;
@@ -1685,10 +1686,18 @@ export class AuthApi {
       res.status(404).send('Not Found');
       return;
     }
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'users.html'));
   };
 
   private getAuthorizationPage = (_req: express.Request, res: express.Response): void => {
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
     res.sendFile(path.join(this.deps.publicDir, 'page', 'authorization.html'));
   };
 }

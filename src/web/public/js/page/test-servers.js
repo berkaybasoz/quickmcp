@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initializeTestServersPage() {
     document.getElementById('openSidebar')?.addEventListener('click', openSidebar);
     document.getElementById('closeSidebar')?.addEventListener('click', closeSidebar);
     document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);
@@ -28,6 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!window.renderSidebar) {
         try { applySidebarCollapsedState(); } catch {}
     }
+}
+window.initializeTestServersPage = initializeTestServersPage;
+
+document.addEventListener('DOMContentLoaded', () => {
+    initializeTestServersPage();
 });
 
 window.addEventListener('load', () => {
@@ -846,4 +851,3 @@ function setTestModeTab(mode) {
         panel.classList.toggle('hidden', !isActive);
     });
 }
-

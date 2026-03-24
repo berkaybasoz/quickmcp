@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { existsSync } from 'fs';
 import { DataSourceParser } from '../parsers';
 import { MCPServerGenerator } from '../generators/MCPServerGenerator';
 import { MCPTestRunner } from '../client/MCPTestRunner';
@@ -157,6 +158,9 @@ const clearCookie = authUtils.clearCookie.bind(authUtils);
 const seedLiteAdminsAsync = authUtils.seedLiteAdminsAsync.bind(authUtils);
 const getEffectiveUsername = authUtils.getEffectiveUsername.bind(authUtils);
 const publicDir = authUtils.resolvePublicDir(__dirname);
+const spaDistDir = path.resolve(process.cwd(), 'web-spa', 'dist');
+const spaIndexCandidate = path.join(spaDistDir, 'index.html');
+const spaIndexFile = existsSync(spaIndexCandidate) ? spaIndexCandidate : null;
 const applyNoneModeAuth = authUtils.applyNoneModeAuth.bind(authUtils);
 const isNoneMode = authUtils.isNoneMode.bind(authUtils);
 const buildServerId = authUtils.buildServerId.bind(authUtils);
@@ -181,7 +185,8 @@ const serverApi = new ServerApi({
   getEffectiveUsername,
   generatedServers,
   startRuntimeMCPServer,
-  publicDir
+  publicDir,
+  spaIndexFile
 });
 const nameApi = new NameApi({
   ensureDataStore,
@@ -191,6 +196,7 @@ const databaseApi = new DatabaseApi({ publicDir });
 const mcpApi = new McpApi({ generatedServers });
 const indexApi = new IndexApi({
   publicDir,
+  spaIndexFile,
   authMode,
   resolveAuthContext
 });
@@ -204,6 +210,7 @@ const authApi = new AuthApi({
   accessCookieName,
   refreshCookieName,
   publicDir,
+  spaIndexFile,
   resolveAuthContext,
   requireAdminApi,
   ensureDataStore,
@@ -532,6 +539,9 @@ app.use((req, res, next) => {
 });
 faviconApi.registerRoutes(app);
 app.use(express.static(publicDir, { index: false }));
+if (spaIndexFile) {
+  app.use(express.static(spaDistDir, { index: false }));
+}
 
 configApi.registerRoutes(app);
 healthApi.registerRoutes(app);

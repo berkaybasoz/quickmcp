@@ -812,24 +812,24 @@
       await loadTokens();
     }
 
-    byId('generateTokenBtn').addEventListener('click', () => {
+    byId('generateTokenBtn')?.addEventListener('click', () => {
       generateToken().catch((error) => window.utils?.showToast?.(error.message || 'Failed to generate token', 'error'));
     });
-    byId('refreshTokensBtn').addEventListener('click', () => {
+    byId('refreshTokensBtn')?.addEventListener('click', () => {
       loadTokens().catch((error) => window.utils?.showToast?.(error.message || 'Failed to load tokens', 'error'));
     });
-    byId('saveTokenPolicyBtn').addEventListener('click', () => {
+    byId('saveTokenPolicyBtn')?.addEventListener('click', () => {
       saveTokenPolicy()
         .then(() => window.utils?.showToast?.('Token policy saved', 'success'))
         .catch((error) => window.utils?.showToast?.(error.message || 'Failed to save token policy', 'error'));
     });
-    byId('tabToken').addEventListener('click', () => setAuthorizationTab('token'));
+    byId('tabToken')?.addEventListener('click', () => setAuthorizationTab('token'));
     byId('tabPolicy')?.addEventListener('click', () => {
       if (isSaasMode) return;
       setAuthorizationTab('policy');
     });
-    byId('subjectUserSelect').addEventListener('change', renderTree);
-    byId('copyTokenBtn').addEventListener('click', async () => {
+    byId('subjectUserSelect')?.addEventListener('change', renderTree);
+    byId('copyTokenBtn')?.addEventListener('click', async () => {
       const token = byId('generatedToken').value.trim();
       if (!token) return;
       try {
@@ -839,13 +839,13 @@
         window.utils?.showToast?.('Failed to copy token', 'error');
       }
     });
-    byId('closeTokenModalBtn').addEventListener('click', closeTokenModal);
-    byId('tokenModalOverlay').addEventListener('click', closeTokenModal);
-    byId('toggleTokenMaskBtn').addEventListener('click', () => {
+    byId('closeTokenModalBtn')?.addEventListener('click', closeTokenModal);
+    byId('tokenModalOverlay')?.addEventListener('click', closeTokenModal);
+    byId('toggleTokenMaskBtn')?.addEventListener('click', () => {
       tokenModalMasked = !tokenModalMasked;
       renderTokenModalValue();
     });
-    byId('copyTokenModalBtn').addEventListener('click', async () => {
+    byId('copyTokenModalBtn')?.addEventListener('click', async () => {
       const token = tokenModalRawValue.trim();
       if (!token) return;
       try {
@@ -861,7 +861,7 @@
       }
     });
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    async function initializeAuthorizationPage() {
       try {
         setAuthorizationTab('token');
         await loadConfig();
@@ -874,7 +874,14 @@
       } catch (error) {
         window.utils?.showToast?.(error.message || 'Authorization page failed to load', 'error');
       }
-    });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeAuthorizationPage();
+      }, { once: true });
+    } else {
+      initializeAuthorizationPage();
+    }
   </script>
 </body>
 </html>

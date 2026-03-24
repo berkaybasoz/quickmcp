@@ -442,9 +442,10 @@ function initializeDesktopSidebarLayoutBase() {
     document.body.setAttribute('data-has-sidebar', '1');
 }
 
-function renderSharedAppBar() {
+function renderSharedAppBar(force = false) {
     const header = document.querySelector('header');
-    if (!header || header.dataset.commonAppBar === 'true') return;
+    if (!header) return;
+    if (!force && header.dataset.commonAppBar === 'true') return;
 
     header.dataset.commonAppBar = 'true';
     const baseClass = 'backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-700/70 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3';
@@ -494,7 +495,13 @@ function renderSharedAppBar() {
         </button>
       </div>
     `;
+    initBrandHomeLink();
+    // App bar HTML is replaced on each route render; re-bind theme toggle to the new button.
+    try {
+        window.QuickMCPTheme?.setupThemeToggle?.();
+    } catch {}
 }
+window.renderSharedAppBar = renderSharedAppBar;
 
 function initBrandHomeLink() {
     const titleEls = document.querySelectorAll('header h1');
@@ -1007,6 +1014,8 @@ function escapeHtml(value) {
 window.escapeHtml = escapeHtml;
 
 function setupRouting() {
+    if (window.__quickmcpRoutingBound) return;
+    window.__quickmcpRoutingBound = true;
     window.addEventListener('popstate', () => {
         handleRoute();
     });
@@ -1352,7 +1361,7 @@ function applySidebarCollapsedState() {
 
     // Force layout sync to prevent header/sidebar overlap during collapse/expand transitions.
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-    const header = document.querySelector('body > header');
+    const header = document.querySelector('body > header') || document.querySelector('#root > header');
     const layouts = document.querySelectorAll('.app-main-layout');
     if (isDesktop) {
       if (header instanceof HTMLElement) {
