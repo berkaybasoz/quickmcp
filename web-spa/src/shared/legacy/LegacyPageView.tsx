@@ -138,6 +138,8 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
   const location = useLocation();
   const [mainClassName, setMainClassName] = useState('flex-1 relative overflow-hidden flex flex-col min-w-0');
   const [mainHtml, setMainHtml] = useState('');
+  const [sideClassName, setSideClassName] = useState('');
+  const [sideHtml, setSideHtml] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -154,6 +156,9 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
 
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const legacyMain = doc.querySelector('.app-main-layout > .flex-1') as HTMLElement | null;
+        const legacySide = pageFile === 'how-to-use.html'
+          ? (doc.querySelector('.app-main-layout > .w-80') as HTMLElement | null)
+          : null;
 
         const bodyClassName = String(doc.body?.className || '').trim();
         if (bodyClassName) {
@@ -170,6 +175,8 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
 
         setMainClassName(legacyMain?.className || 'flex-1 relative overflow-hidden flex flex-col min-w-0');
         setMainHtml(legacyMain?.innerHTML || '<div class="p-8 text-sm text-red-600">Page content could not be loaded.</div>');
+        setSideClassName(legacySide?.className || '');
+        setSideHtml(legacySide?.innerHTML || '');
         await waitForDomCommit();
 
         const pageScriptSources = Array.from(doc.querySelectorAll('script[src]'))
@@ -195,6 +202,8 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
         const message = error instanceof Error ? error.message : 'Unknown page load error';
         setMainClassName('flex-1 relative overflow-hidden flex flex-col min-w-0');
         setMainHtml(`<div class="p-8"><div class="card p-4 text-sm text-red-700">${message}</div></div>`);
+        setSideClassName('');
+        setSideHtml('');
       }
     };
 
@@ -206,6 +215,9 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
   }, [pageFile, location.search]);
 
   return (
-    <div className={mainClassName} dangerouslySetInnerHTML={{ __html: mainHtml }} />
+    <>
+      <div className={mainClassName} dangerouslySetInnerHTML={{ __html: mainHtml }} />
+      {sideHtml ? <div className={sideClassName} dangerouslySetInnerHTML={{ __html: sideHtml }} /> : null}
+    </>
   );
 }
