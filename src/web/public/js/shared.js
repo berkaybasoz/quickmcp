@@ -1510,6 +1510,7 @@ function applySidebarCollapsedState() {
   }
 
   async function renderSidebar() {
+    if (window.__quickmcpReactShell) return;
     const root = document.getElementById('sidebar');
     if (!root) return;
     root.setAttribute('data-ready', '0');
