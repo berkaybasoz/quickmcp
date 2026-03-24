@@ -994,3 +994,592 @@ window.utils = {
         }, 3000);
     }
 };
+
+// Page-level helpers migrated from previous page/shared.js
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+window.escapeHtml = escapeHtml;
+
+function setupRouting() {
+    window.addEventListener('popstate', () => {
+        handleRoute();
+    });
+}
+
+function handleInitialRoute() {
+    handleRoute();
+}
+
+function handleRoute() {
+    const path = window.location.pathname;
+    if (path === '/' || path === '/quick-ask' || path === '/how-to-use') return;
+
+    let tabName = 'generate';
+    if (path === '/manage-servers') tabName = 'manage';
+    else if (path === '/test-servers') tabName = 'test';
+
+    switchTabByRoute(tabName);
+}
+
+function switchTabByRoute(tabName) {
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach((tab) => tab.classList.add('hidden'));
+
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach((item) => {
+        item.classList.remove('active', 'bg-gradient-to-r', 'from-blue-50', 'to-cyan-50', 'text-blue-700', 'border', 'border-blue-200');
+        item.classList.add('text-gray-700', 'hover:bg-gray-50');
+    });
+
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) selectedTab.classList.remove('hidden');
+
+    const activeItem = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeItem) {
+        activeItem.classList.remove('text-gray-700', 'hover:bg-gray-50');
+        activeItem.classList.add('active', 'bg-gradient-to-r', 'from-blue-50', 'to-cyan-50', 'text-blue-700', 'border', 'border-blue-200');
+    }
+
+    const pageTitle = document.getElementById('pageTitle');
+    const headerNewServerBtn = document.getElementById('headerNewServerBtn');
+    if (pageTitle) pageTitle.classList.add('hidden');
+    headerNewServerBtn?.classList.remove('hidden');
+
+    const detailsPanel = document.getElementById('server-details-panel');
+    if (detailsPanel) {
+        detailsPanel.classList.add('hidden', 'lg:hidden');
+        detailsPanel.classList.remove('lg:flex');
+    }
+
+    if (tabName === 'manage' && typeof loadServers === 'function') {
+        loadServers();
+    } else if (tabName === 'test' && typeof loadTestServers === 'function') {
+        loadTestServers();
+    }
+}
+
+function switchTab(tabName) {
+    let newPath = '/generate';
+    if (tabName === 'manage') newPath = '/manage-servers';
+    else if (tabName === 'test') newPath = '/test-servers';
+
+    const needsFullNav = (
+        (tabName === 'manage' && !document.getElementById('server-list')) ||
+        (tabName === 'test' && !document.getElementById('autoTestServerSelect') && !document.getElementById('testServerSelect')) ||
+        (tabName === 'generate' && !document.getElementById('generate-tab'))
+    );
+
+    if (needsFullNav) {
+        window.location.href = newPath;
+        return;
+    }
+
+    window.history.pushState(null, '', newPath);
+    switchTabByRoute(tabName);
+
+    if (window.innerWidth < 1024) {
+        closeSidebar();
+    }
+}
+
+function syncDesktopLayoutOffsetFromApp(sidebar) {
+    if (!sidebar) return;
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    const expandedWidth = (saved && saved >= 200 && saved <= 480) ? `${saved}px` : '18rem';
+    const offset = collapsed ? '3rem' : expandedWidth;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    document.body?.setAttribute('data-has-sidebar', '1');
+}
+
+function initSidebarResizer() {
+    if (window.renderSidebar) return;
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+
+    let startX = 0;
+    let startWidth = 0;
+    const min = 200;
+    const max = 480;
+
+    const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        const newW = Math.min(max, Math.max(min, startWidth + dx));
+        sidebar.style.width = `${newW}px`;
+        localStorage.setItem('sidebarWidth', String(newW));
+        syncDesktopLayoutOffsetFromApp(sidebar);
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    };
+
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    };
+
+    resizer.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    const saved = Number(localStorage.getItem('sidebarWidth'));
+    if (saved && saved >= min && saved <= max) {
+        sidebar.style.width = `${saved}px`;
+    }
+
+    syncDesktopLayoutOffsetFromApp(sidebar);
+}
+
+function applySidebarCollapsedState() {
+    if (window.renderSidebar) return;
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        sidebar.style.width = '3rem';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-right';
+    } else {
+        sidebar.classList.remove('collapsed');
+        const saved = Number(localStorage.getItem('sidebarWidth'));
+        sidebar.style.width = saved ? `${saved}px` : '';
+        const icon = collapseBtn?.querySelector('i');
+        if (icon) icon.className = 'fas fa-angles-left';
+    }
+
+    syncDesktopLayoutOffsetFromApp(sidebar);
+}
+
+
+// Merged from sidebar.js
+// Renders the shared sidebar into the #sidebar element on each page
+(function () {
+  async function resolveAuthMode() {
+    try {
+      const cacheApi = window.QuickMCPClientCache;
+      const data = (cacheApi && typeof cacheApi.getOrFetchAuthConfig === 'function')
+        ? await cacheApi.getOrFetchAuthConfig(async () => {
+            const response = await fetch('/api/auth/config');
+            if (!response.ok) return null;
+            const payload = await response.json().catch(() => ({}));
+            const next = payload?.data;
+            return next && typeof next === 'object' ? next : null;
+          })
+        : null;
+      if (!data) return null;
+      const mode = data?.authMode;
+      const deployMode = data?.deployMode;
+      const usersEnabled = data?.usersEnabled;
+      return {
+        authMode: typeof mode === 'string' ? mode : null,
+        deployMode: typeof deployMode === 'string' ? deployMode : '',
+        usersEnabled: usersEnabled !== false
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function isNavPathActive(path) {
+    const p = window.location.pathname.replace(/\/$/, '');
+    if (path === '/' || path === '/quick-ask') {
+      return p === '' || p === '/' || p === '/quick-ask';
+    }
+    return p === path;
+  }
+
+  function navItem(href, icon, title, subtitle, active, iconClass = '') {
+    const base = "nav-item group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors";
+    const activeCls = active
+      ? " active bg-slate-100 text-slate-900"
+      : "";
+    const iconBase = iconClass || "bg-transparent text-slate-500";
+    const currentAttr = active ? ' aria-current="page"' : '';
+    return `
+      <a href="${href}" class="${base}${activeCls}"${currentAttr}>
+        <div class="relative">
+          <div class="w-8 h-8 flex items-center justify-center rounded-md transition-colors ${iconBase}">
+            <i class="fas ${icon}"></i>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="text-slate-700 font-medium text-sm block">${title}</span>
+          <span class="text-slate-500 text-xs mt-0.5 block">${subtitle}</span>
+        </div>
+      </a>
+    `;
+  }
+
+  function normalizeChatTitle(chat) {
+    const directTitle = String(chat?.title || '').trim();
+    if (directTitle) return directTitle;
+    const firstUserMessage = Array.isArray(chat?.messages)
+      ? chat.messages.find((msg) => msg?.role === 'user' && String(msg?.content || '').trim())
+      : null;
+    const base = firstUserMessage ? String(firstUserMessage.content || '').trim() : '';
+    return base ? base.slice(0, 80) : 'New chat';
+  }
+
+  function normalizeChatPreview(chat) {
+    const messages = Array.isArray(chat?.messages) ? chat.messages : [];
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const text = String(messages[i]?.content || '').trim();
+      if (text) return text.slice(0, 96);
+    }
+    return 'No messages yet';
+  }
+
+  async function mountSharedQuickAskSidebar() {
+    // Quick Ask page (and pages embedding full Quick Ask UI) use app.js native sidebar logic.
+    if (document.getElementById('quickAskSection')) return;
+
+    const navList = document.getElementById('sidebarNavList');
+    if (!navList) return;
+
+    let section = document.getElementById('sharedQuickAskSidebarChats');
+    if (!section) {
+      section = document.createElement('div');
+      section.id = 'sharedQuickAskSidebarChats';
+      section.className = 'mt-3 pt-3 border-t border-slate-200/60 space-y-2';
+      navList.appendChild(section);
+    }
+
+    section.innerHTML = `
+      <div class="pt-1 flex items-center justify-between gap-2">
+        <p class="text-[11px] tracking-[0.14em] uppercase text-slate-500 font-semibold">Your Chats</p>
+        <a href="/quick-ask?new=1" class="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">
+          <i class="fas fa-plus text-[10px]"></i>
+          New
+        </a>
+      </div>
+      <div id="sharedQuickAskSidebarChatList" class="space-y-1">
+        <p class="px-2 py-2 text-xs text-slate-500">Loading chats...</p>
+      </div>
+      <a href="/quick-ask?new=1" class="quick-ask-collapsed-add w-9 h-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-600" title="New chat" aria-label="New chat">
+        <i class="fas fa-plus text-[12px]"></i>
+      </a>
+    `;
+
+    const list = section.querySelector('#sharedQuickAskSidebarChatList');
+    if (!list) return;
+
+    try {
+      const response = await fetch('/api/ask/chats');
+      const payload = await response.json().catch(() => ({}));
+      const chatsRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
+        ? payload.data.chats
+        : [];
+      const chats = chatsRaw
+        .map((chat) => ({
+          id: String(chat?.id || '').trim(),
+          title: normalizeChatTitle(chat),
+          preview: normalizeChatPreview(chat),
+          updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
+        }))
+        .filter((chat) => chat.id)
+        .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+        .slice(0, 8);
+
+      if (chats.length === 0) {
+        list.innerHTML = '<p class="px-2 py-2 text-xs text-slate-500">No chats yet.</p>';
+        return;
+      }
+
+      list.innerHTML = chats.map((chat) => `
+        <a href="/quick-ask?chat=${encodeURIComponent(chat.id)}" class="group block rounded-lg border border-slate-200 bg-white px-2 py-2 hover:bg-slate-50">
+          <p class="text-xs font-semibold text-slate-800 truncate">${window.escapeHtml(chat.title)}</p>
+          <p class="mt-0.5 text-[11px] text-slate-500 truncate">${window.escapeHtml(chat.preview)}</p>
+        </a>
+      `).join('');
+    } catch {
+      list.innerHTML = '<p class="px-2 py-2 text-xs text-slate-500">Unable to load chats.</p>';
+    }
+  }
+
+  function getSidebarPanelIconSvg() {
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 flex-shrink-0" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+        <path d="M9 3v18"></path>
+      </svg>
+    `;
+  }
+
+  function setSidebarCollapseIcon() {
+    const iconWrap = document.getElementById('sidebarCollapseIcon');
+    if (!iconWrap) return;
+    iconWrap.innerHTML = getSidebarPanelIconSvg();
+  }
+
+  function normalizeSidebarWidth(value, fallback = '18rem') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    if (raw.endsWith('px') || raw.endsWith('rem')) return raw;
+    const num = Number(raw);
+    if (Number.isFinite(num) && num > 0) return `${num}px`;
+    return fallback;
+  }
+
+  function syncDesktopLayoutOffset(sidebar) {
+    if (!sidebar) return;
+    const collapsed = sidebar.classList.contains('collapsed');
+    const measuredWidth = Math.round(sidebar.getBoundingClientRect().width || 0);
+    const expanded = measuredWidth > 0 && !collapsed
+      ? `${measuredWidth}px`
+      : normalizeSidebarWidth(
+          sidebar.style.width
+          || (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })(),
+          '18rem'
+        );
+    const offset = collapsed ? '3rem' : expanded;
+    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    if (document.body) document.body.setAttribute('data-has-sidebar', '1');
+
+    // Force layout sync to prevent header/sidebar overlap during collapse/expand transitions.
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const header = document.querySelector('body > header');
+    const layouts = document.querySelectorAll('.app-main-layout');
+    if (isDesktop) {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = offset;
+        header.style.width = `calc(100% - ${offset})`;
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = `calc(${offset} + var(--sidebar-gutter, 0px))`;
+        }
+      });
+    } else {
+      if (header instanceof HTMLElement) {
+        header.style.marginLeft = '';
+        header.style.width = '';
+      }
+      layouts.forEach((layout) => {
+        if (layout instanceof HTMLElement) {
+          layout.style.paddingLeft = '';
+        }
+      });
+    }
+  }
+
+  function applySidebarCollapsedState() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const collapsed = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+    if (collapsed) {
+      sidebar.classList.add('collapsed');
+      sidebar.style.width = '3rem';
+      setSidebarCollapseIcon();
+      if (collapseBtn) collapseBtn.title = 'Expand sidebar';
+    } else {
+      sidebar.classList.remove('collapsed');
+      const savedWidth = (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })();
+      sidebar.style.width = normalizeSidebarWidth(savedWidth, '');
+      setSidebarCollapseIcon();
+      if (collapseBtn) collapseBtn.title = 'Collapse sidebar';
+    }
+    syncDesktopLayoutOffset(sidebar);
+  }
+
+  function initSidebarResizer() {
+    const sidebar = document.getElementById('sidebar');
+    const resizer = document.getElementById('sidebarResizer');
+    if (!sidebar || !resizer) return;
+    if (resizer.dataset.bound === 'true') return;
+    resizer.dataset.bound = 'true';
+
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMove = (event) => {
+      if (!isResizing) return;
+      const delta = event.clientX - startX;
+      const next = Math.max(180, Math.min(420, startWidth + delta));
+      sidebar.style.width = `${next}px`;
+      syncDesktopLayoutOffset(sidebar);
+    };
+
+    const onUp = () => {
+      if (!isResizing) return;
+      isResizing = false;
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      try { localStorage.setItem('sidebarWidth', sidebar.style.width || ''); } catch {}
+    };
+
+    resizer.addEventListener('mousedown', (event) => {
+      if (sidebar.classList.contains('collapsed')) return;
+      isResizing = true;
+      startX = event.clientX;
+      startWidth = sidebar.getBoundingClientRect().width;
+      document.body.style.userSelect = 'none';
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      event.preventDefault();
+    });
+
+    const savedWidth = (function(){ try { return localStorage.getItem('sidebarWidth'); } catch { return null; } })();
+    if (savedWidth && !sidebar.classList.contains('collapsed')) {
+      sidebar.style.width = savedWidth;
+    }
+    syncDesktopLayoutOffset(sidebar);
+  }
+
+  function wireSidebarInteractions() {
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    const headerToggleBtn = document.getElementById('sidebarHeaderToggle');
+    const headerRow = document.getElementById('sidebarHeaderRow');
+    if (!sidebar) return;
+
+    if (collapseBtn && collapseBtn.dataset.bound !== 'true') {
+      collapseBtn.dataset.bound = 'true';
+      collapseBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const current = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+        try { localStorage.setItem('sidebarCollapsed', (!current).toString()); } catch {}
+        applySidebarCollapsedState();
+      });
+    }
+
+    if (headerRow && headerRow.dataset.bound !== 'true') {
+      headerRow.dataset.bound = 'true';
+      headerRow.addEventListener('click', (event) => {
+        if (!sidebar.classList.contains('collapsed')) return;
+        const clickedToggle = Array.isArray(event.composedPath?.())
+          ? event.composedPath().some((el) => el && (el.id === 'sidebarCollapseBtn' || el.id === 'sidebarHeaderToggle'))
+          : !!(event.target?.closest && (event.target.closest('#sidebarCollapseBtn') || event.target.closest('#sidebarHeaderToggle')));
+        if (clickedToggle) return;
+        try { localStorage.setItem('sidebarCollapsed', 'false'); } catch {}
+        applySidebarCollapsedState();
+      });
+    }
+
+    if (headerToggleBtn && headerToggleBtn.dataset.bound !== 'true') {
+      headerToggleBtn.dataset.bound = 'true';
+      headerToggleBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const current = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+        try { localStorage.setItem('sidebarCollapsed', (!current).toString()); } catch {}
+        applySidebarCollapsedState();
+      });
+    }
+
+    applySidebarCollapsedState();
+    initSidebarResizer();
+    if (!window.__quickmcpSidebarResizeBound) {
+      window.__quickmcpSidebarResizeBound = true;
+      window.addEventListener('resize', () => syncDesktopLayoutOffset(document.getElementById('sidebar')));
+    }
+  }
+
+  async function renderSidebar() {
+    const root = document.getElementById('sidebar');
+    if (!root) return;
+    root.setAttribute('data-ready', '0');
+
+    // Ensure base container classes exist (for pages that only mount an empty div)
+    if (!root.className) {
+      root.className = 'w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-40 fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0';
+    }
+
+    // Respect saved collapsed state before any async work
+    const preferCollapsed = (function(){ try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; } })();
+    if (preferCollapsed) {
+      root.classList.add('collapsed');
+      root.style.width = '3rem';
+    }
+
+    const authCfg = await resolveAuthMode();
+    const authMode = authCfg?.authMode || null;
+    const deployMode = (authCfg?.deployMode || '').toUpperCase();
+    const showAuthManagement = authMode !== 'NONE';
+    const showUsers = showAuthManagement && authCfg?.usersEnabled !== false && deployMode !== 'SAAS';
+
+    const quickAskActive = isNavPathActive('/');
+
+    const html = `
+      <div class="p-4 bg-white">
+        <div id="sidebarHeaderRow" class="flex items-center justify-start gap-2 mb-2">
+          <div id="sidebarHeaderMain" class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <i class="fas fa-rocket text-sm"></i>
+            </div>
+          </div>
+          <div id="sidebarHeaderToggleWrap" class="flex items-center ml-auto">
+            <button id="sidebarHeaderToggle" type="button" class="w-8 h-8 flex items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-600 hover:shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-blue-300 transition-all" title="Toggle sidebar">
+              <span id="sidebarCollapseIcon" class="inline-flex items-center justify-center"></span>
+            </button>
+          </div>
+          <div id="sidebarHeaderActions" class="flex items-center gap-2">
+            <button id="closeSidebar" class="lg:hidden text-slate-400 hover:text-slate-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="sidebarNavList" class="p-3 overflow-y-auto flex-1 scrollbar-modern space-y-1.5">
+        ${navItem('/', 'fa-comment-dots', 'Quick Ask', 'Ask Aria with MCP tools', quickAskActive)}
+        ${navItem('/generate', 'fa-magic', 'Generate Server', 'Create new MCP servers', isNavPathActive('/generate'))}
+        ${navItem('/manage-servers', 'fa-server', 'Manage Servers', 'Edit & Control', isNavPathActive('/manage-servers'))}
+        ${navItem('/test-servers', 'fa-vial', 'Test Servers', 'Verify functionality', isNavPathActive('/test-servers'))}
+        ${showAuthManagement ? navItem('/authorization', 'fa-key', 'Authorization', 'MCP token policy', isNavPathActive('/authorization'), 'bg-amber-100 text-amber-700 group-hover:bg-amber-200') : ''}
+        ${showUsers ? navItem('/users', 'fa-users', 'Users', 'User management', isNavPathActive('/users'), 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200') : ''}
+        ${navItem('/how-to-use', 'fa-book', 'How to Use', 'Documentation & Guide', isNavPathActive('/how-to-use'))}
+      </div>
+
+      <div id="sidebarUserSection" class="p-3 border-t border-slate-200/60 bg-white">
+        <button id="sidebarUserButton" data-user-menu-anchor="true" type="button" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md flex-shrink-0" data-user-avatar>G</div>
+          <div id="sidebarUserMeta" class="min-w-0">
+            <div id="sidebarUserName" class="text-sm font-semibold text-slate-800 truncate">Guest</div>
+            <div id="sidebarUserEmail" class="text-xs text-slate-500 truncate">Not signed in</div>
+          </div>
+        </button>
+      </div>
+
+      <div id="sidebarResizer" class="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent"></div>
+    `;
+
+    root.innerHTML = html;
+    setSidebarCollapseIcon();
+    wireSidebarInteractions();
+    syncDesktopLayoutOffset(root);
+    if (typeof window.updateUserAvatar === 'function') {
+      window.updateUserAvatar();
+    }
+    await mountSharedQuickAskSidebar();
+    root.setAttribute('data-ready', '1');
+  }
+
+  // auto-render (works both before and after DOMContentLoaded)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderSidebar);
+  } else {
+    renderSidebar();
+  }
+
+  // expose for manual calls if needed
+  window.renderSidebar = renderSidebar;
+})();
