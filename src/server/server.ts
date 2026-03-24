@@ -138,6 +138,25 @@ function ensureDataStore(): IDataStore {
   return dataStore;
 }
 
+function resolveSpaDistDir(currentDir: string): string | null {
+  const candidates = [
+    path.join(process.cwd(), 'web-spa', 'dist'),
+    path.join(process.cwd(), 'dist', 'web-spa', 'dist'),
+    path.join(currentDir, '..', '..', 'web-spa', 'dist'),
+    path.join(currentDir, '..', '..', '..', 'web-spa', 'dist'),
+    path.join('/var', 'task', 'web-spa', 'dist'),
+    path.join('/var', 'task', 'user', 'web-spa', 'dist')
+  ];
+
+  for (const dir of candidates) {
+    if (existsSync(path.join(dir, 'index.html'))) {
+      return dir;
+    }
+  }
+
+  return null;
+}
+
 const authUtils = new AuthUtils({
   authMode,
   authDefaultUsername,
@@ -161,9 +180,8 @@ const clearCookie = authUtils.clearCookie.bind(authUtils);
 const seedLiteAdminsAsync = authUtils.seedLiteAdminsAsync.bind(authUtils);
 const getEffectiveUsername = authUtils.getEffectiveUsername.bind(authUtils);
 const publicDir = authUtils.resolvePublicDir(__dirname);
-const spaDistDir = path.resolve(process.cwd(), 'web-spa', 'dist');
-const spaIndexCandidate = path.join(spaDistDir, 'index.html');
-const spaIndexFile = existsSync(spaIndexCandidate) ? spaIndexCandidate : null;
+const spaDistDir = resolveSpaDistDir(__dirname);
+const spaIndexFile = spaDistDir ? path.join(spaDistDir, 'index.html') : null;
 const applyNoneModeAuth = authUtils.applyNoneModeAuth.bind(authUtils);
 const isNoneMode = authUtils.isNoneMode.bind(authUtils);
 const buildServerId = authUtils.buildServerId.bind(authUtils);
@@ -542,7 +560,7 @@ app.use((req, res, next) => {
 });
 faviconApi.registerRoutes(app);
 app.use(express.static(publicDir, { index: false }));
-if (spaIndexFile) {
+if (spaDistDir && spaIndexFile) {
   app.use(express.static(spaDistDir, { index: false }));
 }
 
