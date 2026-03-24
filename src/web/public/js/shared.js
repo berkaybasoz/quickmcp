@@ -383,6 +383,9 @@ async function consumeSupabaseHashSessionIfPresent() {
 
 // Initialize sidebar functionality
 document.addEventListener('DOMContentLoaded', async function() {
+    if (window.__quickmcpReactShell) {
+        return;
+    }
     initializeDesktopSidebarLayoutBase();
     const handledSupabaseHash = await consumeSupabaseHashSessionIfPresent();
     if (handledSupabaseHash) return;
@@ -1178,6 +1181,10 @@ function applySidebarCollapsedState() {
 // Merged from sidebar.js
 // Renders the shared sidebar into the #sidebar element on each page
 (function () {
+  if (window.__quickmcpReactShell) {
+    return;
+  }
+
   async function resolveAuthMode() {
     try {
       const cacheApi = window.QuickMCPClientCache;

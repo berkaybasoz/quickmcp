@@ -188,9 +188,6 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
 
         requestAnimationFrame(() => {
           const runtime = window as any;
-          runtime.renderSharedAppBar?.(true);
-          runtime.renderSidebar?.();
-          runtime.updateUserAvatar?.();
           initializeLegacyPage(pageFile);
         });
       } catch (error) {

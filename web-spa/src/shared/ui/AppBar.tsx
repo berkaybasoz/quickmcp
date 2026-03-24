@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 type UiTheme = 'light' | 'dark';
@@ -42,9 +42,10 @@ function applyTheme(theme: UiTheme): void {
 
 type AppBarProps = {
   onOpenSidebar?: () => void;
+  style?: CSSProperties;
 };
 
-export function AppBar({ onOpenSidebar }: AppBarProps) {
+export function AppBar({ onOpenSidebar, style }: AppBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [theme, setTheme] = useState<UiTheme>(() => readTheme());
@@ -61,7 +62,7 @@ export function AppBar({ onOpenSidebar }: AppBarProps) {
   const isDark = theme === 'dark';
 
   return (
-    <header className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-700/70 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
+    <header style={style} className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-700/70 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3">
       <div className="flex items-center gap-6">
         <div
           className="flex items-center gap-3 cursor-pointer"

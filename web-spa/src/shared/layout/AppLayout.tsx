@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { AppBar } from '../ui/AppBar';
+import { Sidebar } from '../ui/Sidebar';
 
 declare global {
   interface Window {
-    renderSidebar?: () => void;
-    renderSharedAppBar?: (force?: boolean) => void;
     updateUserAvatar?: () => Promise<void> | void;
   }
 }
@@ -18,26 +18,57 @@ function isClientSideRoute(href: string): boolean {
 }
 
 export function AppLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sidebarCollapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('sidebarWidth'));
+      if (Number.isFinite(saved) && saved >= 180 && saved <= 420) return Math.round(saved);
+    } catch {}
+    return 288;
+  });
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
 
   useEffect(() => {
-    const root = document.getElementById('root');
-    if (root) {
-      root.className = 'h-screen flex flex-col';
-    }
-
     document.body.classList.add('h-screen', 'flex', 'flex-col', 'overflow-hidden');
-
-    window.renderSharedAppBar?.(true);
-    window.renderSidebar?.();
     window.updateUserAvatar?.();
   }, []);
 
   useEffect(() => {
-    window.renderSharedAppBar?.(true);
-    window.renderSidebar?.();
-  }, [location.pathname]);
+    const media = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsDesktop(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? 'true' : 'false');
+    } catch {}
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sidebarWidth', String(sidebarWidth));
+    } catch {}
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const offsetPx = sidebarCollapsed ? 48 : sidebarWidth;
+    document.documentElement.style.setProperty('--sidebar-offset', `${offsetPx}px`);
+    document.body.setAttribute('data-has-sidebar', '1');
+  }, [sidebarCollapsed, sidebarWidth]);
 
   useEffect(() => {
     const onDocumentClick = (event: MouseEvent) => {
@@ -76,21 +107,32 @@ export function AppLayout() {
     return () => document.removeEventListener('click', onDocumentClick, true);
   }, [navigate]);
 
+  const shellOffsetPx = sidebarCollapsed ? 48 : sidebarWidth;
+  const appBarStyle = useMemo(() => {
+    if (!isDesktop) return undefined;
+    return {
+      marginLeft: `${shellOffsetPx}px`,
+      width: `calc(100% - ${shellOffsetPx}px)`
+    };
+  }, [isDesktop, shellOffsetPx]);
+
+  const mainLayoutStyle = useMemo(() => {
+    if (!isDesktop) return undefined;
+    return { paddingLeft: `calc(${shellOffsetPx}px + var(--sidebar-gutter, 0px))` };
+  }, [isDesktop, shellOffsetPx]);
+
   return (
     <>
-      <header className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-700/70 shadow-sm relative z-50 h-16 flex-shrink-0 flex items-center justify-between px-6 py-3" />
-
-      <div className="app-main-layout flex flex-1 overflow-x-hidden" id="app">
-        <div
-          id="sidebar"
-          className="w-72 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col flex-shrink-0 z-[60] fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 lg:top-0 lg:h-screen transition-transform duration-300 ease-in-out h-full pt-16 lg:pt-0"
+      <AppBar onOpenSidebar={() => setMobileSidebarOpen(true)} style={appBarStyle} />
+      <div className="app-main-layout flex flex-1 overflow-x-hidden" id="app" style={mainLayoutStyle}>
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          widthPx={sidebarWidth}
+          mobileOpen={mobileSidebarOpen}
+          onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+          onWidthChange={(width) => setSidebarWidth(width)}
         />
-
-        <div
-          id="sidebarOverlay"
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden opacity-0 invisible transition-all duration-300"
-        />
-
         <Outlet />
       </div>
     </>
