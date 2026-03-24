@@ -98,6 +98,7 @@ export class ServerApi {
       data: {
         config: {
           name: server.name,
+          type: finalType,
           description: `${server.name} - Virtual MCP Server (${finalType})`,
           version,
           tools: tools.map((tool) => ({

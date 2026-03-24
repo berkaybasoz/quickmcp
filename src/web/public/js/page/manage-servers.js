@@ -253,33 +253,33 @@ function getServerTypeIconMeta(serverType) {
     const normalized = type;
 
     if (normalized === 'curl') {
-        return { image: 'images/app/curl_mini.png', icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+        return { kind: 'image', value: 'images/app/curl_mini.png', bg: 'bg-white', text: 'text-slate-600' };
     }
     if (normalized === 'ftp') {
-        return { image: '', icon: 'fa-folder-open', bg: 'bg-amber-100', text: 'text-amber-700' };
+        return { kind: 'icon', value: 'fa-folder-open', bg: 'bg-amber-100', text: 'text-amber-700' };
     }
     if (normalized === 'email') {
-        return { image: '', icon: 'fa-envelope', bg: 'bg-rose-100', text: 'text-rose-700' };
+        return { kind: 'icon', value: 'fa-envelope', bg: 'bg-rose-100', text: 'text-rose-700' };
     }
     if (normalized === 'csv') {
-        return { image: '', icon: 'fa-file-csv', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+        return { kind: 'icon', value: 'fa-file-csv', bg: 'bg-emerald-100', text: 'text-emerald-700' };
     }
     if (normalized === 'excel') {
-        return { image: '', icon: 'fa-file-excel', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+        return { kind: 'icon', value: 'fa-file-excel', bg: 'bg-emerald-100', text: 'text-emerald-700' };
     }
     if (normalized === 'azure_openai') {
-        return { image: 'images/app/azure_openai.png', icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+        return { kind: 'image', value: 'images/app/azure_openai.png', bg: 'bg-white', text: 'text-slate-600' };
     }
     if (normalized === 'rest') {
-        return { image: '', icon: 'fa-network-wired', bg: 'bg-cyan-100', text: 'text-cyan-700' };
+        return { kind: 'icon', value: 'fa-network-wired', bg: 'bg-cyan-100', text: 'text-cyan-700' };
     }
     if (normalized && SERVER_TYPE_IMAGE_BASENAMES.has(normalized)) {
-        return { image: `images/app/${normalized}.png`, icon: 'fa-server', bg: 'bg-white', text: 'text-slate-600' };
+        return { kind: 'image', value: `images/app/${normalized}.png`, bg: 'bg-white', text: 'text-slate-600' };
     }
     if (normalized === 'localfs') {
-        return { image: '', icon: 'fa-folder-tree', bg: 'bg-amber-100', text: 'text-amber-700' };
+        return { kind: 'icon', value: 'fa-folder-tree', bg: 'bg-amber-100', text: 'text-amber-700' };
     }
-    return { image: '', icon: 'fa-server', bg: 'bg-slate-100', text: 'text-slate-600' };
+    return { kind: 'icon', value: 'fa-server', bg: 'bg-slate-100', text: 'text-slate-600' };
 }
 
 function displayServers(servers) {
@@ -324,19 +324,14 @@ function displayServers(servers) {
     const rowsHtml = servers.map(server => {
         const safeType = String(server.type || '').toLowerCase() || 'unknown';
         const iconMeta = getServerTypeIconMeta(safeType);
-        const isWebPageLike = ['webhook'].includes(String(safeType).toLowerCase());
-        const iconHtml = isWebPageLike
-            ? `<div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
-                    <i class="fas fa-rocket text-lg"></i>
-               </div>`
-            : (iconMeta.image
-                ? `<img src="${iconMeta.image}" alt="${safeType}" class="w-6 h-6 object-contain" />`
-                : `<i class="fas ${iconMeta.icon} text-sm"></i>`);
+        const iconHtml = iconMeta.kind === 'image'
+            ? `<img src="${iconMeta.value}" alt="${safeType}" class="w-6 h-6 object-contain" />`
+            : `<i class="fas ${iconMeta.value} text-sm"></i>`;
         return `
         <div class="group md:grid md:grid-cols-12 items-start md:items-center px-5 py-3 border-x border-b border-slate-200 odd:bg-white even:bg-slate-50/60 hover:bg-slate-50 transition-colors">
             <div class="md:col-span-4 min-w-0 pr-3">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="hidden md:inline-flex ${isWebPageLike ? '' : `w-8 h-8 rounded-lg shadow-sm ${iconMeta.bg} ${iconMeta.text}`} items-center justify-center">
+                    <span class="hidden md:inline-flex w-8 h-8 rounded-lg shadow-sm ${iconMeta.bg} ${iconMeta.text} items-center justify-center">
                         ${iconHtml}
                     </span>
                     <span id="server-name-${server.id}" ondblclick="startRenameServer('${server.id}', '${server.name.replace(/'/g, "'")}')" class="font-semibold text-slate-900 truncate cursor-pointer" title="${server.name}">${server.name}</span>
@@ -565,6 +560,11 @@ function showServerDetailsPanel(serverData, serverIdArg) {
     const serverDescription = config.description || 'No description available';
     // Prefer explicit id from caller; fall back to config.name (server id == name)
     const serverId = serverIdArg || serverData.id || serverData.config?.name || 'unknown';
+    const serverType = String(config?.type || '').toLowerCase() || 'unknown';
+    const nameIconMeta = getServerTypeIconMeta(serverType);
+    const nameIconHtml = nameIconMeta.kind === 'image'
+        ? `<img src="${nameIconMeta.value}" alt="${serverType}" class="w-6 h-6 object-contain" />`
+        : `<i class="fas ${nameIconMeta.value} text-sm"></i>`;
 
     const inner = `
         <div id=\"serverDetailsHeaderRow\" class=\"p-6 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/50 to-white/50 flex items-center justify-between\">\n            <div class=\"flex items-center gap-3\">\n                <button id=\"rightPanelCollapseBtn\" class=\"text-slate-400 hover:text-slate-600 inline-flex items-center justify-center leading-none\" title=\"Collapse panel\">\n                    <span id=\"rightPanelCollapseIcon\" class=\"inline-flex items-center justify-center\"></span>\n                </button>\n                <div id=\"serverDetailsHeaderMain\" class=\"flex items-center gap-3\">
@@ -577,9 +577,14 @@ function showServerDetailsPanel(serverData, serverIdArg) {
                     </div>
                 </div>\n            </div>\n        </div>
         <div class=\"flex-1 overflow-y-auto scrollbar-modern p-6 space-y-6\">
-            <div>
-                <h3 class="text-xl font-bold text-slate-900">${serverName}</h3>
-                <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
+            <div class="flex items-start gap-3">
+                <span class="inline-flex w-9 h-9 rounded-lg shadow-sm items-center justify-center ${nameIconMeta.bg} ${nameIconMeta.text}">
+                    ${nameIconHtml}
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-xl font-bold text-slate-900 truncate">${serverName}</h3>
+                    <p class="text-slate-600 mt-1 text-sm">${serverDescription}</p>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div class="text-center rounded-lg border bg-blue-50 border-blue-100 dark:bg-blue-900/30 dark:border-blue-800/50 p-3">
