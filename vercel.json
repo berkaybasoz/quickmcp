@@ -7,7 +7,8 @@
       "config": {
         "includeFiles": [
           "src/web/public/**",
-          "dist/web/public/**"
+          "dist/web/public/**",
+          "web-spa/dist/**"
         ]
       }
     }
