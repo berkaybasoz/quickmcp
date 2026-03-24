@@ -43,7 +43,7 @@ export class IndexApi {
   private serveGenerate = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      res.sendFile(path.join(this.deps.publicDir, 'page', 'index.html'));
+      res.sendFile(path.join(this.deps.publicDir, 'page', 'generate.html'));
       return;
     }
     res.redirect('/landing');
