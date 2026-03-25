@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter, useLocation } from 'react-router-dom';
 import { AppLayout } from '../shared/layout/AppLayout';
 import { AuthorizationPage } from '../pages/AuthorizationPage';
 import { GeneratePage } from '../pages/GeneratePage';
@@ -16,10 +16,15 @@ function RootEntryRedirect() {
   const status = useBootstrapStore((state) => state.status);
   const me = useBootstrapStore((state) => state.me);
   const config = useBootstrapStore((state) => state.config);
+  const location = useLocation();
   const isAuthRequired = (config?.authMode || 'NONE') !== 'NONE';
+  const next = (() => {
+    const raw = new URLSearchParams(location.search).get('next') || '';
+    return raw.startsWith('/') ? raw : '/quick-ask';
+  })();
 
   if (status === 'ready' && (!isAuthRequired || me)) {
-    return <Navigate to="/quick-ask" replace />;
+    return <Navigate to={next} replace />;
   }
 
   return <LandingPage />;
