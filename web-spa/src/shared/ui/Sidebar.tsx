@@ -1,4 +1,4 @@
-import { MouseEvent as ReactMouseEvent, useEffect, useMemo, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
 
@@ -63,43 +63,53 @@ export function Sidebar({
 
   const showUsers = (config?.authMode || 'NONE') !== 'NONE' && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadChats() {
-      setChatStatus('loading');
-      try {
-        const response = await fetch('/api/ask/chats', { credentials: 'include' });
-        const payload = await response.json().catch(() => ({}));
-        const chatsRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
-          ? payload.data.chats
-          : [];
+  const loadChats = useCallback(async () => {
+    setChatStatus('loading');
+    try {
+      const response = await fetch('/api/ask/chats', { credentials: 'include' });
+      const payload = await response.json().catch(() => ({}));
+      const chatsRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
+        ? payload.data.chats
+        : [];
 
-        const nextChats = chatsRaw
-          .map((chat: any) => ({
-            id: String(chat?.id || '').trim(),
-            title: normalizeChatTitle(chat),
-            preview: normalizeChatPreview(chat),
-            updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
-          }))
-          .filter((chat: QuickAskChat) => chat.id)
-          .sort((a: QuickAskChat, b: QuickAskChat) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-          .slice(0, 8);
+      const nextChats = chatsRaw
+        .map((chat: any) => ({
+          id: String(chat?.id || '').trim(),
+          title: normalizeChatTitle(chat),
+          preview: normalizeChatPreview(chat),
+          updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
+        }))
+        .filter((chat: QuickAskChat) => chat.id)
+        .sort((a: QuickAskChat, b: QuickAskChat) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+        .slice(0, 8);
 
-        if (cancelled) return;
-        setChats(nextChats);
-        setChatStatus(nextChats.length ? 'ready' : 'empty');
-      } catch {
-        if (cancelled) return;
-        setChats([]);
-        setChatStatus('error');
-      }
+      setChats(nextChats);
+      setChatStatus(nextChats.length ? 'ready' : 'empty');
+    } catch {
+      setChats([]);
+      setChatStatus('error');
     }
-
-    void loadChats();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    void loadChats();
+  }, [loadChats]);
+
+  useEffect(() => {
+    if (location.pathname === '/quick-ask') {
+      void loadChats();
+    }
+  }, [location.pathname, location.search, loadChats]);
+
+  useEffect(() => {
+    const refresh = () => {
+      void loadChats();
+    };
+    window.addEventListener('quickask:chats-updated', refresh);
+    return () => {
+      window.removeEventListener('quickask:chats-updated', refresh);
+    };
+  }, [loadChats]);
 
   useEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;

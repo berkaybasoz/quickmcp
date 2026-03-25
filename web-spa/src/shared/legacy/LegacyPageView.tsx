@@ -94,12 +94,6 @@ function ensureExternalScript(src: string): Promise<void> {
 function initializeLegacyPage(pageFile: string) {
   const runtime = window as any;
 
-  if (pageFile === 'quick-ask.html') {
-    runtime.setupQuickAskPageEventListeners?.();
-    runtime.initializeQuickAsk?.();
-    return;
-  }
-
   if (pageFile === 'generate.html') {
     runtime.setupEventListeners?.();
     try { runtime.setupTemplateFilters?.(); } catch {}
