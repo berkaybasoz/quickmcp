@@ -34,10 +34,10 @@ export class IndexApi {
   private serveRoot = async (req: express.Request, res: express.Response): Promise<void> => {
     const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
     if (ctx) {
-      this.sendAppPage(res, 'quick-ask.html');
+      res.redirect('/quick-ask');
       return;
     }
-    res.redirect('/landing');
+    this.sendAppPage(res, 'quick-ask.html');
   };
 
   private serveQuickAsk = async (req: express.Request, res: express.Response): Promise<void> => {

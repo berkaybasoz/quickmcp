@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../shared/layout/AppLayout';
 import { AuthorizationPage } from '../pages/AuthorizationPage';
@@ -17,18 +16,11 @@ function RootEntryRedirect() {
   const config = useBootstrapStore((state) => state.config);
   const isAuthRequired = (config?.authMode || 'NONE') !== 'NONE';
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (status !== 'ready' && status !== 'error') return;
-    if (status === 'ready' && (!isAuthRequired || me)) return;
-    window.location.replace('/landing');
-  }, [status, isAuthRequired, me]);
-
   if (status === 'ready' && (!isAuthRequired || me)) {
     return <Navigate to="/quick-ask" replace />;
   }
 
-  return null;
+  return <LandingPage />;
 }
 
 export const router = createBrowserRouter([
