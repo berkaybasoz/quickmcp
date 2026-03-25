@@ -32,7 +32,12 @@ export class IndexApi {
   }
 
   private serveRoot = async (req: express.Request, res: express.Response): Promise<void> => {
-    this.sendAppPage(res, 'quick-ask.html');
+    const ctx = this.deps.authMode === 'NONE' ? {} : await this.deps.resolveAuthContext(req, res);
+    if (ctx) {
+      this.sendAppPage(res, 'quick-ask.html');
+      return;
+    }
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'landing.html'));
   };
 
   private serveQuickAsk = async (req: express.Request, res: express.Response): Promise<void> => {
@@ -59,7 +64,7 @@ export class IndexApi {
       res.redirect('/');
       return;
     }
-    this.sendAppPage(res, 'quick-ask.html');
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'landing.html'));
   };
 
   private servePricing = (_req: express.Request, res: express.Response): void => {

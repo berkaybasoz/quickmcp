@@ -1,0 +1,2749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickMCP - AI-Powered MCP Server Generator</title>
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f3f7ff;
+      --bg-soft: #ffffff;
+      --card: #ffffff;
+      --line: #dbe6f7;
+      --text: #1f2937;
+      --text-secondary: #475569;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: #60a5fa;
+      --accent-bg: rgba(37, 99, 235, 0.08);
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+      --shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 24px 64px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Background Effects */
+    .bg-effects {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.12), transparent 62%);
+      filter: saturate(118%) contrast(106%);
+    }
+
+    .gradient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(46px);
+      opacity: 0;
+      will-change: transform;
+    }
+
+    .gradient-orb.one {
+      width: 44vmax;
+      height: 44vmax;
+      top: -10vmax;
+      left: -8vmax;
+      background: radial-gradient(circle at 35% 35%, rgba(245, 217, 122, 0.68), rgba(245, 217, 122, 0.32) 46%, transparent 74%);
+      animation: blobDropOne 18s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+    }
+
+    .gradient-orb.two {
+      width: 42vmax;
+      height: 42vmax;
+      top: 8vmax;
+      left: 22vmax;
+      background: radial-gradient(circle at 40% 30%, rgba(240, 160, 192, 0.64), rgba(240, 160, 192, 0.3) 46%, transparent 74%);
+      animation: blobDropTwo 20s cubic-bezier(0.22, 0.61, 0.36, 1) 3s infinite;
+    }
+
+    .gradient-orb.three {
+      width: 46vmax;
+      height: 46vmax;
+      bottom: -12vmax;
+      right: -10vmax;
+      background: radial-gradient(circle at 50% 45%, rgba(212, 160, 240, 0.64), rgba(212, 160, 240, 0.3) 46%, transparent 74%);
+      animation: blobDropThree 22s cubic-bezier(0.22, 0.61, 0.36, 1) 6s infinite;
+    }
+
+    @keyframes blobDropOne {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.2);
+        opacity: 0;
+      }
+      18% {
+        opacity: 0.62;
+      }
+      55% {
+        transform: translate3d(14vw, 12vh, 0) scale(1.25);
+        opacity: 0.5;
+      }
+      100% {
+        transform: translate3d(28vw, 24vh, 0) scale(2.3);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blobDropTwo {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.22);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.58;
+      }
+      58% {
+        transform: translate3d(-16vw, 14vh, 0) scale(1.3);
+        opacity: 0.46;
+      }
+      100% {
+        transform: translate3d(-32vw, 24vh, 0) scale(2.4);
+        opacity: 0;
+      }
+    }
+
+    @keyframes blobDropThree {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.2);
+        opacity: 0;
+      }
+      16% {
+        opacity: 0.56;
+      }
+      60% {
+        transform: translate3d(-20vw, -16vh, 0) scale(1.35);
+        opacity: 0.44;
+      }
+      100% {
+        transform: translate3d(-34vw, -28vh, 0) scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    /* Layout */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .logo-text {
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-menu-toggle,
+    .nav-mobile-menu {
+      display: none;
+    }
+
+    @media (min-width: 901px) {
+      .nav-menu-toggle,
+      .nav-mobile-menu {
+        display: none !important;
+      }
+
+      .nav-get-started-desktop {
+        display: inline-flex !important;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-ghost {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .btn-ghost:hover {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1a1918;
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-accent:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--accent-bg);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .hero-badge i {
+      font-size: 12px;
+    }
+
+    .hero-title {
+      font-size: clamp(42px, 8vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-title .highlight {
+      color: var(--accent);
+    }
+
+    .hero-title .serif {
+      font-family: "Newsreader", Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .type-cursor {
+      display: inline-block;
+      margin-left: 2px;
+      color: var(--accent);
+      animation: blink 1s steps(1, end) infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hero-actions .btn {
+      padding: 14px 28px;
+      font-size: 15px;
+    }
+
+    /* Prompt Cards Section */
+    .prompts-section {
+      padding: 40px 0 80px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .prompt-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prompt-card:hover {
+      border-color: rgba(37, 99, 235, 0.3);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .prompt-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .prompt-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .prompt-icon img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .prompt-meta {
+      flex: 1;
+    }
+
+    .prompt-app {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .prompt-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .prompt-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .prompt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+
+    .prompt-users {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .prompt-users i {
+      color: var(--accent);
+    }
+
+    .prompt-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: var(--text);
+      color: white;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .prompt-cta:hover {
+      background: var(--accent);
+      transform: translateX(2px);
+    }
+
+    .prompt-cta i {
+      font-size: 11px;
+      transition: transform 0.2s;
+    }
+
+    .prompt-cta:hover i {
+      transform: translateX(3px);
+    }
+
+    /* How It Works Section */
+    .how-section {
+      padding: 80px 0;
+      background: var(--bg-soft);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 48px;
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 56px;
+      height: 56px;
+      background: var(--accent);
+      color: white;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Integrations Section */
+    .integrations-section {
+      padding: 80px 0;
+    }
+
+    .integrations-wrap {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 20px;
+      padding: 32px;
+      overflow: hidden;
+    }
+
+    .integrations-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .integrations-title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .integrations-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    .marquee-container {
+      overflow: hidden;
+      mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+    }
+
+    .marquee-row {
+      padding: 8px 0;
+    }
+
+    .marquee {
+      display: flex;
+      width: max-content;
+      gap: 12px;
+    }
+
+    .marquee.left {
+      animation: marquee-left 50s linear infinite;
+    }
+
+    .marquee.right {
+      animation: marquee-right 45s linear infinite;
+    }
+
+    @keyframes marquee-left {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @keyframes marquee-right {
+      from { transform: translateX(-50%); }
+      to { transform: translateX(0); }
+    }
+
+    .integration-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .integration-chip:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .integration-chip img {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    .server-tech {
+      margin-top: 36px;
+      text-align: center;
+    }
+
+    .server-tech-title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .server-tech-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .server-tech-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .server-tech-chip img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .marquee.tech-left {
+      animation: marquee-left 150s linear infinite;
+    }
+
+    .marquee.tech-right {
+      animation: marquee-right 150s linear infinite;
+    }
+
+    .server-tech .marquee-row {
+      padding: 14px 0;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      padding: 80px 0;
+      background: transparent;
+      border-top: none;
+    }
+
+    .install-anywhere-spotlight {
+      position: relative;
+      margin: -22px auto 28px;
+      max-width: 660px;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(120deg, #1d4ed8, #2563eb, #38bdf8, #1d4ed8);
+      background-size: 240% 240%;
+      animation: installGradientShift 7s ease infinite;
+      box-shadow: 0 14px 30px rgba(14, 116, 248, 0.2);
+    }
+
+    .install-anywhere-spotlight::before {
+      content: '';
+      position: absolute;
+      inset: -16px;
+      border-radius: 24px;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.3), transparent 70%);
+      filter: blur(14px);
+      pointer-events: none;
+    }
+
+    .install-anywhere-trigger {
+      width: 100%;
+      border: none;
+      border-radius: 17px;
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.95), rgba(3, 105, 161, 0.95));
+      color: #ffffff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+      position: relative;
+    }
+
+    .install-anywhere-trigger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 36px rgba(15, 23, 42, 0.28);
+    }
+
+    .install-anywhere-copy {
+      display: grid;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+      padding: 0 44px;
+    }
+
+    .install-anywhere-title {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .install-anywhere-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .install-anywhere-chevron {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.14);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    @keyframes installGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .install-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .install-modal.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .install-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.48);
+      backdrop-filter: blur(2px);
+    }
+
+    .install-modal-panel {
+      position: relative;
+      width: min(560px, 100%);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+      padding: 22px;
+      overflow: visible;
+    }
+
+    .install-modal-view.hidden {
+      display: none;
+    }
+
+    .install-modal.detail-active .install-modal-panel {
+      padding-top: 56px;
+    }
+
+    .install-modal-back {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .install-modal-back:hover {
+      color: var(--text);
+      border-color: rgba(37, 99, 235, 0.35);
+      background: #eff6ff;
+    }
+
+    .install-modal-back.hidden {
+      display: none;
+    }
+
+    .install-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .install-modal-close:hover {
+      color: var(--text);
+      border-color: rgba(37, 99, 235, 0.35);
+      background: #eff6ff;
+    }
+
+    .install-modal-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .install-modal-heading i {
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .install-modal-subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .install-channels {
+      display: grid;
+      gap: 10px;
+    }
+
+    .install-channel-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+    }
+
+    .install-channel-label {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      padding-left: 2px;
+      flex: 0 0 auto;
+    }
+
+    .install-channel-group .install-channel-row {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .install-channel-row {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .install-channel-row:hover {
+      border-color: rgba(37, 99, 235, 0.36);
+      background: #f8fbff;
+      transform: translateX(2px);
+    }
+
+    .install-channel-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .install-channel-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      object-fit: contain;
+      background: #fff;
+      flex-shrink: 0;
+      padding: 3px;
+    }
+
+    .install-channel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .install-channel-text {
+      display: grid;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .install-channel-subtitle {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      line-height: 1.2;
+    }
+
+    .install-channel-arrow {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .install-modal-actions {
+      margin-top: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .install-primary-btn {
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1d4ed8, #0369a1);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 20px rgba(29, 78, 216, 0.22);
+    }
+
+    .install-primary-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(29, 78, 216, 0.28);
+    }
+
+    .install-step-list {
+      display: grid;
+      gap: 14px;
+      position: relative;
+      padding-left: 52px;
+      margin-top: 6px;
+    }
+
+    .install-step-list::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.45), rgba(14, 165, 233, 0.15));
+      border-radius: 999px;
+    }
+
+    .install-step {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .install-step-index {
+      position: absolute;
+      left: -52px;
+      top: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, #1d4ed8, #0284c7);
+      box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+      margin-bottom: 0;
+      line-height: 1;
+    }
+
+    .install-step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .install-step-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .install-step-copy-row {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .install-step-url {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 400;
+      overflow-wrap: anywhere;
+    }
+
+    .install-steps-scroll {
+      max-height: min(64vh, 560px);
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 999px;
+    }
+
+    .install-steps-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .install-guide-media {
+      margin: 10px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .install-guide-media img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #f8fafc;
+    }
+
+    .install-step-details {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-top: 8px;
+      margin-bottom: 0;
+      padding-left: 18px;
+    }
+
+    .install-copy-btn {
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .install-copy-btn:hover {
+      background: #eff6ff;
+      border-color: rgba(37, 99, 235, 0.45);
+    }
+
+    .install-signin-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+    }
+
+    .install-signin-btn:hover {
+      background: #1e293b;
+      transform: translateY(-1px);
+    }
+
+    .install-signin-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .token-help-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .token-help-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      background: #ffffff;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .token-help-icon:hover,
+    .token-help-icon:focus-visible {
+      color: #0f172a;
+      border-color: rgba(37, 99, 235, 0.45);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
+    }
+
+    .token-help-preview {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      right: 0;
+      width: min(560px, 86vw);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+      padding: 6px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 180;
+      pointer-events: none;
+    }
+
+    .token-help-preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #f8fafc;
+    }
+
+    .token-help-wrap:hover .token-help-preview,
+    .token-help-wrap:focus-within .token-help-preview {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .token-help-wrap.token-help-down .token-help-preview {
+      top: calc(100% + 10px);
+      bottom: auto;
+      right: 0;
+      transform: translateY(-6px);
+    }
+
+    .token-help-wrap.token-help-down:hover .token-help-preview,
+    .token-help-wrap.token-help-down:focus-within .token-help-preview {
+      transform: translateY(0);
+    }
+
+    .token-help-wrap.token-help-global .token-help-preview {
+      display: none;
+    }
+
+    .token-help-floating-preview {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: min(560px, calc(100vw - 24px));
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+      padding: 6px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+      z-index: 260;
+      pointer-events: none;
+    }
+
+    .token-help-floating-preview.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .token-help-floating-preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #f8fafc;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+      align-items: start;
+    }
+
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .faq-item:hover {
+      border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .faq-item[open] {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .faq-item summary {
+      list-style: none;
+      padding: 20px 24px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-item summary::after {
+      content: '+';
+      font-size: 20px;
+      color: var(--muted);
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+
+    .faq-item[open] summary::after {
+      content: '-';
+      color: var(--accent);
+    }
+
+    .faq-answer {
+      padding: 0 24px 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 80px 0;
+    }
+
+    .cta-card {
+      background: var(--text);
+      border-radius: 24px;
+      padding: 64px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 400px;
+      height: 400px;
+      background: var(--accent);
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-title {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 800;
+      color: white;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .cta-actions .btn-accent {
+      background: var(--accent);
+      padding: 16px 32px;
+      font-size: 16px;
+    }
+
+    .cta-actions .btn-ghost {
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 16px 32px;
+      font-size: 16px;
+    }
+
+    .cta-actions .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .footer-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .nav-links {
+        display: none;
+      }
+
+      .nav {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .nav-actions {
+        margin-left: auto;
+      }
+
+      .nav-actions .btn-ghost,
+      .nav-get-started-desktop {
+        display: none;
+      }
+
+      .nav-menu-toggle {
+        display: inline-flex;
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+
+      .nav-menu-toggle .label {
+        display: none;
+      }
+
+      .nav-mobile-menu {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .nav-mobile-menu.open {
+        display: grid;
+      }
+
+      .nav-mobile-link {
+        text-decoration: none;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 500;
+        padding: 6px 2px;
+      }
+
+      .nav-mobile-link:hover {
+        color: var(--text);
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .prompt-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-card {
+        padding: 40px 24px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .hero {
+        padding: 48px 0 40px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .hero-actions .btn {
+        width: 100%;
+      }
+
+      .cta-actions {
+        flex-direction: column;
+      }
+
+      .cta-actions .btn {
+        width: 100%;
+      }
+
+      .install-anywhere-spotlight {
+        margin: -14px auto 16px;
+        border-radius: 16px;
+      }
+
+      .install-anywhere-trigger {
+        border-radius: 15px;
+        padding: 12px 14px;
+      }
+
+      .install-anywhere-copy {
+        padding: 0 34px;
+      }
+
+      .install-anywhere-title {
+        font-size: 18px;
+      }
+
+      .install-anywhere-subtitle {
+        font-size: 11px;
+      }
+
+      .install-modal-panel {
+        padding: 18px;
+      }
+
+      .install-step-list {
+        padding-left: 44px;
+      }
+
+      .install-step-list::before {
+        left: 13px;
+      }
+
+      .install-step-index {
+        left: -44px;
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+      }
+
+      .install-steps-scroll {
+        max-height: min(58vh, 460px);
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="bg-effects" aria-hidden="true">
+    <div class="gradient-orb one"></div>
+    <div class="gradient-orb two"></div>
+    <div class="gradient-orb three"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="container">
+    <nav class="nav">
+      <a href="/landing" class="logo">
+        <span class="logo-icon">
+          <i class="fas fa-rocket"></i>
+        </span>
+        <span class="logo-text">QuickMCP</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#prompts" class="nav-link">Use Cases</a>
+        <a href="#how" class="nav-link">How It Works</a>
+        <a href="#integrations" class="nav-link">Integrations</a>
+        <a href="/pricing" class="nav-link">Pricing</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </div>
+
+      <div class="nav-actions">
+        <a href="/login" class="btn btn-ghost">Sign In</a>
+        <a href="/login" class="btn btn-primary nav-get-started-desktop">Get Started</a>
+        <button type="button" id="navMenuToggle" class="btn btn-primary nav-menu-toggle" aria-expanded="false" aria-controls="navMobileMenu">
+          <span class="label">Menu</span>
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <div id="navMobileMenu" class="nav-mobile-menu">
+        <a href="/login" class="nav-mobile-link">Sign In</a>
+        <a href="#prompts" class="nav-mobile-link">Use Cases</a>
+        <a href="#how" class="nav-mobile-link">How It Works</a>
+        <a href="#integrations" class="nav-mobile-link">Integrations</a>
+        <a href="/pricing" class="nav-mobile-link">Pricing</a>
+        <a href="#faq" class="nav-mobile-link">FAQ</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero-badge">
+        <i class="fas fa-sparkles"></i>
+        AI-Powered MCP Server Generator
+      </span>
+      <h1 class="hero-title">
+        <span id="hero-type-part-1"></span><span class="highlight" id="hero-type-part-2"></span><span id="hero-type-part-3"></span><span class="serif" id="hero-type-part-4"></span><span class="type-cursor" aria-hidden="true">|</span>
+      </h1>
+      <p class="hero-subtitle">
+        Generate MCP servers from APIs and databases. Connect Claude, Cursor, and other AI tools to your entire stack in minutes.
+      </p>
+      <div class="hero-actions">
+        <a href="/login" class="btn btn-accent">
+          <i class="fas fa-rocket"></i>
+          Start Building Free
+        </a>
+        <a href="#prompts" class="btn btn-ghost">
+          Explore Use Cases
+          <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Prompt Cards Section -->
+  <section id="prompts" class="prompts-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Popular Prompts</span>
+        <h2 class="section-title">Connect apps, automation happens</h2>
+        <p class="section-subtitle">Real prompts that work. Try them with your AI assistant.</p>
+      </div>
+
+      <div class="prompt-grid">
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon gmail">
+              <img src="/images/app/gmail.png" alt="Gmail">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Gmail Integration</div>
+              <div class="prompt-title">Send emails with Gmail</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Draft and send an email to my team about tomorrow's meeting, include the agenda from my notes."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              892+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon slack">
+              <img src="/images/app/slack.png" alt="Slack">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Slack Integration</div>
+              <div class="prompt-title">Post updates to Slack</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Post a summary of today's completed tasks to the #dev channel with relevant mentions."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              1.2k+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon database">
+              <img src="/images/app/postgresql.png" alt="PostgreSQL">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">PostgreSQL Integration</div>
+              <div class="prompt-title">Query your database</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Show me all users who signed up last week and their subscription status from the database."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              756+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon notion">
+              <img src="/images/app/notion.png" alt="Notion">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Notion Integration</div>
+              <div class="prompt-title">Update Notion pages</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Create a new page in my Projects database with today's meeting notes and action items."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              634+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon calendar">
+              <img src="/images/app/googlecalendar.png" alt="Google Calendar">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Google Calendar</div>
+              <div class="prompt-title">Manage calendar events</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Schedule a 30-minute sync with Sarah next week, find a time that works for both of us."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              543+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-card-header">
+            <div class="prompt-icon api">
+              <img src="/images/app/graphql.png" alt="Custom API">
+            </div>
+            <div class="prompt-meta">
+              <div class="prompt-app">Custom API</div>
+              <div class="prompt-title">Connect any REST API</div>
+            </div>
+          </div>
+          <p class="prompt-description">
+            "Fetch the latest analytics from our internal API and create a summary report."
+          </p>
+          <div class="prompt-footer">
+            <span class="prompt-users">
+              <i class="fas fa-users"></i>
+              421+ users
+            </span>
+            <a href="/login" class="prompt-cta">
+              Try
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how" class="how-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">How It Works</span>
+        <h2 class="section-title">Three steps to AI automation</h2>
+        <p class="section-subtitle">From zero to production MCP server in minutes.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Connect your source</h3>
+          <p class="step-desc">Link APIs, databases, or third-party services. We support REST, GraphQL, PostgreSQL, MySQL, and more.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Generate MCP tools</h3>
+          <p class="step-desc">QuickMCP automatically creates type-safe tools with proper schemas. Test them instantly in our playground.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Deploy & use</h3>
+          <p class="step-desc">Get your MCP server endpoint. Connect it to Claude, Cursor, or any MCP-compatible AI assistant.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Integrations Section -->
+  <section id="integrations" class="integrations-section">
+    <div class="container">
+      <div class="integrations-wrap">
+        <div class="integrations-header">
+          <span class="section-label">Integrations</span>
+          <h2 class="integrations-title">Works with your entire stack</h2>
+          <p class="integrations-subtitle">Connect the tools you already use and love.</p>
+        </div>
+
+        <div class="marquee-container">
+          <div class="marquee-row">
+            <div class="marquee left">
+              <span class="integration-chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
+              <span class="integration-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+              <span class="integration-chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
+              <span class="integration-chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
+              <span class="integration-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+              <span class="integration-chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
+              <span class="integration-chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
+              <span class="integration-chip"><img src="/images/app/windsorf.png" alt="Windsurf">Windsurf</span>
+              <span class="integration-chip"><img src="/images/app/intellij.png" alt="IntelliJ">IntelliJ</span>
+              <span class="integration-chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
+              <span class="integration-chip"><img src="/images/app/zededitor.png" alt="Zed">Zed</span>
+              <span class="integration-chip"><img src="/images/app/vscode.png" alt="VSCode">VSCode</span>
+              <span class="integration-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+              <span class="integration-chip"><img src="/images/app/cursor.png" alt="Cursor">Cursor</span>
+              <span class="integration-chip"><img src="/images/app/whatsappbusiness.png" alt="Whatsapp">Whatsapp</span>
+              <span class="integration-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+              <span class="integration-chip"><img src="/images/app/n8n.png" alt="N8N">N8N</span>
+              <span class="integration-chip"><img src="/images/app/mcp.png" alt="MCP">MCP</span>
+              <span class="integration-chip"><img src="/images/app/windsorf.png" alt="Windsurf">Windsurf</span>
+              <span class="integration-chip"><img src="/images/app/intellij.png" alt="IntelliJ">IntelliJ</span>
+              <span class="integration-chip"><img src="/images/app/githubcopilot.png" alt="GitHub Copilot">GitHub Copilot</span>
+              <span class="integration-chip"><img src="/images/app/zededitor.png" alt="Zed">Zed</span>
+            </div>
+          </div>
+
+          <div class="marquee-row">
+            <div class="marquee right">
+              <span class="integration-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+              <span class="integration-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+              <span class="integration-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+              <span class="integration-chip"><img src="/images/app/microsoftteams.png" alt="Teams">Teams</span>
+              <span class="integration-chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
+              <span class="integration-chip"><img src="/images/app/make.png" alt="Make">Make</span>
+              <span class="integration-chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
+              <span class="integration-chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
+              <span class="integration-chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
+              <span class="integration-chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
+              <span class="integration-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+              <span class="integration-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+              <span class="integration-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+              <span class="integration-chip"><img src="/images/app/microsoftteams.png" alt="Teams">Teams</span>
+              <span class="integration-chip"><img src="/images/app/zapier.png" alt="Zapier">Zapier</span>
+              <span class="integration-chip"><img src="/images/app/make.png" alt="Make">Make</span>
+              <span class="integration-chip"><img src="/images/app/pipedream.png" alt="Pipedream">Pipedream</span>
+              <span class="integration-chip"><img src="/images/app/activepieces.png" alt="Activepieces">Activepieces</span>
+              <span class="integration-chip"><img src="/images/app/androidstudio.png" alt="Android Studio">Android Studio</span>
+              <span class="integration-chip"><img src="/images/app/antigravity.png" alt="Antigravity">Antigravity</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="server-tech">
+          <h3 class="server-tech-title">Build MCP servers from your data and APIs</h3>
+          <p class="server-tech-subtitle">Use every source available in New Server, from databases and APIs to SaaS tools and AI platforms.</p>
+          <div class="marquee-container">
+            <div class="marquee-row">
+              <div class="marquee tech-left" id="server-tech-marquee-left">
+                <span class="server-tech-chip"><img src="/images/app/airtable.png" alt="Airtable">Airtable</span>
+                <span class="server-tech-chip"><img src="/images/app/applenotes.png" alt="Apple Notes">Apple Notes</span>
+                <span class="server-tech-chip"><img src="/images/app/applereminders.png" alt="Apple Reminders">Apple Reminders</span>
+                <span class="server-tech-chip"><img src="/images/app/asana.png" alt="Asana">Asana</span>
+                <span class="server-tech-chip"><img src="/images/app/azure_openai.png" alt="Azure AI">Azure AI</span>
+                <span class="server-tech-chip"><img src="/images/app/bearnotes.png" alt="Bear Notes">Bear Notes</span>
+                <span class="server-tech-chip"><img src="/images/app/bitbucket.png" alt="Bitbucket">Bitbucket</span>
+                <span class="server-tech-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+                <span class="server-tech-chip"><img src="/images/app/clickup.png" alt="ClickUp">ClickUp</span>
+                <span class="server-tech-chip"><img src="/images/app/cohere.png" alt="Cohere">Cohere</span>
+                <span class="server-tech-chip"><img src="/images/app/confluence.png" alt="Confluence">Confluence</span>
+                <span class="server-tech-chip"><img src="/images/app/db2.png" alt="DB2">DB2</span>
+                <span class="server-tech-chip"><img src="/images/app/deepseek.png" alt="DeepSeek">DeepSeek</span>
+                <span class="server-tech-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+                <span class="server-tech-chip"><img src="/images/app/dockerhub.png" alt="Docker Hub">Docker Hub</span>
+                <span class="server-tech-chip"><img src="/images/app/dropbox.png" alt="Dropbox">Dropbox</span>
+                <span class="server-tech-chip"><img src="/images/app/elasticsearch.png" alt="Elasticsearch">Elasticsearch</span>
+                <span class="server-tech-chip"><img src="/images/app/facebook.png" alt="Facebook">Facebook</span>
+                <span class="server-tech-chip"><img src="/images/app/falai.png" alt="Fal.ai">Fal.ai</span>
+                <span class="server-tech-chip"><img src="/images/app/gdrive.png" alt="Google Drive">Google Drive</span>
+                <span class="server-tech-chip"><img src="/images/app/gemini.png" alt="Gemini">Gemini</span>
+                <span class="server-tech-chip"><img src="/images/app/github.png" alt="GitHub">GitHub</span>
+                <span class="server-tech-chip"><img src="/images/app/gitlab.png" alt="GitLab">GitLab</span>
+                <span class="server-tech-chip"><img src="/images/app/gmail.png" alt="Gmail">Gmail</span>
+                <span class="server-tech-chip"><img src="/images/app/googlecalendar.png" alt="Google Calendar">Google Calendar</span>
+                <span class="server-tech-chip"><img src="/images/app/googledocs.png" alt="Google Docs">Google Docs</span>
+                <span class="server-tech-chip"><img src="/images/app/googlesheets.png" alt="Google Sheets">Google Sheets</span>
+                <span class="server-tech-chip"><img src="/images/app/gradle.png" alt="Gradle">Gradle</span>
+                <span class="server-tech-chip"><img src="/images/app/grafana.png" alt="Grafana">Grafana</span>
+                <span class="server-tech-chip"><img src="/images/app/graphql.png" alt="GraphQL">GraphQL</span>
+                <span class="server-tech-chip"><img src="/images/app/grok.png" alt="Grok">Grok</span>
+                <span class="server-tech-chip"><img src="/images/app/groq.png" alt="Groq">Groq</span>
+                <span class="server-tech-chip"><img src="/images/app/hazelcast.png" alt="Hazelcast">Hazelcast</span>
+                <span class="server-tech-chip"><img src="/images/app/huggingface.png" alt="Hugging Face">Hugging Face</span>
+                <span class="server-tech-chip"><img src="/images/app/imessage.png" alt="iMessage">iMessage</span>
+                <span class="server-tech-chip"><img src="/images/app/instagram.png" alt="Instagram">Instagram</span>
+                <span class="server-tech-chip"><img src="/images/app/jenkins.png" alt="Jenkins">Jenkins</span>
+                <span class="server-tech-chip"><img src="/images/app/jira.png" alt="Jira">Jira</span>
+                <span class="server-tech-chip"><img src="/images/app/kafka.png" alt="Kafka">Kafka</span>
+                <span class="server-tech-chip"><img src="/images/app/kubernetes.png" alt="Kubernetes">Kubernetes</span>
+                <span class="server-tech-chip"><img src="/images/app/linear.png" alt="Linear">Linear</span>
+                <span class="server-tech-chip"><img src="/images/app/linkedin.png" alt="LinkedIn">LinkedIn</span>
+                <span class="server-tech-chip"><img src="/images/app/llama.png" alt="Llama">Llama</span>
+                <span class="server-tech-chip"><img src="/images/app/maven.png" alt="Maven">Maven</span>
+                <span class="server-tech-chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
+                <span class="server-tech-chip"><img src="/images/app/mistral.png" alt="Mistral">Mistral</span>
+                <span class="server-tech-chip"><img src="/images/app/monday.png" alt="Monday">Monday</span>
+                <span class="server-tech-chip"><img src="/images/app/mssql.png" alt="SQL Server">SQL Server</span>
+                <span class="server-tech-chip"><img src="/images/app/mysql.png" alt="MySQL">MySQL</span>
+                <span class="server-tech-chip"><img src="/images/app/n8n.png" alt="n8n">n8n</span>
+                <span class="server-tech-chip"><img src="/images/app/notion.png" alt="Notion">Notion</span>
+                <span class="server-tech-chip"><img src="/images/app/npm.png" alt="npm">npm</span>
+                <span class="server-tech-chip"><img src="/images/app/nuget.png" alt="NuGet">NuGet</span>
+                <span class="server-tech-chip"><img src="/images/app/obsidian.png" alt="Obsidian">Obsidian</span>
+                <span class="server-tech-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+                <span class="server-tech-chip"><img src="/images/app/openrouter.png" alt="OpenRouter">OpenRouter</span>
+                <span class="server-tech-chip"><img src="/images/app/opensearch.png" alt="OpenSearch">OpenSearch</span>
+                <span class="server-tech-chip"><img src="/images/app/openshift.png" alt="OpenShift">OpenShift</span>
+                <span class="server-tech-chip"><img src="/images/app/oracle.png" alt="Oracle">Oracle</span>
+                <span class="server-tech-chip"><img src="/images/app/perplexity.png" alt="Perplexity">Perplexity</span>
+                <span class="server-tech-chip"><img src="/images/app/postgresql.png" alt="PostgreSQL">PostgreSQL</span>
+                <span class="server-tech-chip"><img src="/images/app/prometheus.png" alt="Prometheus">Prometheus</span>
+                <span class="server-tech-chip"><img src="/images/app/reddit.png" alt="Reddit">Reddit</span>
+                <span class="server-tech-chip"><img src="/images/app/redis.png" alt="Redis">Redis</span>
+                <span class="server-tech-chip"><img src="/images/app/rss.png" alt="RSS">RSS</span>
+                <span class="server-tech-chip"><img src="/images/app/signal.png" alt="Signal">Signal</span>
+                <span class="server-tech-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+                <span class="server-tech-chip"><img src="/images/app/soap.png" alt="SOAP">SOAP</span>
+                <span class="server-tech-chip"><img src="/images/app/sqlite.png" alt="SQLite">SQLite</span>
+                <span class="server-tech-chip"><img src="/images/app/supabase.png" alt="Supabase">Supabase</span>
+                <span class="server-tech-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+                <span class="server-tech-chip"><img src="/images/app/things3.png" alt="Things3">Things3</span>
+                <span class="server-tech-chip"><img src="/images/app/threads.png" alt="Threads">Threads</span>
+                <span class="server-tech-chip"><img src="/images/app/tiktok.png" alt="TikTok">TikTok</span>
+                <span class="server-tech-chip"><img src="/images/app/together.png" alt="Together AI">Together AI</span>
+                <span class="server-tech-chip"><img src="/images/app/trello.png" alt="Trello">Trello</span>
+                <span class="server-tech-chip"><img src="/images/app/whatsappbusiness.png" alt="WhatsApp">WhatsApp</span>
+                <span class="server-tech-chip"><img src="/images/app/x.png" alt="X">X</span>
+                <span class="server-tech-chip"><img src="/images/app/youtube.png" alt="YouTube">YouTube</span>
+                <span class="server-tech-chip"><img src="/images/app/zoom.png" alt="Zoom">Zoom</span>
+                <span class="server-tech-chip"><img src="/images/app/airtable.png" alt="Airtable">Airtable</span>
+                <span class="server-tech-chip"><img src="/images/app/applenotes.png" alt="Apple Notes">Apple Notes</span>
+                <span class="server-tech-chip"><img src="/images/app/applereminders.png" alt="Apple Reminders">Apple Reminders</span>
+                <span class="server-tech-chip"><img src="/images/app/asana.png" alt="Asana">Asana</span>
+                <span class="server-tech-chip"><img src="/images/app/azure_openai.png" alt="Azure AI">Azure AI</span>
+                <span class="server-tech-chip"><img src="/images/app/bearnotes.png" alt="Bear Notes">Bear Notes</span>
+                <span class="server-tech-chip"><img src="/images/app/bitbucket.png" alt="Bitbucket">Bitbucket</span>
+                <span class="server-tech-chip"><img src="/images/app/claude.png" alt="Claude">Claude</span>
+                <span class="server-tech-chip"><img src="/images/app/clickup.png" alt="ClickUp">ClickUp</span>
+                <span class="server-tech-chip"><img src="/images/app/cohere.png" alt="Cohere">Cohere</span>
+                <span class="server-tech-chip"><img src="/images/app/confluence.png" alt="Confluence">Confluence</span>
+                <span class="server-tech-chip"><img src="/images/app/db2.png" alt="DB2">DB2</span>
+                <span class="server-tech-chip"><img src="/images/app/deepseek.png" alt="DeepSeek">DeepSeek</span>
+                <span class="server-tech-chip"><img src="/images/app/discord.png" alt="Discord">Discord</span>
+                <span class="server-tech-chip"><img src="/images/app/dockerhub.png" alt="Docker Hub">Docker Hub</span>
+                <span class="server-tech-chip"><img src="/images/app/dropbox.png" alt="Dropbox">Dropbox</span>
+                <span class="server-tech-chip"><img src="/images/app/elasticsearch.png" alt="Elasticsearch">Elasticsearch</span>
+                <span class="server-tech-chip"><img src="/images/app/facebook.png" alt="Facebook">Facebook</span>
+                <span class="server-tech-chip"><img src="/images/app/falai.png" alt="Fal.ai">Fal.ai</span>
+                <span class="server-tech-chip"><img src="/images/app/gdrive.png" alt="Google Drive">Google Drive</span>
+                <span class="server-tech-chip"><img src="/images/app/gemini.png" alt="Gemini">Gemini</span>
+                <span class="server-tech-chip"><img src="/images/app/github.png" alt="GitHub">GitHub</span>
+                <span class="server-tech-chip"><img src="/images/app/gitlab.png" alt="GitLab">GitLab</span>
+                <span class="server-tech-chip"><img src="/images/app/gmail.png" alt="Gmail">Gmail</span>
+                <span class="server-tech-chip"><img src="/images/app/googlecalendar.png" alt="Google Calendar">Google Calendar</span>
+                <span class="server-tech-chip"><img src="/images/app/googledocs.png" alt="Google Docs">Google Docs</span>
+                <span class="server-tech-chip"><img src="/images/app/googlesheets.png" alt="Google Sheets">Google Sheets</span>
+                <span class="server-tech-chip"><img src="/images/app/gradle.png" alt="Gradle">Gradle</span>
+                <span class="server-tech-chip"><img src="/images/app/grafana.png" alt="Grafana">Grafana</span>
+                <span class="server-tech-chip"><img src="/images/app/graphql.png" alt="GraphQL">GraphQL</span>
+                <span class="server-tech-chip"><img src="/images/app/grok.png" alt="Grok">Grok</span>
+                <span class="server-tech-chip"><img src="/images/app/groq.png" alt="Groq">Groq</span>
+                <span class="server-tech-chip"><img src="/images/app/hazelcast.png" alt="Hazelcast">Hazelcast</span>
+                <span class="server-tech-chip"><img src="/images/app/huggingface.png" alt="Hugging Face">Hugging Face</span>
+                <span class="server-tech-chip"><img src="/images/app/imessage.png" alt="iMessage">iMessage</span>
+                <span class="server-tech-chip"><img src="/images/app/instagram.png" alt="Instagram">Instagram</span>
+                <span class="server-tech-chip"><img src="/images/app/jenkins.png" alt="Jenkins">Jenkins</span>
+                <span class="server-tech-chip"><img src="/images/app/jira.png" alt="Jira">Jira</span>
+                <span class="server-tech-chip"><img src="/images/app/kafka.png" alt="Kafka">Kafka</span>
+                <span class="server-tech-chip"><img src="/images/app/kubernetes.png" alt="Kubernetes">Kubernetes</span>
+                <span class="server-tech-chip"><img src="/images/app/linear.png" alt="Linear">Linear</span>
+                <span class="server-tech-chip"><img src="/images/app/linkedin.png" alt="LinkedIn">LinkedIn</span>
+                <span class="server-tech-chip"><img src="/images/app/llama.png" alt="Llama">Llama</span>
+                <span class="server-tech-chip"><img src="/images/app/maven.png" alt="Maven">Maven</span>
+                <span class="server-tech-chip"><img src="/images/app/microsoftteams.png" alt="Microsoft Teams">Microsoft Teams</span>
+                <span class="server-tech-chip"><img src="/images/app/mistral.png" alt="Mistral">Mistral</span>
+                <span class="server-tech-chip"><img src="/images/app/monday.png" alt="Monday">Monday</span>
+                <span class="server-tech-chip"><img src="/images/app/mssql.png" alt="SQL Server">SQL Server</span>
+                <span class="server-tech-chip"><img src="/images/app/mysql.png" alt="MySQL">MySQL</span>
+                <span class="server-tech-chip"><img src="/images/app/n8n.png" alt="n8n">n8n</span>
+                <span class="server-tech-chip"><img src="/images/app/notion.png" alt="Notion">Notion</span>
+                <span class="server-tech-chip"><img src="/images/app/npm.png" alt="npm">npm</span>
+                <span class="server-tech-chip"><img src="/images/app/nuget.png" alt="NuGet">NuGet</span>
+                <span class="server-tech-chip"><img src="/images/app/obsidian.png" alt="Obsidian">Obsidian</span>
+                <span class="server-tech-chip"><img src="/images/app/openai.png" alt="OpenAI">OpenAI</span>
+                <span class="server-tech-chip"><img src="/images/app/openrouter.png" alt="OpenRouter">OpenRouter</span>
+                <span class="server-tech-chip"><img src="/images/app/opensearch.png" alt="OpenSearch">OpenSearch</span>
+                <span class="server-tech-chip"><img src="/images/app/openshift.png" alt="OpenShift">OpenShift</span>
+                <span class="server-tech-chip"><img src="/images/app/oracle.png" alt="Oracle">Oracle</span>
+                <span class="server-tech-chip"><img src="/images/app/perplexity.png" alt="Perplexity">Perplexity</span>
+                <span class="server-tech-chip"><img src="/images/app/postgresql.png" alt="PostgreSQL">PostgreSQL</span>
+                <span class="server-tech-chip"><img src="/images/app/prometheus.png" alt="Prometheus">Prometheus</span>
+                <span class="server-tech-chip"><img src="/images/app/reddit.png" alt="Reddit">Reddit</span>
+                <span class="server-tech-chip"><img src="/images/app/redis.png" alt="Redis">Redis</span>
+                <span class="server-tech-chip"><img src="/images/app/rss.png" alt="RSS">RSS</span>
+                <span class="server-tech-chip"><img src="/images/app/signal.png" alt="Signal">Signal</span>
+                <span class="server-tech-chip"><img src="/images/app/slack.png" alt="Slack">Slack</span>
+                <span class="server-tech-chip"><img src="/images/app/soap.png" alt="SOAP">SOAP</span>
+                <span class="server-tech-chip"><img src="/images/app/sqlite.png" alt="SQLite">SQLite</span>
+                <span class="server-tech-chip"><img src="/images/app/supabase.png" alt="Supabase">Supabase</span>
+                <span class="server-tech-chip"><img src="/images/app/telegram.png" alt="Telegram">Telegram</span>
+                <span class="server-tech-chip"><img src="/images/app/things3.png" alt="Things3">Things3</span>
+                <span class="server-tech-chip"><img src="/images/app/threads.png" alt="Threads">Threads</span>
+                <span class="server-tech-chip"><img src="/images/app/tiktok.png" alt="TikTok">TikTok</span>
+                <span class="server-tech-chip"><img src="/images/app/together.png" alt="Together AI">Together AI</span>
+                <span class="server-tech-chip"><img src="/images/app/trello.png" alt="Trello">Trello</span>
+                <span class="server-tech-chip"><img src="/images/app/whatsappbusiness.png" alt="WhatsApp">WhatsApp</span>
+                <span class="server-tech-chip"><img src="/images/app/x.png" alt="X">X</span>
+                <span class="server-tech-chip"><img src="/images/app/youtube.png" alt="YouTube">YouTube</span>
+                <span class="server-tech-chip"><img src="/images/app/zoom.png" alt="Zoom">Zoom</span>
+              </div>
+            </div>
+            <div class="marquee-row">
+              <div class="marquee tech-right" id="server-tech-marquee-right"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="install-anywhere-spotlight">
+    <button type="button" id="openInstallAnywhereModal" class="install-anywhere-trigger">
+      <span class="install-anywhere-copy">
+        <span class="install-anywhere-title">
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Use QuickMCP Anywhere
+        </span>
+        <span class="install-anywhere-subtitle">OpenAI, Claude, IDEs, MCP</span>
+      </span>
+      <span class="install-anywhere-chevron" aria-hidden="true">
+        <i class="fas fa-arrow-right"></i>
+      </span>
+    </button>
+  </div>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="faq-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">FAQ</span>
+        <h2 class="section-title">Got questions?</h2>
+        <p class="section-subtitle">Everything you need to know about QuickMCP.</p>
+      </div>
+
+      <div class="faq-grid">
+        <details class="faq-item">
+          <summary>What is QuickMCP and how does it work?</summary>
+          <div class="faq-answer">QuickMCP connects to 500+ apps, including Gmail, Slack, GitHub, and Notion, and turns your data into structured actions your AI assistant can safely execute through MCP (Model Context Protocol).<br><br>Just sign in, connect your apps, and ask your AI to complete real business workflows like "Analyze products in the database," "Segment customers by behavior," "Generate sales insights from recent orders," or "Identify churn-risk accounts." QuickMCP can also run as an MCP server in compatible AI tools.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>How do I get started?</summary>
+          <div class="faq-answer">Create an account, connect your first tool or database, generate actions, and test them from your AI client in minutes. No coding required for basic setups.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>What can I connect to QuickMCP?</summary>
+          <div class="faq-answer">You can connect databases like PostgreSQL, MySQL, MSSQL, and Oracle; message brokers like Kafka and RabbitMQ; in-memory data grids like Redis and Hazelcast; container platforms like OpenShift and Kubernetes; plus REST APIs and GraphQL endpoints.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Which AI assistants are supported?</summary>
+          <div class="faq-answer">QuickMCP works with any MCP-compatible AI assistant including Claude Desktop, Cursor, VSCode with Claude extension, and other tools that support the MCP protocol.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Is my data secure?</summary>
+          <div class="faq-answer">Yes. Access is controlled with authentication and token policies. Integrations are scoped to only the resources you explicitly allow. Your credentials are encrypted at rest.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Do I need coding skills?</summary>
+          <div class="faq-answer">Basic setup is no-code friendly. For advanced customization, you can modify generated tools and server behavior using TypeScript or Python.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Can I use multiple integrations together?</summary>
+          <div class="faq-answer">Yes. You can connect and orchestrate multiple services in one workflow and call them from the same MCP session for complex automations.</div>
+        </details>
+
+        <details class="faq-item">
+          <summary>What if my app isn't supported?</summary>
+          <div class="faq-answer">You can integrate any app using custom API connectors or database connections. QuickMCP generates MCP tools from any REST API specification.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <div id="installAnywhereModal" class="install-modal" aria-hidden="true">
+    <div class="install-modal-backdrop" data-install-modal-close></div>
+    <div class="install-modal-panel" role="dialog" aria-modal="true" aria-labelledby="installAnywhereTitle">
+      <button type="button" id="installModalBackBtn" class="install-modal-back hidden" aria-label="Back to install options">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Back
+      </button>
+      <button type="button" class="install-modal-close" data-install-modal-close aria-label="Close installation modal">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+      <div id="installModalViewChooser" class="install-modal-view">
+        <h3 id="installAnywhereTitle" class="install-modal-heading">
+          <i class="fas fa-download" aria-hidden="true"></i>
+          Use QuickMCP Anywhere
+        </h3>
+        <p class="install-modal-subtitle">Choose where you want to install QuickMCP integrations.</p>
+        <div class="install-modal-actions">
+          <button type="button" id="openApiKeyFlowBtn" class="install-primary-btn">Get Api Key</button>
+        </div>
+        <div class="install-channels">
+          <div class="install-channel-group">
+            <span class="install-channel-label">OpenAI</span>
+            <button type="button" id="openChatgptFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/openai.png" alt="ChatGPT" class="install-channel-icon">
+                <span class="install-channel-text">
+                  <span class="install-channel-title">ChatGPT</span>
+                  <span class="install-channel-subtitle">Developer Mode</span>
+                </span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="install-channel-group">
+            <span class="install-channel-label">Claude</span>
+            <button type="button" id="openClaudeWebFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/claude.png" alt="Claude Web" class="install-channel-icon">
+                <span class="install-channel-title">Claude Web</span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+            <button type="button" id="openClaudeDesktopFlowBtn" class="install-channel-row">
+              <span class="install-channel-main">
+                <img src="/images/app/claude.png" alt="Claude Desktop" class="install-channel-icon">
+                <span class="install-channel-title">Claude Desktop</span>
+              </span>
+              <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+            </button>
+          </div>
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/vscode.png" alt="IDEs" class="install-channel-icon">
+              <span class="install-channel-title">IDEs</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="install-channel-row">
+            <span class="install-channel-main">
+              <img src="/images/app/mcp.png" alt="MCP" class="install-channel-icon">
+              <span class="install-channel-title">MCP</span>
+            </span>
+            <i class="fas fa-chevron-right install-channel-arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="installModalViewApiKey" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-key" aria-hidden="true"></i>
+          Get Api Key
+        </h3>
+        <div class="install-step-list">
+          <section class="install-step">
+            <div class="install-step-index">1</div>
+            <h4 class="install-step-title">Copy the MCP URL</h4>
+            <div class="install-step-copy-row">
+              <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+              <button type="button" id="copyMcpUrlBtn" class="install-copy-btn">Copy</button>
+            </div>
+          </section>
+
+          <section class="install-step">
+            <div class="install-step-index">2</div>
+            <h4 class="install-step-title">Generate a signed token for Authorization header</h4>
+            <p class="install-step-desc">Sign in to generate an Authorization header token for your MCP client.</p>
+            <div class="install-signin-row">
+              <a href="/authorization" class="install-signin-btn">Sign in and Generate Token</a>
+              <span class="token-help-wrap">
+                <button type="button" class="token-help-icon" aria-label="Show token generate guide">
+                  <i class="fas fa-circle-question" aria-hidden="true"></i>
+                </button>
+                <span class="token-help-preview" role="tooltip">
+                  <img src="/images/install/token-generate/token-generate.png" alt="Token generate guide preview">
+                </span>
+              </span>
+            </div>
+          </section>
+
+          <section class="install-step">
+            <div class="install-step-index">3</div>
+            <h4 class="install-step-title">Use it with your favourite agentic SDK or MCP client</h4>
+          </section>
+        </div>
+      </div>
+
+      <div id="installModalViewChatgpt" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-comments" aria-hidden="true"></i>
+          ChatGPT Developer Mode
+        </h3>
+        <p class="install-modal-subtitle">Install QuickMCP in ChatGPT by following these steps.</p>
+        <div class="install-steps-scroll">
+          <div class="install-step-list">
+            <section class="install-step">
+              <div class="install-step-index">1</div>
+              <h4 class="install-step-title">Generate Token</h4>
+              <p class="install-step-desc">Sign in to generate an Authorization header token for your MCP client.</p>
+              <div class="install-signin-row">
+                <a href="/authorization" class="install-signin-btn">Sign in and Generate Token</a>
+                <span class="token-help-wrap token-help-down token-help-global">
+                  <button type="button" class="token-help-icon" aria-label="Show token generate guide">
+                    <i class="fas fa-circle-question" aria-hidden="true"></i>
+                  </button>
+                  <span class="token-help-preview" role="tooltip">
+                    <img src="/images/install/token-generate/token-generate.png" alt="Token generate guide preview">
+                  </span>
+                </span>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">2</div>
+              <h4 class="install-step-title">Copy the MCP URL</h4>
+              <div class="install-step-copy-row">
+                <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+                <button type="button" id="copyMcpUrlBtnChatgpt" class="install-copy-btn">Copy</button>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">3</div>
+              <h4 class="install-step-title">Click on Advanced Settings</h4>
+              <p class="install-step-desc">Go to Settings &gt; Apps and click on Advanced Settings.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step0.png" alt="ChatGPT settings page">
+                <img src="/images/install/chatgpt-web/step1.png" alt="ChatGPT advanced settings">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">4</div>
+              <h4 class="install-step-title">Enable Developer mode and click Create app</h4>
+              <p class="install-step-desc">Enable the Developer mode toggle and click on Create app.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step2.png" alt="Enable developer mode in ChatGPT">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">5</div>
+              <h4 class="install-step-title">Enter the details and click Create</h4>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step4.png" alt="Create app form in ChatGPT">
+              </div>
+              <p class="install-step-desc">Fill in the following details:</p>
+              <ul class="install-step-details">
+                <li>Name: QuickMCP</li>
+                <li>MCP Server URL: Paste the URL from step 2</li>
+                <li>Authentication: OAuth</li>
+                <li>Keep Client ID and Client Secret empty</li>
+                <li>Check "I understand and want to continue"</li>
+                <li>Click Create</li>
+              </ul>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">6</div>
+              <h4 class="install-step-title">Click Allow access</h4>
+              <p class="install-step-desc">Click on Allow access to authorize ChatGPT to connect with QuickMCP.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step5.png" alt="Allow access prompt">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">7</div>
+              <h4 class="install-step-title">QuickMCP is now connected</h4>
+              <p class="install-step-desc">QuickMCP is now connected to ChatGPT. You can view the connection details and available actions.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step6.png" alt="QuickMCP connected in ChatGPT">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">8</div>
+              <h4 class="install-step-title">Go back to chat, click + More, and select QuickMCP</h4>
+              <p class="install-step-desc">Go back to chat, click on the + icon, then click More, and select QuickMCP. You'll need to do this for every new chat.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step7.png" alt="Select QuickMCP from chat menu">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">9</div>
+              <h4 class="install-step-title">Try it out!</h4>
+              <p class="install-step-desc">Try something like "Hey QuickMCP, fetch my latest emails from Gmail" and start using 1000+ apps inside ChatGPT.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step8.png" alt="Try QuickMCP in ChatGPT">
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div id="installModalViewClaudeWeb" class="install-modal-view hidden">
+        <h3 class="install-modal-heading">
+          <i class="fas fa-globe" aria-hidden="true"></i>
+          Claude Web
+        </h3>
+        <p class="install-modal-subtitle">Install QuickMCP in Claude Web by following these steps.</p>
+        <div class="install-steps-scroll">
+          <div class="install-step-list">
+            <section class="install-step">
+              <div class="install-step-index">1</div>
+              <h4 class="install-step-title">Copy the MCP URL</h4>
+              <div class="install-step-copy-row">
+                <code class="install-step-url">https://www.quickmcp.ai/mcp</code>
+                <button type="button" id="copyMcpUrlBtnClaudeWeb" class="install-copy-btn">Copy</button>
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">2</div>
+              <h4 class="install-step-title">In Claude Web Settings, under Connectors click on “Add custom connector"</h4>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step0.png" alt="Claude Web connectors settings">
+                <img src="/images/install/claude-web/step1.png" alt="Add custom connector in Claude Web">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">3</div>
+              <h4 class="install-step-title">Add QuickMCP to Claude Web</h4>
+              <p class="install-step-desc">Paste the MCP URL and token into Claude Web MCP settings, then save and start using your tools.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step2.png" alt="Claude Web custom connector form">
+                <img src="/images/install/claude-web/step3.png" alt="Claude Web connector saved">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">4</div>
+              <h4 class="install-step-title">Click on "Connect" or if it is connected click "Disconnect" then "Connect".</h4>
+              <p class="install-step-desc">Sometimes Claude Web does not show tools until the connector is reconnected.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step4.png" alt="Reconnect connector in Claude Web">
+                <img src="/images/install/claude-web/step5.png" alt="Tools visible after reconnect in Claude Web">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">5</div>
+              <h4 class="install-step-title">Click Allow access</h4>
+              <p class="install-step-desc">Click on Allow access to authorize Claude to connect with QuickMCP.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/chatgpt-web/step5.png" alt="Allow access prompt">
+              </div>
+            </section>
+
+            <section class="install-step">
+              <div class="install-step-index">6</div>
+              <h4 class="install-step-title">QuickMCP is now connected</h4>
+              <p class="install-step-desc">QuickMCP is now connected to Claude Web. You can view the connector details and available tools.</p>
+              <div class="install-guide-media">
+                <img src="/images/install/claude-web/step6.png" alt="QuickMCP connected in Claude Web">
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="tokenHelpFloatingPreview" class="token-help-floating-preview" aria-hidden="true">
+    <img src="" alt="">
+  </div>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-card">
+        <div class="cta-content">
+          <h2 class="cta-title">Ready to connect your AI to everything?</h2>
+          <p class="cta-subtitle">Start building your MCP servers today. No credit card required.</p>
+          <div class="cta-actions">
+            <a href="/login" class="btn btn-accent">
+              <i class="fas fa-rocket"></i>
+              Get Started Free
+            </a>
+            <a href="mailto:quickmcp@gmail.com" class="btn btn-ghost">
+              Contact Sales
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-text">
+        Built with <span style="color: var(--accent);">&#10084;</span> by QuickMCP Team &middot;
+        <a href="mailto:quickmcp@gmail.com">quickmcp@gmail.com</a>
+      </p>
+    </div>
+  </footer>
+  <script>
+    (() => {
+      const hash = window.location.hash || '';
+      const hasSupabaseToken = hash.includes('access_token=');
+      if (hasSupabaseToken) {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const accessToken = params.get('access_token') || '';
+        if (accessToken) {
+          fetch('/api/auth/oauth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken })
+          })
+            .then((response) => response.ok ? response.json() : Promise.reject(new Error('session_failed')))
+            .then((body) => {
+              const apiNext = typeof body?.data?.next === 'string' ? body.data.next : '';
+              const next = apiNext.startsWith('/') ? apiNext : '/oauth/authorize/complete';
+              window.location.replace(next);
+            })
+            .catch(() => {
+              // Fallback to login page; keep hash so login page can retry session creation.
+              window.location.replace(`/login${window.location.hash}`);
+            });
+          return;
+        }
+      }
+
+      const navMenuToggle = document.getElementById('navMenuToggle');
+      const navMobileMenu = document.getElementById('navMobileMenu');
+      const installAnywhereModal = document.getElementById('installAnywhereModal');
+      const openInstallAnywhereModal = document.getElementById('openInstallAnywhereModal');
+      const installModalViewChooser = document.getElementById('installModalViewChooser');
+      const installModalViewApiKey = document.getElementById('installModalViewApiKey');
+      const installModalViewChatgpt = document.getElementById('installModalViewChatgpt');
+      const installModalViewClaudeWeb = document.getElementById('installModalViewClaudeWeb');
+      const installModalBackBtn = document.getElementById('installModalBackBtn');
+      const openApiKeyFlowBtn = document.getElementById('openApiKeyFlowBtn');
+      const openChatgptFlowBtn = document.getElementById('openChatgptFlowBtn');
+      const openClaudeWebFlowBtn = document.getElementById('openClaudeWebFlowBtn');
+      const copyMcpUrlBtn = document.getElementById('copyMcpUrlBtn');
+      const copyMcpUrlBtnChatgpt = document.getElementById('copyMcpUrlBtnChatgpt');
+      const copyMcpUrlBtnClaudeWeb = document.getElementById('copyMcpUrlBtnClaudeWeb');
+      const tokenHelpFloatingPreview = document.getElementById('tokenHelpFloatingPreview');
+      const tokenHelpFloatingImg = tokenHelpFloatingPreview ? tokenHelpFloatingPreview.querySelector('img') : null;
+
+      const setInstallModalView = (view) => {
+        if (!installModalViewChooser || !installModalViewApiKey || !installModalViewChatgpt || !installModalViewClaudeWeb) return;
+        const isApiKey = view === 'api-key';
+        const isChatgpt = view === 'chatgpt';
+        const isClaudeWeb = view === 'claude-web';
+        const isChooser = view === 'chooser';
+        installModalViewChooser.classList.toggle('hidden', !isChooser);
+        installModalViewApiKey.classList.toggle('hidden', !isApiKey);
+        installModalViewChatgpt.classList.toggle('hidden', !isChatgpt);
+        installModalViewClaudeWeb.classList.toggle('hidden', !isClaudeWeb);
+        if (installAnywhereModal) {
+          installAnywhereModal.classList.toggle('detail-active', !isChooser);
+        }
+        if (installModalBackBtn) {
+          installModalBackBtn.classList.toggle('hidden', isChooser);
+        }
+      };
+
+      const setInstallModalOpen = (isOpen) => {
+        if (!installAnywhereModal) return;
+        installAnywhereModal.classList.toggle('open', isOpen);
+        installAnywhereModal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        if (!isOpen) setInstallModalView('chooser');
+      };
+
+      if (installAnywhereModal && openInstallAnywhereModal) {
+        openInstallAnywhereModal.addEventListener('click', () => {
+          setInstallModalView('chooser');
+          setInstallModalOpen(true);
+        });
+        installAnywhereModal.querySelectorAll('[data-install-modal-close]').forEach((node) => {
+          node.addEventListener('click', () => setInstallModalOpen(false));
+        });
+        if (openApiKeyFlowBtn) {
+          openApiKeyFlowBtn.addEventListener('click', () => setInstallModalView('api-key'));
+        }
+        if (openChatgptFlowBtn) {
+          openChatgptFlowBtn.addEventListener('click', () => setInstallModalView('chatgpt'));
+        }
+        if (openClaudeWebFlowBtn) {
+          openClaudeWebFlowBtn.addEventListener('click', () => setInstallModalView('claude-web'));
+        }
+        if (installModalBackBtn) {
+          installModalBackBtn.addEventListener('click', () => setInstallModalView('chooser'));
+        }
+
+        const bindCopyMcpUrl = (button) => {
+          if (!button) return;
+          button.addEventListener('click', async () => {
+            const text = 'https://www.quickmcp.ai/mcp';
+            try {
+              if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+              } else {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                tempInput.setAttribute('readonly', 'true');
+                tempInput.style.position = 'absolute';
+                tempInput.style.left = '-9999px';
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+              }
+              const original = button.textContent;
+              button.textContent = 'Copied';
+              setTimeout(() => { button.textContent = original || 'Copy'; }, 1200);
+            } catch {}
+          });
+        };
+
+        bindCopyMcpUrl(copyMcpUrlBtn);
+        bindCopyMcpUrl(copyMcpUrlBtnChatgpt);
+        bindCopyMcpUrl(copyMcpUrlBtnClaudeWeb);
+
+        const hideFloatingPreview = () => {
+          if (!tokenHelpFloatingPreview) return;
+          tokenHelpFloatingPreview.classList.remove('open');
+          tokenHelpFloatingPreview.setAttribute('aria-hidden', 'true');
+        };
+
+        const showFloatingPreview = (wrap) => {
+          if (!tokenHelpFloatingPreview || !tokenHelpFloatingImg || !wrap) return;
+          const sourceImg = wrap.querySelector('.token-help-preview img');
+          if (!sourceImg) return;
+
+          tokenHelpFloatingImg.src = sourceImg.getAttribute('src') || '';
+          tokenHelpFloatingImg.alt = sourceImg.getAttribute('alt') || 'Token generate guide preview';
+          tokenHelpFloatingPreview.classList.add('open');
+          tokenHelpFloatingPreview.setAttribute('aria-hidden', 'false');
+
+          requestAnimationFrame(() => {
+            const padding = 12;
+            const triggerRect = wrap.getBoundingClientRect();
+            const previewRect = tokenHelpFloatingPreview.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let left = triggerRect.right - previewRect.width;
+            if (left < padding) left = padding;
+            if (left + previewRect.width > viewportWidth - padding) {
+              left = Math.max(padding, viewportWidth - previewRect.width - padding);
+            }
+
+            let top = triggerRect.bottom + 10;
+            if (top + previewRect.height > viewportHeight - padding) {
+              top = Math.max(padding, triggerRect.top - previewRect.height - 10);
+            }
+
+            tokenHelpFloatingPreview.style.left = `${left}px`;
+            tokenHelpFloatingPreview.style.top = `${top}px`;
+          });
+        };
+
+        document.querySelectorAll('.token-help-wrap.token-help-global').forEach((wrap) => {
+          const icon = wrap.querySelector('.token-help-icon');
+          wrap.addEventListener('mouseenter', () => showFloatingPreview(wrap));
+          wrap.addEventListener('mouseleave', () => hideFloatingPreview());
+          if (icon) {
+            icon.addEventListener('focus', () => showFloatingPreview(wrap));
+            icon.addEventListener('blur', () => {
+              setTimeout(() => {
+                if (!wrap.matches(':hover')) hideFloatingPreview();
+              }, 80);
+            });
+          }
+        });
+
+        window.addEventListener('resize', hideFloatingPreview);
+        window.addEventListener('scroll', hideFloatingPreview, true);
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            hideFloatingPreview();
+            setInstallModalOpen(false);
+          }
+        });
+      }
+
+      if (navMenuToggle && navMobileMenu) {
+        navMenuToggle.addEventListener('click', () => {
+          const isOpen = navMobileMenu.classList.toggle('open');
+          navMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navMobileMenu.querySelectorAll('a').forEach((link) => {
+          link.addEventListener('click', () => {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 900) {
+            navMobileMenu.classList.remove('open');
+            navMenuToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const parts = [
+        { id: 'hero-type-part-1', text: 'Now your AI can ' },
+        { id: 'hero-type-part-2', text: 'connect' },
+        { id: 'hero-type-part-3', text: ' to ' },
+        { id: 'hero-type-part-4', text: 'anything' }
+      ];
+
+      if (reduceMotion) {
+        parts.forEach((part) => {
+          const el = document.getElementById(part.id);
+          if (el) el.textContent = part.text;
+        });
+      } else {
+        const queue = parts
+          .map((part) => {
+            const el = document.getElementById(part.id);
+            if (el) el.textContent = '';
+            return { ...part, el, index: 0 };
+          })
+          .filter((part) => part.el);
+
+        let partIndex = 0;
+        const speedMs = 55;
+
+        const tick = () => {
+          if (partIndex >= queue.length) return;
+          const current = queue[partIndex];
+          current.index += 1;
+          current.el.textContent = current.text.slice(0, current.index);
+          if (current.index >= current.text.length) partIndex += 1;
+          setTimeout(tick, speedMs);
+        };
+
+        tick();
+      }
+
+      const left = document.getElementById('server-tech-marquee-left');
+      const right = document.getElementById('server-tech-marquee-right');
+      if (!left || !right) return;
+      right.innerHTML = left.innerHTML;
+    })();
+  </script>
+</body>
+</html>

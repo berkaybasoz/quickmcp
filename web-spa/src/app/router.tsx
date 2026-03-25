@@ -1,46 +1,19 @@
-import { useEffect } from 'react';
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../shared/layout/AppLayout';
 import { AuthorizationPage } from '../pages/AuthorizationPage';
 import { GeneratePage } from '../pages/GeneratePage';
 import { HowToUsePage } from '../pages/HowToUsePage';
-import { LandingPage } from '../pages/LandingPage';
 import { ManageServersPage } from '../pages/ManageServersPage';
 import { QuickAskPage } from '../pages/QuickAskPage';
 import { TestServersPage } from '../pages/TestServersPage';
 import { UsersPage } from '../pages/UsersPage';
-import { useBootstrapStore } from '../shared/store/bootstrapStore';
-
-function RootEntryRedirect() {
-  const status = useBootstrapStore((state) => state.status);
-  const me = useBootstrapStore((state) => state.me);
-  const config = useBootstrapStore((state) => state.config);
-  const isAuthRequired = (config?.authMode || 'NONE') !== 'NONE';
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (status !== 'ready' && status !== 'error') return;
-    if (status === 'ready' && (!isAuthRequired || me)) return;
-    window.location.replace('/landing');
-  }, [status, isAuthRequired, me]);
-
-  if (status === 'ready' && (!isAuthRequired || me)) {
-    return <Navigate to="/quick-ask" replace />;
-  }
-
-  return null;
-}
 
 export const router = createBrowserRouter([
-  {
-    path: '/landing',
-    element: <LandingPage />
-  },
   {
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <RootEntryRedirect /> },
+      { index: true, element: <Navigate to="/quick-ask" replace /> },
       { path: 'quick-ask', element: <QuickAskPage /> },
       { path: 'generate', element: <GeneratePage /> },
       { path: 'manage-servers', element: <ManageServersPage /> },
