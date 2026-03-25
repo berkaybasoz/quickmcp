@@ -424,7 +424,6 @@ function getAppBarSubtitle() {
     if (p === '/authorization') return 'Authorization';
     if (p === '/users') return 'Users';
     if (p === '/how-to-use') return 'How to Use';
-    if (p === '/database-tables') return 'Database Tables';
     if (p === '/roles') return 'Roles';
     return 'Server Generator';
 }

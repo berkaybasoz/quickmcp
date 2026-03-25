@@ -26,7 +26,6 @@ import { ParseApi } from './api/parseApi';
 import { GenerateApi } from './api/generateApi';
 import { ServerApi } from './api/serverApi';
 import { NameApi } from './api/nameApi';
-import { DatabaseApi } from './api/databaseApi';
 import { McpApi } from './api/mcpApi';
 import { IndexApi } from './api/indexApi';
 import { LogsApi } from './api/logsApi';
@@ -213,7 +212,6 @@ const nameApi = new NameApi({
   ensureDataStore,
   getEffectiveUsername
 });
-const databaseApi = new DatabaseApi({ publicDir });
 const mcpApi = new McpApi({ generatedServers });
 const indexApi = new IndexApi({
   publicDir,
@@ -571,7 +569,6 @@ parseApi.registerRoutes(app);
 generateApi.registerRoutes(app);
 serverApi.registerRoutes(app);
 nameApi.registerRoutes(app);
-databaseApi.registerRoutes(app);
 mcpApi.registerRoutes(app);
 authApi.registerRoutes(app);
 logsApi.registerRoutes(app);
