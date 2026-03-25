@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppBar } from '../ui/AppBar';
 import { Sidebar } from '../ui/Sidebar';
 
@@ -18,6 +18,7 @@ function isClientSideRoute(href: string): boolean {
 }
 
 export function AppLayout() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -38,19 +39,22 @@ export function AppLayout() {
     if (typeof window === 'undefined') return true;
     return window.matchMedia('(min-width: 1024px)').matches;
   });
+  const isRootEntry = location.pathname === '/';
 
   useEffect(() => {
+    if (isRootEntry) return;
     document.body.classList.add('h-screen', 'flex', 'flex-col', 'overflow-hidden');
     window.updateUserAvatar?.();
-  }, []);
+  }, [isRootEntry]);
 
   useEffect(() => {
+    if (isRootEntry) return;
     const media = window.matchMedia('(min-width: 1024px)');
     const sync = () => setIsDesktop(media.matches);
     sync();
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
-  }, []);
+  }, [isRootEntry]);
 
   useEffect(() => {
     try {
@@ -65,12 +69,14 @@ export function AppLayout() {
   }, [sidebarWidth]);
 
   useEffect(() => {
+    if (isRootEntry) return;
     const offsetPx = sidebarCollapsed ? 48 : sidebarWidth;
     document.documentElement.style.setProperty('--sidebar-offset', `${offsetPx}px`);
     document.body.setAttribute('data-has-sidebar', '1');
-  }, [sidebarCollapsed, sidebarWidth]);
+  }, [isRootEntry, sidebarCollapsed, sidebarWidth]);
 
   useEffect(() => {
+    if (isRootEntry) return;
     const onDocumentClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -105,7 +111,7 @@ export function AppLayout() {
 
     document.addEventListener('click', onDocumentClick, true);
     return () => document.removeEventListener('click', onDocumentClick, true);
-  }, [navigate]);
+  }, [isRootEntry, navigate]);
 
   const shellOffsetPx = sidebarCollapsed ? 48 : sidebarWidth;
   const appBarStyle = useMemo(() => {
@@ -120,6 +126,10 @@ export function AppLayout() {
     if (!isDesktop) return undefined;
     return { paddingLeft: `calc(${shellOffsetPx}px + var(--sidebar-gutter, 0px))` };
   }, [isDesktop, shellOffsetPx]);
+
+  if (isRootEntry) {
+    return <Outlet />;
+  }
 
   return (
     <>

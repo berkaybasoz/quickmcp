@@ -5,6 +5,10 @@ export function AppProviders({ children }: PropsWithChildren) {
   const fetchOnce = useBootstrapStore((state) => state.fetchOnce);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const path = String(window.location.pathname || '').toLowerCase();
+      if (path === '/landing') return;
+    }
     void fetchOnce();
   }, [fetchOnce]);
 
