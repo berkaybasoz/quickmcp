@@ -576,3 +576,4 @@ Yerel stdio script yolunu kullanmak isterseniz (alternatif):
   }
 }
 ```
+
