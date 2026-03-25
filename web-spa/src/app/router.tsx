@@ -5,6 +5,7 @@ import { GeneratePage } from '../pages/GeneratePage';
 import { HowToUsePage } from '../pages/HowToUsePage';
 import { LandingPage } from '../pages/LandingPage';
 import { ManageServersPage } from '../pages/ManageServersPage';
+import { PricingPage } from '../pages/PricingPage';
 import { QuickAskPage } from '../pages/QuickAskPage';
 import { TestServersPage } from '../pages/TestServersPage';
 import { UsersPage } from '../pages/UsersPage';
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
   {
     path: '/landing',
     element: <LandingPage />
+  },
+  {
+    path: '/pricing',
+    element: <PricingPage />
   },
   {
     path: '/',

@@ -1,5 +1,4 @@
 import express from 'express';
-import path from 'path';
 import { AuthContext } from '../../auth/auth-utils';
 import { AuthMode } from '../../config/auth-config';
 
@@ -64,7 +63,7 @@ export class IndexApi {
   };
 
   private servePricing = (_req: express.Request, res: express.Response): void => {
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'pricing.html'));
+    this.sendAppPage(res, 'pricing.html');
   };
 
   private serveApp = (_req: express.Request, res: express.Response): void => {
