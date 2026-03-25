@@ -22,6 +22,10 @@ function RootEntryRedirect() {
     const raw = new URLSearchParams(location.search).get('next') || '';
     return raw.startsWith('/') ? raw : '/quick-ask';
   })();
+  // kullanıcı yetkilendirilmişse / ile sayfaya istek attığında önce /landing sonra /quick-ask anlık yönlendirimesini engelliyor
+  if (status === 'idle' || status === 'loading') {
+    return null;
+  }
 
   if (status === 'ready' && (!isAuthRequired || me)) {
     return <Navigate to={next} replace />;
