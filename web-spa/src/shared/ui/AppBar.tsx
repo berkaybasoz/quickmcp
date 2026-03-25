@@ -14,6 +14,7 @@ function subtitleByPath(pathname: string): string {
   if (p === '/test-servers') return 'Test Servers';
   if (p === '/authorization') return 'Authorization';
   if (p === '/users') return 'Users';
+  if (p === '/roles') return 'Roles';
   if (p === '/how-to-use') return 'How to Use';
   return 'Server Generator';
 }

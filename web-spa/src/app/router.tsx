@@ -7,6 +7,7 @@ import { LandingPage } from '../pages/LandingPage';
 import { ManageServersPage } from '../pages/ManageServersPage';
 import { PricingPage } from '../pages/PricingPage';
 import { QuickAskPage } from '../pages/QuickAskPage';
+import { RolesPage } from '../pages/RolesPage';
 import { TestServersPage } from '../pages/TestServersPage';
 import { UsersPage } from '../pages/UsersPage';
 import { useBootstrapStore } from '../shared/store/bootstrapStore';
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: 'test-servers', element: <TestServersPage /> },
       { path: 'authorization', element: <AuthorizationPage /> },
       { path: 'users', element: <UsersPage /> },
+      { path: 'roles', element: <RolesPage /> },
       { path: 'how-to-use', element: <HowToUsePage /> }
     ]
   }

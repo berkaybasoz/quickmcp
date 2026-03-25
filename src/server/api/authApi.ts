@@ -210,6 +210,7 @@ export class AuthApi {
 
     app.get('/login', this.getLoginPage);
     app.get('/users', this.getUsersPage);
+    app.get('/roles', this.getRolesPage);
     app.get('/authorization', this.getAuthorizationPage);
   }
 
@@ -1691,6 +1692,18 @@ export class AuthApi {
       return;
     }
     res.status(503).send('SPA build not found: users');
+  };
+
+  private getRolesPage = (_req: express.Request, res: express.Response): void => {
+    if (this.isSaasMode()) {
+      res.status(404).send('Not Found');
+      return;
+    }
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
+    res.status(503).send('SPA build not found: roles');
   };
 
   private getAuthorizationPage = (_req: express.Request, res: express.Response): void => {
