@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "buildCommand": "npm run build:spa",
+  "outputDirectory": "web-spa/dist",
   "functions": {
     "api/index.ts": {
       "includeFiles": "{src/web/public/**,web-spa/dist/**}"
