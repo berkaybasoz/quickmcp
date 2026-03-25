@@ -1,16 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "npm run build && npm run build:spa",
+  "buildCommand": "npm run build:spa",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "{src/web/public/**,dist/web/public/**,web-spa/dist/**}"
+      "includeFiles": "{src/web/public/**,web-spa/dist/**}"
     }
   },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api"
     }
   ]
 }

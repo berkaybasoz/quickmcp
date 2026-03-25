@@ -1,6 +1,6 @@
 # Compiled output
 dist/
-
+web-spa/dist/
 # Dependencies
 node_modules/
 
