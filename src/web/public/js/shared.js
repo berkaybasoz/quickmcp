@@ -1081,8 +1081,6 @@ function switchTabByRoute(tabName) {
 
     if (tabName === 'manage' && typeof loadServers === 'function') {
         loadServers();
-    } else if (tabName === 'test' && typeof loadTestServers === 'function') {
-        loadTestServers();
     }
 }
 

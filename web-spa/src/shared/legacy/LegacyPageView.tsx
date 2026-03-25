@@ -122,11 +122,6 @@ function initializeLegacyPage(pageFile: string) {
     return;
   }
 
-  if (pageFile === 'test-servers.html') {
-    runtime.initializeTestServersPage?.();
-    return;
-  }
-
   if (pageFile === 'how-to-use.html') {
     runtime.setupHowToUseEventListeners?.();
     runtime.switchHowToTab?.('installation');

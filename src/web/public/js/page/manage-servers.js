@@ -1145,9 +1145,6 @@ async function confirmDeleteServer(serverId) {
             
             // Reload server lists
             loadServers();
-            if (typeof loadTestServers === 'function') {
-                loadTestServers();
-            }
         } else {
             throw new Error(result.error);
         }
@@ -1177,9 +1174,6 @@ async function confirmDeleteAllServers() {
         allServers = [];
         displayServers([]);
         updateServerSearchCount(0, 0);
-        if (typeof loadTestServers === 'function') {
-            loadTestServers();
-        }
     } catch (error) {
         closeDeleteAllLoadingModal();
         showDeleteErrorModal(error.message || 'Failed to delete all servers.');
