@@ -5967,11 +5967,10 @@ function setupTemplateFilters() {
     });
 
     if (searchInput && !searchInput.dataset.listenerAttached) {
-        const handle = debounce(() => {
+        searchInput.addEventListener('input', () => {
             const q = (searchInput.value || '').trim().toLowerCase();
             applyFilter(currentFilter, q);
-        }, 150);
-        searchInput.addEventListener('input', handle);
+        });
         searchInput.dataset.listenerAttached = 'true';
     }
 
