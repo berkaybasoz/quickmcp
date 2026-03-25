@@ -1,6 +1,8 @@
 create table if not exists public.servers (
   id text primary key,
   name text not null,
+  type text not null default '',
+  description text not null default '',
   version text not null default '1.0.0',
   owner_username text not null default 'guest',
   source_config jsonb not null default '{}'::jsonb,

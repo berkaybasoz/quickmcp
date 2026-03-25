@@ -1,6 +1,8 @@
 export interface ServerConfig {
   id: string;
   name: string;
+  type: string;
+  description: string;
   version: string;
   ownerUsername: string;
   sourceConfig: {
@@ -8,6 +10,14 @@ export interface ServerConfig {
     [key: string]: unknown;
   };
   createdAt: string;
+}
+
+export interface ServerWithTools {
+  server_id: string;
+  server_name: string;
+  server_type: string;
+  server_description: string;
+  tools: { name: string; description: string }[];
 }
 
 export interface ToolDefinition {
@@ -137,6 +147,7 @@ export interface IDataStore {
   getServerForOwner(serverId: string, ownerUsername: string): Promise<ServerConfig | null>;
   getAllServers(): Promise<ServerConfig[]>;
   getAllServersByOwner(ownerUsername: string): Promise<ServerConfig[]>;
+  getServersWithTools(ownerUsername: string | null): Promise<ServerWithTools[]>;
   serverNameExistsForOwner(serverName: string, ownerUsername: string): Promise<boolean>;
   deleteServer(serverId: string): Promise<void>;
 

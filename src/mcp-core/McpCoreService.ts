@@ -486,6 +486,8 @@ export class McpCoreService {
         return this.executeQuickMcpMultiExecuteTool(args, authContext);
       case QUICKMCP_META_TOOL_NAMES.FIND_TOOL:
         return this.executeQuickMcpFindTool(args, authContext);
+      case QUICKMCP_META_TOOL_NAMES.LIST_SERVERS:
+        return this.executeQuickMcpListServers(authContext);
       default:
         throw new Error(`Unknown QuickMCP meta tool: ${toolName}`);
     }
@@ -728,6 +730,19 @@ export class McpCoreService {
         if (includeDetails) payload.input_schema = row.tool?.inputSchema || {};
         return payload;
       })
+    };
+  }
+
+  private async executeQuickMcpListServers(authContext: McpAuthContext): Promise<any> {
+    const ownerUsername = authContext.identity?.workspace ?? authContext.identity?.username ?? null;
+    const allServers = await this.executor.getServersWithTools(
+      this.deploymentUtil.authModeIsNone(this.authMode) ? null : ownerUsername
+    );
+
+    return {
+      successful: true,
+      server_count: allServers.length,
+      servers: allServers
     };
   }
 

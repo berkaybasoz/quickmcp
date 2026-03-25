@@ -1,7 +1,11 @@
-import { IDataStore, ToolDefinition } from '../database/datastore';
+import { IDataStore, ServerWithTools, ToolDefinition } from '../database/datastore';
 
 export class ServerUtils {
   constructor(private readonly dataStore: IDataStore) {}
+
+  async getServersWithTools(ownerUsername: string | null): Promise<ServerWithTools[]> {
+    return this.dataStore.getServersWithTools(ownerUsername);
+  }
 
   async getAllTools(): Promise<any[]> {
     const tools = await this.dataStore.getAllTools();

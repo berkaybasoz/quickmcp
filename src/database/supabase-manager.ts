@@ -10,6 +10,7 @@ import {
   ResourceDefinition,
   ServerAuthConfig,
   ServerConfig,
+  ServerWithTools,
   ToolDefinition,
   UserRecord,
   UserRole,
@@ -122,6 +123,8 @@ export class SupabaseDataStore implements IDataStore {
     return {
       id: String(row.id),
       name: String(row.name),
+      type: String(row.type),
+      description: String(row.description),
       version: String(row.version || '1.0.0'),
       ownerUsername: String(row.owner_username || 'guest'),
       sourceConfig,
@@ -204,6 +207,8 @@ export class SupabaseDataStore implements IDataStore {
     await this.request('servers?on_conflict=id', 'POST', {
       id: server.id,
       name: server.name,
+      type: server.type,
+      description: server.description,
       version: server.version || '1.0.0',
       owner_username: server.ownerUsername,
       source_config: server.sourceConfig,
@@ -232,6 +237,28 @@ export class SupabaseDataStore implements IDataStore {
     return (await this.request<any[]>(
       `servers?select=*&owner_username=eq.${encodeURIComponent(ownerUsername)}&order=created_at.desc`
     )).map((r) => this.mapServerRow(r));
+  }
+
+  async getServersWithTools(ownerUsername: string | null): Promise<ServerWithTools[]> {
+    const serversUrl = ownerUsername
+      ? `servers?select=id,name,type,description&owner_username=eq.${encodeURIComponent(ownerUsername)}&order=created_at.desc`
+      : `servers?select=id,name,type,description&order=created_at.desc`;
+    const servers = await this.request<any[]>(serversUrl);
+
+    const serverMap = new Map<string, ServerWithTools>();
+    for (const s of servers) {
+      serverMap.set(s.id, { server_id: s.id, server_name: s.name, server_type: s.type || '', server_description: s.description || '', tools: [] });
+    }
+
+    if (serverMap.size > 0) {
+      const ids = Array.from(serverMap.keys()).map((id) => encodeURIComponent(id)).join(',');
+      const tools = await this.request<any[]>(`tools?select=server_id,name,description&server_id=in.(${ids})&order=name`);
+      for (const t of tools) {
+        serverMap.get(t.server_id)?.tools.push({ name: t.name, description: t.description || '' });
+      }
+    }
+
+    return Array.from(serverMap.values());
   }
 
   async serverNameExistsForOwner(serverName: string, ownerUsername: string): Promise<boolean> {

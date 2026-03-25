@@ -114,7 +114,7 @@ export class GenerateApi {
   private generate = async (req: AuthenticatedRequest, res: express.Response): Promise<express.Response | void> => {
     const { parser, ensureGenerator, ensureDataStore, getEffectiveUsername, buildServerId } = this.deps;
       try {
-        const { name, description, version, dataSource, selectedTables, parsedData } = req.body;
+        const { name, description, version, dataSource, selectedTables, parsedData, type } = req.body;
         const ownerUsername = getEffectiveUsername(req);
         
         console.log('🔍 Generate request received:');
@@ -806,7 +806,9 @@ export class GenerateApi {
           parsedForGen,
           dbConfForGen,
           selectedTables,
-          serverVersion
+          serverVersion,
+          type,
+          description || ''
         );
     
         if (result.success) {

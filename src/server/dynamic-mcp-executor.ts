@@ -1,5 +1,5 @@
 import { createDataStore } from '../database/factory';
-import { IDataStore } from '../database/datastore';
+import { IDataStore, ServerWithTools } from '../database/datastore';
 import { ServerUtils } from './server-utils';
 import { ToolExecuter } from './tool-executer';
 import { logger } from '../utils/logger';
@@ -16,6 +16,10 @@ export class DynamicMCPExecutor {
 
   async getAllTools(): Promise<any[]> {
     return this.serverUtils.getAllTools();
+  }
+
+  async getServersWithTools(ownerUsername: string | null): Promise<ServerWithTools[]> {
+    return this.serverUtils.getServersWithTools(ownerUsername);
   }
 
   async getAllResources(): Promise<any[]> {

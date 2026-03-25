@@ -5,7 +5,8 @@ export const QUICKMCP_META_TOOL_NAMES = {
   MANAGE_CONNECTIONS: 'quickmcp__QUICKMCP_MANAGE_CONNECTIONS',
   EXECUTE_TOOL: 'quickmcp__QUICKMCP_EXECUTE_TOOL',
   MULTI_EXECUTE_TOOL: 'quickmcp__QUICKMCP_MULTI_EXECUTE_TOOL',
-  FIND_TOOL: 'quickmcp__QUICKMCP_FIND_TOOL'
+  FIND_TOOL: 'quickmcp__QUICKMCP_FIND_TOOL',
+  LIST_SERVERS: 'quickmcp__QUICKMCP_LIST_SERVERS'
 } as const;
 
 export type QuickMcpMetaToolName = (typeof QUICKMCP_META_TOOL_NAMES)[keyof typeof QUICKMCP_META_TOOL_NAMES];
@@ -335,6 +336,21 @@ export const QUICKMCP_META_TOOLS: any[] = [
         limit: { type: 'integer', minimum: 1, maximum: 20, default: 5 },
         include_details: { type: 'boolean', default: false }
       }
+    },
+    securitySchemes: OAUTH_SCHEME,
+    _meta: { securitySchemes: OAUTH_SCHEME }
+  },
+  {
+    name: QUICKMCP_META_TOOL_NAMES.LIST_SERVERS,
+    description: `List all MCP servers available to the current user, along with the tools each server exposes.
+
+Use this tool to discover which servers are connected and what they can do—before searching for specific tools.
+
+Returns each server's ID, the number of tools it has, and a summary of tool names so you can decide which server to target.`,
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {}
     },
     securitySchemes: OAUTH_SCHEME,
     _meta: { securitySchemes: OAUTH_SCHEME }

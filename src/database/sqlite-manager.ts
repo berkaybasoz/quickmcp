@@ -1,11 +1,15 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import { IDataStore, LogEntry, QuickAskStateRecord, ResourceDefinition, ServerConfig, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
+import { IDataStore, LogEntry, QuickAskStateRecord, ResourceDefinition, ServerConfig, ServerWithTools, ToolDefinition, RefreshTokenRecord, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 import { ensureDirExists, resolveQuickMcpDataDir } from '../utils/data-dir';
 
 export class SQLiteManager implements IDataStore {
   private db: Database.Database;
   private dbPath: string;
+
+  getDbPath(): string {
+    return this.dbPath;
+  }
 
   constructor() {
     const dbDir = resolveQuickMcpDataDir(process.env.QUICKMCP_DATA_DIR, process.cwd());
@@ -21,6 +25,8 @@ export class SQLiteManager implements IDataStore {
       CREATE TABLE IF NOT EXISTS servers (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
         version TEXT NOT NULL DEFAULT '1.0.0',
         owner_username TEXT NOT NULL DEFAULT 'guest',
         source_config TEXT NOT NULL,
@@ -32,6 +38,14 @@ export class SQLiteManager implements IDataStore {
     const hasVersion = serverCols.some((col) => col.name === 'version');
     if (!hasVersion) {
       this.db.exec(`ALTER TABLE servers ADD COLUMN version TEXT NOT NULL DEFAULT '1.0.0'`);
+    }
+    const hasType = serverCols.some((col) => col.name === 'type');
+    if (!hasType) {
+      this.db.exec(`ALTER TABLE servers ADD COLUMN type TEXT NOT NULL DEFAULT ''`);
+    }
+    const hasDescription = serverCols.some((col) => col.name === 'description');
+    if (!hasDescription) {
+      this.db.exec(`ALTER TABLE servers ADD COLUMN description TEXT NOT NULL DEFAULT ''`);
     }
 
     this.db.exec(`
@@ -214,10 +228,12 @@ export class SQLiteManager implements IDataStore {
 
   async saveServer(server: ServerConfig): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO servers (id, name, version, owner_username, source_config, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO servers (id, name, type, description, version, owner_username, source_config, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
+        type = excluded.type,
+        description = excluded.description,
         version = excluded.version,
         owner_username = excluded.owner_username,
         source_config = excluded.source_config,
@@ -228,6 +244,8 @@ export class SQLiteManager implements IDataStore {
     stmt.run(
       server.id,
       server.name,
+      server.type,
+      server.description,
       server.version || '1.0.0',
       server.ownerUsername,
       JSON.stringify(server.sourceConfig),
@@ -246,6 +264,8 @@ export class SQLiteManager implements IDataStore {
     return {
       id: row.id,
       name: row.name,
+      type: row.type,
+      description: row.description,
       version: row.version || '1.0.0',
       ownerUsername: row.owner_username || 'guest',
       sourceConfig: parsedConfig,
@@ -275,6 +295,34 @@ export class SQLiteManager implements IDataStore {
     const stmt = this.db.prepare('SELECT * FROM servers WHERE owner_username = ? ORDER BY created_at DESC');
     const rows = stmt.all(ownerUsername) as any[];
     return rows.map((row) => this.mapServerRow(row));
+  }
+
+  async getServersWithTools(ownerUsername: string | null): Promise<ServerWithTools[]> {
+    const sql = ownerUsername
+      ? `SELECT s.id, s.name, s.type, s.description, t.name AS tool_name, t.description AS tool_description
+         FROM servers s
+         LEFT JOIN tools t ON t.server_id = s.id
+         WHERE s.owner_username = ?
+         ORDER BY s.created_at DESC, t.name`
+      : `SELECT s.id, s.name, s.type, s.description, t.name AS tool_name, t.description AS tool_description
+         FROM servers s
+         LEFT JOIN tools t ON t.server_id = s.id
+         ORDER BY s.created_at DESC, t.name`;
+
+    const rows = (ownerUsername
+      ? this.db.prepare(sql).all(ownerUsername)
+      : this.db.prepare(sql).all()) as any[];
+
+    const serverMap = new Map<string, ServerWithTools>();
+    for (const row of rows) {
+      if (!serverMap.has(row.id)) {
+        serverMap.set(row.id, { server_id: row.id, server_name: row.name, server_type: row.type || '', server_description: row.description || '', tools: [] });
+      }
+      if (row.tool_name) {
+        serverMap.get(row.id)!.tools.push({ name: row.tool_name, description: row.tool_description || '' });
+      }
+    }
+    return Array.from(serverMap.values());
   }
 
   async serverNameExistsForOwner(serverName: string, ownerUsername: string): Promise<boolean> {

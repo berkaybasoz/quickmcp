@@ -1,4 +1,4 @@
-import { IDataStore, LogEntry, QuickAskStateRecord, RefreshTokenRecord, ResourceDefinition, ServerConfig, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
+import { IDataStore, LogEntry, QuickAskStateRecord, RefreshTokenRecord, ResourceDefinition, ServerConfig, ServerWithTools, ToolDefinition, UserRecord, UserRole, ServerAuthConfig, McpTokenCreateInput, McpTokenRecord, McpTokenPolicyRecord, McpTokenPolicyScope, WorkspaceAiConfig } from './datastore';
 
 export class JdbcDataStore implements IDataStore {
   constructor() {
@@ -10,6 +10,7 @@ export class JdbcDataStore implements IDataStore {
   async getServerForOwner(_serverId: string, _ownerUsername: string): Promise<ServerConfig | null> { throw new Error('Not implemented'); }
   async getAllServers(): Promise<ServerConfig[]> { throw new Error('Not implemented'); }
   async getAllServersByOwner(_ownerUsername: string): Promise<ServerConfig[]> { throw new Error('Not implemented'); }
+  async getServersWithTools(_ownerUsername: string | null): Promise<ServerWithTools[]> { throw new Error('Not implemented'); }
   async serverNameExistsForOwner(_serverName: string, _ownerUsername: string): Promise<boolean> { throw new Error('Not implemented'); }
   async deleteServer(_serverId: string): Promise<void> { throw new Error('Not implemented'); }
 

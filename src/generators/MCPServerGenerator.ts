@@ -26,7 +26,9 @@ export class MCPServerGenerator {
     parsedData: any,
     sourceConfig: any,
     selectedTables?: any[],
-    serverVersion?: string
+    serverVersion?: string,
+    serverType?: string,
+    serverDescription?: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       //console.log(`🚀 Generating virtual MCP server: ${serverId}`);
@@ -36,6 +38,8 @@ export class MCPServerGenerator {
       const serverConfig: ServerConfig = {
         id: serverId,
         name: serverName,
+        type: serverType,
+        description: serverDescription,
         version: (typeof serverVersion === 'string' && serverVersion.trim()) ? serverVersion.trim() : '1.0.0',
         ownerUsername,
         sourceConfig: sourceConfig,
