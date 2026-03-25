@@ -373,7 +373,7 @@ async function consumeSupabaseHashSessionIfPresent() {
         const apiNext = typeof body?.data?.next === 'string' ? body.data.next : '';
         const next = (queryNext && queryNext.startsWith('/'))
             ? queryNext
-            : (apiNext.startsWith('/') ? apiNext : '/');
+            : (apiNext.startsWith('/') ? apiNext : '/quick-ask');
         window.location.replace(next);
         return true;
     } catch (_) {

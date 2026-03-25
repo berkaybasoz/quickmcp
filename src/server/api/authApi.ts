@@ -1496,7 +1496,7 @@ export class AuthApi {
       return;
     }
 
-    const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/';
+    const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/quick-ask';
     const appBaseUrl = this.resolveAppBaseUrl(req);
     const redirectTo = `${appBaseUrl.replace(/\/+$/, '')}/login?oauth=callback`;
     this.deps.setCookie(res, this.oauthNextCookieName, next, 10 * 60);
@@ -1669,11 +1669,14 @@ export class AuthApi {
     }
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/')
       ? req.query.next
-      : '/';
-    const ctx = await this.deps.resolveAuthContext(req as AuthenticatedRequest, res);
-    if (ctx) {
-      res.redirect(next);
-      return;
+      : '/quick-ask';
+    const shouldBypassAutoRedirect = this.isSaasMode();
+    if (!shouldBypassAutoRedirect) {
+      const ctx = await this.deps.resolveAuthContext(req as AuthenticatedRequest, res);
+      if (ctx) {
+        res.redirect(next);
+        return;
+      }
     }
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
