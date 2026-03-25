@@ -6906,6 +6906,7 @@ async function generateServer() {
                 name,
                 description: description || '',
                 version: version || '1.0.0',
+                type: currentDataSource?.type,
                 dataSource: currentDataSource,
                 selectedTables: selectedTablesConfig,
                 parsedData: currentParsedData
