@@ -532,8 +532,10 @@ export function TestServersPage() {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = TEST_PAGE_TITLE;
+    document.body.classList.add('test-page');
     return () => {
       document.title = previousTitle;
+      document.body.classList.remove('test-page');
     };
   }, []);
 
@@ -821,12 +823,12 @@ export function TestServersPage() {
 
   return (
     <div className="flex-1 min-h-0 min-w-0 relative overflow-hidden flex flex-col">
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-modern px-8 pt-0 pb-8 relative z-0">
-        <div className="max-w-6xl mx-auto space-y-8 pb-20">
-          <div id="test-tab" className="tab-content animate-fade-in">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-modern p-8 relative z-0">
+        <div className="max-w-6xl mx-auto space-y-6 pb-20">
+          <div id="test-tab" className="animate-fade-in">
             <div className="text-center mb-10">
               <h2 className="text-3xl font-bold text-slate-900">Test Suite</h2>
-              <p className="text-slate-600">Verify your server functionality.</p>
+              <p className="text-slate-600 mt-1">Verify your server functionality.</p>
             </div>
 
             <div className="card mb-6 p-0 overflow-hidden">
