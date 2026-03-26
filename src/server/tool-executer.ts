@@ -7277,6 +7277,7 @@ export class ToolExecuter {
             await dbConnection.connection.close();
             break;
           case DataSourceType.MySQL:
+          case DataSourceType.MariaDB:
             await dbConnection.connection.end();
             break;
           case DataSourceType.PostgreSQL:
@@ -7318,6 +7319,7 @@ export class ToolExecuter {
           break;
 
         case DataSourceType.MySQL:
+        case DataSourceType.MariaDB:
           connection = await mysql.createConnection({
             host: sourceConfig.host,
             port: sourceConfig.port || 3306,
@@ -7325,7 +7327,7 @@ export class ToolExecuter {
             user: sourceConfig.username,
             password: sourceConfig.password
           });
-          logger.error(`🔗 Connected to MySQL database for server ${serverId}`);
+          logger.error(`🔗 Connected to ${sourceConfig.type === DataSourceType.MariaDB ? 'MariaDB' : 'MySQL'} database for server ${serverId}`);
           break;
 
         case DataSourceType.PostgreSQL:
@@ -7407,7 +7409,8 @@ export class ToolExecuter {
           return { rowsAffected: result.rowsAffected[0] };
         }
 
-        case DataSourceType.MySQL: {
+        case DataSourceType.MySQL:
+        case DataSourceType.MariaDB: {
           if (operation === 'SELECT') {
             const limit = args.limit || 100;
             const offset = args.offset || 0;

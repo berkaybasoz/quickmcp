@@ -8,6 +8,7 @@ export interface CurlSetting {
 export enum DataSourceType {
   MSSQL = 'mssql',
   MySQL = 'mysql',
+  MariaDB = 'mariadb',
   PostgreSQL = 'postgresql',
   SQLite = 'sqlite',
   Oracle = 'oracle',
@@ -111,6 +112,7 @@ export function isDatabase(type: DataSourceType | string | undefined | null): bo
   const value = String(type).toLowerCase();
   return value === DataSourceType.MSSQL
     || value === DataSourceType.MySQL
+    || value === DataSourceType.MariaDB
     || value === DataSourceType.PostgreSQL
     || value === DataSourceType.SQLite
     || value === DataSourceType.Oracle;
@@ -314,7 +316,7 @@ export interface DatabaseConnection {
   database: string;
   username?: string;
   password?: string;
-  type: DataSourceType.MySQL | DataSourceType.PostgreSQL | DataSourceType.SQLite | DataSourceType.MSSQL;
+  type: DataSourceType.MySQL | DataSourceType.MariaDB | DataSourceType.PostgreSQL | DataSourceType.SQLite | DataSourceType.MSSQL;
 }
 
 export interface RedisConnection {

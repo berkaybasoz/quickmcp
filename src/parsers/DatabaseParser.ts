@@ -10,6 +10,8 @@ export class DatabaseParser {
     switch (connection.type) {
       case DataSourceType.MySQL:
         return this.parseMySql(connection, tableName);
+      case DataSourceType.MariaDB:
+        return this.parseMariaDB(connection, tableName);
       case DataSourceType.PostgreSQL:
         return this.parsePostgreSql(connection, tableName);
       case DataSourceType.SQLite:
@@ -25,6 +27,8 @@ export class DatabaseParser {
     switch (connection.type) {
       case DataSourceType.MySQL:
         return this.getMySqlTables(connection);
+      case DataSourceType.MariaDB:
+        return this.getMariaDBTables(connection);
       case DataSourceType.PostgreSQL:
         return this.getPostgreSqlTables(connection);
       case DataSourceType.SQLite:
@@ -80,6 +84,10 @@ export class DatabaseParser {
     } finally {
       await conn.end();
     }
+  }
+
+  private async parseMariaDB(connection: DatabaseConnection, tableName?: string): Promise<ParsedData[]> {
+    return this.parseMySql(connection, tableName);
   }
 
   private async parsePostgreSql(connection: DatabaseConnection, tableName?: string): Promise<ParsedData[]> {
@@ -201,6 +209,10 @@ export class DatabaseParser {
     } finally {
       await conn.end();
     }
+  }
+
+  private async getMariaDBTables(connection: DatabaseConnection): Promise<string[]> {
+    return this.getMySqlTables(connection);
   }
 
   private async getPostgreSqlTables(connection: DatabaseConnection): Promise<string[]> {

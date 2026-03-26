@@ -8573,8 +8573,8 @@ export class MCPServerGenerator {
     let query = `SELECT ${columnList} FROM ${this.quoteIdentifier(tableName, dbType)}`;
 
     if (withParams) {
-      if (dbType === DataSourceType.MySQL || dbType === DataSourceType.PostgreSQL) {
-        // MySQL and PostgreSQL: simple query without complex WHERE, parameters handled in executor
+      if (dbType === DataSourceType.MySQL || dbType === DataSourceType.MariaDB || dbType === DataSourceType.PostgreSQL) {
+        // MySQL/MariaDB and PostgreSQL: simple query without complex WHERE, parameters handled in executor
         const orderColumn = columns.find(col =>
           col.name.toLowerCase() === 'id' ||
           col.name.toLowerCase().includes('created') ||
@@ -8585,7 +8585,7 @@ export class MCPServerGenerator {
           query += ` ORDER BY ${this.quoteIdentifier(orderColumn.name, dbType)}`;
         }
 
-        if (dbType === 'mysql') {
+        if (dbType === DataSourceType.MySQL || dbType === DataSourceType.MariaDB) {
           query += ' LIMIT ? OFFSET ?';
         } else {
           query += ' LIMIT $1 OFFSET $2';
@@ -8626,7 +8626,7 @@ export class MCPServerGenerator {
   private generateUpdateQuery(tableName: string, columns: ParsedColumn[], dbType: string): string {
     const updateColumns = columns.filter(col => col.name.toLowerCase() !== 'id');
 
-    if (dbType === DataSourceType.MySQL) {
+    if (dbType === DataSourceType.MySQL || dbType === DataSourceType.MariaDB) {
       const setClause = updateColumns.map(col => `${this.quoteIdentifier(col.name, dbType)} = ?`).join(', ');
       return `UPDATE ${this.quoteIdentifier(tableName, dbType)} SET ${setClause} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
     } else if (dbType === DataSourceType.PostgreSQL) {
@@ -8639,7 +8639,7 @@ export class MCPServerGenerator {
   }
 
   private generateDeleteQuery(tableName: string, dbType: string): string {
-    if (dbType === DataSourceType.MySQL) {
+    if (dbType === DataSourceType.MySQL || dbType === DataSourceType.MariaDB) {
       return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = ?`;
     } else if (dbType === DataSourceType.PostgreSQL) {
       return `DELETE FROM ${this.quoteIdentifier(tableName, dbType)} WHERE ${this.quoteIdentifier('id', dbType)} = $1`;
@@ -8730,6 +8730,7 @@ export class MCPServerGenerator {
   private quoteIdentifier(name: string, dbType: string): string {
     switch (dbType) {
       case DataSourceType.MySQL:
+      case DataSourceType.MariaDB:
         return `\`${name}\``;
       case DataSourceType.PostgreSQL:
         return `"${name}"`;
@@ -8742,6 +8743,7 @@ export class MCPServerGenerator {
   private getParamPlaceholder(name: string, index: number, dbType: string): string {
     switch (dbType) {
       case DataSourceType.MySQL:
+      case DataSourceType.MariaDB:
         return '?';
       case DataSourceType.PostgreSQL:
         return `$${index}`;
