@@ -116,11 +116,6 @@ function initializeLegacyPage(pageFile: string) {
     return;
   }
 
-  if (pageFile === 'how-to-use.html') {
-    runtime.setupHowToUseEventListeners?.();
-    runtime.switchHowToTab?.('installation');
-    return;
-  }
 }
 
 export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
@@ -145,9 +140,7 @@ export function LegacyPageView({ pageFile }: LegacyPageViewProps) {
 
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const legacyMain = doc.querySelector('.app-main-layout > .flex-1') as HTMLElement | null;
-        const legacySide = pageFile === 'how-to-use.html'
-          ? (doc.querySelector('.app-main-layout > .w-80') as HTMLElement | null)
-          : null;
+        const legacySide = null as HTMLElement | null;
 
         const bodyClassName = String(doc.body?.className || '').trim();
         if (bodyClassName) {
