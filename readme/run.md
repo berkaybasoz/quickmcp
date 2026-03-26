@@ -31,3 +31,11 @@ npm run build && npm run build:spa
 npx concurrently -k -n BACKEND,SPA -c green,blue \
   "DEPLOY_MODE=SAAS AUTH_MODE=SUPABASE_GOOGLE DATA_PROVIDER=SUPABASE DOTENV_CONFIG_PATH=.env.dev npm run dev" \
   "npm run dev:spa"
+
+
+{
+    "scripts": {
+      "dev:backend:saas": "DEPLOY_MODE=SAAS AUTH_MODE=SUPABASE_GOOGLE DATA_PROVIDER=SUPABASE DOTENV_CONFIG_PATH=.env.dev npm run dev",
+      "dev:ui": "npm run dev:spa"
+    }
+  }

@@ -1,5 +1,5 @@
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useQuickAskStore } from '../shared/store/QuickAskStore';
 
 type AskStatusKind = 'idle' | 'ready' | 'busy' | 'error';
 type ChatRole = 'user' | 'assistant';
@@ -145,7 +145,10 @@ function sortChatsByRecent(chats: AskChat[]): AskChat[] {
   });
 }
 
-function normalizeChatState(chats: AskChat[], currentChatId: string): { chats: AskChat[]; currentChatId: string } {
+function normalizeChatState(
+  chats: AskChat[],
+  currentChatId: string
+): { chats: AskChat[]; currentChatId: string } {
   let nextChats = sortChatsByRecent(chats);
   if (nextChats.length > QUICK_ASK_MAX_CHATS) {
     nextChats = nextChats.slice(0, QUICK_ASK_MAX_CHATS);
@@ -154,9 +157,6 @@ function normalizeChatState(chats: AskChat[], currentChatId: string): { chats: A
   let nextCurrent = String(currentChatId || '').trim();
   if (nextCurrent && !nextChats.some((chat) => chat.id === nextCurrent)) {
     nextCurrent = '';
-  }
-  if (!nextCurrent) {
-    nextCurrent = String(nextChats[0]?.id || '');
   }
 
   return { chats: nextChats, currentChatId: nextCurrent };
@@ -455,8 +455,9 @@ const STATUS_DOTS: Record<AskStatusKind, string> = {
 };
 
 export function QuickAskPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const navigationNonce = useQuickAskStore((state) => state.navigationNonce);
+  const consumeNavigationIntent = useQuickAskStore((state) => state.consumeNavigationIntent);
+  const setGlobalActiveChatId = useQuickAskStore((state) => state.setActiveChatId);
 
   const [askContext, setAskContext] = useState<AskContextPayload | null>(null);
   const [statusKind, setStatusKind] = useState<AskStatusKind>('idle');
@@ -623,15 +624,14 @@ export function QuickAskPage() {
     applyChatState(nextChats, currentChatIdRef.current, { skipPersist: !persistIfChanged });
   }, [applyChatState]);
 
-  const loadChats = useCallback(async (searchRaw: string) => {
-    const search = new URLSearchParams(searchRaw || '');
-    const requestedChatId = String(search.get('chat') || '').trim();
-    const requestNewChat = search.get('new') === '1';
+  const loadChats = useCallback(async () => {
+    const intent = consumeNavigationIntent();
+    const requestedChatId = String(intent.openChatId || '').trim();
+    const requestNewChat = intent.createNewChat === true;
 
     let nextChats: AskChat[] = [];
     let nextCurrentId = '';
     let shouldPersistAfterLoad = false;
-    let consumedQuery = false;
 
     try {
       const response = await fetch('/api/ask/chats', { credentials: 'include' });
@@ -649,14 +649,20 @@ export function QuickAskPage() {
       nextChats = [chat, ...nextChats];
       nextCurrentId = chat.id;
       shouldPersistAfterLoad = true;
-      consumedQuery = true;
     }
 
-    if (requestedChatId && nextChats.some((chat) => chat.id === requestedChatId)) {
-      nextCurrentId = requestedChatId;
-      consumedQuery = true;
+    if (requestedChatId) {
+      if (nextChats.some((chat) => chat.id === requestedChatId)) {
+        nextCurrentId = requestedChatId;
+      } else {
+        nextCurrentId = '';
+      }
     }
 
+    const shouldSelectFromIntent = requestNewChat || (requestedChatId ? !!nextCurrentId : false);
+    if (!shouldSelectFromIntent) {
+      nextCurrentId = '';
+    }
     const normalized = normalizeChatState(nextChats, nextCurrentId);
     nextChats = normalized.chats;
     nextCurrentId = normalized.currentChatId;
@@ -670,11 +676,7 @@ export function QuickAskPage() {
     if (shouldPersistAfterLoad) {
       schedulePersist();
     }
-
-    if (consumedQuery) {
-      navigate('/quick-ask', { replace: true });
-    }
-  }, [applyChatState, applySelectionsFromChat, navigate, schedulePersist]);
+  }, [applyChatState, applySelectionsFromChat, consumeNavigationIntent, schedulePersist]);
 
   const loadContext = useCallback(async () => {
     applyStatus('busy', 'Loading context');
@@ -760,8 +762,7 @@ export function QuickAskPage() {
       chat.id === chatId
         ? {
             ...chat,
-            title: title.slice(0, 80),
-            updatedAt: nowIso()
+            title: title.slice(0, 80)
           }
         : chat
     ));
@@ -994,7 +995,7 @@ export function QuickAskPage() {
     document.title = QUICK_ASK_PAGE_TITLE;
     document.body.classList.add('quick-ask-page');
 
-    void loadChats(location.search || '');
+    void loadChats();
     void loadContext();
 
     return () => {
@@ -1005,7 +1006,12 @@ export function QuickAskPage() {
         persistTimerRef.current = null;
       }
     };
-  }, [loadChats, loadContext, location.search]);
+  }, [loadChats, loadContext]);
+
+  useEffect(() => {
+    if (!initializedRef.current) return;
+    void loadChats();
+  }, [loadChats, navigationNonce]);
 
   useEffect(() => {
     if (!initializedRef.current) return;
@@ -1031,6 +1037,10 @@ export function QuickAskPage() {
     if (!messagesEl) return;
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }, [currentChat?.messages]);
+
+  useEffect(() => {
+    setGlobalActiveChatId(currentChatId);
+  }, [currentChatId, setGlobalActiveChatId]);
 
   return (
     <div className="flex-1 relative overflow-hidden flex flex-col min-w-0">
@@ -1173,7 +1183,6 @@ export function QuickAskPage() {
                       type="button"
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors"
                       onClick={() => setToolsPanelOpen((current) => !current)}
-                      disabled={!askEnabled}
                     >
                       <i className="fas fa-sliders-h text-[11px]"></i>
                       Select MCP & Tools
@@ -1194,7 +1203,7 @@ export function QuickAskPage() {
                   </div>
                 </div>
 
-                <div id="quickAskToolsPanel" className={toolsPanelOpen && askEnabled ? 'rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3' : 'hidden rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3'}>
+                <div id="quickAskToolsPanel" className={toolsPanelOpen ? 'rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3' : 'hidden rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3'}>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-slate-800">Choose MCP servers and tools</p>
                     <button
@@ -1219,7 +1228,7 @@ export function QuickAskPage() {
                         const tools = Array.isArray(server.tools) ? server.tools : [];
 
                         return (
-                          <details key={serverId} className="quick-ask-server-details border border-slate-200 rounded-lg bg-slate-50/60" open>
+                          <details key={serverId} className="quick-ask-server-details border border-slate-200 rounded-lg bg-slate-50/60">
                             <summary className="quick-ask-server-summary cursor-pointer px-3 py-2.5 flex items-center justify-between gap-3 text-sm">
                               <div className="flex items-center gap-2 min-w-0">
                                 <i className="quick-ask-server-chevron fas fa-chevron-down text-[11px] text-slate-500"></i>
@@ -1285,107 +1294,6 @@ export function QuickAskPage() {
             </div>
           </section>
 
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <p className="text-sm font-semibold text-slate-800">Your chats</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={chatSearchText}
-                  placeholder="Search chats"
-                  className="w-44 rounded-lg border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  onChange={(event) => setChatSearchText(event.target.value)}
-                />
-              </div>
-            </div>
-
-            <div id="quickAskChatList" className="space-y-1">
-              {filteredChats.length === 0 ? <p className="px-2 py-3 text-xs text-slate-500">No chats found.</p> : null}
-              {filteredChats.map((chat) => {
-                const isActive = chat.id === currentChatId;
-                const isRenaming = chat.id === renamingChatId;
-                const itemClass = isActive
-                  ? 'border-blue-200 bg-blue-50'
-                  : 'border-slate-200 bg-white hover:bg-slate-50';
-
-                return (
-                  <div key={chat.id} className={`group relative rounded-lg border transition-colors ${itemClass}`}>
-                    {isRenaming ? (
-                      <div className="w-full rounded-lg px-2.5 py-2 pr-20 text-left">
-                        <input
-                          type="text"
-                          value={renameDraft}
-                          maxLength={80}
-                          className="w-full rounded-md border border-blue-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          onChange={(event) => setRenameDraft(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault();
-                              commitRename(chat.id, renameDraft);
-                            }
-                            if (event.key === 'Escape') {
-                              event.preventDefault();
-                              cancelRename();
-                            }
-                          }}
-                        />
-                        <p className="mt-0.5 text-[11px] text-slate-500 truncate">{getChatPreview(chat)}</p>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="w-full rounded-lg px-2.5 py-2 pr-20 text-left"
-                        onClick={() => selectChat(chat.id)}
-                      >
-                        <p className="text-xs font-semibold text-slate-800 truncate">{chat.title}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-500 truncate">{getChatPreview(chat)}</p>
-                      </button>
-                    )}
-
-                    {isRenaming ? (
-                      <div className="absolute right-1 top-1 flex items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm">
-                        <button
-                          type="button"
-                          title="Save"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-emerald-600 hover:bg-emerald-50"
-                          onClick={() => commitRename(chat.id, renameDraft)}
-                        >
-                          <i className="fas fa-check text-[10px]"></i>
-                        </button>
-                        <button
-                          type="button"
-                          title="Cancel"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          onClick={cancelRename}
-                        >
-                          <i className="fas fa-times text-[10px]"></i>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="absolute right-1 top-1 hidden items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm group-hover:flex group-focus-within:flex">
-                        <button
-                          type="button"
-                          title="Rename chat"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          onClick={() => startRename(chat.id)}
-                        >
-                          <i className="fas fa-pen text-[10px]"></i>
-                        </button>
-                        <button
-                          type="button"
-                          title="Delete chat"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600"
-                          onClick={() => deleteChat(chat.id)}
-                        >
-                          <i className="fas fa-trash text-[10px]"></i>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </div>
       </main>
     </div>

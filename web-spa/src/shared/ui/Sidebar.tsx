@@ -1,6 +1,7 @@
 import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
+import { useQuickAskStore } from '../store/QuickAskStore';
 
 type SidebarProps = {
   collapsed: boolean;
@@ -16,6 +17,11 @@ type QuickAskChat = {
   title: string;
   preview: string;
   updatedAt: string;
+};
+
+type AskChatStatePayload = {
+  chats?: unknown[];
+  currentChatId?: string;
 };
 
 function isNavPathActive(path: string, pathname: string): boolean {
@@ -45,6 +51,25 @@ function normalizeChatPreview(chat: any): string {
   return 'No messages yet';
 }
 
+function sortChatsByRecent<T extends { updatedAt?: string; createdAt?: string }>(chats: T[]): T[] {
+  return [...chats].sort((a, b) => {
+    const ta = new Date(String(a?.updatedAt || a?.createdAt || 0)).getTime();
+    const tb = new Date(String(b?.updatedAt || b?.createdAt || 0)).getTime();
+    return tb - ta;
+  });
+}
+
+function toQuickAskChats(rawChats: unknown[]): QuickAskChat[] {
+  return sortChatsByRecent((Array.isArray(rawChats) ? rawChats : []) as any[])
+    .map((chat: any) => ({
+      id: String(chat?.id || '').trim(),
+      title: normalizeChatTitle(chat),
+      preview: normalizeChatPreview(chat),
+      updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
+    }))
+    .filter((chat: QuickAskChat) => chat.id);
+}
+
 export function Sidebar({
   collapsed,
   widthPx,
@@ -57,37 +82,47 @@ export function Sidebar({
   const navigate = useNavigate();
   const me = useBootstrapStore((state) => state.me);
   const config = useBootstrapStore((state) => state.config);
+  const globalActiveChatId = useQuickAskStore((state) => state.activeChatId);
+  const requestOpenChat = useQuickAskStore((state) => state.requestOpenChat);
+  const requestNewChat = useQuickAskStore((state) => state.requestNewChat);
+  const setGlobalActiveChatId = useQuickAskStore((state) => state.setActiveChatId);
 
   const [chats, setChats] = useState<QuickAskChat[]>([]);
+  const [chatsRaw, setChatsRaw] = useState<any[]>([]);
+  const [storedCurrentChatId, setStoredCurrentChatId] = useState('');
   const [chatStatus, setChatStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
+  const [chatSearchText, setChatSearchText] = useState('');
+  const [renamingChatId, setRenamingChatId] = useState('');
+  const [renameDraft, setRenameDraft] = useState('');
+  const [savingChatId, setSavingChatId] = useState('');
+  const [pendingDeleteChatId, setPendingDeleteChatId] = useState('');
 
   const showUsers = (config?.authMode || 'NONE') !== 'NONE' && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
 
-  const loadChats = useCallback(async () => {
-    setChatStatus('loading');
+  const loadChats = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setChatStatus('loading');
+    } else {
+      setChatStatus((prev) => (prev === 'ready' || prev === 'empty' ? prev : 'loading'));
+    }
     try {
       const response = await fetch('/api/ask/chats', { credentials: 'include' });
-      const payload = await response.json().catch(() => ({}));
-      const chatsRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
-        ? payload.data.chats
+      const payload = await response.json().catch(() => ({})) as {
+        success?: boolean;
+        data?: AskChatStatePayload;
+      };
+      const nextRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
+        ? (payload.data!.chats as any[])
         : [];
+      const nextStoredCurrent = String(payload?.data?.currentChatId || '').trim();
+      const nextChats = toQuickAskChats(nextRaw);
 
-      const nextChats = chatsRaw
-        .map((chat: any) => ({
-          id: String(chat?.id || '').trim(),
-          title: normalizeChatTitle(chat),
-          preview: normalizeChatPreview(chat),
-          updatedAt: String(chat?.updatedAt || chat?.createdAt || '')
-        }))
-        .filter((chat: QuickAskChat) => chat.id)
-        .sort((a: QuickAskChat, b: QuickAskChat) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-        .slice(0, 8);
-
+      setChatsRaw(nextRaw);
+      setStoredCurrentChatId(nextStoredCurrent);
       setChats(nextChats);
       setChatStatus(nextChats.length ? 'ready' : 'empty');
     } catch {
-      setChats([]);
-      setChatStatus('error');
+      setChatStatus((prev) => (options?.silent && (prev === 'ready' || prev === 'empty') ? prev : 'error'));
     }
   }, []);
 
@@ -97,13 +132,13 @@ export function Sidebar({
 
   useEffect(() => {
     if (location.pathname === '/quick-ask') {
-      void loadChats();
+      void loadChats({ silent: true });
     }
-  }, [location.pathname, location.search, loadChats]);
+  }, [location.pathname, loadChats]);
 
   useEffect(() => {
     const refresh = () => {
-      void loadChats();
+      void loadChats({ silent: true });
     };
     window.addEventListener('quickask:chats-updated', refresh);
     return () => {
@@ -133,6 +168,149 @@ export function Sidebar({
   ].join(' ').trim();
 
   const quickAskActive = isNavPathActive('/', location.pathname);
+  const filteredChats = useMemo(() => {
+    const query = chatSearchText.trim().toLowerCase();
+    if (!query) return chats;
+    return chats.filter((chat) => (`${chat.title} ${chat.preview}`).toLowerCase().includes(query));
+  }, [chatSearchText, chats]);
+
+  const openChat = useCallback((chatId: string) => {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    requestOpenChat(id);
+    setGlobalActiveChatId(id);
+    navigate('/quick-ask');
+    onCloseMobile();
+  }, [navigate, onCloseMobile, requestOpenChat, setGlobalActiveChatId]);
+
+  const openNewChat = useCallback(() => {
+    requestNewChat();
+    setGlobalActiveChatId('');
+    navigate('/quick-ask');
+    onCloseMobile();
+  }, [navigate, onCloseMobile, requestNewChat, setGlobalActiveChatId]);
+
+  const persistChatState = useCallback(async (nextRaw: any[], nextCurrentChatId: string) => {
+    const response = await fetch('/api/ask/chats', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chats: nextRaw,
+        currentChatId: nextCurrentChatId
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const nextChats = toQuickAskChats(nextRaw);
+    setChatsRaw(nextRaw);
+    setStoredCurrentChatId(nextCurrentChatId);
+    setChats(nextChats);
+    setChatStatus(nextChats.length ? 'ready' : 'empty');
+    window.dispatchEvent(new CustomEvent('quickask:chats-updated'));
+  }, []);
+
+  const startRename = useCallback((chat: QuickAskChat) => {
+    setRenamingChatId(chat.id);
+    setRenameDraft(chat.title || 'New chat');
+  }, []);
+
+  const cancelRename = useCallback(() => {
+    setRenamingChatId('');
+    setRenameDraft('');
+  }, []);
+
+  const commitRename = useCallback(async (chatId: string, rawTitle: string) => {
+    const id = String(chatId || '').trim();
+    const title = String(rawTitle || '').trim();
+    if (!id || !title) return;
+
+    const nextRaw = chatsRaw.map((chat: any) => (
+      String(chat?.id || '').trim() === id
+        ? {
+            ...chat,
+            title: title.slice(0, 80)
+          }
+        : chat
+    ));
+    const nextCurrentId = nextRaw.some((chat: any) => String(chat?.id || '').trim() === storedCurrentChatId)
+      ? storedCurrentChatId
+      : '';
+
+    setSavingChatId(id);
+    try {
+      await persistChatState(nextRaw, nextCurrentId);
+      setRenamingChatId('');
+      setRenameDraft('');
+    } finally {
+      setSavingChatId('');
+    }
+  }, [chatsRaw, persistChatState, storedCurrentChatId]);
+
+  const deleteChat = useCallback(async (chatId: string) => {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+
+    const nextRaw = chatsRaw.filter((chat: any) => String(chat?.id || '').trim() !== id);
+    const nextCurrentId = nextRaw.some((chat: any) => String(chat?.id || '').trim() === storedCurrentChatId)
+      ? storedCurrentChatId
+      : '';
+
+    setSavingChatId(id);
+    try {
+      await persistChatState(nextRaw, nextCurrentId);
+      if (renamingChatId === id) {
+        setRenamingChatId('');
+        setRenameDraft('');
+      }
+      if (globalActiveChatId === id) {
+        setGlobalActiveChatId('');
+        navigate('/quick-ask');
+      }
+    } finally {
+      setSavingChatId('');
+    }
+  }, [chatsRaw, globalActiveChatId, navigate, persistChatState, renamingChatId, setGlobalActiveChatId, storedCurrentChatId]);
+
+  const pendingDeleteChat = useMemo(
+    () => chats.find((chat) => chat.id === pendingDeleteChatId) || null,
+    [chats, pendingDeleteChatId]
+  );
+
+  const requestDeleteChat = useCallback((chatId: string) => {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    setPendingDeleteChatId(id);
+  }, []);
+
+  const closeDeleteModal = useCallback(() => {
+    if (!pendingDeleteChatId) return;
+    if (savingChatId === pendingDeleteChatId) return;
+    setPendingDeleteChatId('');
+  }, [pendingDeleteChatId, savingChatId]);
+
+  const confirmDeleteChat = useCallback(async () => {
+    const id = String(pendingDeleteChatId || '').trim();
+    if (!id) return;
+    try {
+      await deleteChat(id);
+    } finally {
+      setPendingDeleteChatId('');
+    }
+  }, [deleteChat, pendingDeleteChatId]);
+
+  useEffect(() => {
+    if (!pendingDeleteChatId) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeDeleteModal();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeDeleteModal, pendingDeleteChatId]);
 
   const navItems = useMemo(() => {
     const base = [
@@ -256,47 +434,130 @@ export function Sidebar({
             <div className="pt-1 flex items-center justify-between gap-2">
               <p className="text-[11px] tracking-[0.14em] uppercase text-slate-500 font-semibold">Your Chats</p>
               <a
-                href="/quick-ask?new=1"
+                href="/quick-ask"
                 className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
                 onClick={(event) => {
                   event.preventDefault();
-                  navigate('/quick-ask?new=1');
-                  onCloseMobile();
+                  openNewChat();
                 }}
               >
                 <i className="fas fa-plus text-[10px]" />
                 New
               </a>
             </div>
+            <div className="px-0.5">
+              <input
+                type="text"
+                value={chatSearchText}
+                placeholder="Search chats"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                onChange={(event) => setChatSearchText(event.target.value)}
+              />
+            </div>
             <div id="sharedQuickAskSidebarChatList" className="space-y-1">
               {chatStatus === 'loading' && <p className="px-2 py-2 text-xs text-slate-500">Loading chats...</p>}
               {chatStatus === 'error' && <p className="px-2 py-2 text-xs text-slate-500">Unable to load chats.</p>}
               {chatStatus === 'empty' && <p className="px-2 py-2 text-xs text-slate-500">No chats yet.</p>}
-              {chatStatus === 'ready' && chats.map((chat) => (
-                <a
-                  key={chat.id}
-                  href={`/quick-ask?chat=${encodeURIComponent(chat.id)}`}
-                  className="group block rounded-lg border border-slate-200 bg-white px-2 py-2 hover:bg-slate-50"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    navigate(`/quick-ask?chat=${encodeURIComponent(chat.id)}`);
-                    onCloseMobile();
-                  }}
-                >
-                  <p className="text-xs font-semibold text-slate-800 truncate">{chat.title}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500 truncate">{chat.preview}</p>
-                </a>
-              ))}
+              {chatStatus === 'ready' && filteredChats.length === 0 ? <p className="px-2 py-2 text-xs text-slate-500">No chats found.</p> : null}
+              {chatStatus === 'ready' && filteredChats.map((chat) => {
+                const isActive = location.pathname === '/quick-ask' && globalActiveChatId === chat.id;
+                const isRenaming = renamingChatId === chat.id;
+                const isSaving = savingChatId === chat.id;
+                const itemClass = isActive
+                  ? 'border-blue-200 bg-blue-50'
+                  : 'border-slate-200 bg-white hover:bg-slate-50';
+                return (
+                  <div key={chat.id} className={`group relative rounded-lg border transition-colors ${itemClass}`}>
+                    {isRenaming ? (
+                      <div className="w-full rounded-lg px-2.5 py-2 pr-20 text-left">
+                        <input
+                          type="text"
+                          value={renameDraft}
+                          maxLength={80}
+                          className="w-full rounded-md border border-blue-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          onChange={(event) => setRenameDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              void commitRename(chat.id, renameDraft);
+                            }
+                            if (event.key === 'Escape') {
+                              event.preventDefault();
+                              cancelRename();
+                            }
+                          }}
+                          disabled={isSaving}
+                        />
+                        <p className="mt-0.5 text-[11px] text-slate-500 truncate">{chat.preview}</p>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="w-full rounded-lg px-2.5 py-2 pr-20 text-left"
+                        onClick={() => openChat(chat.id)}
+                      >
+                        <p className="text-xs font-semibold text-slate-800 truncate">{chat.title}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500 truncate">{chat.preview}</p>
+                      </button>
+                    )}
+
+                    {isRenaming ? (
+                      <div className="absolute right-1 top-1 flex items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm">
+                        <button
+                          type="button"
+                          title="Save"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                          onClick={() => {
+                            void commitRename(chat.id, renameDraft);
+                          }}
+                          disabled={isSaving}
+                        >
+                          <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-check'} text-[10px]`}></i>
+                        </button>
+                        <button
+                          type="button"
+                          title="Cancel"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                          onClick={cancelRename}
+                          disabled={isSaving}
+                        >
+                          <i className="fas fa-times text-[10px]"></i>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="absolute right-1 top-1 hidden items-center gap-1 rounded-md border border-slate-200 bg-white/95 p-1 shadow-sm group-hover:flex group-focus-within:flex">
+                        <button
+                          type="button"
+                          title="Rename chat"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          onClick={() => startRename(chat)}
+                        >
+                          <i className="fas fa-pen text-[10px]"></i>
+                        </button>
+                        <button
+                          type="button"
+                          title="Delete chat"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+                          onClick={() => {
+                            requestDeleteChat(chat.id);
+                          }}
+                        >
+                          <i className="fas fa-trash text-[10px]"></i>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <a
-              href="/quick-ask?new=1"
+              href="/quick-ask"
               className="quick-ask-collapsed-add w-9 h-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-600"
               title="New chat"
               aria-label="New chat"
               onClick={(event) => {
                 event.preventDefault();
-                navigate('/quick-ask?new=1');
-                onCloseMobile();
+                openNewChat();
               }}
             >
               <i className="fas fa-plus text-[12px]" />
@@ -324,6 +585,62 @@ export function Sidebar({
         className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden transition-all duration-300 ${mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
         onClick={onCloseMobile}
       />
+
+      {pendingDeleteChatId ? (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close delete confirmation"
+            className="absolute inset-0 bg-slate-900/45 backdrop-blur-[1px]"
+            onClick={closeDeleteModal}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deleteChatDialogTitle"
+            className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                <i className="fas fa-trash text-xs"></i>
+              </div>
+              <div className="min-w-0">
+                <h3 id="deleteChatDialogTitle" className="text-sm font-semibold text-slate-900">Delete chat?</h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  {pendingDeleteChat?.title
+                    ? (
+                      <>
+                        <strong className="font-semibold text-slate-900">"{pendingDeleteChat.title}"</strong>
+                        {' '}will be permanently removed.
+                      </>
+                    )
+                    : 'This chat will be permanently removed.'}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                onClick={closeDeleteModal}
+                disabled={savingChatId === pendingDeleteChatId}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                onClick={() => {
+                  void confirmDeleteChat();
+                }}
+                disabled={savingChatId === pendingDeleteChatId}
+              >
+                {savingChatId === pendingDeleteChatId ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
