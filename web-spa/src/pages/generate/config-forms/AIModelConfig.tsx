@@ -13,6 +13,7 @@ function Field({ label, id, type = 'text', placeholder, value, onChange, readOnl
         <div className="input bg-slate-50 text-slate-500 text-sm font-mono">{value}</div>
       ) : (
         <input id={id} type={type} className="input" placeholder={placeholder} value={value}
+          autoComplete={type === 'password' ? 'new-password' : 'off'}
           onChange={(e) => onChange?.(e.target.value)} />
       )}
     </div>

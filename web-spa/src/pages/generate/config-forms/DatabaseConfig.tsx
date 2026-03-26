@@ -169,6 +169,7 @@ export function DatabaseConfig({ type }: DatabaseConfigProps) {
               id="dbPort"
               placeholder={defaultPort}
               className="input"
+              autoComplete="off"
               value={dbPort}
               onChange={(e) => setField('dbPort', e.target.value)}
             />
@@ -213,7 +214,7 @@ export function DatabaseConfig({ type }: DatabaseConfigProps) {
               <span id="dbPasswordLabel">{cfg.passwordLabel}</span>
             </label>
             <input
-              type="password"
+              type="password" autoComplete="new-password"
               id="dbPassword"
               placeholder="••••••••"
               className="input"

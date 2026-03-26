@@ -16,7 +16,7 @@ export function DiscordConfig() {
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Bot Token <span className="text-red-500">*</span></label>
           <input
-            type="password"
+            type="password" autoComplete="new-password"
             id="discordBotToken"
             className="input"
             placeholder="Bot token"

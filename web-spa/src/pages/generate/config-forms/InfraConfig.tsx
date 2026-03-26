@@ -9,7 +9,7 @@ function Field({ label, id, type = 'text', placeholder, value, onChange }: {
   return (
     <div>
       <label className="block text-xs font-bold text-slate-700 uppercase mb-2">{label}</label>
-      <input id={id} type={type} className="input" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+      <input id={id} type={type} className="input" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} autoComplete={type === 'password' ? 'new-password' : 'off'} />
     </div>
   );
 }

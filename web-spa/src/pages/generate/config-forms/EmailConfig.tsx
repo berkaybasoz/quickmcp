@@ -68,11 +68,11 @@ export function EmailConfig() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">IMAP Host <span className="text-red-500">*</span></label>
-              <input type="text" id="emailImapHost" placeholder="imap.gmail.com" className="input" value={emailImapHost} onChange={(e) => setField('emailImapHost', e.target.value)} />
+              <input type="text" autoComplete="off" id="emailImapHost" placeholder="imap.gmail.com" className="input" value={emailImapHost} onChange={(e) => setField('emailImapHost', e.target.value)} />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">IMAP Port</label>
-              <input type="number" id="emailImapPort" placeholder="993" className="input" value={emailImapPort} onChange={(e) => setField('emailImapPort', e.target.value)} />
+              <input type="number" autoComplete="off" id="emailImapPort" placeholder="993" className="input" value={emailImapPort} onChange={(e) => setField('emailImapPort', e.target.value)} />
             </div>
           </div>
         </div>
@@ -87,11 +87,11 @@ export function EmailConfig() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">SMTP Host <span className="text-red-500">*</span></label>
-              <input type="text" id="emailSmtpHost" placeholder="smtp.gmail.com" className="input" value={emailSmtpHost} onChange={(e) => setField('emailSmtpHost', e.target.value)} />
+              <input type="text" autoComplete="off" id="emailSmtpHost" placeholder="smtp.gmail.com" className="input" value={emailSmtpHost} onChange={(e) => setField('emailSmtpHost', e.target.value)} />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">SMTP Port</label>
-              <input type="number" id="emailSmtpPort" placeholder="587" className="input" value={emailSmtpPort} onChange={(e) => setField('emailSmtpPort', e.target.value)} />
+              <input type="number" autoComplete="off" id="emailSmtpPort" placeholder="587" className="input" value={emailSmtpPort} onChange={(e) => setField('emailSmtpPort', e.target.value)} />
             </div>
           </div>
         </div>
@@ -101,12 +101,12 @@ export function EmailConfig() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Username <span className="text-red-500">*</span></label>
-          <input type="text" id="emailUsername" placeholder="your.email@gmail.com" className="input" value={emailUsername} onChange={(e) => setField('emailUsername', e.target.value)} />
+          <input type="text" autoComplete="off" id="emailUsername" placeholder="your.email@gmail.com" className="input" value={emailUsername} onChange={(e) => setField('emailUsername', e.target.value)} />
           <p className="text-xs text-slate-500 mt-2">Usually your full email address.</p>
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Password <span className="text-red-500">*</span></label>
-          <input type="password" id="emailPassword" placeholder="App password or password" className="input" value={emailPassword} onChange={(e) => setField('emailPassword', e.target.value)} />
+          <input type="password" autoComplete="new-password" id="emailPassword" placeholder="App password or password" className="input" value={emailPassword} onChange={(e) => setField('emailPassword', e.target.value)} />
           <p className="text-xs text-slate-500 mt-2">For Gmail, use an App Password.</p>
         </div>
       </div>

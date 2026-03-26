@@ -57,12 +57,12 @@ export function GmailConfig() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Username <span className="text-red-500">*</span></label>
-          <input type="text" id="gmailUsername" placeholder="your.email@gmail.com" className="input" value={gmailUsername} onChange={(e) => setField('gmailUsername', e.target.value)} />
+          <input type="text" autoComplete="off" id="gmailUsername" placeholder="your.email@gmail.com" className="input" value={gmailUsername} onChange={(e) => setField('gmailUsername', e.target.value)} />
           <p className="text-xs text-slate-500 mt-2">Use your Gmail address.</p>
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Password <span className="text-red-500">*</span></label>
-          <input type="password" id="gmailPassword" placeholder="App password" className="input" value={gmailPassword} onChange={(e) => setField('gmailPassword', e.target.value)} />
+          <input type="password" autoComplete="new-password" id="gmailPassword" placeholder="App password" className="input" value={gmailPassword} onChange={(e) => setField('gmailPassword', e.target.value)} />
           <p className="text-xs text-slate-500 mt-2">Use a Gmail App Password.</p>
         </div>
       </div>
