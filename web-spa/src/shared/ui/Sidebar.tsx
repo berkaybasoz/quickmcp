@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
 import { useQuickAskChatsStore } from '../store/QuickAskChatsStore';
 import { useQuickAskStore } from '../store/QuickAskStore';
+import { useGenerateStore } from '../../pages/generate/store/useGenerateStore';
 
 type SidebarProps = {
   collapsed: boolean;
@@ -478,7 +479,9 @@ export function Sidebar({
                 aria-current={item.active ? 'page' : undefined}
                 onClick={(event) => {
                   event.preventDefault();
-                  navigate(item.href, item.href === '/generate' ? { state: { new: true } } : undefined);
+                  event.stopPropagation();
+                  if (item.href === '/generate') useGenerateStore.getState().resetForm();
+                  navigate(item.href);
                   onCloseMobile();
                 }}
               >

@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
 import { AppBar } from '../ui/AppBar';
 import { Sidebar } from '../ui/Sidebar';
+import { useGenerateStore } from '../../pages/generate/store/useGenerateStore';
 
 declare global {
   interface Window {
@@ -108,7 +109,8 @@ export function AppLayout() {
       if (newServerBtn) {
         event.preventDefault();
         event.stopPropagation();
-        navigate('/generate', { state: { new: true } });
+        useGenerateStore.getState().resetForm();
+        navigate('/generate');
         return;
       }
 
