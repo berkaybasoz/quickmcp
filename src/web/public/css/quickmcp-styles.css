@@ -1712,6 +1712,63 @@ html.dark body.howto-page {
   background-image: linear-gradient(135deg, rgb(15 23 42), rgb(2 6 23)) !important;
 }
 
+/* Dark mode: How to Use page tab/panel parity with archived template */
+html.dark body.howto-page .card {
+  border-color: rgba(71, 85, 105, 0.82) !important;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+}
+
+html.dark body.howto-page .border-slate-200,
+html.dark body.howto-page .border-slate-200\/60 {
+  border-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark body.howto-page #howtoTabsWrap {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)) !important;
+  border-color: rgba(71, 85, 105, 0.82) !important;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.4) !important;
+}
+
+html.dark body.howto-page #howtoTabsRow {
+  border-bottom-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark body.howto-page #howtoTabsRow .howto-tab-btn {
+  color: #94a3b8 !important;
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+}
+
+html.dark body.howto-page #howtoTabsRow .howto-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #93c5fd !important;
+}
+
+html.dark body.howto-page #howtoTabsRow .howto-tab-btn.border-r {
+  border-right-color: rgba(71, 85, 105, 0.82) !important;
+}
+
+html.dark body.howto-page #howtoTabsRow .howto-tab-btn.bg-blue-50\/50 {
+  background: rgba(30, 58, 138, 0.28) !important;
+  color: #bfdbfe !important;
+  border-bottom-color: rgba(96, 165, 250, 0.9) !important;
+}
+
+html.dark body.howto-page .howto-alert-tools {
+  background: rgba(127, 29, 29, 0.30) !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+html.dark body.howto-page .howto-alert-offline {
+  background: rgba(146, 64, 14, 0.30) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+
+html.dark body.howto-page .howto-alert-tools .text-slate-600,
+html.dark body.howto-page .howto-alert-offline .text-slate-600 {
+  color: #e2e8f0 !important;
+}
+
 /* Dark mode: Users page panels */
 html.dark body.users-page #createUserCard,
 html.dark body.users-page #usersListCard,
