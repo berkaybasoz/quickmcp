@@ -1,7 +1,7 @@
 import { Navigate, createBrowserRouter, useLocation } from 'react-router-dom';
 import { AppLayout } from '../shared/layout/AppLayout';
 import { AuthorizationPage } from '../pages/AuthorizationPage';
-import { GeneratePage } from '../pages/GeneratePage';
+import { GeneratePage } from '../pages/generate/GeneratePage';
 import { HowToUsePage } from '../pages/HowToUsePage';
 import { LandingPage } from '../pages/LandingPage';
 import { LoginPage } from '../pages/LoginPage';

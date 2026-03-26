@@ -94,18 +94,6 @@ function ensureExternalScript(src: string): Promise<void> {
 function initializeLegacyPage(pageFile: string) {
   const runtime = window as any;
 
-  if (pageFile === 'generate.html') {
-    runtime.setupEventListeners?.();
-    try { runtime.setupTemplateFilters?.(); } catch {}
-    runtime.setupFileUpload?.();
-    runtime.applySaasDataSourceRestrictions?.();
-    runtime.setupRouting?.();
-    runtime.handleInitialRoute?.();
-    runtime.toggleDataSourceFields?.();
-    runtime.updateWizardNavigation?.();
-    return;
-  }
-
   if (pageFile === 'manage-servers.html') {
     runtime.setupManageServersEventListeners?.();
     runtime.setupRouting?.();
