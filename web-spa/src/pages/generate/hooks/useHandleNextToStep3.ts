@@ -58,45 +58,46 @@ interface PreviewCardOpts {
   subtitle: string;
   details: Array<{ label: string; value: string }>;
   tools: string[];
-}
-
-function badge(text: string): string {
-  return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">${text}</span>`;
-}
-
-function detailRow(label: string, value: string): string {
-  if (!value) return '';
-  return `
-    <div class="flex justify-between gap-4 py-1 border-b border-slate-50 last:border-0">
-      <span class="text-xs text-slate-500 font-medium">${label}</span>
-      <span class="text-xs text-slate-700 font-mono truncate max-w-[240px]">${value}</span>
-    </div>`;
+  cardBg?: string; // optional override for outer card bg+border classes
 }
 
 function buildGenericPreviewHtml(opts: PreviewCardOpts): string {
-  const { icon, color, typeLabel, title, subtitle, details, tools } = opts;
-  const detailRows = details.map((d) => detailRow(d.label, d.value)).join('');
-  const toolBadges = tools.map(badge).join('');
+  const { icon, color, typeLabel, title, subtitle, details, tools, cardBg } = opts;
+  const outerCls = cardBg ?? 'bg-slate-50 border-2 border-slate-300';
+
+  const detailsHtml = details.filter((d) => d.value).map((d) => `
+    <div>
+      <span class="text-slate-500">${d.label}:</span>
+      <span class="ml-2 font-mono text-slate-700 break-all">${d.value}</span>
+    </div>`).join('');
+
+  const toolsHtml = tools.map((t) => `
+    <div class="flex items-start gap-2 text-sm">
+      <i class="fas fa-wrench text-slate-400 mt-0.5"></i>
+      <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t}</code>
+    </div>`).join('');
 
   return `
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-  <div class="flex items-center gap-4 p-5 border-b border-slate-100">
-    <div class="w-12 h-12 rounded-xl bg-${color}-100 flex items-center justify-center flex-shrink-0">
-      <i class="fas fa-${icon} text-${color}-600 text-xl"></i>
+<div class="space-y-4">
+  <div class="${outerCls} rounded-xl p-6">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 rounded-lg bg-${color}-100 text-${color}-600 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-${icon} text-2xl"></i>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-bold text-slate-900 text-lg mb-1">${typeLabel} — ${title}</h3>
+        <p class="text-slate-700 mb-3">${subtitle}</p>
+        ${detailsHtml ? `
+        <div class="bg-white rounded-lg p-4 mb-3 border border-slate-200">
+          <div class="grid grid-cols-1 gap-2 text-sm">${detailsHtml}</div>
+        </div>` : ''}
+        ${tools.length ? `
+        <div class="bg-white rounded-lg p-4 border border-slate-200">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label>
+          <div class="grid grid-cols-2 gap-2">${toolsHtml}</div>
+        </div>` : ''}
+      </div>
     </div>
-    <div class="min-w-0">
-      <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${typeLabel}</div>
-      <h3 class="text-lg font-bold text-slate-900">${title}</h3>
-      <p class="text-sm text-slate-500">${subtitle}</p>
-    </div>
-  </div>
-  <div class="p-5 space-y-4">
-    ${detailRows ? `<div class="space-y-0.5 text-sm">${detailRows}</div>` : ''}
-    ${tools.length ? `
-    <div>
-      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Generated Tools</p>
-      <div class="flex flex-wrap gap-1.5">${toolBadges}</div>
-    </div>` : ''}
   </div>
 </div>`;
 }
@@ -108,45 +109,132 @@ export function buildDbTablePreviewHtml(parsedData: any[]): string {
     return '<p class="text-slate-500 text-sm">No tables found.</p>';
   }
 
-  const DEFAULT_TOOLS = ['get', 'create', 'update', 'delete', 'count', 'min', 'max', 'sum', 'avg'];
+  const TOOL_COLORS: Record<string, string> = {
+    get: 'text-blue-600 border-blue-300 focus:ring-blue-500',
+    create: 'text-green-600 border-green-300 focus:ring-green-500',
+    update: 'text-yellow-600 border-yellow-300 focus:ring-yellow-500',
+    delete: 'text-red-600 border-red-300 focus:ring-red-500',
+    count: 'text-purple-600 border-purple-300 focus:ring-purple-500',
+    min: 'text-indigo-600 border-indigo-300 focus:ring-indigo-500',
+    max: 'text-pink-600 border-pink-300 focus:ring-pink-500',
+    sum: 'text-teal-600 border-teal-300 focus:ring-teal-500',
+    avg: 'text-orange-600 border-orange-300 focus:ring-orange-500',
+  };
 
-  const rows = parsedData.map((table: any, i: number) => {
-    const toolCheckboxes = DEFAULT_TOOLS.map((t) => `
-      <label class="flex items-center gap-1 text-xs text-slate-600 cursor-pointer select-none">
-        <input type="checkbox" id="tool-${t}-${i}" checked class="w-3 h-3 accent-blue-600" />
-        ${t}
-      </label>`).join('');
-
-    return `
-    <div class="border border-slate-200 rounded-lg overflow-hidden mb-3">
-      <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 cursor-pointer" onclick="window.toggleTableDetails(${i})">
-        <input type="checkbox" id="table-select-${i}" data-table-name="${table.name || table.tableName || ''}" checked
-               class="w-4 h-4 accent-blue-600 flex-shrink-0" onclick="event.stopPropagation();window.toggleTableSelection(${i})" />
-        <span class="font-semibold text-slate-800 flex-1 text-sm">${table.name || table.tableName || 'Table ' + i}</span>
-        <span class="text-xs text-slate-400">${(table.columns || []).length} columns</span>
-        <i class="fas fa-chevron-down text-xs text-slate-400 transition-transform" id="table-chevron-${i}"></i>
-      </div>
-      <div id="table-details-${i}" class="px-4 py-3 hidden">
-        ${table.columns && table.columns.length ? `
-        <div class="mb-3">
-          <p class="text-xs font-semibold text-slate-500 mb-1.5">Columns</p>
-          <div class="flex flex-wrap gap-1.5">
-            ${table.columns.map((c: any) => `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">${typeof c === 'string' ? c : c.name || c.column_name || c}</span>`).join('')}
-          </div>
-        </div>` : ''}
+  let html = '<div class="space-y-4">';
+  html += `
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <div class="flex items-start space-x-3">
+        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
         <div>
-          <p class="text-xs font-semibold text-slate-500 mb-1.5">Tools</p>
-          <div class="flex flex-wrap gap-3">${toolCheckboxes}</div>
+          <h3 class="font-semibold text-blue-900 mb-1">Configure Your MCP Server</h3>
+          <p class="text-blue-800 text-sm">Select which tables to include and choose which tools to generate for each table. All tools are enabled by default.</p>
         </div>
       </div>
     </div>`;
-  }).join('');
 
-  return `
-<div class="mb-3 flex items-center justify-between">
-  <h4 class="font-bold text-slate-900">${parsedData.length} table${parsedData.length !== 1 ? 's' : ''} detected</h4>
-</div>
-${rows}`;
+  parsedData.forEach((data: any, index: number) => {
+    const tableName = data.tableName || `Table ${index + 1}`;
+    const panelId = `table-panel-${index}`;
+    const headers: string[] = data.headers || [];
+    const rowCount: number = data.metadata?.rowCount ?? (data.rows?.length ?? 0);
+    const columnCount: number = data.metadata?.columnCount ?? headers.length;
+    const dataTypes: Record<string, string> = data.metadata?.dataTypes || {};
+
+    const numericColumns = headers.filter((h: string) => {
+      const t = (dataTypes[h] || '').toLowerCase();
+      return t === 'integer' || t === 'number' || t === 'float' || t === 'decimal' || t === 'numeric';
+    });
+
+    const BASIC_TOOLS = ['get', 'create', 'update', 'delete', 'count'];
+    const AGG_TOOLS = ['min', 'max', 'sum', 'avg'];
+    const tools = numericColumns.length > 0 ? [...BASIC_TOOLS, ...AGG_TOOLS] : BASIC_TOOLS;
+
+    const toolCheckboxes = tools.map((t) => {
+      const cls = TOOL_COLORS[t] || 'text-gray-700 border-gray-300';
+      return `
+        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg hover:bg-white transition-colors">
+          <input type="checkbox" id="tool-${t}-${index}" class="w-4 h-4 ${cls} border rounded focus:ring-2" checked>
+          <span class="text-sm font-medium text-gray-700">${t.toUpperCase()}</span>
+        </label>`;
+    }).join('');
+
+    const rows: any[][] = data.rows || [];
+    let tableDataHtml = '';
+    if (headers.length > 0) {
+      const headerCells = headers.map((h: string) =>
+        `<th class="px-3 py-2 text-left font-medium text-gray-700">${h} <span class="text-xs text-gray-500">(${dataTypes[h] || 'string'})</span></th>`
+      ).join('');
+      const dataRows = rows.slice(0, 5).map((row: any[], ri: number) =>
+        `<tr class="${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">${row.map((cell: any) => `<td class="px-3 py-2 text-gray-900">${cell ?? ''}</td>`).join('')}</tr>`
+      ).join('');
+      const moreRow = rows.length > 5
+        ? `<tr><td colspan="${headers.length}" class="px-3 py-2 text-center text-gray-500 italic">... and ${rows.length - 5} more rows</td></tr>`
+        : '';
+      tableDataHtml = `
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead><tr class="bg-gray-100">${headerCells}</tr></thead>
+            <tbody>${dataRows}${moreRow}</tbody>
+          </table>
+        </div>`;
+    }
+
+    html += `
+      <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4 table-selection-panel">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="table-select-${index}" data-table-name="${tableName}"
+                     class="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                     checked onchange="window.toggleTableSelection(${index})">
+              <div>
+                <h4 class="font-semibold text-gray-900 text-lg">${tableName}</h4>
+                <p class="text-sm text-gray-600">${rowCount} rows, ${columnCount} columns</p>
+              </div>
+            </label>
+            <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="window.toggleTableDetails('${panelId}')">
+              <i id="${panelId}-icon" class="fas fa-chevron-down transition-transform"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="table-tools-${index}" class="bg-blue-50 p-4 border-b border-gray-200">
+          <h5 class="font-medium text-gray-900 mb-3">
+            <i class="fas fa-tools mr-2 text-blue-500"></i>Select Tools to Generate
+          </h5>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            ${toolCheckboxes}
+          </div>
+          ${numericColumns.length > 0 ? `
+          <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-sm text-green-800">
+              <i class="fas fa-calculator mr-2"></i>
+              <strong>Aggregate tools available:</strong> This table has ${numericColumns.length} numeric column(s):
+              <span class="font-mono">${numericColumns.join(', ')}</span>
+            </p>
+          </div>` : ''}
+          <div class="mt-4 flex items-center space-x-4">
+            <button onclick="window.selectAllTools(${index})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              <i class="fas fa-check-square mr-1"></i>Select All
+            </button>
+            <button onclick="window.deselectAllTools(${index})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+              <i class="fas fa-square mr-1"></i>Deselect All
+            </button>
+            <button onclick="window.selectOnlyBasicTools(${index})" class="text-sm text-green-600 hover:text-green-800 font-medium">
+              <i class="fas fa-check mr-1"></i>Basic Only
+            </button>
+          </div>
+        </div>
+
+        <div id="${panelId}" class="p-4 hidden">
+          ${tableDataHtml}
+        </div>
+      </div>`;
+  });
+
+  html += '</div>';
+  return html;
 }
 
 export function buildRestEndpointsPreviewHtml(parsedData: any[]): string {
@@ -154,33 +242,36 @@ export function buildRestEndpointsPreviewHtml(parsedData: any[]): string {
     return '<p class="text-slate-500 text-sm">No endpoints found.</p>';
   }
 
-  const methodColor: Record<string, string> = {
-    GET: 'bg-green-100 text-green-700',
-    POST: 'bg-blue-100 text-blue-700',
-    PUT: 'bg-amber-100 text-amber-700',
-    PATCH: 'bg-orange-100 text-orange-700',
-    DELETE: 'bg-red-100 text-red-700',
-  };
-
   const rows = parsedData.map((ep: any, i: number) => {
     const method = (ep.method || 'GET').toUpperCase();
-    const colorCls = methodColor[method] || 'bg-slate-100 text-slate-700';
     return `
-    <div class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
+    <label class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
       <input type="checkbox" id="rest-endpoint-${i}" data-endpoint-path="${ep.path || ''}" data-endpoint-method="${method}" checked
-             class="w-4 h-4 accent-blue-600 flex-shrink-0" />
-      <span class="text-xs font-bold px-2 py-0.5 rounded ${colorCls} font-mono flex-shrink-0">${method}</span>
-      <span class="text-sm font-mono text-slate-700 truncate">${ep.path || ep.operationId || ''}</span>
-      ${ep.summary ? `<span class="text-xs text-slate-400 ml-auto truncate max-w-[200px]">${ep.summary}</span>` : ''}
-    </div>`;
+             class="w-4 h-4 text-blue-600 border-gray-300 rounded">
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-slate-100 text-slate-700">${method}</span>
+      <span class="font-mono text-sm text-slate-800 truncate">${ep.path || ep.operationId || ''}</span>
+      ${ep.summary ? `<span class="text-xs text-slate-500 truncate">${ep.summary}</span>` : ''}
+    </label>`;
   }).join('');
 
   return `
-<div class="mb-3">
-  <h4 class="font-bold text-slate-900">${parsedData.length} endpoint${parsedData.length !== 1 ? 's' : ''} detected</h4>
-</div>
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-  <div class="px-4 py-3 divide-y divide-slate-50">${rows}</div>
+<div class="space-y-4">
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+    <div class="flex items-start space-x-3">
+      <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+      <div>
+        <h3 class="font-semibold text-blue-900 mb-1">Configure Your MCP Server</h3>
+        <p class="text-blue-800 text-sm">Select which endpoints to include as tools in your MCP server.</p>
+      </div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
+    <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+      <h4 class="font-semibold text-gray-900 text-lg">Discovered Endpoints</h4>
+      <p class="text-sm text-gray-600">Select endpoints to generate as tools.</p>
+    </div>
+    <div class="p-4 space-y-2">${rows}</div>
+  </div>
 </div>`;
 }
 
@@ -191,27 +282,79 @@ export function buildConnectionGroupPreviewHtml(parsedData: any[], prefix: strin
     return '<p class="text-slate-500 text-sm">No groups found.</p>';
   }
 
-  const rows = parsedData.map((group: any, i: number) => {
-    const toolCheckboxes = (group.tools || []).map((t: string) => `
-      <label class="flex items-center gap-1 text-xs text-slate-600 cursor-pointer select-none">
-        <input type="checkbox" data-tool-name="${t}" checked class="w-3 h-3 accent-blue-600" />
-        ${t}
-      </label>`).join('');
+  const infoText: Record<string, { title: string; subtitle: string }> = {
+    redis: { title: 'Configure Redis Tool Groups', subtitle: 'Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, DIAGNOSTICS, STRINGS.' },
+    hazelcast: { title: 'Configure Hazelcast Tool Groups', subtitle: 'Select group(s) and specific tools to include in your MCP server. Example groups: MAPS, QUEUES, SETS, LISTS, TOPICS, DIAGNOSTICS.' },
+    kafka: { title: 'Configure Kafka Tool Groups', subtitle: 'Select group(s) and specific tools to include in your MCP server.' },
+  };
+  const info = infoText[prefix] || { title: 'Configure Tool Groups', subtitle: 'Select groups and tools to include.' };
 
-    return `
-    <div class="border border-slate-200 rounded-lg overflow-hidden mb-3">
-      <div class="flex items-center gap-3 px-4 py-3 bg-slate-50">
-        <input type="checkbox" id="${prefix}-group-select-${i}" checked class="w-4 h-4 accent-blue-600 flex-shrink-0" />
-        <span class="font-semibold text-slate-800 flex-1 text-sm">${group.name || group.group || 'Group ' + i}</span>
+  let html = `<div class="space-y-4">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <div class="flex items-start space-x-3">
+        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+        <div>
+          <h3 class="font-semibold text-blue-900 mb-1">${info.title}</h3>
+          <p class="text-blue-800 text-sm">${info.subtitle}</p>
+        </div>
       </div>
-      ${toolCheckboxes ? `
-      <div id="${prefix}-group-tools-${i}" class="px-4 py-3">
-        <div class="flex flex-wrap gap-3">${toolCheckboxes}</div>
-      </div>` : ''}
     </div>`;
-  }).join('');
 
-  return `<div class="mb-3"><h4 class="font-bold text-slate-900">${parsedData.length} group${parsedData.length !== 1 ? 's' : ''} detected</h4></div>${rows}`;
+  parsedData.forEach((group: any, i: number) => {
+    const groupName = group.tableName || group.name || group.group || `GROUP_${i + 1}`;
+    const rows: any[][] = Array.isArray(group.rows) ? group.rows : [];
+    const panelId = `${prefix}-group-tools-${i}`;
+    const iconId = `${prefix}-group-icon-${i}`;
+
+    const toolItems = rows.map((row: any[], ti: number) => {
+      const toolName = String(row?.[0] || '').trim();
+      const toolDesc = String(row?.[1] || '');
+      return `
+        <label class="flex items-start gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors">
+          <input type="checkbox" id="${prefix}-tool-${i}-${ti}" data-tool-name="${toolName}" checked
+                 class="w-4 h-4 text-blue-600 border-gray-300 rounded mt-0.5">
+          <div>
+            <div class="text-sm font-mono text-gray-900">${toolName}</div>
+            ${toolDesc ? `<div class="text-xs text-gray-600">${toolDesc}</div>` : ''}
+          </div>
+        </label>`;
+    }).join('');
+
+    html += `
+      <div class="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden mb-4">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="${prefix}-group-select-${i}" checked
+                     onchange="window.toggle${prefix.charAt(0).toUpperCase() + prefix.slice(1)}GroupSelection(${i})"
+                     class="w-4 h-4 text-blue-600 border-gray-300 rounded">
+              <div>
+                <h4 class="font-semibold text-gray-900 text-lg">${groupName}</h4>
+                <p class="text-sm text-gray-600">${rows.length} tool(s)</p>
+              </div>
+            </label>
+            <button class="text-gray-400 hover:text-gray-700 transition-colors"
+                    onclick="window.toggleGroupDetails('${panelId}', '${iconId}')" title="Expand/Collapse">
+              <i id="${iconId}" class="fas fa-chevron-down transition-transform"></i>
+            </button>
+          </div>
+        </div>
+        <div id="${panelId}" class="hidden p-4 bg-blue-50 border-b border-gray-200 space-y-2">
+          ${toolItems}
+          <div class="pt-2 flex items-center gap-4">
+            <button onclick="window.selectAllGroupTools('${prefix}', ${i})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              <i class="fas fa-check-square mr-1"></i>Select All
+            </button>
+            <button onclick="window.deselectAllGroupTools('${prefix}', ${i})" class="text-sm text-gray-600 hover:text-gray-800 font-medium">
+              <i class="fas fa-square mr-1"></i>Deselect All
+            </button>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  html += '</div>';
+  return html;
 }
 
 // ─── Direct data source builders ─────────────────────────────────────────────
@@ -235,13 +378,14 @@ function card(type: string, s: S): DirectResult {
       dataSource: ds,
       parsedData: null,
       html: buildGenericPreviewHtml({
-        icon: 'globe', color: 'cyan', typeLabel: 'Web Page',
-        title: s.webUrl || 'Web Page', subtitle: 'Fetches and scrapes a web page',
+        icon: 'rocket', color: 'blue', typeLabel: 'Web Page',
+        title: s.webUrl || 'Web Page', subtitle: 'This server will fetch HTML content from the specified URL at runtime.',
+        cardBg: 'bg-indigo-50 border-2 border-indigo-200',
         details: [
           { label: 'URL', value: s.webUrl },
           { label: 'Alias', value: s.webToolAlias },
         ],
-        tools: ['get_page_content', 'extract_links', 'screenshot'],
+        tools: ['fetch_webpage'],
       }),
     };
   }
@@ -260,13 +404,14 @@ function card(type: string, s: S): DirectResult {
       dataSource: ds,
       parsedData: null,
       html: buildGenericPreviewHtml({
-        icon: 'terminal', color: 'slate', typeLabel: 'cURL',
-        title: ds.url || 'cURL Request', subtitle: `${ds.method} request`,
+        icon: 'terminal', color: 'sky', typeLabel: 'cURL',
+        title: ds.url || 'cURL Request', subtitle: 'This server will generate a single tool to execute the configured cURL request.',
+        cardBg: 'bg-sky-50 border-2 border-sky-200',
         details: [
-          { label: 'URL', value: ds.url },
           { label: 'Method', value: ds.method },
+          { label: 'URL', value: ds.url },
         ],
-        tools: ['execute_request'],
+        tools: ['execute_curl_request'],
       }),
     };
   }
@@ -341,7 +486,7 @@ function card(type: string, s: S): DirectResult {
 
   // ── MongoDB ──────────────────────────────────────────────────────────────────
   if (type === T.MongoDB) {
-    const ds = { type, name: 'MongoDB', host: s.mongoHost, port: s.mongoPort, database: s.mongoDatabase, username: s.mongoUsername, password: s.mongoPassword, authSource: s.mongoAuthSource };
+    const ds = { type, name: 'MongoDB', host: s.mongoHost, port: Number(s.mongoPort), database: s.mongoDatabase, username: s.mongoUsername, password: s.mongoPassword, authSource: s.mongoAuthSource };
     return {
       dataSource: ds,
       parsedData: null,
@@ -395,7 +540,7 @@ function card(type: string, s: S): DirectResult {
 
   // ── Email / Gmail ────────────────────────────────────────────────────────────
   if (type === T.Email) {
-    const ds = { type, name: 'Email', mode: s.emailMode, imapHost: s.emailImapHost, imapPort: s.emailImapPort, smtpHost: s.emailSmtpHost, smtpPort: s.emailSmtpPort, username: s.emailUsername, password: s.emailPassword, secure: s.emailSecure };
+    const ds = { type, name: 'Email', mode: s.emailMode, imapHost: s.emailImapHost, imapPort: Number(s.emailImapPort), smtpHost: s.emailSmtpHost, smtpPort: Number(s.emailSmtpPort), username: s.emailUsername, password: s.emailPassword, secure: s.emailSecure };
     return {
       dataSource: ds,
       parsedData: null,
@@ -413,7 +558,7 @@ function card(type: string, s: S): DirectResult {
   }
 
   if (type === T.Gmail) {
-    const ds = { type, name: 'Gmail', mode: s.gmailMode, imapHost: 'imap.gmail.com', imapPort: '993', smtpHost: 'smtp.gmail.com', smtpPort: '587', username: s.gmailUsername, password: s.gmailPassword, secure: s.gmailSecure };
+    const ds = { type, name: 'Gmail', mode: s.gmailMode, imapHost: 'imap.gmail.com', imapPort: 993, smtpHost: 'smtp.gmail.com', smtpPort: 587, username: s.gmailUsername, password: s.gmailPassword, secure: s.gmailSecure };
     return {
       dataSource: ds,
       parsedData: null,
@@ -542,7 +687,7 @@ function card(type: string, s: S): DirectResult {
 
   // ── FTP / LocalFS ────────────────────────────────────────────────────────────
   if (type === T.Ftp) {
-    const ds = { type, name: 'FTP', host: s.ftpHost, port: s.ftpPort, username: s.ftpUsername, password: s.ftpPassword, basePath: s.ftpBasePath, secure: s.ftpSecure };
+    const ds = { type, name: 'FTP', host: s.ftpHost, port: Number(s.ftpPort), username: s.ftpUsername, password: s.ftpPassword, basePath: s.ftpBasePath, secure: s.ftpSecure };
     return {
       dataSource: ds,
       parsedData: null,
@@ -659,7 +804,7 @@ function card(type: string, s: S): DirectResult {
   }
 
   if (type === T.Telegram) {
-    const ds = { type, name: 'Telegram', baseUrl: s.telegramBaseUrl, botToken: s.telegramBotToken, chatId: s.telegramChatId };
+    const ds = { type, name: 'Telegram', baseUrl: s.telegramBaseUrl, botToken: s.telegramBotToken, defaultChatId: s.telegramChatId };
     return {
       dataSource: ds, parsedData: null,
       html: buildGenericPreviewHtml({ icon: 'telegram', color: 'blue', typeLabel: 'Telegram', title: 'Telegram Bot', subtitle: s.telegramChatId ? `Default chat: ${s.telegramChatId}` : 'Telegram Bot API', details: [{ label: 'Base URL', value: s.telegramBaseUrl }], tools: ['get_me', 'get_updates', 'send_message'] }),
@@ -755,19 +900,19 @@ function card(type: string, s: S): DirectResult {
 
   // ── AI Models ────────────────────────────────────────────────────────────────
   if (type === T.OpenAI) {
-    const ds = { type, name: 'OpenAI', apiKey: s.openaiApiKey, model: s.openaiModel };
+    const ds = { type, name: 'OpenAI', apiKey: s.openaiApiKey, defaultModel: s.openaiModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'green', typeLabel: 'OpenAI', title: `OpenAI — ${s.openaiModel}`, subtitle: 'Access GPT models', details: [{ label: 'Model', value: s.openaiModel }], tools: ['chat_completion', 'text_completion', 'create_image', 'create_embedding', 'list_models'] }) };
   }
   if (type === T.Claude) {
-    const ds = { type, name: 'Claude', apiKey: s.claudeApiKey, model: s.claudeModel, apiVersion: s.claudeApiVersion };
+    const ds = { type, name: 'Claude', apiKey: s.claudeApiKey, defaultModel: s.claudeModel, apiVersion: s.claudeApiVersion };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'orange', typeLabel: 'Claude (Anthropic)', title: `Claude — ${s.claudeModel}`, subtitle: 'Access Anthropic Claude models', details: [{ label: 'Model', value: s.claudeModel }, { label: 'API Version', value: s.claudeApiVersion }], tools: ['chat', 'count_tokens', 'list_models'] }) };
   }
   if (type === T.Gemini) {
-    const ds = { type, name: 'Gemini', apiKey: s.geminiApiKey, model: s.geminiModel };
+    const ds = { type, name: 'Gemini', apiKey: s.geminiApiKey, defaultModel: s.geminiModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'blue', typeLabel: 'Google Gemini', title: `Gemini — ${s.geminiModel}`, subtitle: 'Access Google Gemini models', details: [{ label: 'Model', value: s.geminiModel }], tools: ['generate_content', 'chat', 'embed_content', 'list_models'] }) };
   }
   if (type === T.Grok) {
-    const ds = { type, name: 'Grok', apiKey: s.grokApiKey, model: s.grokModel };
+    const ds = { type, name: 'Grok', apiKey: s.grokApiKey, defaultModel: s.grokModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'slate', typeLabel: 'Grok (xAI)', title: `Grok — ${s.grokModel}`, subtitle: 'Access xAI Grok models', details: [{ label: 'Model', value: s.grokModel }], tools: ['chat_completion', 'list_models'] }) };
   }
   if (type === T.FalAI) {
@@ -779,11 +924,11 @@ function card(type: string, s: S): DirectResult {
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'yellow', typeLabel: 'Hugging Face', title: 'Hugging Face', subtitle: s.huggingfaceDefaultModel || 'Inference API', details: [{ label: 'Base URL', value: s.huggingfaceBaseUrl }, { label: 'Default Model', value: s.huggingfaceDefaultModel }], tools: ['text_generation', 'text_classification', 'image_classification', 'summarization', 'translation'] }) };
   }
   if (type === T.Llama) {
-    const ds = { type, name: 'Llama (Ollama)', baseUrl: s.llamaBaseUrl, model: s.llamaModel };
+    const ds = { type, name: 'Llama (Ollama)', baseUrl: s.llamaBaseUrl, defaultModel: s.llamaModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'orange', typeLabel: 'Llama (Ollama)', title: `Llama — ${s.llamaModel}`, subtitle: 'Local Llama via Ollama', details: [{ label: 'Base URL', value: s.llamaBaseUrl }, { label: 'Model', value: s.llamaModel }], tools: ['chat', 'generate', 'list_models', 'pull_model'] }) };
   }
   if (type === T.DeepSeek) {
-    const ds = { type, name: 'DeepSeek', baseUrl: s.deepseekBaseUrl, apiKey: s.deepseekApiKey, model: s.deepseekModel };
+    const ds = { type, name: 'DeepSeek', baseUrl: s.deepseekBaseUrl, apiKey: s.deepseekApiKey, defaultModel: s.deepseekModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'blue', typeLabel: 'DeepSeek', title: `DeepSeek — ${s.deepseekModel}`, subtitle: 'Access DeepSeek AI models', details: [{ label: 'Model', value: s.deepseekModel }], tools: ['chat_completion', 'list_models'] }) };
   }
   if (type === T.AzureOpenAI) {
@@ -791,31 +936,31 @@ function card(type: string, s: S): DirectResult {
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'blue', typeLabel: 'Azure OpenAI', title: `Azure OpenAI — ${s.azureOpenAIDeployment || 'deployment'}`, subtitle: s.azureOpenAIBaseUrl || 'Azure Cognitive Services', details: [{ label: 'Deployment', value: s.azureOpenAIDeployment }, { label: 'API Version', value: s.azureOpenAIApiVersion }], tools: ['chat_completion', 'text_completion', 'create_embedding', 'create_image'] }) };
   }
   if (type === T.Mistral) {
-    const ds = { type, name: 'Mistral AI', baseUrl: s.mistralBaseUrl, apiKey: s.mistralApiKey, model: s.mistralModel };
+    const ds = { type, name: 'Mistral AI', baseUrl: s.mistralBaseUrl, apiKey: s.mistralApiKey, defaultModel: s.mistralModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'orange', typeLabel: 'Mistral AI', title: `Mistral — ${s.mistralModel}`, subtitle: 'Access Mistral AI models', details: [{ label: 'Model', value: s.mistralModel }], tools: ['chat_completion', 'list_models'] }) };
   }
   if (type === T.Cohere) {
-    const ds = { type, name: 'Cohere', baseUrl: s.cohereBaseUrl, apiKey: s.cohereApiKey, model: s.cohereModel };
+    const ds = { type, name: 'Cohere', baseUrl: s.cohereBaseUrl, apiKey: s.cohereApiKey, defaultModel: s.cohereModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'violet', typeLabel: 'Cohere', title: `Cohere — ${s.cohereModel}`, subtitle: 'Access Cohere AI models', details: [{ label: 'Model', value: s.cohereModel }], tools: ['chat', 'generate', 'embed', 'rerank', 'classify'] }) };
   }
   if (type === T.Perplexity) {
-    const ds = { type, name: 'Perplexity AI', baseUrl: s.perplexityBaseUrl, apiKey: s.perplexityApiKey, model: s.perplexityModel };
+    const ds = { type, name: 'Perplexity AI', baseUrl: s.perplexityBaseUrl, apiKey: s.perplexityApiKey, defaultModel: s.perplexityModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'search', color: 'blue', typeLabel: 'Perplexity AI', title: `Perplexity — ${s.perplexityModel}`, subtitle: 'AI-powered search and answers', details: [{ label: 'Model', value: s.perplexityModel }], tools: ['chat_completion', 'list_models'] }) };
   }
   if (type === T.Together) {
-    const ds = { type, name: 'Together AI', baseUrl: s.togetherBaseUrl, apiKey: s.togetherApiKey, model: s.togetherModel };
+    const ds = { type, name: 'Together AI', baseUrl: s.togetherBaseUrl, apiKey: s.togetherApiKey, defaultModel: s.togetherModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'blue', typeLabel: 'Together AI', title: s.togetherModel ? `Together — ${s.togetherModel}` : 'Together AI', subtitle: 'Access open-source models via Together', details: [{ label: 'Model', value: s.togetherModel }], tools: ['chat_completion', 'completions', 'list_models'] }) };
   }
   if (type === T.Fireworks) {
-    const ds = { type, name: 'Fireworks AI', baseUrl: s.fireworksBaseUrl, apiKey: s.fireworksApiKey, model: s.fireworksModel };
+    const ds = { type, name: 'Fireworks AI', baseUrl: s.fireworksBaseUrl, apiKey: s.fireworksApiKey, defaultModel: s.fireworksModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'fire', color: 'red', typeLabel: 'Fireworks AI', title: s.fireworksModel ? `Fireworks — ${s.fireworksModel}` : 'Fireworks AI', subtitle: 'Fast inference for open-source models', details: [{ label: 'Model', value: s.fireworksModel }], tools: ['chat_completion', 'completions', 'list_models'] }) };
   }
   if (type === T.Groq) {
-    const ds = { type, name: 'Groq', baseUrl: s.groqBaseUrl, apiKey: s.groqApiKey, model: s.groqModel };
+    const ds = { type, name: 'Groq', baseUrl: s.groqBaseUrl, apiKey: s.groqApiKey, defaultModel: s.groqModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'bolt', color: 'orange', typeLabel: 'Groq', title: `Groq — ${s.groqModel}`, subtitle: 'Ultra-fast LLM inference', details: [{ label: 'Model', value: s.groqModel }], tools: ['chat_completion', 'list_models'] }) };
   }
   if (type === T.OpenRouter) {
-    const ds = { type, name: 'OpenRouter', baseUrl: s.openrouterBaseUrl, apiKey: s.openrouterApiKey, model: s.openrouterModel };
+    const ds = { type, name: 'OpenRouter', baseUrl: s.openrouterBaseUrl, apiKey: s.openrouterApiKey, defaultModel: s.openrouterModel };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'route', color: 'violet', typeLabel: 'OpenRouter', title: s.openrouterModel ? `OpenRouter — ${s.openrouterModel}` : 'OpenRouter', subtitle: 'Access multiple AI models', details: [{ label: 'Model', value: s.openrouterModel }], tools: ['chat_completion', 'list_models'] }) };
   }
 
@@ -915,7 +1060,7 @@ function card(type: string, s: S): DirectResult {
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'book', color: 'blue', typeLabel: 'Confluence', title: s.confluenceHost || 'Confluence', subtitle: s.confluenceEmail || '', details: [{ label: 'Host', value: s.confluenceHost }, { label: 'Email', value: s.confluenceEmail }], tools: ['list_spaces', 'get_space', 'list_pages', 'get_page', 'create_page', 'update_page', 'search'] }) };
   }
   if (type === T.Notion) {
-    const ds = { type, name: 'Notion', baseUrl: s.notionBaseUrl, version: s.notionVersion, accessToken: s.notionAccessToken };
+    const ds = { type, name: 'Notion', baseUrl: s.notionBaseUrl, notionVersion: s.notionVersion, accessToken: s.notionAccessToken };
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'book-open', color: 'slate', typeLabel: 'Notion', title: 'Notion', subtitle: `API version: ${s.notionVersion}`, details: [{ label: 'Base URL', value: s.notionBaseUrl }, { label: 'Version', value: s.notionVersion }], tools: ['search', 'get_page', 'get_database', 'query_database', 'create_page', 'update_page'] }) };
   }
   if (type === T.Dropbox) {
@@ -979,9 +1124,9 @@ export function useHandleNextToStep3() {
             connection: {
               type,
               host: store.dbHost,
-              port: store.dbPort,
-              db: store.dbName,
-              user: store.dbUser,
+              port: Number(store.dbPort),
+              database: store.dbName,
+              username: store.dbUser,
               password: store.dbPassword,
             },
           });
@@ -990,9 +1135,11 @@ export function useHandleNextToStep3() {
           headers['Content-Type'] = 'application/json';
           body = JSON.stringify({
             type,
-            host: store.dbHost,
-            port: store.dbPort,
-            password: store.dbPassword,
+            dbHost: store.dbHost,
+            dbPort: Number(store.dbPort),
+            dbName: store.dbName,
+            dbUser: store.dbUser,
+            dbPassword: store.dbPassword,
           });
         }
 
@@ -1003,8 +1150,28 @@ export function useHandleNextToStep3() {
           throw new Error(data.error || 'Parse failed');
         }
 
-        const parsedData: any[] = data.tables || data.endpoints || data.groups || [];
-        store.setCurrentDataSource({ type, host: store.dbHost, port: store.dbPort, db: store.dbName, user: store.dbUser, password: store.dbPassword, swaggerUrl: store.swaggerUrl });
+        const parsedData: any[] = data.data?.parsedData || [];
+
+        // Build currentDataSource in the format generateApi.ts expects per type
+        let currentDs: any;
+        if (type === DataSourceType.Rest) {
+          currentDs = { type, swaggerUrl: store.swaggerUrl };
+        } else if (type === DataSourceType.Redis) {
+          currentDs = { type, host: store.dbHost, port: Number(store.dbPort), database: store.dbName, username: store.dbUser, password: store.dbPassword };
+        } else if (type === DataSourceType.Hazelcast) {
+          currentDs = { type, host: store.dbHost, port: Number(store.dbPort), clusterName: store.dbName, username: store.dbUser, password: store.dbPassword };
+        } else if (type === DataSourceType.Kafka) {
+          currentDs = { type, host: store.dbHost, port: Number(store.dbPort), topic: store.dbName, username: store.dbUser, password: store.dbPassword };
+        } else if (isDbType) {
+          // SQL types: generateApi reads dataSource.connection
+          currentDs = {
+            type,
+            connection: { type, host: store.dbHost, port: Number(store.dbPort), database: store.dbName, username: store.dbUser, password: store.dbPassword },
+          };
+        } else {
+          currentDs = { type, host: store.dbHost, port: Number(store.dbPort), database: store.dbName, username: store.dbUser, password: store.dbPassword, swaggerUrl: store.swaggerUrl };
+        }
+        store.setCurrentDataSource(currentDs);
         store.setCurrentParsedData(parsedData);
 
         // Build preview HTML with checkboxes

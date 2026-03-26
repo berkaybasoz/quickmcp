@@ -89,25 +89,68 @@ export function GeneratePage() {
       .catch(() => {});
 
     // Expose toggle helpers so dangerouslySetInnerHTML preview checkboxes work
-    (window as any).toggleTableDetails = (i: number) => {
-      const details = document.getElementById(`table-details-${i}`);
-      const chevron = document.getElementById(`table-chevron-${i}`);
-      if (details) details.classList.toggle('hidden');
-      if (chevron) chevron.classList.toggle('rotate-180');
+    (window as any).toggleTableDetails = (panelId: string) => {
+      const panel = document.getElementById(panelId);
+      const icon = document.getElementById(`${panelId}-icon`);
+      if (panel) panel.classList.toggle('hidden');
+      if (icon) icon.classList.toggle('rotate-180');
     };
     (window as any).toggleTableSelection = (i: number) => {
       const cb = document.querySelector<HTMLInputElement>(`#table-select-${i}`);
       if (!cb) return;
-      const toolCheckboxes = document.querySelectorAll<HTMLInputElement>(
-        `#table-details-${i} input[type="checkbox"]`
-      );
-      toolCheckboxes.forEach((t) => { t.disabled = !cb.checked; });
+      const toolsPanel = document.getElementById(`table-tools-${i}`);
+      if (toolsPanel) {
+        toolsPanel.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((t) => { t.disabled = !cb.checked; });
+        toolsPanel.style.opacity = cb.checked ? '' : '0.5';
+      }
+    };
+    (window as any).selectAllTools = (i: number) => {
+      document.querySelectorAll<HTMLInputElement>(`#table-tools-${i} input[type="checkbox"]`).forEach((t) => { t.checked = true; });
+    };
+    (window as any).deselectAllTools = (i: number) => {
+      document.querySelectorAll<HTMLInputElement>(`#table-tools-${i} input[type="checkbox"]`).forEach((t) => { t.checked = false; });
+    };
+    (window as any).selectOnlyBasicTools = (i: number) => {
+      const BASIC = ['get', 'create', 'update', 'delete', 'count'];
+      document.querySelectorAll<HTMLInputElement>(`#table-tools-${i} input[type="checkbox"]`).forEach((t) => {
+        const id = t.id.replace(`-${i}`, '').replace('tool-', '');
+        t.checked = BASIC.includes(id);
+      });
+    };
+    (window as any).toggleGroupDetails = (panelId: string, iconId: string) => {
+      const panel = document.getElementById(panelId);
+      const icon = document.getElementById(iconId);
+      if (panel) panel.classList.toggle('hidden');
+      if (icon) icon.classList.toggle('rotate-180');
+    };
+    (window as any).toggleRedisGroupSelection = (i: number) => {
+      const cb = document.querySelector<HTMLInputElement>(`#redis-group-select-${i}`);
+      if (!cb) return;
+      document.querySelectorAll<HTMLInputElement>(`#redis-group-tools-${i} input[type="checkbox"]`).forEach((t) => { t.disabled = !cb.checked; });
+    };
+    (window as any).toggleHazelcastGroupSelection = (i: number) => {
+      const cb = document.querySelector<HTMLInputElement>(`#hazelcast-group-select-${i}`);
+      if (!cb) return;
+      document.querySelectorAll<HTMLInputElement>(`#hazelcast-group-tools-${i} input[type="checkbox"]`).forEach((t) => { t.disabled = !cb.checked; });
+    };
+    (window as any).toggleKafkaGroupSelection = (i: number) => {
+      const cb = document.querySelector<HTMLInputElement>(`#kafka-group-select-${i}`);
+      if (!cb) return;
+      document.querySelectorAll<HTMLInputElement>(`#kafka-group-tools-${i} input[type="checkbox"]`).forEach((t) => { t.disabled = !cb.checked; });
+    };
+    (window as any).selectAllGroupTools = (prefix: string, i: number) => {
+      document.querySelectorAll<HTMLInputElement>(`#${prefix}-group-tools-${i} input[type="checkbox"]`).forEach((t) => { t.checked = true; });
+    };
+    (window as any).deselectAllGroupTools = (prefix: string, i: number) => {
+      document.querySelectorAll<HTMLInputElement>(`#${prefix}-group-tools-${i} input[type="checkbox"]`).forEach((t) => { t.checked = false; });
     };
 
     return () => {
       document.title = prevTitle;
-      delete (window as any).toggleTableDetails;
-      delete (window as any).toggleTableSelection;
+      const fns = ['toggleTableDetails', 'toggleTableSelection', 'selectAllTools', 'deselectAllTools',
+        'selectOnlyBasicTools', 'toggleGroupDetails', 'toggleRedisGroupSelection',
+        'toggleHazelcastGroupSelection', 'toggleKafkaGroupSelection', 'selectAllGroupTools', 'deselectAllGroupTools'];
+      fns.forEach((fn) => delete (window as any)[fn]);
     };
   }, []);
 
