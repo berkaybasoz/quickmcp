@@ -1185,7 +1185,7 @@ export function QuickAskPage() {
                       onClick={() => setToolsPanelOpen((current) => !current)}
                     >
                       <i className="fas fa-sliders-h text-[11px]"></i>
-                      Select MCP & Tools
+                      Selected MCP & Tools
                       <span id="quickAskSelectedCount" className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[11px] px-1">{selectedCount}</span>
                     </button>
                     <button

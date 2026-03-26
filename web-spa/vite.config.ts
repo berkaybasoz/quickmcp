@@ -15,6 +15,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
       '/mcp': 'http://localhost:3000',
+      '/page': 'http://localhost:3000',
       '/js': 'http://localhost:3000',
       '/css': 'http://localhost:3000',
       '/images': 'http://localhost:3000',
