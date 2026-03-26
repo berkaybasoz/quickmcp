@@ -410,6 +410,8 @@ export interface GenerateFormState {
   jiraHost: string;
   jiraEmail: string;
   jiraApiToken: string;
+  jiraApiVersion: 'v2' | 'v3';
+  jiraProjectKey: string;
   confluenceHost: string;
   confluenceEmail: string;
   confluenceApiToken: string;
@@ -521,7 +523,7 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   mongoHost: '',
   mongoPort: '27017',
   mongoDatabase: '',
-  mongoAuthSource: 'admin',
+  mongoAuthSource: '',
   mongoUsername: '',
   mongoPassword: '',
 
@@ -694,7 +696,7 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   n8nBaseUrl: '',
   n8nApiKey: '',
   n8nApiPath: '/api/v1',
-  n8nSelectedTools: [],
+  n8nSelectedTools: ['list_executions','get_execution','get_execution_tags','list_workflows','get_workflow','get_workflow_tags','list_tags','list_variables','list_data_tables','get_data_table','list_data_table_rows','list_projects'],
 
   supabaseBaseUrl: '',
   supabaseApiKey: '',
@@ -759,6 +761,8 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   jiraHost: '',
   jiraEmail: '',
   jiraApiToken: '',
+  jiraApiVersion: 'v2',
+  jiraProjectKey: '',
   confluenceHost: '',
   confluenceEmail: '',
   confluenceApiToken: '',

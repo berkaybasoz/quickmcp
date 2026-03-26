@@ -153,39 +153,155 @@ export function InfraConfig({ type }: Props) {
           <p className="text-xs text-slate-500">Creates 3 tools: list_repositories, list_components, search</p>
         </div>
       );
-    case 'n8n':
+    case 'n8n': {
+      const N8N_TOOLS = [
+        { name: 'list_users', description: 'Retrieve all users', category: 'admin', defaultEnabled: false },
+        { name: 'create_users', description: 'Create multiple users', category: 'admin', defaultEnabled: false },
+        { name: 'get_user', description: 'Get user by ID/Email', category: 'admin', defaultEnabled: false },
+        { name: 'delete_user', description: 'Delete a user', category: 'admin', defaultEnabled: false },
+        { name: 'change_user_role', description: "Change a user's global role", category: 'admin', defaultEnabled: false },
+        { name: 'generate_audit', description: 'Generate an audit', category: 'admin', defaultEnabled: false },
+        { name: 'list_executions', description: 'Retrieve all executions', category: 'core', defaultEnabled: true },
+        { name: 'get_execution', description: 'Retrieve an execution', category: 'core', defaultEnabled: true },
+        { name: 'delete_execution', description: 'Delete an execution', category: 'admin', defaultEnabled: false },
+        { name: 'retry_execution', description: 'Retry an execution', category: 'builder', defaultEnabled: false },
+        { name: 'stop_execution', description: 'Stop an execution', category: 'builder', defaultEnabled: false },
+        { name: 'stop_multiple_executions', description: 'Stop multiple executions', category: 'builder', defaultEnabled: false },
+        { name: 'get_execution_tags', description: 'Get execution tags', category: 'core', defaultEnabled: true },
+        { name: 'update_execution_tags', description: 'Update tags of an execution', category: 'builder', defaultEnabled: false },
+        { name: 'create_workflow', description: 'Create a workflow', category: 'builder', defaultEnabled: false },
+        { name: 'list_workflows', description: 'Retrieve all workflows', category: 'core', defaultEnabled: true },
+        { name: 'get_workflow', description: 'Retrieve a workflow', category: 'core', defaultEnabled: true },
+        { name: 'delete_workflow', description: 'Delete a workflow', category: 'admin', defaultEnabled: false },
+        { name: 'update_workflow', description: 'Update a workflow', category: 'builder', defaultEnabled: false },
+        { name: 'get_workflow_version', description: 'Retrieve a specific workflow version', category: 'core', defaultEnabled: false },
+        { name: 'activate_workflow', description: 'Publish a workflow', category: 'builder', defaultEnabled: false },
+        { name: 'deactivate_workflow', description: 'Deactivate a workflow', category: 'builder', defaultEnabled: false },
+        { name: 'transfer_workflow', description: 'Transfer a workflow to another project', category: 'admin', defaultEnabled: false },
+        { name: 'get_workflow_tags', description: 'Get workflow tags', category: 'core', defaultEnabled: true },
+        { name: 'update_workflow_tags', description: 'Update tags of a workflow', category: 'builder', defaultEnabled: false },
+        { name: 'list_credentials', description: 'List credentials', category: 'admin', defaultEnabled: false },
+        { name: 'create_credential', description: 'Create a credential', category: 'admin', defaultEnabled: false },
+        { name: 'update_credential', description: 'Update credential by ID', category: 'admin', defaultEnabled: false },
+        { name: 'delete_credential', description: 'Delete credential by ID', category: 'admin', defaultEnabled: false },
+        { name: 'get_credential_schema', description: 'Show credential data schema', category: 'admin', defaultEnabled: false },
+        { name: 'transfer_credential', description: 'Transfer credential to another project', category: 'admin', defaultEnabled: false },
+        { name: 'create_tag', description: 'Create a tag', category: 'builder', defaultEnabled: false },
+        { name: 'list_tags', description: 'Retrieve all tags', category: 'core', defaultEnabled: true },
+        { name: 'get_tag', description: 'Retrieve a tag', category: 'core', defaultEnabled: false },
+        { name: 'delete_tag', description: 'Delete a tag', category: 'admin', defaultEnabled: false },
+        { name: 'update_tag', description: 'Update a tag', category: 'builder', defaultEnabled: false },
+        { name: 'source_control_pull', description: 'Pull changes from source control', category: 'admin', defaultEnabled: false },
+        { name: 'create_variable', description: 'Create a variable', category: 'builder', defaultEnabled: false },
+        { name: 'list_variables', description: 'Retrieve variables', category: 'core', defaultEnabled: true },
+        { name: 'delete_variable', description: 'Delete a variable', category: 'admin', defaultEnabled: false },
+        { name: 'update_variable', description: 'Update a variable', category: 'builder', defaultEnabled: false },
+        { name: 'list_data_tables', description: 'List all data tables', category: 'core', defaultEnabled: true },
+        { name: 'create_data_table', description: 'Create a data table', category: 'builder', defaultEnabled: false },
+        { name: 'get_data_table', description: 'Get a data table', category: 'core', defaultEnabled: true },
+        { name: 'update_data_table', description: 'Update a data table', category: 'builder', defaultEnabled: false },
+        { name: 'delete_data_table', description: 'Delete a data table', category: 'admin', defaultEnabled: false },
+        { name: 'list_data_table_rows', description: 'Retrieve rows from a data table', category: 'core', defaultEnabled: true },
+        { name: 'insert_data_table_rows', description: 'Insert rows into a data table', category: 'builder', defaultEnabled: false },
+        { name: 'update_data_table_rows', description: 'Update rows in a data table', category: 'builder', defaultEnabled: false },
+        { name: 'upsert_data_table_rows', description: 'Upsert rows in a data table', category: 'builder', defaultEnabled: false },
+        { name: 'delete_data_table_rows', description: 'Delete rows from a data table', category: 'admin', defaultEnabled: false },
+        { name: 'create_project', description: 'Create a project', category: 'admin', defaultEnabled: false },
+        { name: 'list_projects', description: 'Retrieve projects', category: 'core', defaultEnabled: true },
+        { name: 'delete_project', description: 'Delete a project', category: 'admin', defaultEnabled: false },
+        { name: 'update_project', description: 'Update a project', category: 'admin', defaultEnabled: false },
+        { name: 'list_project_users', description: 'List project members', category: 'core', defaultEnabled: false },
+        { name: 'add_project_users', description: 'Add users to a project', category: 'admin', defaultEnabled: false },
+        { name: 'delete_project_user', description: 'Delete a user from a project', category: 'admin', defaultEnabled: false },
+        { name: 'update_project_user_role', description: "Change a user's role in a project", category: 'admin', defaultEnabled: false },
+      ] as const;
+      const selected = new Set(s.n8nSelectedTools);
+      const GROUPS = [
+        { key: 'core', label: 'Core', desc: 'Read-focused safe tools' },
+        { key: 'builder', label: 'Builder', desc: 'Create/update workflow data' },
+        { key: 'admin', label: 'Admin', desc: 'Users, credentials, projects' },
+      ] as const;
+      const toggleCategory = (category: string, enabled: boolean) => {
+        const next = new Set(s.n8nSelectedTools);
+        N8N_TOOLS.filter((t) => t.category === category).forEach((t) => enabled ? next.add(t.name) : next.delete(t.name));
+        s.setField('n8nSelectedTools', Array.from(next));
+      };
+      const toggleTool = (name: string, checked: boolean) => {
+        const next = new Set(s.n8nSelectedTools);
+        checked ? next.add(name) : next.delete(name);
+        s.setField('n8nSelectedTools', Array.from(next));
+      };
       return (
-        <div className="space-y-4 mt-6">
-          <Field id="n8nBaseUrl" label="n8n URL" placeholder="http://localhost:5678" value={s.n8nBaseUrl} onChange={(v) => s.setField('n8nBaseUrl', v)} />
-          <Field id="n8nApiKey" label="API Key" type="password" value={s.n8nApiKey} onChange={(v) => s.setField('n8nApiKey', v)} />
-          <Field id="n8nApiPath" label="API Path" placeholder="/api/v1" value={s.n8nApiPath} onChange={(v) => s.setField('n8nApiPath', v)} />
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Groups</label>
-            <div className="space-y-2">
-              {[
-                { key: 'core', label: 'Core tools' },
-                { key: 'builder', label: 'Builder tools' },
-                { key: 'admin', label: 'Admin tools' },
-              ].map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id={`n8n-toggle-${key}`}
-                    checked={s.n8nSelectedTools.includes(key)}
-                    onChange={(e) => {
-                      const tools = e.target.checked
-                        ? [...s.n8nSelectedTools, key]
-                        : s.n8nSelectedTools.filter((t) => t !== key);
-                      s.setField('n8nSelectedTools', tools);
-                    }}
-                  />
-                  {label}
-                </label>
-              ))}
+        <div className="space-y-6 mt-6">
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="flex items-start gap-3">
+              <i className="fas fa-info-circle text-amber-600 mt-0.5" />
+              <div className="text-sm text-amber-700">
+                <p className="font-medium text-amber-800 mb-1">n8n API</p>
+                <p>Use your n8n API key.</p>
+              </div>
             </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Field id="n8nBaseUrl" label="Base URL" value={s.n8nBaseUrl} onChange={(v) => s.setField('n8nBaseUrl', v)} />
+            <Field id="n8nApiKey" label="API Key" type="password" placeholder="n8n_api_key" value={s.n8nApiKey} onChange={(v) => s.setField('n8nApiKey', v)} />
+            <Field id="n8nApiPath" label="API Path" value={s.n8nApiPath} onChange={(v) => s.setField('n8nApiPath', v)} />
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-slate-200 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tool Groups</label>
+              <p className="text-xs text-slate-500">Toggle groups, then fine-tune each tool from the checklist.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {GROUPS.map(({ key, label, desc }) => {
+                const catTools = N8N_TOOLS.filter((t) => t.category === key);
+                const allSelected = catTools.every((t) => selected.has(t.name));
+                return (
+                  <label key={key} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 cursor-pointer hover:border-slate-300">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">{label}</div>
+                      <div className="text-xs text-slate-500">{desc}</div>
+                    </div>
+                    <input
+                      id={`n8n-toggle-${key}`}
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      checked={allSelected}
+                      onChange={(e) => toggleCategory(key, e.target.checked)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Selection</label>
+              <div id="n8n-tool-list" className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 p-3 bg-slate-50 space-y-1">
+                {N8N_TOOLS.map((tool) => (
+                  <label key={tool.name} className="flex items-start gap-2 cursor-pointer hover:bg-white rounded px-1 py-0.5">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
+                      checked={selected.has(tool.name)}
+                      onChange={(e) => toggleTool(tool.name, e.target.checked)}
+                    />
+                    <div className="text-sm">
+                      <span className="font-mono text-xs text-slate-700">{tool.name}</span>
+                      <span className="text-slate-500 ml-2 text-xs">{tool.description}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700">
+              <i className="fas fa-tools mr-2" />
+              <strong id="n8n-tools-count-label">{selected.size} tools</strong> selected for generation.
+            </p>
           </div>
         </div>
       );
+    }
     default:
       return null;
   }

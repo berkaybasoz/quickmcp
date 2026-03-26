@@ -102,6 +102,18 @@ function buildGenericPreviewHtml(opts: PreviewCardOpts): string {
 </div>`;
 }
 
+// ─── AI model preview ─────────────────────────────────────────────────────────
+
+function buildAIModelPreviewHtml(opts: {
+  img: string; alt: string; title: string; apiDesc: string;
+  baseUrl: string; tools: { name: string; desc: string }[];
+}): string {
+  const toolRows = opts.tools.map(t =>
+    `<div class="flex items-start gap-2 text-sm"><i class="fas fa-wrench text-slate-400 mt-0.5"></i><div><code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code><p class="text-xs text-slate-500 mt-0.5">${t.desc}</p></div></div>`
+  ).join('');
+  return `<div class="space-y-4"><div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6"><div class="flex items-start gap-4"><div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0"><img src="/images/app/${opts.img}" alt="${opts.alt}" class="w-8 h-8 object-contain" /></div><div class="flex-1"><h3 class="font-bold text-slate-900 text-lg mb-2">${opts.title} Configuration</h3><p class="text-slate-700 mb-3">This server will generate tools to interact with ${opts.apiDesc}.</p><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><div class="grid grid-cols-2 gap-4 text-sm"><div><span class="text-slate-500">Base URL:</span><span class="ml-2 font-mono text-slate-700">${opts.baseUrl || 'Not set'}</span></div></div></div><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${opts.tools.length})</label><div class="grid grid-cols-2 gap-2">${toolRows}</div></div></div></div></div></div>`;
+}
+
 // ─── DB/CSV/REST preview (with table/tool checkboxes) ─────────────────────────
 
 export function buildDbTablePreviewHtml(parsedData: any[]): string {
@@ -687,21 +699,20 @@ function card(type: string, s: S): DirectResult {
   // ── FTP / LocalFS ────────────────────────────────────────────────────────────
   if (type === T.Ftp) {
     const ds = { type, name: 'FTP', host: s.ftpHost, port: Number(s.ftpPort), username: s.ftpUsername, password: s.ftpPassword, basePath: s.ftpBasePath, secure: s.ftpSecure };
-    return {
-      dataSource: ds,
-      parsedData: null,
-      html: buildGenericPreviewHtml({
-        icon: 'server', color: 'slate', typeLabel: 'FTP',
-        title: s.ftpHost || 'FTP Server', subtitle: `${s.ftpSecure ? 'FTPS' : 'FTP'} — port ${s.ftpPort}`,
-        details: [
-          { label: 'Host', value: s.ftpHost },
-          { label: 'Port', value: s.ftpPort },
-          { label: 'Username', value: s.ftpUsername },
-          { label: 'Base Path', value: s.ftpBasePath },
-        ],
-        tools: ['list_files', 'get_file', 'upload_file', 'delete_file', 'create_directory'],
-      }),
-    };
+    const isSftp = Number(s.ftpPort) === 22;
+    const protocolName = isSftp ? 'SFTP' : (s.ftpSecure ? 'FTPS' : 'FTP');
+    const ftpTools = [
+      { name: 'list_files', desc: 'List files and directories in a path' },
+      { name: 'download_file', desc: 'Download a file from server' },
+      { name: 'upload_file', desc: 'Upload a file to server' },
+      { name: 'delete_file', desc: 'Delete a file from server' },
+      { name: 'create_directory', desc: 'Create a new directory' },
+      { name: 'delete_directory', desc: 'Delete a directory' },
+      { name: 'rename', desc: 'Rename a file or directory' },
+      { name: 'get_file_info', desc: 'Get information about a file' },
+    ];
+    const ftpHtml = `<div class="space-y-4"><div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6"><div class="flex items-start gap-4"><div class="w-12 h-12 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0"><i class="fas fa-folder-open text-2xl"></i></div><div class="flex-1"><h3 class="font-bold text-slate-900 text-lg mb-2">${protocolName} Server Configuration</h3><p class="text-slate-700 mb-3">This server will generate tools to interact with ${isSftp ? 'an SFTP (SSH)' : 'an FTP'} server.</p><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><div class="grid grid-cols-2 gap-4 text-sm"><div><span class="text-slate-500">Host:</span><span class="ml-2 font-mono text-slate-700">${s.ftpHost || 'Not set'}</span></div><div><span class="text-slate-500">Port:</span><span class="ml-2 font-mono text-slate-700">${s.ftpPort || 21}</span></div><div><span class="text-slate-500">Username:</span><span class="ml-2 font-mono text-slate-700">${s.ftpUsername || 'Not set'}</span></div><div><span class="text-slate-500">Protocol:</span><span class="ml-2 font-mono text-slate-700">${protocolName}</span></div><div><span class="text-slate-500">Base Path:</span><span class="ml-2 font-mono text-slate-700">${s.ftpBasePath || '/'}</span></div></div></div><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${ftpTools.length})</label><div class="grid grid-cols-2 gap-2">${ftpTools.map(t => `<div class="flex items-start gap-2 text-sm"><i class="fas fa-wrench text-slate-400 mt-0.5"></i><div><code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code><p class="text-xs text-slate-500 mt-0.5">${t.desc}</p></div></div>`).join('')}</div></div><div class="space-y-2 text-sm text-slate-700"><div class="flex items-start gap-2"><i class="fas fa-check-circle mt-0.5 text-green-500"></i><span>All ${protocolName} tools will use your credentials for authentication.</span></div><div class="flex items-start gap-2"><i class="fas fa-check-circle mt-0.5 text-green-500"></i><span>File paths can be specified when calling tools.</span></div>${isSftp ? '<div class="flex items-start gap-2"><i class="fas fa-lock mt-0.5 text-blue-500"></i><span>Connection is secured via SSH.</span></div>' : ''}</div></div></div></div></div>`;
+    return { dataSource: ds, parsedData: null, html: ftpHtml };
   }
 
   if (type === T.LocalFS) {
@@ -900,15 +911,15 @@ function card(type: string, s: S): DirectResult {
   // ── AI Models ────────────────────────────────────────────────────────────────
   if (type === T.OpenAI) {
     const ds = { type, name: 'OpenAI', apiKey: s.openaiApiKey, defaultModel: s.openaiModel };
-    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'green', typeLabel: 'OpenAI', title: `OpenAI — ${s.openaiModel}`, subtitle: 'Access GPT models', details: [{ label: 'Model', value: s.openaiModel }], tools: ['chat_completion', 'text_completion', 'create_image', 'create_embedding', 'list_models'] }) };
+    return { dataSource: ds, parsedData: null, html: buildAIModelPreviewHtml({ img: 'openai.png', alt: 'OpenAI', title: 'OpenAI', apiDesc: 'OpenAI API', baseUrl: 'https://api.openai.com/v1', tools: [{ name: 'chat', desc: 'Create chat completions' }, { name: 'embeddings', desc: 'Create embeddings' }, { name: 'moderations', desc: 'Moderate text' }, { name: 'images', desc: 'Generate images' }, { name: 'audio_speech', desc: 'Text to speech' }, { name: 'audio_transcriptions', desc: 'Transcribe audio' }, { name: 'audio_translations', desc: 'Translate audio' }] }) };
   }
   if (type === T.Claude) {
     const ds = { type, name: 'Claude', apiKey: s.claudeApiKey, defaultModel: s.claudeModel, apiVersion: s.claudeApiVersion };
-    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'orange', typeLabel: 'Claude (Anthropic)', title: `Claude — ${s.claudeModel}`, subtitle: 'Access Anthropic Claude models', details: [{ label: 'Model', value: s.claudeModel }, { label: 'API Version', value: s.claudeApiVersion }], tools: ['chat', 'count_tokens', 'list_models'] }) };
+    return { dataSource: ds, parsedData: null, html: buildAIModelPreviewHtml({ img: 'claude.png', alt: 'Claude', title: 'Claude', apiDesc: 'Anthropic API', baseUrl: 'https://api.anthropic.com/v1', tools: [{ name: 'chat', desc: 'Create messages' }] }) };
   }
   if (type === T.Gemini) {
     const ds = { type, name: 'Gemini', apiKey: s.geminiApiKey, defaultModel: s.geminiModel };
-    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'robot', color: 'blue', typeLabel: 'Google Gemini', title: `Gemini — ${s.geminiModel}`, subtitle: 'Access Google Gemini models', details: [{ label: 'Model', value: s.geminiModel }], tools: ['generate_content', 'chat', 'embed_content', 'list_models'] }) };
+    return { dataSource: ds, parsedData: null, html: buildAIModelPreviewHtml({ img: 'gemini.png', alt: 'Gemini', title: 'Gemini', apiDesc: 'Gemini API', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', tools: [{ name: 'chat', desc: 'Generate content' }, { name: 'embeddings', desc: 'Create embeddings' }] }) };
   }
   if (type === T.Grok) {
     const ds = { type, name: 'Grok', apiKey: s.grokApiKey, defaultModel: s.grokModel };
@@ -1051,8 +1062,8 @@ function card(type: string, s: S): DirectResult {
     return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'layer-group', color: 'violet', typeLabel: 'Linear', title: 'Linear', subtitle: 'Manage engineering issues', details: [{ label: 'Base URL', value: s.linearBaseUrl }], tools: ['list_teams', 'list_projects', 'list_issues', 'create_issue', 'update_issue'] }) };
   }
   if (type === T.Jira) {
-    const ds = { type, name: 'Jira', apiVersion: 'rest/api/3', host: s.jiraHost, email: s.jiraEmail, apiToken: s.jiraApiToken };
-    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'jira', color: 'blue', typeLabel: 'Jira', title: s.jiraHost || 'Jira', subtitle: `${s.jiraEmail || ''}`, details: [{ label: 'Host', value: s.jiraHost }, { label: 'Email', value: s.jiraEmail }], tools: ['list_projects', 'get_project', 'list_issues', 'get_issue', 'create_issue', 'update_issue', 'add_comment', 'list_sprints', 'get_sprint', 'list_transitions', 'transition_issue', 'assign_issue'] }) };
+    const ds = { type, name: 'Jira', apiVersion: s.jiraApiVersion, host: s.jiraHost, email: s.jiraEmail, apiToken: s.jiraApiToken, projectKey: s.jiraProjectKey || undefined };
+    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'jira', color: 'blue', typeLabel: 'Jira', title: s.jiraHost || 'Jira', subtitle: `${s.jiraEmail || ''} · API ${s.jiraApiVersion}`, details: [{ label: 'Host', value: s.jiraHost }, { label: 'Email', value: s.jiraEmail }, { label: 'API Version', value: s.jiraApiVersion }, ...(s.jiraProjectKey ? [{ label: 'Project Key', value: s.jiraProjectKey }] : [])], tools: ['search_issues', 'get_issue', 'create_issue', 'update_issue', 'add_comment', 'get_transitions', 'transition_issue', 'list_projects', 'get_project', 'get_user', 'assign_issue', 'get_issue_comments'] }) };
   }
   if (type === T.Confluence) {
     const ds = { type, name: 'Confluence', host: s.confluenceHost, email: s.confluenceEmail, apiToken: s.confluenceApiToken };

@@ -147,11 +147,50 @@ export function ProductivityConfig({ type }: Props) {
       );
     case 'jira':
       return (
-        <div className="space-y-4 mt-6">
-          <Field id="jiraHost" label="Jira Host" placeholder="yourcompany.atlassian.net" value={s.jiraHost} onChange={(v) => s.setField('jiraHost', v)} />
-          <Field id="jiraEmail" label="Email" type="email" placeholder="user@company.com" value={s.jiraEmail} onChange={(v) => s.setField('jiraEmail', v)} />
-          <Field id="jiraApiToken" label="API Token" type="password" value={s.jiraApiToken} onChange={(v) => s.setField('jiraApiToken', v)} />
-          <p className="text-xs text-slate-500">Creates 12 tools: list_projects, get_project, list_issues, get_issue, create_issue, update_issue, etc.</p>
+        <div className="space-y-6 mt-6">
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-start gap-3">
+              <i className="fas fa-info-circle text-blue-500 mt-0.5" />
+              <div className="text-sm text-slate-600">
+                <p className="font-medium text-slate-700 mb-1">Jira API Token</p>
+                <p>Create an API token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">id.atlassian.com/manage-profile/security/api-tokens</a>. Use your Atlassian account email and the API token for authentication.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Field id="jiraHost" label="Jira Host" placeholder="https://your-domain.atlassian.net" value={s.jiraHost} onChange={(v) => s.setField('jiraHost', v)} />
+              <p className="text-xs text-slate-500 mt-2">Your Jira domain (with or without https://).</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">API Version</label>
+              <select id="jiraApiVersion" className="input" value={s.jiraApiVersion} onChange={(e) => s.setField('jiraApiVersion', e.target.value as 'v2' | 'v3')}>
+                <option value="v2">API v2 (Jira Server / Data Center)</option>
+                <option value="v3">API v3 (Jira Cloud)</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-2">Select based on your Jira deployment type.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Field id="jiraEmail" label="Email/Username" placeholder="you@example.com" value={s.jiraEmail} onChange={(v) => s.setField('jiraEmail', v)} />
+              <p className="text-xs text-slate-500 mt-2">Your Atlassian account email.</p>
+            </div>
+            <div>
+              <Field id="jiraApiToken" label="API Token" type="password" placeholder="Your API token" value={s.jiraApiToken} onChange={(v) => s.setField('jiraApiToken', v)} />
+              <p className="text-xs text-slate-500 mt-2">Your Jira API token.</p>
+            </div>
+          </div>
+          <div>
+            <Field id="jiraProjectKey" label="Default Project Key" placeholder="e.g., MYPROJ" value={s.jiraProjectKey} onChange={(v) => s.setField('jiraProjectKey', v)} optional />
+            <p className="text-xs text-slate-500 mt-2">Default project key for issue operations.</p>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700">
+              <i className="fas fa-tools mr-2" />
+              <strong>12 tools</strong> will be created: search_issues, get_issue, create_issue, update_issue, add_comment, get_transitions, transition_issue, list_projects, get_project, get_user, assign_issue, get_issue_comments
+            </p>
+          </div>
         </div>
       );
     case 'confluence':

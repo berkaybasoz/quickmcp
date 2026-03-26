@@ -9,6 +9,7 @@ import { CurlConfig } from '../config-forms/CurlConfig';
 import { GraphQLConfig } from '../config-forms/GraphQLConfig';
 import { SOAPConfig } from '../config-forms/SOAPConfig';
 import { GitHubConfig } from '../config-forms/GitHubConfig';
+import { FTPConfig } from '../config-forms/FTPConfig';
 import { LocalFSConfig } from '../config-forms/LocalFSConfig';
 import { SlackConfig } from '../config-forms/SlackConfig';
 import { DiscordConfig } from '../config-forms/DiscordConfig';
@@ -74,7 +75,7 @@ function ConfigForm({ type }: { type: string }) {
   if (type === DataSourceType.Discord) return <DiscordConfig />;
   if (type === DataSourceType.Email) return <EmailConfig />;
   if (type === DataSourceType.Gmail) return <GmailConfig />;
-  if (type === DataSourceType.Ftp) return <SocialConfig type={type} />;
+  if (type === DataSourceType.Ftp) return <FTPConfig />;
   if (type === DataSourceType.LocalFS) return <LocalFSConfig />;
   if (AI_TYPES.has(type as any)) return <AIModelConfig type={type} />;
   if (INFRA_TYPES.has(type as any)) return <InfraConfig type={type} />;

@@ -36,21 +36,61 @@ export function AIModelConfig({ type }: Props) {
       );
     case 'claude':
       return (
-        <div className="space-y-4 mt-6">
-          <Field label="Base URL" value="https://api.anthropic.com/v1" readOnly />
-          <Field label="API Version" placeholder="2023-06-01" value={s.claudeApiVersion} onChange={(v) => s.setField('claudeApiVersion', v)} />
-          <Field label="Model (optional)" placeholder="claude-opus-4-6" value={s.claudeModel} onChange={(v) => s.setField('claudeModel', v)} />
-          <Field label="API Key" type="password" id="claudeApiKey" placeholder="sk-ant-..." value={s.claudeApiKey} onChange={(v) => s.setField('claudeApiKey', v)} />
-          <p className="text-xs text-slate-500">Creates 1 tool: chat</p>
+        <div className="space-y-6 mt-6">
+          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="flex items-start gap-3">
+              <i className="fas fa-info-circle text-orange-600 mt-0.5" />
+              <div className="text-sm text-orange-700">
+                <p className="font-medium text-orange-800 mb-1">Anthropic (Claude) API</p>
+                <p>Use an API key and optional default model.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Field label="Base URL" value="https://api.anthropic.com/v1" readOnly />
+            </div>
+            <div>
+              <Field label="API Version" id="claudeApiVersion" value={s.claudeApiVersion} onChange={(v) => s.setField('claudeApiVersion', v)} />
+            </div>
+            <div>
+              <Field label="Default Model (Optional)" id="claudeModel" placeholder="claude-3-5-sonnet-20240620" value={s.claudeModel} onChange={(v) => s.setField('claudeModel', v)} />
+            </div>
+            <div className="md:col-span-2">
+              <Field label="API Key" type="password" id="claudeApiKey" placeholder="sk-ant-..." value={s.claudeApiKey} onChange={(v) => s.setField('claudeApiKey', v)} />
+            </div>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700"><i className="fas fa-tools mr-2" /><strong>1 tool</strong> will be created: chat</p>
+          </div>
         </div>
       );
     case 'gemini':
       return (
-        <div className="space-y-4 mt-6">
-          <Field label="Base URL" value="https://generativelanguage.googleapis.com/v1beta" readOnly />
-          <Field label="Model (optional)" placeholder="gemini-pro" value={s.geminiModel} onChange={(v) => s.setField('geminiModel', v)} />
-          <Field label="API Key" type="password" id="geminiApiKey" value={s.geminiApiKey} onChange={(v) => s.setField('geminiApiKey', v)} />
-          <p className="text-xs text-slate-500">Creates 2 tools: chat, embeddings</p>
+        <div className="space-y-6 mt-6">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-3">
+              <i className="fas fa-info-circle text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-700">
+                <p className="font-medium text-blue-800 mb-1">Gemini API</p>
+                <p>Use a Google AI Studio API key.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Field label="Base URL" value="https://generativelanguage.googleapis.com/v1beta" readOnly />
+            </div>
+            <div>
+              <Field label="Default Model (Optional)" id="geminiModel" placeholder="gemini-1.5-flash" value={s.geminiModel} onChange={(v) => s.setField('geminiModel', v)} />
+            </div>
+            <div className="md:col-span-2">
+              <Field label="API Key" type="password" id="geminiApiKey" placeholder="AIza..." value={s.geminiApiKey} onChange={(v) => s.setField('geminiApiKey', v)} />
+            </div>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700"><i className="fas fa-tools mr-2" /><strong>2 tools</strong> will be created: chat, embeddings</p>
+          </div>
         </div>
       );
     case 'grok':
