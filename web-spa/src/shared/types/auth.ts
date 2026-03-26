@@ -4,6 +4,11 @@ export type AuthMe = {
   email?: string;
   role?: string;
   authMode?: string;
+  workspaceId?: string;
+  avatarUrl?: string;
+  createdDate?: string;
+  lastSignInDate?: string;
+  isAdmin?: boolean;
 };
 
 export type AuthConfig = {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useBootstrapStore } from '../store/bootstrapStore';
 import { AppBar } from '../ui/AppBar';
 import { Sidebar } from '../ui/Sidebar';
 
@@ -20,6 +21,9 @@ function isClientSideRoute(href: string): boolean {
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const bootstrapStatus = useBootstrapStore((state) => state.status);
+  const me = useBootstrapStore((state) => state.me);
+  const config = useBootstrapStore((state) => state.config);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem('sidebarCollapsed') === 'true';
@@ -40,6 +44,18 @@ export function AppLayout() {
     return window.matchMedia('(min-width: 1024px)').matches;
   });
   const isRootEntry = location.pathname === '/';
+  const isAuthRequired = (config?.authMode || 'NONE') !== 'NONE';
+  const requiresLoginRedirect = !isRootEntry
+    && bootstrapStatus === 'ready'
+    && isAuthRequired
+    && !me;
+
+  useEffect(() => {
+    if (!requiresLoginRedirect) return;
+    const next = `${location.pathname}${location.search || ''}${location.hash || ''}`;
+    const target = `/login?next=${encodeURIComponent(next || '/')}`;
+    window.location.assign(target);
+  }, [location.hash, location.pathname, location.search, requiresLoginRedirect]);
 
   useEffect(() => {
     if (isRootEntry) return;
@@ -128,6 +144,10 @@ export function AppLayout() {
 
   if (isRootEntry) {
     return <Outlet />;
+  }
+
+  if (requiresLoginRedirect) {
+    return null;
   }
 
   return (

@@ -1,4 +1,4 @@
-import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
 import { useQuickAskChatsStore } from '../store/QuickAskChatsStore';
@@ -19,6 +19,8 @@ type QuickAskChat = {
   preview: string;
   updatedAt: string;
 };
+
+type UserSettingsTab = 'account';
 
 function isNavPathActive(path: string, pathname: string): boolean {
   const p = pathname.replace(/\/$/, '');
@@ -93,6 +95,13 @@ export function Sidebar({
   const [renameDraft, setRenameDraft] = useState('');
   const [savingChatId, setSavingChatId] = useState('');
   const [pendingDeleteChatId, setPendingDeleteChatId] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<UserSettingsTab>('account');
+  const [userMenuPosition, setUserMenuPosition] = useState<{ top: number; right: number }>({ top: 8, right: 8 });
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const userMenuAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const showUsers = (config?.authMode || 'NONE') !== 'NONE' && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
   const chats = useMemo(() => toQuickAskChats(chatsRaw), [chatsRaw]);
@@ -113,9 +122,22 @@ export function Sidebar({
     }
   }, [location.pathname, mobileOpen, onCloseMobile]);
 
+  useEffect(() => {
+    setIsUserMenuOpen(false);
+    setIsUserSettingsOpen(false);
+  }, [location.pathname]);
+
   const userName = String(me?.displayName || me?.username || 'Guest').trim() || 'Guest';
+  const accountUsername = String(me?.username || '').trim() || userName;
   const userEmail = String(me?.email || '').trim();
+  const userSecondaryText = userEmail || (me ? 'Signed in' : 'Not signed in');
   const userAvatar = userName.charAt(0).toUpperCase() || 'G';
+  const userRole = String(me?.role || 'user').trim() || 'user';
+  const userWorkspace = String(me?.workspaceId || '').trim();
+  const userCreatedDate = String(me?.createdDate || '').trim();
+  const userLastSignInDate = String(me?.lastSignInDate || '').trim();
+  const authMode = String(me?.authMode || 'NONE').trim() || 'NONE';
+  const showLogout = authMode !== 'NONE';
 
   const sidebarStyle = collapsed
     ? { width: '3rem' }
@@ -246,6 +268,51 @@ export function Sidebar({
     setPendingDeleteChatId('');
   }, [pendingDeleteChatId, savingChatId]);
 
+  const closeUserSettings = useCallback(() => {
+    if (isSigningOut) return;
+    setIsUserSettingsOpen(false);
+  }, [isSigningOut]);
+
+  const updateUserMenuPosition = useCallback(() => {
+    const anchorEl = userMenuAnchorRef.current;
+    const menuEl = userMenuRef.current;
+    if (!anchorEl || !menuEl) return;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const menuHeight = menuEl.offsetHeight || 0;
+    const menuWidth = menuEl.offsetWidth || 0;
+
+    let top = rect.bottom + 8;
+    const viewportBottom = window.innerHeight - 8;
+    if (top + menuHeight > viewportBottom) {
+      top = Math.max(8, rect.top - menuHeight - 8);
+    }
+
+    let right = Math.max(window.innerWidth - rect.right, 8);
+    const left = window.innerWidth - right - menuWidth;
+    if (left < 8) {
+      right = Math.max(8, window.innerWidth - (8 + menuWidth));
+    }
+
+    setUserMenuPosition({ top, right });
+  }, []);
+
+  const signOut = useCallback(async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch {
+      // Best effort logout; continue to login screen.
+    } finally {
+      window.location.assign('/login');
+    }
+  }, [isSigningOut]);
+
   const confirmDeleteChat = useCallback(async () => {
     const id = String(pendingDeleteChatId || '').trim();
     if (!id) return;
@@ -266,6 +333,42 @@ export function Sidebar({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [closeDeleteModal, pendingDeleteChatId]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    updateUserMenuPosition();
+    const onResize = () => updateUserMenuPosition();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isUserMenuOpen, updateUserMenuPosition]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (userMenuRef.current?.contains(target)) return;
+      if (userMenuAnchorRef.current?.contains(target)) return;
+      setIsUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [isUserMenuOpen]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen && !isUserSettingsOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (isUserSettingsOpen) {
+        closeUserSettings();
+        return;
+      }
+      setIsUserMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [closeUserSettings, isUserMenuOpen, isUserSettingsOpen]);
 
   const navItems = useMemo(() => {
     const base = [
@@ -320,6 +423,13 @@ export function Sidebar({
     window.addEventListener('mouseup', onUp);
     event.preventDefault();
   };
+
+  const formatDateValue = useCallback((value: string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString();
+  }, []);
 
   return (
     <>
@@ -521,19 +631,166 @@ export function Sidebar({
         </div>
 
         <div id="sidebarUserSection" className="p-3 border-t border-slate-200/60 bg-white">
-          <button id="sidebarUserButton" data-user-menu-anchor="true" type="button" className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+          <button
+            id="sidebarUserButton"
+            data-user-menu-anchor="true"
+            type="button"
+            ref={userMenuAnchorRef}
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left"
+            onClick={() => {
+              setIsUserMenuOpen((current) => !current);
+            }}
+          >
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-sm font-bold shadow-md flex-shrink-0" data-user-avatar>
               {userAvatar}
             </div>
             <div id="sidebarUserMeta" className="min-w-0">
               <div id="sidebarUserName" className="text-sm font-semibold text-slate-800 truncate">{userName}</div>
-              <div id="sidebarUserEmail" className="text-xs text-slate-500 truncate">{userEmail || 'Not signed in'}</div>
+              <div id="sidebarUserEmail" className="text-xs text-slate-500 truncate">{userSecondaryText}</div>
             </div>
           </button>
         </div>
 
         <div id="sidebarResizer" className="hidden lg:block absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent" onMouseDown={handleResizerMouseDown} />
       </div>
+
+      {isUserMenuOpen ? (
+        <div
+          id="userAvatarMenu"
+          ref={userMenuRef}
+          className="fixed z-[120] w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2"
+          style={{ top: `${userMenuPosition.top}px`, right: `${userMenuPosition.right}px` }}
+        >
+          <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 mb-2">
+            <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">Signed In</div>
+            <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{userName}</div>
+          </div>
+          <button
+            type="button"
+            className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            onClick={() => {
+              setIsUserMenuOpen(false);
+              setActiveSettingsTab('account');
+              setIsUserSettingsOpen(true);
+            }}
+          >
+            Settings
+          </button>
+          {showLogout ? (
+            <button
+              type="button"
+              className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
+              onClick={() => {
+                setIsUserMenuOpen(false);
+                void signOut();
+              }}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? 'Signing out...' : 'Sign out'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {isUserSettingsOpen ? (
+        <div className="fixed inset-0 z-[121] bg-slate-900/45 backdrop-blur-[1px] flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close user settings"
+            className="absolute inset-0"
+            onClick={closeUserSettings}
+            disabled={isSigningOut}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="userSettingsDialogTitle"
+            className="relative w-[42rem] max-w-[96vw] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-0 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70">
+              <h3 id="userSettingsDialogTitle" className="text-base font-semibold text-slate-900 dark:text-slate-100">Settings</h3>
+              <button
+                type="button"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/60 disabled:opacity-50"
+                onClick={closeUserSettings}
+                disabled={isSigningOut}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="flex min-h-[24rem]">
+              <div className="w-40 border-r border-slate-200 dark:border-slate-700 p-3 bg-slate-50/50 dark:bg-slate-800/40">
+                <button
+                  type="button"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+                    activeSettingsTab === 'account'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-semibold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  onClick={() => setActiveSettingsTab('account')}
+                >
+                  Account
+                </button>
+              </div>
+
+              <div className="flex-1 p-5 bg-white dark:bg-slate-900 overflow-auto">
+                {activeSettingsTab === 'account' ? (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-4 pb-1">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center text-xl font-bold">
+                        {userAvatar}
+                      </div>
+                      <div>
+                        <div className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">{userName}</div>
+                        {userEmail ? <div className="text-sm text-slate-500 mt-1">{userEmail}</div> : null}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 text-sm">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Username</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{accountUsername || '-'}</div>
+                      </div>
+                      {userEmail ? (
+                        <div>
+                          <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Email</div>
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{userEmail}</div>
+                        </div>
+                      ) : null}
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Role</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{userRole || '-'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Workspace</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{userWorkspace || '-'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">created_date</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{formatDateValue(userCreatedDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">last_sign_in_date</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">{formatDateValue(userLastSignInDate)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Sign In</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 mt-1">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            {authMode === 'SUPABASE_GOOGLE' ? 'Google' : (authMode || '-')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-600">No content.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div
         id="sidebarOverlay"

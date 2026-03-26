@@ -15,6 +15,22 @@ type BootstrapStore = {
 
 let bootstrapPromise: Promise<void> | null = null;
 
+async function fetchAuthMeOptional(): Promise<AuthMe | null> {
+  const response = await fetch('/api/auth/me', {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (response.status === 401) {
+    return null;
+  }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = (payload as any)?.error || (payload as any)?.message || `HTTP ${response.status}`;
+    throw new Error(String(message));
+  }
+  return extractApiData<AuthMe>(payload) || null;
+}
+
 export const useBootstrapStore = create<BootstrapStore>((set, get) => ({
   status: 'idle',
   error: null,
@@ -29,13 +45,13 @@ export const useBootstrapStore = create<BootstrapStore>((set, get) => ({
 
     bootstrapPromise = (async () => {
       try {
-        const [mePayload, configPayload] = await Promise.all([
-          fetchJson<any>('/api/auth/me'),
+        const [me, configPayload] = await Promise.all([
+          fetchAuthMeOptional(),
           fetchJson<any>('/api/auth/config')
         ]);
 
         set({
-          me: extractApiData<AuthMe>(mePayload) || null,
+          me,
           config: extractApiData<AuthConfig>(configPayload) || null,
           status: 'ready',
           error: null
