@@ -44,7 +44,6 @@ export function AppLayout() {
   useEffect(() => {
     if (isRootEntry) return;
     document.body.classList.add('h-screen', 'flex', 'flex-col', 'overflow-hidden');
-    window.updateUserAvatar?.();
   }, [isRootEntry]);
 
   useEffect(() => {

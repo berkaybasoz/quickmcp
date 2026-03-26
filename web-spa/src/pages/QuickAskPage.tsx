@@ -1,4 +1,5 @@
 import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuickAskChatsStore } from '../shared/store/QuickAskChatsStore';
 import { useQuickAskStore } from '../shared/store/QuickAskStore';
 
 type AskStatusKind = 'idle' | 'ready' | 'busy' | 'error';
@@ -458,6 +459,8 @@ export function QuickAskPage() {
   const navigationNonce = useQuickAskStore((state) => state.navigationNonce);
   const consumeNavigationIntent = useQuickAskStore((state) => state.consumeNavigationIntent);
   const setGlobalActiveChatId = useQuickAskStore((state) => state.setActiveChatId);
+  const fetchChatsOnce = useQuickAskChatsStore((state) => state.fetchOnce);
+  const setChatsSnapshot = useQuickAskChatsStore((state) => state.setSnapshot);
 
   const [askContext, setAskContext] = useState<AskContextPayload | null>(null);
   const [statusKind, setStatusKind] = useState<AskStatusKind>('idle');
@@ -633,16 +636,12 @@ export function QuickAskPage() {
     let nextCurrentId = '';
     let shouldPersistAfterLoad = false;
 
-    try {
-      const response = await fetch('/api/ask/chats', { credentials: 'include' });
-      const payload = await response.json().catch(() => ({})) as ApiEnvelope<{ chats?: unknown[]; currentChatId?: string }>;
-      if (response.ok && payload?.success) {
-        nextChats = Array.isArray(payload?.data?.chats)
-          ? payload.data!.chats!.map((chat) => normalizeChat(chat)).filter((chat): chat is AskChat => !!chat)
-          : [];
-        nextCurrentId = String(payload?.data?.currentChatId || '').trim();
-      }
-    } catch {}
+    await fetchChatsOnce();
+    const snapshot = useQuickAskChatsStore.getState();
+    nextChats = Array.isArray(snapshot.chatsRaw)
+      ? snapshot.chatsRaw.map((chat) => normalizeChat(chat)).filter((chat): chat is AskChat => !!chat)
+      : [];
+    nextCurrentId = String(snapshot.currentChatId || '').trim();
 
     if (requestNewChat) {
       const chat = createChat('New chat');
@@ -676,7 +675,7 @@ export function QuickAskPage() {
     if (shouldPersistAfterLoad) {
       schedulePersist();
     }
-  }, [applyChatState, applySelectionsFromChat, consumeNavigationIntent, schedulePersist]);
+  }, [applyChatState, applySelectionsFromChat, consumeNavigationIntent, fetchChatsOnce, schedulePersist]);
 
   const loadContext = useCallback(async () => {
     applyStatus('busy', 'Loading context');
@@ -1016,9 +1015,6 @@ export function QuickAskPage() {
   useEffect(() => {
     if (!initializedRef.current) return;
 
-    const event = new CustomEvent('quickask:chats-updated');
-    window.dispatchEvent(event);
-
     if (skipPersistRef.current) {
       skipPersistRef.current = false;
       return;
@@ -1026,6 +1022,11 @@ export function QuickAskPage() {
 
     schedulePersist();
   }, [chats, currentChatId, schedulePersist]);
+
+  useEffect(() => {
+    if (!initializedRef.current) return;
+    setChatsSnapshot(chats, currentChatId);
+  }, [chats, currentChatId, setChatsSnapshot]);
 
   useEffect(() => {
     const chat = chatsRef.current.find((item) => item.id === currentChatIdRef.current) || null;

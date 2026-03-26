@@ -1,6 +1,7 @@
 import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBootstrapStore } from '../store/bootstrapStore';
+import { useQuickAskChatsStore } from '../store/QuickAskChatsStore';
 import { useQuickAskStore } from '../store/QuickAskStore';
 
 type SidebarProps = {
@@ -17,11 +18,6 @@ type QuickAskChat = {
   title: string;
   preview: string;
   updatedAt: string;
-};
-
-type AskChatStatePayload = {
-  chats?: unknown[];
-  currentChatId?: string;
 };
 
 function isNavPathActive(path: string, pathname: string): boolean {
@@ -86,11 +82,12 @@ export function Sidebar({
   const requestOpenChat = useQuickAskStore((state) => state.requestOpenChat);
   const requestNewChat = useQuickAskStore((state) => state.requestNewChat);
   const setGlobalActiveChatId = useQuickAskStore((state) => state.setActiveChatId);
+  const chatsRaw = useQuickAskChatsStore((state) => state.chatsRaw);
+  const storedCurrentChatId = useQuickAskChatsStore((state) => state.currentChatId);
+  const chatsStoreStatus = useQuickAskChatsStore((state) => state.status);
+  const fetchChatsOnce = useQuickAskChatsStore((state) => state.fetchOnce);
+  const setChatsSnapshot = useQuickAskChatsStore((state) => state.setSnapshot);
 
-  const [chats, setChats] = useState<QuickAskChat[]>([]);
-  const [chatsRaw, setChatsRaw] = useState<any[]>([]);
-  const [storedCurrentChatId, setStoredCurrentChatId] = useState('');
-  const [chatStatus, setChatStatus] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const [chatSearchText, setChatSearchText] = useState('');
   const [renamingChatId, setRenamingChatId] = useState('');
   const [renameDraft, setRenameDraft] = useState('');
@@ -98,53 +95,16 @@ export function Sidebar({
   const [pendingDeleteChatId, setPendingDeleteChatId] = useState('');
 
   const showUsers = (config?.authMode || 'NONE') !== 'NONE' && config?.deployMode !== 'SAAS' && (config as any)?.usersEnabled !== false;
-
-  const loadChats = useCallback(async (options?: { silent?: boolean }) => {
-    if (!options?.silent) {
-      setChatStatus('loading');
-    } else {
-      setChatStatus((prev) => (prev === 'ready' || prev === 'empty' ? prev : 'loading'));
-    }
-    try {
-      const response = await fetch('/api/ask/chats', { credentials: 'include' });
-      const payload = await response.json().catch(() => ({})) as {
-        success?: boolean;
-        data?: AskChatStatePayload;
-      };
-      const nextRaw = (response.ok && payload?.success && Array.isArray(payload?.data?.chats))
-        ? (payload.data!.chats as any[])
-        : [];
-      const nextStoredCurrent = String(payload?.data?.currentChatId || '').trim();
-      const nextChats = toQuickAskChats(nextRaw);
-
-      setChatsRaw(nextRaw);
-      setStoredCurrentChatId(nextStoredCurrent);
-      setChats(nextChats);
-      setChatStatus(nextChats.length ? 'ready' : 'empty');
-    } catch {
-      setChatStatus((prev) => (options?.silent && (prev === 'ready' || prev === 'empty') ? prev : 'error'));
-    }
-  }, []);
+  const chats = useMemo(() => toQuickAskChats(chatsRaw), [chatsRaw]);
+  const chatStatus = useMemo<'loading' | 'ready' | 'empty' | 'error'>(() => {
+    if (chatsStoreStatus === 'idle' || chatsStoreStatus === 'loading') return 'loading';
+    if (chatsStoreStatus === 'error' && chats.length === 0) return 'error';
+    return chats.length > 0 ? 'ready' : 'empty';
+  }, [chats.length, chatsStoreStatus]);
 
   useEffect(() => {
-    void loadChats();
-  }, [loadChats]);
-
-  useEffect(() => {
-    if (location.pathname === '/quick-ask') {
-      void loadChats({ silent: true });
-    }
-  }, [location.pathname, loadChats]);
-
-  useEffect(() => {
-    const refresh = () => {
-      void loadChats({ silent: true });
-    };
-    window.addEventListener('quickask:chats-updated', refresh);
-    return () => {
-      window.removeEventListener('quickask:chats-updated', refresh);
-    };
-  }, [loadChats]);
+    void fetchChatsOnce();
+  }, [fetchChatsOnce]);
 
   useEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
@@ -204,13 +164,8 @@ export function Sidebar({
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const nextChats = toQuickAskChats(nextRaw);
-    setChatsRaw(nextRaw);
-    setStoredCurrentChatId(nextCurrentChatId);
-    setChats(nextChats);
-    setChatStatus(nextChats.length ? 'ready' : 'empty');
-    window.dispatchEvent(new CustomEvent('quickask:chats-updated'));
-  }, []);
+    setChatsSnapshot(nextRaw, nextCurrentChatId);
+  }, [setChatsSnapshot]);
 
   const startRename = useCallback((chat: QuickAskChat) => {
     setRenamingChatId(chat.id);
