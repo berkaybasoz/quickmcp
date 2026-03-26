@@ -82,7 +82,7 @@ export function AppBar({ onOpenSidebar, style }: AppBarProps) {
           <button
             id="headerNewServerBtn"
             type="button"
-            onClick={() => navigate('/generate')}
+            onClick={() => navigate('/generate', { state: { new: true } })}
             className="md:inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-400 text-slate-700 dark:text-slate-100 hover:text-blue-600 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
           >
             <i className="fas fa-plus" />

@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGenerateStore } from './store/useGenerateStore';
 import { isNoTableDataSource } from './types';
 import { useHandleNextToStep3 } from './hooks/useHandleNextToStep3';
@@ -69,9 +69,20 @@ function getGroupTools(prefix: string) {
 
 export function GeneratePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const store = useGenerateStore();
   const { handleNextToStep3, parseLoading } = useHandleNextToStep3();
   const canProceedStep2 = useCanProceed(store);
+
+  // ── Reset form when navigated here as "new" ────────────────────────────────
+  useEffect(() => {
+    if ((location.state as any)?.new) {
+      store.resetForm();
+      // Clear the state so refreshing doesn't re-reset
+      navigate('/generate', { replace: true, state: {} });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   // ── Mount ──────────────────────────────────────────────────────────────────
   useEffect(() => {

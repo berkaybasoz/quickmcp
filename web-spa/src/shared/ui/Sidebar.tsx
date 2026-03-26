@@ -478,7 +478,7 @@ export function Sidebar({
                 aria-current={item.active ? 'page' : undefined}
                 onClick={(event) => {
                   event.preventDefault();
-                  navigate(item.href);
+                  navigate(item.href, item.href === '/generate' ? { state: { new: true } } : undefined);
                   onCloseMobile();
                 }}
               >

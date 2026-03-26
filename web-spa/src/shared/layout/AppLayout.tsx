@@ -108,7 +108,7 @@ export function AppLayout() {
       if (newServerBtn) {
         event.preventDefault();
         event.stopPropagation();
-        navigate('/generate');
+        navigate('/generate', { state: { new: true } });
         return;
       }
 
