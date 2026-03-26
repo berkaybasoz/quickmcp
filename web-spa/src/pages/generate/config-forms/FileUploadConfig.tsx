@@ -46,58 +46,58 @@ export function FileUploadConfig() {
   };
 
   return (
-    <div id="file-upload-section" className="space-y-4 mt-6">
+    <div id="file-upload-section">
       <div
-        className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-300 transition-colors"
+        id="fileUpload"
+        className="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer"
+        onClick={() => fileInputRef.current?.click()}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
-        <i className="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-3" />
-        <p className="text-sm font-medium text-slate-700 mb-1">
-          {selectedFileName ? selectedFileName : 'Drag & drop your file here'}
-        </p>
-        <p className="text-xs text-slate-500 mb-4">CSV or Excel files (.csv, .xlsx, .xls)</p>
-        <label className="btn-primary cursor-pointer text-sm px-4 py-2 bg-blue-600 text-white rounded-lg">
-          Browse File
-          <input
-            ref={fileInputRef}
-            type="file"
-            id="fileInput"
-            accept=".csv,.xlsx,.xls"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </label>
-      </div>
-
-      <div className="text-center text-xs text-slate-400">— or enter file path —</div>
-
-      <div className="flex gap-2">
+        <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+          <i className="fas fa-cloud-upload-alt text-3xl" />
+        </div>
+        <h4 className="text-lg font-bold text-slate-900">
+          {selectedFileName ? selectedFileName : 'Click or Drag file here'}
+        </h4>
+        <p className="text-sm text-slate-500 mt-1">Supports .csv and .xlsx files up to 10MB</p>
         <input
-          type="text"
-          id="csvExcelFilePath"
-          placeholder="/path/to/file.csv"
-          className="input flex-1"
-          value={csvExcelFilePath}
-          onChange={(e) => setField('csvExcelFilePath', e.target.value)}
+          ref={fileInputRef}
+          type="file"
+          id="fileInput"
+          accept=".csv,.xlsx,.xls"
+          className="hidden"
+          onChange={handleFileChange}
         />
-        <button
-          id="browseCsvExcelFileBtn"
-          type="button"
-          className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:border-slate-300"
-          onClick={handleBrowseServerPath}
-        >
-          <i className="fas fa-folder-open mr-1" />
-          Browse
-        </button>
       </div>
 
-      <div
-        id="file-upload-section-parse-error"
-        className={parseError ? 'text-xs text-red-600' : 'hidden text-xs text-red-600'}
-      >
-        {parseError}
+      <div className="mt-4">
+        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">File Path (Optional)</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            id="csvExcelFilePath"
+            placeholder="/Users/username/Documents/data.csv"
+            className="input flex-1"
+            value={csvExcelFilePath}
+            onChange={(e) => setField('csvExcelFilePath', e.target.value)}
+          />
+          <button
+            id="browseCsvExcelFileBtn"
+            type="button"
+            className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            onClick={handleBrowseServerPath}
+          >
+            <i className="fas fa-file" />
+            <span>Browse File</span>
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Upload yerine doğrudan dosya yolu da kullanabilirsiniz.</p>
       </div>
+
+      {parseError && (
+        <div className="mt-2 text-xs text-red-600">{parseError}</div>
+      )}
     </div>
   );
 }

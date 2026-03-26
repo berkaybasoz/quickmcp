@@ -101,9 +101,11 @@ export function Step2Config({ onBack, onNext, canProceed, isLoading }: Step2Prop
 
   return (
     <div id="wizard-step-2" className="wizard-step">
-      <div className="bg-slate-50/50 p-6 border-b border-slate-200/60">
-        <h3 className="text-lg font-bold text-slate-900">Configure Data Source</h3>
-        <p className="text-sm text-slate-500">Enter connection details for your selected source.</p>
+      <div className="bg-slate-50/50 p-6 border-b border-slate-200/60 flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">Template Configuration</h3>
+          <p className="text-sm text-slate-500">Fill in the template fields for your data source.</p>
+        </div>
       </div>
       <div id="wizard-step-2-content" className="p-8 space-y-6">
         <ConfigForm type={selectedType} />

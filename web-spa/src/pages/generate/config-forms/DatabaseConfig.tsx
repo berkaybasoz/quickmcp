@@ -133,92 +133,92 @@ export function DatabaseConfig({ type }: DatabaseConfigProps) {
   const defaultPort = useMemo(() => DEFAULT_PORTS[type] ?? '', [type]);
 
   return (
-    <div id="database-section" className="space-y-4 mt-6">
-      {cfg.showHost && (
-        <div id="db-host-group">
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            <span id="dbHostLabel">{cfg.hostLabel}</span>
-          </label>
-          <input
-            type="text"
-            id="dbHost"
-            placeholder="localhost"
-            className="input"
-            value={dbHost}
-            onChange={(e) => setField('dbHost', e.target.value)}
-          />
-        </div>
-      )}
-
-      {cfg.showPort && (
-        <div id="db-port-group">
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            <span id="dbPortLabel">{cfg.portLabel}</span>
-          </label>
-          <input
-            type="number"
-            id="dbPort"
-            placeholder={defaultPort}
-            className="input"
-            value={dbPort}
-            onChange={(e) => setField('dbPort', e.target.value)}
-          />
-        </div>
-      )}
-
-      {cfg.showDbName && (
-        <div id="db-name-group">
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            <span id="dbNameLabel">{cfg.dbNameLabel}</span>
-          </label>
-          <input
-            type="text"
-            id="dbName"
-            placeholder={cfg.dbNamePlaceholder}
-            className="input"
-            value={dbName}
-            onChange={(e) => setField('dbName', e.target.value)}
-          />
-        </div>
-      )}
-
-      {cfg.showUser && (
-        <div id="db-user-group">
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            <span id="dbUserLabel">{cfg.userLabel}</span>
-          </label>
-          <input
-            type="text"
-            id="dbUser"
-            placeholder="root"
-            className="input"
-            value={dbUser}
-            onChange={(e) => setField('dbUser', e.target.value)}
-          />
-        </div>
-      )}
-
-      {cfg.showPassword && (
-        <div id="db-password-group">
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            <span id="dbPasswordLabel">{cfg.passwordLabel}</span>
-          </label>
-          <input
-            type="password"
-            id="dbPassword"
-            placeholder="••••••••"
-            className="input"
-            value={dbPassword}
-            onChange={(e) => setField('dbPassword', e.target.value)}
-          />
-        </div>
-      )}
-
+    <div id="database-section" className="space-y-6">
       {cfg.hint && (
-        <p id="db-connection-hint" className="text-xs text-slate-500 mt-2">
-          {cfg.hint}
-        </p>
+        <p id="db-connection-hint" className="text-xs text-slate-500">{cfg.hint}</p>
       )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {cfg.showHost && (
+          <div id="db-host-group">
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <span id="dbHostLabel">{cfg.hostLabel}</span>
+            </label>
+            <input
+              type="text"
+              id="dbHost"
+              placeholder="localhost"
+              className="input"
+              value={dbHost}
+              onChange={(e) => setField('dbHost', e.target.value)}
+            />
+          </div>
+        )}
+
+        {cfg.showPort && (
+          <div id="db-port-group">
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <span id="dbPortLabel">{cfg.portLabel}</span>
+            </label>
+            <input
+              type="number"
+              id="dbPort"
+              placeholder={defaultPort}
+              className="input"
+              value={dbPort}
+              onChange={(e) => setField('dbPort', e.target.value)}
+            />
+          </div>
+        )}
+
+        {cfg.showDbName && (
+          <div id="db-name-group">
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <span id="dbNameLabel">{cfg.dbNameLabel}</span>
+            </label>
+            <input
+              type="text"
+              id="dbName"
+              placeholder={cfg.dbNamePlaceholder}
+              className="input"
+              value={dbName}
+              onChange={(e) => setField('dbName', e.target.value)}
+            />
+          </div>
+        )}
+
+        {cfg.showUser && (
+          <div id="db-user-group">
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <span id="dbUserLabel">{cfg.userLabel}</span>
+            </label>
+            <input
+              type="text"
+              id="dbUser"
+              placeholder="root"
+              className="input"
+              value={dbUser}
+              onChange={(e) => setField('dbUser', e.target.value)}
+            />
+          </div>
+        )}
+
+        {cfg.showPassword && (
+          <div id="db-password-group">
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+              <span id="dbPasswordLabel">{cfg.passwordLabel}</span>
+            </label>
+            <input
+              type="password"
+              id="dbPassword"
+              placeholder="••••••••"
+              className="input"
+              value={dbPassword}
+              onChange={(e) => setField('dbPassword', e.target.value)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

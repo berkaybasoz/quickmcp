@@ -976,11 +976,14 @@ export function useHandleNextToStep3() {
           headers['Content-Type'] = 'application/json';
           body = JSON.stringify({
             type,
-            host: store.dbHost,
-            port: store.dbPort,
-            db: store.dbName,
-            user: store.dbUser,
-            password: store.dbPassword,
+            connection: {
+              type,
+              host: store.dbHost,
+              port: store.dbPort,
+              db: store.dbName,
+              user: store.dbUser,
+              password: store.dbPassword,
+            },
           });
         } else {
           // connection template (Redis, Hazelcast, Kafka)

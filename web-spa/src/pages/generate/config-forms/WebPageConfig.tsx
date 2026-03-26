@@ -37,35 +37,37 @@ export function WebPageConfig() {
       : '';
 
   return (
-    <div className="space-y-4 mt-6">
+    <div className="space-y-4">
       <div>
-        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Alias</label>
+        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Name (Alias)</label>
         <input
           type="text"
+          id="webToolAlias"
           className="input"
-          placeholder="my_webpage"
+          placeholder="e.g., get_documentation_page"
           value={webToolAlias}
           onChange={(e) => setField('webToolAlias', e.target.value)}
         />
-        {webAliasValidation.message && (
-          <div className={`mt-1 text-xs ${validationClass}`}>{webAliasValidation.message}</div>
-        )}
+        <div id="web-alias-validation" className={`mt-2 text-xs ${validationClass}`}>
+          {webAliasValidation.message}
+        </div>
+        <p className="text-xs text-slate-500 mt-2">
+          Required. Use lowercase letters, numbers, and underscores only. This must be unique.
+        </p>
       </div>
       <div>
-        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          Web Page URL
-        </label>
+        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Web Page URL</label>
         <input
-          type="url"
+          type="text"
+          id="webUrl"
           className="input"
           placeholder="https://example.com"
           value={webUrl}
           onChange={(e) => setField('webUrl', e.target.value)}
         />
-        <p className="text-xs text-slate-500 mt-1">
-          This tool will fetch the HTML content of the specified URL.
-        </p>
+        <p className="text-xs text-slate-500 mt-2">The URL of the web page to fetch.</p>
       </div>
+      <div id="web-parse-error" className="hidden p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm" />
     </div>
   );
 }

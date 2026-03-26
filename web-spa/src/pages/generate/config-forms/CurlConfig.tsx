@@ -40,102 +40,112 @@ export function CurlConfig() {
       : '';
 
   return (
-    <div className="space-y-4 mt-6">
+    <div id="curl-section" className="space-y-6">
       <div>
-        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Alias</label>
+        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Name (Alias)</label>
         <input
           type="text"
+          id="curlToolAlias"
           className="input"
-          placeholder="my_tool"
+          placeholder="e.g., get_weather_data"
           value={curlToolAlias}
           onChange={(e) => setField('curlToolAlias', e.target.value)}
         />
-        {curlAliasValidation.message && (
-          <div className={`mt-1 text-xs ${validationClass}`}>{curlAliasValidation.message}</div>
-        )}
+        <div id="curl-alias-validation" className={`mt-2 text-xs ${validationClass}`}>
+          {curlAliasValidation.message}
+        </div>
+        <p className="text-xs text-slate-500 mt-2">
+          Required. Use lowercase letters, numbers, and underscores only. This must be unique.
+        </p>
       </div>
 
       {/* Tab switcher */}
-      <div className="flex rounded-lg bg-slate-100 p-1">
+      <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
         <button
+          id="curlPasteTab"
           type="button"
           onClick={() => setField('curlMode', 'paste')}
-          className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
-            curlMode === 'paste' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            curlMode === 'paste' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Paste cURL
+          Paste cURL Command
         </button>
         <button
+          id="curlManualTab"
           type="button"
           onClick={() => setField('curlMode', 'manual')}
-          className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
-            curlMode === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            curlMode === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          Manual
+          Manual Configuration
         </button>
       </div>
 
       {curlMode === 'paste' ? (
-        <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            cURL Command
-          </label>
-          <textarea
-            className="input resize-none font-mono text-sm"
-            rows={4}
-            placeholder={"curl -X POST https://api.example.com/data \\\n  -H 'Authorization: Bearer token' \\\n  -d '{\"key\":\"value\"}'"}
-            value={curlCommand}
-            onChange={(e) => setField('curlCommand', e.target.value)}
-          />
+        <div id="curlPasteMode" className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">cURL Command</label>
+            <textarea
+              id="curlCommand"
+              rows={6}
+              className="input font-mono text-xs"
+              placeholder={'curl -X GET "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT" \\\n  -H "Accept: application/json"'}
+              value={curlCommand}
+              onChange={(e) => setField('curlCommand', e.target.value)}
+            />
+            <p className="text-xs text-slate-500 mt-2">Paste your curl command here. We'll parse it automatically.</p>
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">URL</label>
-            <input
-              type="url"
-              className="input"
-              placeholder="https://api.example.com/endpoint"
-              value={curlUrl}
-              onChange={(e) => setField('curlUrl', e.target.value)}
-            />
+        <div id="curlManualMode" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Request URL</label>
+              <input
+                type="text"
+                id="curlUrl"
+                placeholder="https://api.example.com/data"
+                className="input"
+                value={curlUrl}
+                onChange={(e) => setField('curlUrl', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Method</label>
+              <select
+                id="curlMethod"
+                className="input"
+                value={curlMethod}
+                onChange={(e) => setField('curlMethod', e.target.value)}
+              >
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>DELETE</option>
+                <option>PATCH</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Method</label>
-            <select
-              className="input"
-              value={curlMethod}
-              onChange={(e) => setField('curlMethod', e.target.value)}
-            >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
-              <option value="PATCH">PATCH</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-              Headers (JSON, optional)
-            </label>
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Headers (JSON)</label>
             <textarea
-              className="input resize-none font-mono text-sm"
+              id="curlHeaders"
               rows={3}
-              placeholder={'{"Authorization": "Bearer token"}'}
+              className="input font-mono text-xs"
+              placeholder={'{ "Authorization": "Bearer ..." }'}
               value={curlHeaders}
               onChange={(e) => setField('curlHeaders', e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-              Body (JSON, optional)
-            </label>
+            <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Body (JSON)</label>
             <textarea
-              className="input resize-none font-mono text-sm"
-              rows={3}
-              placeholder={'{"key": "value"}'}
+              id="curlBody"
+              rows={4}
+              className="input font-mono text-xs"
+              placeholder={'{ "key": "value" }'}
               value={curlBody}
               onChange={(e) => setField('curlBody', e.target.value)}
             />
