@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 type UiTheme = 'light' | 'dark';
 
 const LEGACY_THEME_CACHE_KEY = 'quickmcp.cache.ui.theme';
-const SPA_THEME_CACHE_KEY = 'quickmcp.spa.theme';
 
 function subtitleByPath(pathname: string): string {
   const p = pathname.replace(/\/$/, '') || '/';
@@ -21,10 +20,6 @@ function subtitleByPath(pathname: string): string {
 
 function readTheme(): UiTheme {
   if (typeof window === 'undefined') return 'light';
-  try {
-    const stored = String(localStorage.getItem(SPA_THEME_CACHE_KEY) || '').trim().toLowerCase();
-    if (stored === 'light' || stored === 'dark') return stored as UiTheme;
-  } catch {}
   try {
     const raw = localStorage.getItem(LEGACY_THEME_CACHE_KEY);
     if (raw) {
@@ -54,7 +49,6 @@ export function AppBar({ onOpenSidebar, style }: AppBarProps) {
   useEffect(() => {
     applyTheme(theme);
     try {
-      localStorage.setItem(SPA_THEME_CACHE_KEY, theme);
       localStorage.setItem(LEGACY_THEME_CACHE_KEY, JSON.stringify({ theme }));
     } catch {}
   }, [theme]);
