@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGenerateStore } from '../store/useGenerateStore';
 
 interface DatabaseConfigProps {
@@ -131,6 +131,10 @@ export function DatabaseConfig({ type }: DatabaseConfigProps) {
 
   const cfg = useMemo(() => getFieldConfig(type), [type]);
   const defaultPort = useMemo(() => DEFAULT_PORTS[type] ?? '', [type]);
+
+  useEffect(() => {
+    if (DEFAULT_PORTS[type]) setField('dbPort', DEFAULT_PORTS[type]);
+  }, [type]);
 
   return (
     <div id="database-section" className="space-y-6">

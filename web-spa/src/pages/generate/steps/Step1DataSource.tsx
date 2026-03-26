@@ -44,7 +44,7 @@ const DATA_SOURCES: DataSourceDef[] = [
     value: 'localfs', category: 'file',
     icon: 'fas fa-folder-open', iconBg: 'bg-yellow-100 text-yellow-600',
     border: 'hover:border-yellow-400 hover:shadow-md hover:shadow-yellow-500/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/30',
-    label: 'Local Filesystem', desc: 'Access local files and directories.',
+    label: 'Local Files', desc: 'Access local files and directories.',
   },
   {
     value: 'ftp', category: 'file',
@@ -115,16 +115,10 @@ const DATA_SOURCES: DataSourceDef[] = [
     label: 'DB2 z/OS', desc: 'Connect to DB2',
   },
   {
-    value: 'elasticsearch', category: 'database',
-    img: '/images/app/elasticsearch.png',
-    border: 'hover:border-yellow-500 hover:shadow-md hover:shadow-yellow-600/20 peer-checked:border-yellow-600 peer-checked:shadow-lg peer-checked:shadow-yellow-600/30',
-    label: 'Elasticsearch', desc: 'Connect to Elasticsearch',
-  },
-  {
-    value: 'opensearch', category: 'database',
-    icon: 'fas fa-search', iconBg: 'bg-blue-100 text-blue-600',
-    border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
-    label: 'OpenSearch', desc: 'Connect to OpenSearch',
+    value: 'supabase', category: 'database',
+    img: '/images/app/supabase.png',
+    border: 'hover:border-green-400 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30',
+    label: 'Supabase', desc: 'Connect to Supabase.',
   },
   {
     value: 'mariadb', category: 'database',
@@ -142,13 +136,13 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'web', category: 'web',
-    icon: 'fas fa-globe', iconBg: 'bg-blue-100 text-blue-600',
+    img: '/images/app/webpage.png',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
     label: 'Web Page', desc: 'Fetch content from a web URL.',
   },
   {
     value: 'rss', category: 'web',
-    icon: 'fas fa-rss', iconBg: 'bg-orange-100 text-orange-600',
+    img: '/images/app/rss.png',
     border: 'hover:border-orange-400 hover:shadow-md hover:shadow-orange-500/20 peer-checked:border-orange-500 peer-checked:shadow-lg peer-checked:shadow-orange-500/30',
     label: 'RSS / Atom Feed', desc: 'Subscribe to an RSS or Atom feed.',
   },
@@ -156,19 +150,19 @@ const DATA_SOURCES: DataSourceDef[] = [
   // API
   {
     value: 'graphql', category: 'api',
-    icon: 'fas fa-project-diagram', iconBg: 'bg-pink-100 text-pink-600',
+    img: '/images/app/graphql.png',
     border: 'hover:border-pink-400 hover:shadow-md hover:shadow-pink-500/20 peer-checked:border-pink-500 peer-checked:shadow-lg peer-checked:shadow-pink-500/30',
     label: 'GraphQL', desc: 'Connect to a GraphQL API.',
   },
   {
     value: 'soap', category: 'api',
-    icon: 'fas fa-code', iconBg: 'bg-slate-100 text-slate-600',
+    img: '/images/app/soap.png',
     border: 'hover:border-slate-400 hover:shadow-md hover:shadow-slate-500/20 peer-checked:border-slate-500 peer-checked:shadow-lg peer-checked:shadow-slate-500/30',
     label: 'SOAP', desc: 'Connect to a SOAP web service.',
   },
   {
     value: 'curl', category: 'api',
-    icon: 'fas fa-terminal', iconBg: 'bg-sky-100 text-sky-600',
+    img: '/images/app/curl_mini.png',
     border: 'hover:border-sky-400 hover:shadow-md hover:shadow-sky-500/20 peer-checked:border-sky-500 peer-checked:shadow-lg peer-checked:shadow-sky-500/30',
     label: 'cURL Request', desc: 'Execute a custom HTTP request.',
   },
@@ -295,12 +289,6 @@ const DATA_SOURCES: DataSourceDef[] = [
     label: 'n8n', desc: 'Connect to n8n automation.',
   },
   {
-    value: 'supabase', category: 'productivity',
-    img: '/images/app/supabase.png',
-    border: 'hover:border-green-400 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30',
-    label: 'Supabase', desc: 'Connect to Supabase.',
-  },
-  {
     value: 'email', category: 'productivity',
     icon: 'fas fa-envelope', iconBg: 'bg-blue-100 text-blue-600',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
@@ -358,7 +346,7 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'whatsappbusiness', category: 'social',
-    img: '/images/app/whatsapp.png',
+    img: '/images/app/whatsappbusiness.png',
     border: 'hover:border-green-400 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30',
     label: 'WhatsApp Business', desc: 'Connect to WhatsApp Business API.',
   },
@@ -412,37 +400,37 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'applenotes', category: 'social',
-    icon: 'fas fa-sticky-note', iconBg: 'bg-yellow-100 text-yellow-600',
+    img: '/images/app/applenotes.png',
     border: 'hover:border-yellow-400 hover:shadow-md hover:shadow-yellow-500/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/30',
     label: 'Apple Notes', desc: 'Access Apple Notes.',
   },
   {
     value: 'applereminders', category: 'social',
-    icon: 'fas fa-bell', iconBg: 'bg-red-100 text-red-600',
+    img: '/images/app/applereminders.png',
     border: 'hover:border-red-400 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30',
     label: 'Apple Reminders', desc: 'Access Apple Reminders.',
   },
   {
     value: 'things3', category: 'social',
-    icon: 'fas fa-tasks', iconBg: 'bg-blue-100 text-blue-600',
+    img: '/images/app/things3.png',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
     label: 'Things 3', desc: 'Connect to Things 3.',
   },
   {
     value: 'obsidian', category: 'social',
-    icon: 'fas fa-gem', iconBg: 'bg-purple-100 text-purple-600',
+    img: '/images/app/obsidian.png',
     border: 'hover:border-purple-400 hover:shadow-md hover:shadow-purple-500/20 peer-checked:border-purple-500 peer-checked:shadow-lg peer-checked:shadow-purple-500/30',
     label: 'Obsidian', desc: 'Connect to Obsidian.',
   },
   {
     value: 'bearnotes', category: 'social',
-    icon: 'fas fa-paw', iconBg: 'bg-red-100 text-red-600',
+    img: '/images/app/bearnotes.png',
     border: 'hover:border-red-400 hover:shadow-md hover:shadow-red-500/20 peer-checked:border-red-500 peer-checked:shadow-lg peer-checked:shadow-red-500/30',
     label: 'Bear Notes', desc: 'Access Bear Notes.',
   },
   {
     value: 'imessage', category: 'social',
-    icon: 'fas fa-comment', iconBg: 'bg-green-100 text-green-600',
+    img: '/images/app/imessage.png',
     border: 'hover:border-green-400 hover:shadow-md hover:shadow-green-500/20 peer-checked:border-green-500 peer-checked:shadow-lg peer-checked:shadow-green-500/30',
     label: 'iMessage', desc: 'Connect to iMessage.',
   },
@@ -540,7 +528,7 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'azure-openai', category: 'ai',
-    img: '/images/app/azure.png',
+    img: '/images/app/azure_openai.png',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
     label: 'Azure OpenAI', desc: 'Connect to Azure OpenAI.',
   },
@@ -558,7 +546,7 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'llama', category: 'ai',
-    icon: 'fas fa-robot', iconBg: 'bg-blue-100 text-blue-600',
+    img: '/images/app/llama.png',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
     label: 'Llama (Ollama)', desc: 'Run Llama models locally.',
   },
@@ -635,6 +623,18 @@ const DATA_SOURCES: DataSourceDef[] = [
     img: '/images/app/nexus.png',
     border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
     label: 'Nexus', desc: 'Connect to Nexus repository.',
+  },
+  {
+    value: 'elasticsearch', category: 'infra',
+    img: '/images/app/elasticsearch.png',
+    border: 'hover:border-yellow-500 hover:shadow-md hover:shadow-yellow-600/20 peer-checked:border-yellow-600 peer-checked:shadow-lg peer-checked:shadow-yellow-600/30',
+    label: 'Elasticsearch', desc: 'Connect to Elasticsearch',
+  },
+  {
+    value: 'opensearch', category: 'infra',
+    img: '/images/app/opensearch.png',
+    border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
+    label: 'OpenSearch', desc: 'Connect to OpenSearch',
   },
 ];
 
