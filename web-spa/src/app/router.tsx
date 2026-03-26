@@ -4,6 +4,7 @@ import { AuthorizationPage } from '../pages/AuthorizationPage';
 import { GeneratePage } from '../pages/GeneratePage';
 import { HowToUsePage } from '../pages/HowToUsePage';
 import { LandingPage } from '../pages/LandingPage';
+import { LoginPage } from '../pages/LoginPage';
 import { ManageServersPage } from '../pages/ManageServersPage';
 import { PricingPage } from '../pages/PricingPage';
 import { QuickAskPage } from '../pages/QuickAskPage';
@@ -42,6 +43,10 @@ export const router = createBrowserRouter([
   {
     path: '/pricing',
     element: <PricingPage />
+  },
+  {
+    path: '/login',
+    element: <LoginPage />
   },
   {
     path: '/',

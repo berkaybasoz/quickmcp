@@ -7,7 +7,7 @@ export function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = String(window.location.pathname || '').toLowerCase();
-      if (path === '/landing' || path === '/pricing') return;
+      if (path === '/landing' || path === '/pricing' || path === '/login') return;
     }
     void fetchOnce();
   }, [fetchOnce]);

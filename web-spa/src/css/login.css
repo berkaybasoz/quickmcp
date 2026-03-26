@@ -1,0 +1,216 @@
+/* Login page */
+body.login-page {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0f172a;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(47, 109, 246, 0.22), transparent 36%),
+    radial-gradient(circle at 86% 90%, rgba(45, 212, 191, 0.16), transparent 42%),
+    #f4f7ff;
+}
+
+html.dark body.login-page {
+  color: #0f172a !important;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(47, 109, 246, 0.22), transparent 36%),
+    radial-gradient(circle at 86% 90%, rgba(45, 212, 191, 0.16), transparent 42%),
+    #f4f7ff !important;
+}
+
+body.login-page .login-wrap {
+  width: min(980px, 94vw);
+  min-height: 620px;
+  border: 1px solid #dbe3f3;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+}
+
+body.login-page .login-brand {
+  background:
+    linear-gradient(160deg, #0f172a 0%, #1e3a8a 58%, #2563eb 100%);
+  color: #fff;
+  padding: 44px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  position: relative;
+  isolation: isolate;
+}
+
+body.login-page .login-brand::before {
+  content: '';
+  position: absolute;
+  inset: auto -40px -80px auto;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  filter: blur(10px);
+  z-index: -1;
+}
+
+body.login-page .login-badge {
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+body.login-page .login-brand h1 {
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+body.login-page .login-brand p {
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.55;
+  margin-top: 14px;
+}
+
+body.login-page .login-points {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+body.login-page .login-point {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.login-page .login-panel {
+  background: #ffffff;
+  padding: 44px 38px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.login-page .login-title {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+body.login-page .login-subtitle {
+  color: #4b5563;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+body.login-page .login-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+}
+
+body.login-page .login-input {
+  width: 100%;
+  border: 1px solid #dbe3f3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+body.login-page .login-input:focus {
+  border-color: #2f6df6;
+  box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.14);
+}
+
+body.login-page .login-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(100deg, #2f6df6, #1d4ed8);
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform .15s ease, filter .2s ease;
+}
+
+body.login-page .login-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+body.login-page .login-btn:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+body.login-page .oauth-btn {
+  width: 100%;
+  border: 1px solid #dbe3f3;
+  background: #fff;
+  border-radius: 12px;
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #0f172a;
+  transition: border-color .2s, background .2s;
+}
+
+body.login-page .oauth-btn:hover:not(:disabled) {
+  border-color: #bfcbec;
+  background: #f8fbff;
+}
+
+body.login-page .oauth-btn:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+body.login-page .error-text {
+  color: #dc2626;
+  font-size: 13px;
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+
+body.login-page .login-google-note {
+  color: #64748b;
+  font-size: 12px;
+  margin: 0;
+}
+
+@media (max-width: 920px) {
+  body.login-page .login-wrap {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  body.login-page .login-brand {
+    padding: 28px 26px;
+  }
+
+  body.login-page .login-panel {
+    padding: 28px 22px;
+  }
+}

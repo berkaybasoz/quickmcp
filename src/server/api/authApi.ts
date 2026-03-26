@@ -1682,7 +1682,11 @@ export class AuthApi {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
-    res.sendFile(path.join(this.deps.publicDir, 'page', 'login.html'));
+    if (this.deps.spaIndexFile) {
+      res.sendFile(this.deps.spaIndexFile);
+      return;
+    }
+    res.sendFile(path.join(this.deps.publicDir, 'page', 'archive', 'login.html'));
   };
 
   private getUsersPage = (_req: express.Request, res: express.Response): void => {
