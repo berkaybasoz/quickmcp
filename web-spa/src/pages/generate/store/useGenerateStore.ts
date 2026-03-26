@@ -22,8 +22,6 @@ interface GenerateStore extends GenerateFormState {
 
   // Validation
   setNameValidation: (v: { available: boolean | null; message: string }) => void;
-  setWebAliasValidation: (v: { available: boolean | null; message: string }) => void;
-  setCurlAliasValidation: (v: { available: boolean | null; message: string }) => void;
 
   // SaaS
   setSaasConfig: (isSaas: boolean, onPremTypes: Set<string>) => void;
@@ -75,8 +73,6 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
 
   // ── Validation ─────────────────────────────────────────────────────────────
   setNameValidation: (v) => set({ nameValidation: v }),
-  setWebAliasValidation: (v) => set({ webAliasValidation: v }),
-  setCurlAliasValidation: (v) => set({ curlAliasValidation: v }),
 
   // ── SaaS ───────────────────────────────────────────────────────────────────
   setSaasConfig: (isSaas, onPremTypes) =>

@@ -153,7 +153,7 @@ export class GenerateApi {
           dbConfForGen = createRestGeneratorConfig(restSource.baseUrl || restSource.swaggerUrl);
         } else if (dataSource?.type === DataSourceType.Webpage) {
           parsedForGen = {};
-          dbConfForGen = createWebpageGeneratorConfig(dataSource.url || dataSource.name, dataSource.alias);
+          dbConfForGen = createWebpageGeneratorConfig(dataSource.url || dataSource.name);
         } else if (dataSource?.type === DataSourceType.GraphQL) {
           parsedForGen = {};
           dbConfForGen = createGraphQLGeneratorConfig(
@@ -180,7 +180,6 @@ export class GenerateApi {
             dataSource.method || 'GET',
             dataSource.headers || {},
             dataSource.body || {},
-            dataSource.alias
           );
         } else if (dataSource?.type === DataSourceType.GitHub) {
           parsedForGen = {};

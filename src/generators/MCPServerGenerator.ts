@@ -313,13 +313,13 @@ export class MCPServerGenerator {
   }
 
   private generateToolsForWebpage(serverId: string, sourceConfig: any): ToolDefinition[] {
-    const { url, alias } = sourceConfig || {};
+    const { url } = sourceConfig || {};
     if (!url) {
       logger.error('❌ No URL provided for webpage server');
       return [];
     }
 
-    const toolName = alias ? `${alias}_web` : 'fetch_webpage';
+    const toolName = 'fetch_webpage';
 
     // Create a tool to fetch the webpage HTML
     const tool: ToolDefinition = {
@@ -445,7 +445,7 @@ export class MCPServerGenerator {
   }
 
   private generateToolsForCurl(serverId: string, sourceConfig: any): ToolDefinition[] {
-    const { url, method = 'GET', alias } = sourceConfig || {};
+    const { url, method = 'GET' } = sourceConfig || {};
     if (!url) {
       logger.error('❌ No URL provided for cURL server');
       return [];
@@ -460,7 +460,7 @@ export class MCPServerGenerator {
       return 'SELECT';
     };
 
-    const toolName = alias ? `${alias}_curl` : 'execute_curl_request';
+    const toolName = 'execute_curl_request';
 
     const tool: ToolDefinition = {
       server_id: serverId,

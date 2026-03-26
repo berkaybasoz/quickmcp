@@ -40,13 +40,11 @@ NAME: REST-PETSTORE
 
 WEB
 URL: https://dolab-html.vercel.app/index.html
-ALIAS: dolab
 NAME: WEBPAGE-DOLAB
 
 ********************************************************************************************************************
 
 CURL
-ALIAS: binance
 COMMAND: curl -X GET "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
 NAME: CURL-BINANCE
 

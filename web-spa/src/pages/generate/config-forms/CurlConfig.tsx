@@ -1,64 +1,14 @@
-import { useEffect, useRef } from 'react';
 import { useGenerateStore } from '../store/useGenerateStore';
 
 export function CurlConfig() {
   const {
-    curlToolAlias, curlAliasValidation, curlMode,
+    curlMode,
     curlCommand, curlUrl, curlMethod, curlHeaders, curlBody,
-    setField, setCurlAliasValidation,
+    setField,
   } = useGenerateStore();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const alias = curlToolAlias.trim();
-    if (!alias) {
-      setCurlAliasValidation({ available: null, message: '' });
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/check-tool-name/${encodeURIComponent(alias)}`);
-        const data = await res.json();
-        if (data.success) {
-          setCurlAliasValidation({
-            available: !!data.available,
-            message: data.available ? '✓ Alias is available' : '✗ Alias already exists',
-          });
-        }
-      } catch {
-        setCurlAliasValidation({ available: null, message: '' });
-      }
-    }, 500);
-  }, [curlToolAlias]);
-
-  const validationClass =
-    curlAliasValidation.available === true
-      ? 'text-green-600'
-      : curlAliasValidation.available === false
-      ? 'text-red-600'
-      : '';
 
   return (
     <div id="curl-section" className="space-y-6">
-      <div>
-        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Name (Alias)</label>
-        <input
-          type="text"
-          id="curlToolAlias"
-          className="input"
-          placeholder="e.g., get_weather_data"
-          value={curlToolAlias}
-          onChange={(e) => setField('curlToolAlias', e.target.value)}
-        />
-        <div id="curl-alias-validation" className={`mt-2 text-xs ${validationClass}`}>
-          {curlAliasValidation.message}
-        </div>
-        <p className="text-xs text-slate-500 mt-2">
-          Required. Use lowercase letters, numbers, and underscores only. This must be unique.
-        </p>
-      </div>
-
       {/* Tab switcher */}
       <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
         <button
@@ -105,6 +55,7 @@ export function CurlConfig() {
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Request URL</label>
               <input
                 type="text"
+                autoComplete="off"
                 id="curlUrl"
                 placeholder="https://api.example.com/data"
                 className="input"

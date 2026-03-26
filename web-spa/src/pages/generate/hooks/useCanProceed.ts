@@ -15,9 +15,9 @@ type RelevantState = Pick<
   // REST
   | 'swaggerUrl'
   // Web
-  | 'webUrl' | 'webAliasValidation'
+  | 'webUrl'
   // Curl
-  | 'curlMode' | 'curlCommand' | 'curlUrl' | 'curlAliasValidation'
+  | 'curlMode' | 'curlCommand' | 'curlUrl'
   // GraphQL
   | 'graphqlBaseUrl'
   // SOAP
@@ -211,14 +211,11 @@ export function useCanProceed(state: RelevantState): boolean {
 
       // ── Webpage ────────────────────────────────────────────────────────────
       case DataSourceType.Webpage:
-        return state.webAliasValidation.available === true && !!state.webUrl;
+        return !!state.webUrl;
 
       // ── Curl ───────────────────────────────────────────────────────────────
       case DataSourceType.Curl:
-        return (
-          state.curlAliasValidation.available === true &&
-          (state.curlMode === 'paste' ? !!state.curlCommand : !!state.curlUrl)
-        );
+        return state.curlMode === 'paste' ? !!state.curlCommand : !!state.curlUrl;
 
       // ── GraphQL ────────────────────────────────────────────────────────────
       case DataSourceType.GraphQL:

@@ -19,7 +19,7 @@ export enum DataSourceType {
   Excel = 'excel',
   JSON = 'json',
   Curl = 'curl',
-  Webpage = 'webpage',
+  Webpage = 'web',
   GraphQL = 'graphql',
   Soap = 'soap',
   Rss = 'rss',
@@ -907,13 +907,11 @@ export interface RestGeneratorConfig extends BaseGeneratorConfig {
 export interface WebpageGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Webpage;
   url: string;
-  alias?: string;
 }
 
 export interface CurlGeneratorConfig extends BaseGeneratorConfig {
   type: DataSourceType.Curl;
   url: string;
-  alias?: string;
   method: string;
   headers: { [key: string]: string };
   body: { [key: string]: any };
@@ -1711,11 +1709,10 @@ export function createRestGeneratorConfig(baseUrl: string): RestGeneratorConfig 
   };
 }
 
-export function createWebpageGeneratorConfig(url: string, alias?: string): WebpageGeneratorConfig {
+export function createWebpageGeneratorConfig(url: string): WebpageGeneratorConfig {
   return {
     type: DataSourceType.Webpage,
     url,
-    alias
   };
 }
 
@@ -1724,7 +1721,6 @@ export function createCurlGeneratorConfig(
   method: string = 'GET',
   headers: { [key: string]: string } = {},
   body: { [key: string]: any } = {},
-  alias?: string
 ): CurlGeneratorConfig {
   return {
     type: DataSourceType.Curl,
@@ -1732,7 +1728,6 @@ export function createCurlGeneratorConfig(
     method,
     headers,
     body,
-    alias
   };
 }
 

@@ -140,13 +140,11 @@ export interface GenerateFormState {
 
   // Web / Curl
   webUrl: string;
-  webToolAlias: string;
   curlCommand: string;
   curlUrl: string;
   curlMethod: string;
   curlHeaders: string;
   curlBody: string;
-  curlToolAlias: string;
   curlMode: 'paste' | 'manual';
 
   // GraphQL
@@ -485,8 +483,6 @@ export interface GenerateFormState {
   generateError: string;
   generateSuccess: string;
   nameValidation: { available: boolean | null; message: string };
-  webAliasValidation: { available: boolean | null; message: string };
-  curlAliasValidation: { available: boolean | null; message: string };
 
   // SaaS
   isSaasDeployMode: boolean;
@@ -532,13 +528,11 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   swaggerUrl: '',
 
   webUrl: '',
-  webToolAlias: '',
   curlCommand: '',
   curlUrl: '',
   curlMethod: 'GET',
   curlHeaders: '',
   curlBody: '',
-  curlToolAlias: '',
   curlMode: 'paste',
 
   graphqlBaseUrl: '',
@@ -826,8 +820,6 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   generateError: '',
   generateSuccess: '',
   nameValidation: { available: null, message: '' },
-  webAliasValidation: { available: null, message: '' },
-  curlAliasValidation: { available: null, message: '' },
 
   isSaasDeployMode: false,
   onPremOnlyTypes: new Set(),

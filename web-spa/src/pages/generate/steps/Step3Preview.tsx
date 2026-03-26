@@ -7,7 +7,7 @@ interface Step3Props {
 
 export function Step3Preview({ onBack, onNext }: Step3Props) {
   const { currentParsedData, previewHtml } = useGenerateStore();
-  const canProceed = currentParsedData !== null;
+  const canProceed = currentParsedData !== null || !!previewHtml;
 
   return (
     <div id="wizard-step-3" className="wizard-step">

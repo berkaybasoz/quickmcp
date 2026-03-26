@@ -373,7 +373,7 @@ function card(type: string, s: S): DirectResult {
 
   // ── HTTP / Web ───────────────────────────────────────────────────────────────
   if (type === T.Webpage) {
-    const ds = { type, alias: s.webToolAlias || undefined, name: s.webUrl, url: s.webUrl };
+    const ds = { type, name: s.webUrl, url: s.webUrl };
     return {
       dataSource: ds,
       parsedData: null,
@@ -383,7 +383,6 @@ function card(type: string, s: S): DirectResult {
         cardBg: 'bg-indigo-50 border-2 border-indigo-200',
         details: [
           { label: 'URL', value: s.webUrl },
-          { label: 'Alias', value: s.webToolAlias },
         ],
         tools: ['fetch_webpage'],
       }),
@@ -394,11 +393,11 @@ function card(type: string, s: S): DirectResult {
     let ds: Record<string, any>;
     if (s.curlMode === 'paste') {
       const parsed = parseCurlCommand(s.curlCommand);
-      ds = { type, alias: s.curlToolAlias || undefined, url: parsed.url, method: parsed.method, headers: parsed.headers, body: parsed.body };
+      ds = { type, url: parsed.url, method: parsed.method, headers: parsed.headers, body: parsed.body };
     } else {
       let headers: Record<string, string> = {};
       try { headers = JSON.parse(s.curlHeaders || '{}'); } catch { headers = {}; }
-      ds = { type, alias: s.curlToolAlias || undefined, url: s.curlUrl, method: s.curlMethod, headers, body: s.curlBody };
+      ds = { type, url: s.curlUrl, method: s.curlMethod, headers, body: s.curlBody };
     }
     return {
       dataSource: ds,
