@@ -165,10 +165,7 @@ export function GeneratePage() {
       const data = await res.json();
       if (data.success) {
         store.setDirectoryPickerPath(data.currentPath || path);
-        const entries = [
-          ...(data.directories || []).map((d: any) => ({ ...d, isDirectory: true })),
-          ...(data.files || []).map((f: any) => ({ ...f, isDirectory: false })),
-        ];
+        const entries = (data.directories || []).map((d: any) => ({ ...d, isDirectory: true }));
         store.setDirectoryPickerEntries(entries);
       }
     } catch { /* ignore */ } finally {
