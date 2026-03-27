@@ -15,22 +15,22 @@ function Field({ label, id, type = 'text', placeholder, value, onChange }: {
   );
 }
 
-function GroupToggle({ id, allSelected, someSelected, defaultGroup, onChange }: {
-  id: string; allSelected: boolean; someSelected: boolean; defaultGroup?: boolean; onChange: (v: boolean) => void;
+function GroupToggle({ id, allSelected, someSelected, onChange }: {
+  id: string; allSelected: boolean; someSelected: boolean; onChange: (v: boolean) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!ref.current) return;
-    ref.current.indeterminate = defaultGroup ? someSelected : (someSelected && !allSelected);
-  }, [someSelected, allSelected, defaultGroup]);
+    ref.current.indeterminate = someSelected && !allSelected;
+  }, [someSelected, allSelected]);
   return (
     <input
       ref={ref}
       id={id}
       type="checkbox"
       className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-      checked={defaultGroup ? false : allSelected}
-      onChange={() => onChange(!allSelected)}
+      checked={allSelected}
+      onChange={(e) => onChange(e.target.checked)}
     />
   );
 }
@@ -312,7 +312,6 @@ export function InfraConfig({ type }: Props) {
                       id={`n8n-toggle-${key}`}
                       allSelected={allSel}
                       someSelected={someSel}
-                      defaultGroup={key === 'core'}
                       onChange={(v) => toggleCategory(key, v)}
                     />
                   </label>
