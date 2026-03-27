@@ -696,7 +696,7 @@ export const INITIAL_FORM_STATE: GenerateFormState = {
   n8nBaseUrl: '',
   n8nApiKey: '',
   n8nApiPath: '/api/v1',
-  n8nSelectedTools: ['list_executions','get_execution','get_execution_tags','list_workflows','get_workflow','get_workflow_tags','list_tags','list_variables','list_data_tables','get_data_table','list_data_table_rows','list_projects'],
+  n8nSelectedTools: ['list_executions','get_execution','get_execution_tags','list_workflows','get_workflow','get_workflow_version','get_workflow_tags','list_tags','get_tag','list_variables','list_data_tables','get_data_table','list_data_table_rows','list_projects','list_project_users'],
 
   supabaseBaseUrl: '',
   supabaseApiKey: '',
