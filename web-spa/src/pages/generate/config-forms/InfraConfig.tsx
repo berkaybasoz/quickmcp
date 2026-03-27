@@ -245,7 +245,19 @@ export function InfraConfig({ type }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Field id="n8nBaseUrl" label="Base URL" value={s.n8nBaseUrl} onChange={(v) => s.setField('n8nBaseUrl', v)} />
             <Field id="n8nApiKey" label="API Key" type="password" placeholder="n8n_api_key" value={s.n8nApiKey} onChange={(v) => s.setField('n8nApiKey', v)} />
-            <Field id="n8nApiPath" label="API Path" value={s.n8nApiPath} onChange={(v) => s.setField('n8nApiPath', v)} />
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">API Path</label>
+              <input
+                id="n8nApiPath"
+                type="text"
+                className="input"
+                placeholder="/api/v1"
+                value={s.n8nApiPath}
+                autoComplete="off"
+                onChange={(e) => s.setField('n8nApiPath', e.target.value)}
+                onBlur={(e) => { if (!e.target.value.trim()) s.setField('n8nApiPath', '/api/v1'); }}
+              />
+            </div>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200 space-y-4">
             <div>
