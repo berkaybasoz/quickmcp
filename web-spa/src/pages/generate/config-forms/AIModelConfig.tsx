@@ -27,11 +27,30 @@ export function AIModelConfig({ type }: Props) {
   switch (type) {
     case 'openai':
       return (
-        <div className="space-y-4 mt-6">
-          <Field label="Base URL" value="https://api.openai.com/v1" readOnly />
-          <Field label="Model (optional)" placeholder="gpt-4o" value={s.openaiModel} onChange={(v) => s.setField('openaiModel', v)} />
-          <Field label="API Key" type="password" id="openaiApiKey" placeholder="sk-..." value={s.openaiApiKey} onChange={(v) => s.setField('openaiApiKey', v)} />
-          <p className="text-xs text-slate-500">Creates 7 tools: chat, embeddings, moderations, images, audio_speech, audio_transcriptions, audio_translations</p>
+        <div className="space-y-6 mt-6">
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-start gap-3">
+              <i className="fas fa-info-circle text-slate-700 mt-0.5" />
+              <div className="text-sm text-slate-700">
+                <p className="font-medium text-slate-900 mb-1">OpenAI API</p>
+                <p>Use an API key and optional default model.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Field label="Base URL" value="https://api.openai.com/v1" readOnly />
+            </div>
+            <div>
+              <Field label="Default Model (Optional)" id="openaiModel" placeholder="gpt-4o-mini" value={s.openaiModel} onChange={(v) => s.setField('openaiModel', v)} />
+            </div>
+            <div className="md:col-span-2">
+              <Field label="API Key" type="password" id="openaiApiKey" placeholder="sk-..." value={s.openaiApiKey} onChange={(v) => s.setField('openaiApiKey', v)} />
+            </div>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700"><i className="fas fa-tools mr-2" /><strong>7 tools</strong> will be created: chat, embeddings, moderations, images, audio_speech, audio_transcriptions, audio_translations</p>
+          </div>
         </div>
       );
     case 'claude':
