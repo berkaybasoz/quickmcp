@@ -1005,7 +1005,33 @@ function card(type: string, s: S): DirectResult {
   }
   if (type === T.N8n) {
     const ds = { type, name: 'n8n', baseUrl: s.n8nBaseUrl, apiKey: s.n8nApiKey, apiPath: s.n8nApiPath, enabledTools: s.n8nSelectedTools };
-    return { dataSource: ds, parsedData: null, html: buildGenericPreviewHtml({ icon: 'project-diagram', color: 'orange', typeLabel: 'n8n', title: s.n8nBaseUrl || 'n8n', subtitle: `Tool groups: ${s.n8nSelectedTools.join(', ') || 'none selected'}`, details: [{ label: 'Base URL', value: s.n8nBaseUrl }, { label: 'API Path', value: s.n8nApiPath }], tools: ['list_workflows', 'get_workflow', 'execute_workflow', 'activate_workflow', 'deactivate_workflow'] }) };
+    const N8N_DESC: Record<string, string> = {
+      list_users: 'Retrieve all users', create_users: 'Create multiple users', get_user: 'Get user by ID/Email',
+      delete_user: 'Delete a user', change_user_role: "Change a user's global role", generate_audit: 'Generate an audit',
+      list_executions: 'Retrieve all executions', get_execution: 'Retrieve an execution', delete_execution: 'Delete an execution',
+      retry_execution: 'Retry an execution', stop_execution: 'Stop an execution', stop_multiple_executions: 'Stop multiple executions',
+      get_execution_tags: 'Get execution tags', update_execution_tags: 'Update tags of an execution',
+      create_workflow: 'Create a workflow', list_workflows: 'Retrieve all workflows', get_workflow: 'Retrieve a workflow',
+      delete_workflow: 'Delete a workflow', update_workflow: 'Update a workflow', get_workflow_version: 'Retrieve a specific workflow version',
+      activate_workflow: 'Publish a workflow', deactivate_workflow: 'Deactivate a workflow', transfer_workflow: 'Transfer a workflow to another project',
+      get_workflow_tags: 'Get workflow tags', update_workflow_tags: 'Update tags of a workflow',
+      list_credentials: 'List credentials', create_credential: 'Create a credential', update_credential: 'Update credential by ID',
+      delete_credential: 'Delete credential by ID', get_credential_schema: 'Show credential data schema', transfer_credential: 'Transfer credential to another project',
+      create_tag: 'Create a tag', list_tags: 'Retrieve all tags', get_tag: 'Retrieve a tag', delete_tag: 'Delete a tag', update_tag: 'Update a tag',
+      source_control_pull: 'Pull changes from source control',
+      create_variable: 'Create a variable', list_variables: 'Retrieve variables', delete_variable: 'Delete a variable', update_variable: 'Update a variable',
+      list_data_tables: 'List all data tables', create_data_table: 'Create a data table', get_data_table: 'Get a data table',
+      update_data_table: 'Update a data table', delete_data_table: 'Delete a data table',
+      list_data_table_rows: 'Retrieve rows from a data table', insert_data_table_rows: 'Insert rows into a data table',
+      update_data_table_rows: 'Update rows in a data table', upsert_data_table_rows: 'Upsert rows in a data table', delete_data_table_rows: 'Delete rows from a data table',
+      create_project: 'Create a project', list_projects: 'Retrieve projects', delete_project: 'Delete a project', update_project: 'Update a project',
+      list_project_users: 'List project members', add_project_users: 'Add users to a project',
+      delete_project_user: 'Delete a user from a project', update_project_user_role: "Change a user's role in a project",
+    };
+    const tools = s.n8nSelectedTools.map(name => ({ name, desc: N8N_DESC[name] || '' }));
+    const toolRows = tools.map(t => `<div class="flex items-start gap-2 text-sm"><i class="fas fa-wrench text-slate-400 mt-0.5"></i><div><code class="text-xs bg-slate-100 px-1 py-0.5 rounded">${t.name}</code><p class="text-xs text-slate-500 mt-0.5">${t.desc}</p></div></div>`).join('');
+    const html = `<div class="space-y-4"><div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-6"><div class="flex items-start gap-4"><div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center flex-shrink-0"><img src="/images/app/n8n.png" alt="n8n" class="w-8 h-8 object-contain" /></div><div class="flex-1"><h3 class="font-bold text-slate-900 text-lg mb-2">n8n Configuration</h3><p class="text-slate-700 mb-3">This server will generate tools to interact with n8n API.</p><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><div class="grid grid-cols-2 gap-4 text-sm"><div><span class="text-slate-500">Base URL:</span><span class="ml-2 font-mono text-slate-700">${s.n8nBaseUrl || 'Not set'}</span></div><div><span class="text-slate-500">API Path:</span><span class="ml-2 font-mono text-slate-700">${s.n8nApiPath || '/api/v1'}</span></div></div></div><div class="bg-white rounded-lg p-4 mb-3 border border-slate-200"><label class="block text-xs font-bold text-slate-700 uppercase mb-3">Generated Tools (${tools.length})</label><div class="grid grid-cols-2 gap-2">${toolRows}</div></div></div></div></div></div>`;
+    return { dataSource: ds, parsedData: null, html };
   }
 
   // ── Productivity ─────────────────────────────────────────────────────────────
