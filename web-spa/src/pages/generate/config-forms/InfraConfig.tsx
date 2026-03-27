@@ -275,18 +275,21 @@ export function InfraConfig({ type }: Props) {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Tool Selection</label>
-              <div id="n8n-tool-list" className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 p-3 bg-slate-50 space-y-1">
+              <div id="n8n-tool-list" className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 p-3 bg-slate-50">
                 {N8N_TOOLS.map((tool) => (
-                  <label key={tool.name} className="flex items-start gap-2 cursor-pointer hover:bg-white rounded px-1 py-0.5">
+                  <label key={tool.name} className="flex items-start gap-3 rounded-md p-2 hover:bg-white transition-colors border border-transparent hover:border-slate-200 cursor-pointer">
                     <input
                       type="checkbox"
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 flex-shrink-0"
                       checked={selected.has(tool.name)}
                       onChange={(e) => toggleTool(tool.name, e.target.checked)}
                     />
-                    <div className="text-sm">
-                      <span className="font-mono text-xs text-slate-700">{tool.name}</span>
-                      <span className="text-slate-500 ml-2 text-xs">{tool.description}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">{tool.name}</code>
+                        <span className={`text-[10px] uppercase tracking-wide font-semibold ${tool.category === 'core' ? 'text-emerald-600' : tool.category === 'builder' ? 'text-blue-600' : 'text-amber-600'}`}>{tool.category}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{tool.description}</p>
                     </div>
                   </label>
                 ))}
