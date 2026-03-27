@@ -42,14 +42,14 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'localfs', category: 'file',
-    icon: 'fas fa-folder-open', iconBg: 'bg-yellow-100 text-yellow-600',
-    border: 'hover:border-yellow-400 hover:shadow-md hover:shadow-yellow-500/20 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/30',
+    icon: 'fas fa-hard-drive', iconBg: 'bg-violet-100 text-violet-600',
+    border: 'hover:border-violet-500 hover:shadow-md hover:shadow-violet-500/20 peer-checked:border-violet-500 peer-checked:shadow-lg peer-checked:shadow-violet-500/30',
     label: 'Local Files', desc: 'Access local files and directories.',
   },
   {
     value: 'ftp', category: 'file',
-    icon: 'fas fa-server', iconBg: 'bg-slate-100 text-slate-600',
-    border: 'hover:border-slate-400 hover:shadow-md hover:shadow-slate-500/20 peer-checked:border-slate-500 peer-checked:shadow-lg peer-checked:shadow-slate-500/30',
+    icon: 'fas fa-folder-open', iconBg: 'bg-amber-100 text-amber-600',
+    border: 'hover:border-amber-500 hover:shadow-md hover:shadow-amber-500/20 peer-checked:border-amber-500 peer-checked:shadow-lg peer-checked:shadow-amber-500/30',
     label: 'FTP / SFTP', desc: 'Connect to FTP or SFTP server.',
   },
 
@@ -290,8 +290,8 @@ const DATA_SOURCES: DataSourceDef[] = [
   },
   {
     value: 'email', category: 'productivity',
-    icon: 'fas fa-envelope', iconBg: 'bg-blue-100 text-blue-600',
-    border: 'hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/20 peer-checked:border-blue-500 peer-checked:shadow-lg peer-checked:shadow-blue-500/30',
+    icon: 'fas fa-envelope', iconBg: 'bg-rose-100 text-rose-600',
+    border: 'hover:border-rose-500 hover:shadow-md hover:shadow-rose-500/20 peer-checked:border-rose-500 peer-checked:shadow-lg peer-checked:shadow-rose-500/30',
     label: 'Email', desc: 'IMAP/SMTP email access.',
   },
   {
