@@ -670,7 +670,7 @@ function DataSourceCard({ source, selected, onPremRestricted, onSelect, onNext }
     : 'cursor-pointer';
 
   return (
-    <label className={`group relative ${restrictedClasses}`}>
+    <label data-role="data-source-card" className={`group relative ${restrictedClasses}`}>
       <input
         type="radio"
         name="dataSourceType"
@@ -770,7 +770,7 @@ export function Step1DataSource({ onNext }: Step1Props) {
     selectedType !== null && !isRestricted(selectedType);
 
   return (
-    <div>
+    <div id="wizard-step-1">
       {/* Header */}
       <div className="bg-slate-50/50 p-6 border-b border-slate-200/60">
         <h3 className="text-lg font-bold text-slate-900">Choose Data Source</h3>
@@ -786,7 +786,7 @@ export function Step1DataSource({ onNext }: Step1Props) {
               type="button"
               onClick={() => setActiveFilter(tab.value)}
               className={[
-                'px-3 py-1.5 rounded-lg border text-sm transition-colors',
+                'template-filter px-3 py-1.5 rounded-lg border text-sm transition-colors',
                 activeFilter === tab.value
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300',

@@ -247,7 +247,7 @@ export function GeneratePage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50">
+    <div id="generate-tab" className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50">
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto space-y-8 pb-20">
           {/* Hero */}
