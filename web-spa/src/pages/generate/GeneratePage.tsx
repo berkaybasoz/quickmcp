@@ -163,7 +163,14 @@ export function GeneratePage() {
     try {
       const res = await fetch(`/api/directories?path=${encodeURIComponent(path)}`);
       const data = await res.json();
-      if (data.success) store.setDirectoryPickerEntries(data.entries || []);
+      if (data.success) {
+        store.setDirectoryPickerPath(data.currentPath || path);
+        const entries = [
+          ...(data.directories || []).map((d: any) => ({ ...d, isDirectory: true })),
+          ...(data.files || []).map((f: any) => ({ ...f, isDirectory: false })),
+        ];
+        store.setDirectoryPickerEntries(entries);
+      }
     } catch { /* ignore */ } finally {
       store.setDirectoryPickerLoading(false);
     }
