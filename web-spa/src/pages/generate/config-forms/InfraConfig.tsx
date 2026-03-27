@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { useGenerateStore } from '../store/useGenerateStore';
 
 interface Props { type: string; }
@@ -11,6 +12,26 @@ function Field({ label, id, type = 'text', placeholder, value, onChange }: {
       <label className="block text-xs font-bold text-slate-700 uppercase mb-2">{label}</label>
       <input id={id} type={type} className="input" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} autoComplete={type === 'password' ? 'new-password' : 'off'} />
     </div>
+  );
+}
+
+function GroupToggle({ id, allSelected, someSelected, defaultGroup, onChange }: {
+  id: string; allSelected: boolean; someSelected: boolean; defaultGroup?: boolean; onChange: (v: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.indeterminate = defaultGroup ? someSelected : (someSelected && !allSelected);
+  }, [someSelected, allSelected, defaultGroup]);
+  return (
+    <input
+      ref={ref}
+      id={id}
+      type="checkbox"
+      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+      checked={defaultGroup ? false : allSelected}
+      onChange={() => onChange(!allSelected)}
+    />
   );
 }
 
@@ -243,7 +264,19 @@ export function InfraConfig({ type }: Props) {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Field id="n8nBaseUrl" label="Base URL" value={s.n8nBaseUrl} onChange={(v) => s.setField('n8nBaseUrl', v)} />
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Base URL</label>
+              <input
+                id="n8nBaseUrl"
+                type="text"
+                className="input"
+                placeholder="http://localhost:5678"
+                value={s.n8nBaseUrl}
+                autoComplete="off"
+                onChange={(e) => s.setField('n8nBaseUrl', e.target.value)}
+                onBlur={(e) => { if (!e.target.value.trim()) s.setField('n8nBaseUrl', 'http://localhost:5678'); }}
+              />
+            </div>
             <Field id="n8nApiKey" label="API Key" type="password" placeholder="n8n_api_key" value={s.n8nApiKey} onChange={(v) => s.setField('n8nApiKey', v)} />
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-2">API Path</label>
@@ -267,19 +300,20 @@ export function InfraConfig({ type }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {GROUPS.map(({ key, label, desc }) => {
                 const catTools = N8N_TOOLS.filter((t) => t.category === key);
-                const allSelected = catTools.every((t) => selected.has(t.name));
+                const allSel = catTools.every((t) => selected.has(t.name));
+                const someSel = catTools.some((t) => selected.has(t.name));
                 return (
                   <label key={key} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 cursor-pointer hover:border-slate-300">
                     <div>
                       <div className="text-sm font-semibold text-slate-800">{label}</div>
                       <div className="text-xs text-slate-500">{desc}</div>
                     </div>
-                    <input
+                    <GroupToggle
                       id={`n8n-toggle-${key}`}
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      checked={allSelected}
-                      onChange={(e) => toggleCategory(key, e.target.checked)}
+                      allSelected={allSel}
+                      someSelected={someSel}
+                      defaultGroup={key === 'core'}
+                      onChange={(v) => toggleCategory(key, v)}
                     />
                   </label>
                 );
